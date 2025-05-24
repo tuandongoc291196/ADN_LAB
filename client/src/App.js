@@ -7,6 +7,7 @@ import './App.css';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './components/Home';
+import About from './components/About';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import AdminDashboard from './components/admin/AdminDashboard';
@@ -65,7 +66,7 @@ function App() {
             
             {/* Additional Public Pages */}
             <Route path="/sitemap" element={<Sitemap />} />
-            <Route path="/about" element={<div className="container py-5"><h2>Giới thiệu</h2><p>Trang giới thiệu đang được phát triển...</p></div>} />
+            <Route path="/about" element={<About />} />
             <Route path="/prices" element={<div className="container py-5"><h2>Bảng giá</h2><p>Bảng giá dịch vụ đang được cập nhật...</p></div>} />
             <Route path="/contact" element={<div className="container py-5"><h2>Liên hệ</h2><p>Thông tin liên hệ đang được cập nhật...</p></div>} />
             <Route path="/library" element={<div className="container py-5"><h2>Thư viện ADN</h2><p>Thư viện kiến thức đang được phát triển...</p></div>} />

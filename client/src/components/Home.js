@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Badge } from 'react-bootstrap';
+import { getServicesByType, COLLECTION_METHODS } from './data/services-data';
 
 const Home = () => {
   // Enhanced inline styles
@@ -57,64 +58,30 @@ const Home = () => {
     }
   };
 
-  // Enhanced services data with categories
-  const services = {
-    civilDNA: [
-      {
-        id: 1,
-        title: 'Xét nghiệm ADN huyết thống cha-con',
-        description: 'Xác định mối quan hệ huyết thống với độ chính xác 99.999%',
-        price: '3.500.000 VNĐ',
-        image: 'https://via.placeholder.com/300x200',
-        selfSample: true,
-        icon: 'bi-people'
-      },
-      {
-        id: 3,
-        title: 'Xét nghiệm ADN thai nhi',
-        description: 'Phương pháp an toàn cho mẹ và bé từ tuần thứ 8',
-        price: '5.500.000 VNĐ',
-        image: 'https://via.placeholder.com/300x200',
-        selfSample: false,
-        icon: 'bi-heart'
-      }
-    ],
-    administrativeDNA: [
-      {
-        id: 2,
-        title: 'Xét nghiệm ADN khai sinh',
-        description: 'Phục vụ thủ tục hành chính, có giá trị pháp lý',
-        price: '4.200.000 VNĐ',
-        image: 'https://via.placeholder.com/300x200',
-        selfSample: false,
-        icon: 'bi-file-earmark-text'
-      },
-      {
-        id: 8,
-        title: 'Xét nghiệm ADN di trú',
-        description: 'Phục vụ thủ tục bảo lãnh, nhập quốc tịch',
-        price: '5.800.000 VNĐ',
-        image: 'https://via.placeholder.com/300x200',
-        selfSample: false,
-        icon: 'bi-globe'
-      }
-    ]
-  };
+  // Get featured services from each category
+  const featuredAdminServices = getServicesByType('administrative')
+    .filter(service => service.featured)
+    .slice(0, 2);
+  
+  const featuredCivilServices = getServicesByType('civil')
+    .filter(service => service.featured)
+    .slice(0, 2);
 
   // Process workflow data
   const workflows = {
-    selfSample: [
-      { step: 1, title: 'Đặt hẹn online', description: 'Chọn dịch vụ và đặt lịch hẹn', icon: 'bi-calendar-check' },
-      { step: 2, title: 'Nhận bộ kit', description: 'Nhận kit xét nghiệm tại nhà', icon: 'bi-box' },
-      { step: 3, title: 'Thu thập mẫu', description: 'Tự thu mẫu theo hướng dẫn', icon: 'bi-droplet' },
-      { step: 4, title: 'Gửi mẫu', description: 'Chuyển mẫu đến phòng lab', icon: 'bi-send' },
-      { step: 5, title: 'Nhận kết quả', description: 'Xem kết quả online sau 3-5 ngày', icon: 'bi-file-earmark-check' }
+    civilWorkflow: [
+      { step: 1, title: 'Chọn dịch vụ ADN dân sự', description: 'Tìm hiểu huyết thống cho mục đích cá nhân', icon: 'bi-person-hearts' },
+      { step: 2, title: 'Chọn phương thức lấy mẫu', description: 'Tự lấy mẫu tại nhà hoặc nhân viên hỗ trợ', icon: 'bi-house' },
+      { step: 3, title: 'Thu thập mẫu ADN', description: 'Lấy mẫu theo hướng dẫn chi tiết', icon: 'bi-droplet' },
+      { step: 4, title: 'Phân tích tại phòng lab', description: 'Sử dụng công nghệ hiện đại', icon: 'bi-eye' },
+      { step: 5, title: 'Nhận kết quả online', description: 'Xem kết quả sau 5-7 ngày', icon: 'bi-file-earmark-check' }
     ],
-    atFacility: [
-      { step: 1, title: 'Đặt hẹn online', description: 'Chọn dịch vụ và thời gian phù hợp', icon: 'bi-calendar-check' },
-      { step: 2, title: 'Đến cơ sở y tế', description: 'Nhân viên thu mẫu chuyên nghiệp', icon: 'bi-hospital' },
-      { step: 3, title: 'Xét nghiệm', description: 'Phân tích mẫu tại phòng lab', icon: 'bi-eye' },
-      { step: 4, title: 'Nhận kết quả', description: 'Kết quả có giá trị pháp lý', icon: 'bi-award' }
+    administrativeWorkflow: [
+      { step: 1, title: 'Chọn dịch vụ ADN hành chính', description: 'Phục vụ thủ tục pháp lý', icon: 'bi-award' },
+      { step: 2, title: 'Đặt lịch tại cơ sở', description: 'Bắt buộc thu mẫu có giám sát', icon: 'bi-calendar-check' },
+      { step: 3, title: 'Thu mẫu có giám sát', description: 'Đảm bảo tính chính xác và pháp lý', icon: 'bi-shield-check' },
+      { step: 4, title: 'Phân tích và công chứng', description: 'Theo tiêu chuẩn pháp lý', icon: 'bi-clipboard-check' },
+      { step: 5, title: 'Nhận báo cáo có giá trị pháp lý', description: 'Sử dụng cho thủ tục hành chính', icon: 'bi-file-earmark-ruled' }
     ]
   };
 
@@ -125,24 +92,27 @@ const Home = () => {
       name: 'Chị Nguyễn Thị Lan',
       location: 'Hà Nội',
       rating: 5,
-      comment: 'Dịch vụ chuyên nghiệp, kết quả chính xác. Nhân viên tư vấn rất nhiệt tình.',
-      service: 'Xét nghiệm ADN huyết thống'
+      comment: 'Dịch vụ xét nghiệm ADN khai sinh rất chuyên nghiệp. Kết quả chính xác và được cơ quan nhà nước công nhận.',
+      service: 'ADN khai sinh',
+      serviceType: 'administrative'
     },
     {
       id: 2,
       name: 'Anh Trần Văn Minh',
       location: 'TP.HCM',
       rating: 5,
-      comment: 'Quy trình nhanh gọn, bảo mật tốt. Rất hài lòng với dịch vụ.',
-      service: 'Xét nghiệm ADN khai sinh'
+      comment: 'Tự lấy mẫu tại nhà rất tiện lợi. Kit được hướng dẫn chi tiết, dễ thực hiện.',
+      service: 'ADN huyết thống',
+      serviceType: 'civil'
     },
     {
       id: 3,
       name: 'Chị Lê Thị Hoa',
       location: 'Đà Nẵng',
       rating: 5,
-      comment: 'Kit tự lấy mẫu rất tiện lợi, hướng dẫn chi tiết, dễ thực hiện.',
-      service: 'Xét nghiệm ADN thai nhi'
+      comment: 'Xét nghiệm ADN trước sinh an toàn, không đau. Kết quả nhanh và chính xác.',
+      service: 'ADN trước sinh',
+      serviceType: 'civil'
     }
   ];
 
@@ -156,7 +126,7 @@ const Home = () => {
     {
       icon: 'bi-clock',
       title: 'Nhanh chóng',
-      description: 'Kết quả trong 3-5 ngày làm việc, có dịch vụ khẩn cấp 24h'
+      description: 'ADN dân sự: 5-7 ngày, ADN hành chính: 3-5 ngày'
     },
     {
       icon: 'bi-lock',
@@ -166,7 +136,7 @@ const Home = () => {
     {
       icon: 'bi-award',
       title: 'Giá trị pháp lý',
-      description: 'Kết quả được công nhận và có giá trị pháp lý đầy đủ'
+      description: 'ADN hành chính được công nhận bởi tòa án và cơ quan nhà nước'
     }
   ];
 
@@ -177,6 +147,12 @@ const Home = () => {
         className={`bi bi-star${index < rating ? '-fill' : ''} text-warning`}
       />
     ));
+  };
+
+  const getServiceTypeBadge = (serviceType) => {
+    return serviceType === 'administrative' 
+      ? <Badge bg="warning" text="dark">Có giá trị pháp lý</Badge>
+      : <Badge bg="success">Dân sự</Badge>;
   };
 
   return (
@@ -196,19 +172,19 @@ const Home = () => {
               <p className="lead mb-4">
                 Công nghệ tiên tiến - Kết quả chính xác 99.999% - Bảo mật tuyệt đối
                 <br />
-                Phục vụ cả xét nghiệm dân sự và hành chính
+                <strong>ADN Dân sự:</strong> Thuận tiện, riêng tư | <strong>ADN Hành chính:</strong> Có giá trị pháp lý
               </p>
               <Row className="g-3 mb-4">
                 <Col sm={6}>
                   <Button size="lg" variant="warning" as={Link} to="/services" className="w-100">
-                    <i className="bi bi-calendar-plus me-2"></i>
-                    Đặt lịch xét nghiệm
+                    <i className="bi bi-grid me-2"></i>
+                    Xem tất cả dịch vụ
                   </Button>
                 </Col>
                 <Col sm={6}>
-                  <Button size="lg" variant="outline-light" as={Link} to="/about" className="w-100">
-                    <i className="bi bi-play-circle me-2"></i>
-                    Tìm hiểu thêm
+                  <Button size="lg" variant="outline-light" as={Link} to="/appointment" className="w-100">
+                    <i className="bi bi-calendar-plus me-2"></i>
+                    Đặt lịch ngay
                   </Button>
                 </Col>
               </Row>
@@ -240,14 +216,14 @@ const Home = () => {
         </Container>
       </section>
 
-      {/* Quick Booking Section */}
+      {/* Quick Contact Section */}
       <section className="text-white py-4" style={styles.quickBookingSection}>
         <Container>
           <Row className="align-items-center">
             <Col md={8}>
               <h5 className="mb-0">
                 <i className="bi bi-telephone me-2"></i>
-                Cần tư vấn khẩn cấp? Gọi ngay hotline: 
+                Cần tư vấn chọn dịch vụ phù hợp? Gọi ngay hotline: 
                 <strong className="ms-2">1900 1234</strong>
               </h5>
             </Col>
@@ -261,27 +237,113 @@ const Home = () => {
         </Container>
       </section>
 
+      {/* Service Comparison Section */}
+      <section className="py-5 bg-light">
+        <Container>
+          <div className="text-center mb-5">
+            <h2 className="display-6 fw-bold">So sánh loại hình xét nghiệm ADN</h2>
+            <p className="lead text-muted">Chọn loại dịch vụ phù hợp với nhu cầu của bạn</p>
+          </div>
+
+          <Row className="mb-5">
+            <Col lg={6} className="mb-4">
+              <Card className="h-100 border-success shadow-sm">
+                <Card.Header className="bg-success text-white text-center py-4">
+                  <i className="bi bi-house fs-1 mb-3 d-block"></i>
+                  <h3 className="mb-2">ADN Dân sự</h3>
+                  <Badge bg="light" text="dark" className="fs-6">Mục đích cá nhân</Badge>
+                </Card.Header>
+                <Card.Body className="p-4">
+                  <div className="mb-4">
+                    <h5 className="text-success mb-3">Đặc điểm:</h5>
+                    <ul className="list-unstyled">
+                      <li className="mb-2"><i className="bi bi-check-circle text-success me-2"></i>Tự lấy mẫu tại nhà được</li>
+                      <li className="mb-2"><i className="bi bi-check-circle text-success me-2"></i>Bảo mật và riêng tư cao</li>
+                      <li className="mb-2"><i className="bi bi-check-circle text-success me-2"></i>Thuận tiện và nhanh chóng</li>
+                      <li className="mb-2"><i className="bi bi-check-circle text-success me-2"></i>Giá thành hợp lý</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <h6 className="text-success mb-3">Phù hợp cho:</h6>
+                    <ul className="small text-muted">
+                      <li>Tìm hiểu quan hệ huyết thống cá nhân</li>
+                      <li>Nghiên cứu nguồn gốc gia đình</li>
+                      <li>Phân tích đặc điểm di truyền</li>
+                      <li>Xét nghiệm riêng tư, kín đáo</li>
+                    </ul>
+                  </div>
+
+                  <div className="text-center">
+                    <Button variant="success" as={Link} to="/services?type=civil" className="me-2">
+                      Xem dịch vụ dân sự
+                    </Button>
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+
+            <Col lg={6} className="mb-4">
+              <Card className="h-100 border-warning shadow-sm">
+                <Card.Header className="bg-warning text-dark text-center py-4">
+                  <i className="bi bi-award fs-1 mb-3 d-block"></i>
+                  <h3 className="mb-2">ADN Hành chính</h3>
+                  <Badge bg="dark" className="fs-6">Có giá trị pháp lý</Badge>
+                </Card.Header>
+                <Card.Body className="p-4">
+                  <div className="mb-4">
+                    <h5 className="text-warning mb-3">Đặc điểm:</h5>
+                    <ul className="list-unstyled">
+                      <li className="mb-2"><i className="bi bi-check-circle text-warning me-2"></i>Có giá trị pháp lý đầy đủ</li>
+                      <li className="mb-2"><i className="bi bi-check-circle text-warning me-2"></i>Được tòa án công nhận</li>
+                      <li className="mb-2"><i className="bi bi-check-circle text-warning me-2"></i>Thu mẫu có giám sát nghiêm ngặt</li>
+                      <li className="mb-2"><i className="bi bi-check-circle text-warning me-2"></i>Tuân thủ tiêu chuẩn quốc tế</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <h6 className="text-warning mb-3">Phù hợp cho:</h6>
+                    <ul className="small text-muted">
+                      <li>Làm giấy khai sinh</li>
+                      <li>Thủ tục nhập tịch, visa</li>
+                      <li>Giải quyết tranh chấp thừa kế</li>
+                      <li>Xác định trách nhiệm cấp dưỡng</li>
+                    </ul>
+                  </div>
+
+                  <div className="text-center">
+                    <Button variant="warning" as={Link} to="/services?type=administrative" className="me-2">
+                      Xem dịch vụ hành chính
+                    </Button>
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+        </Container>
+      </section>
+
       {/* Process Workflow Section */}
       <section className="py-5" style={styles.workflowSection}>
         <Container>
           <div className="text-center mb-5">
             <h2 className="display-6 fw-bold">Quy trình xét nghiệm</h2>
-            <p className="lead text-muted">Chúng tôi cung cấp 2 hình thức xét nghiệm linh hoạt</p>
+            <p className="lead text-muted">Hai quy trình khác nhau phù hợp với từng nhu cầu</p>
           </div>
 
           <Row>
-            {/* Self Sample Workflow */}
+            {/* Civil Workflow */}
             <Col lg={6} className="mb-5">
               <Card className="h-100 border-0 shadow-sm">
                 <Card.Header className="bg-success text-white text-center py-3">
                   <h4 className="mb-0">
                     <i className="bi bi-house me-2"></i>
-                    Xét nghiệm ADN Dân sự - Tự thu mẫu
+                    Quy trình ADN Dân sự
                   </h4>
-                  <small>Tiện lợi, bảo mật, phù hợp xét nghiệm cá nhân</small>
+                  <small>Linh hoạt - Tiện lợi - Riêng tư</small>
                 </Card.Header>
                 <Card.Body>
-                  {workflows.selfSample.map((step, index) => (
+                  {workflows.civilWorkflow.map((step, index) => (
                     <div key={step.step} className="d-flex align-items-start mb-3">
                       <div className="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3" style={styles.stepNumber}>
                         {step.step}
@@ -297,25 +359,25 @@ const Home = () => {
                   ))}
                   <div className="text-center mt-4">
                     <Badge bg="success" className="px-3 py-2">
-                      Thời gian: 5-7 ngày | Giá: Từ 3.5 triệu VNĐ
+                      Thời gian: 5-7 ngày | Từ 3.5 triệu VNĐ
                     </Badge>
                   </div>
                 </Card.Body>
               </Card>
             </Col>
 
-            {/* At Facility Workflow */}
+            {/* Administrative Workflow */}
             <Col lg={6} className="mb-5">
               <Card className="h-100 border-0 shadow-sm">
                 <Card.Header className="bg-warning text-dark text-center py-3">
                   <h4 className="mb-0">
-                    <i className="bi bi-hospital me-2"></i>
-                    Xét nghiệm ADN Hành chính - Tại cơ sở
+                    <i className="bi bi-award me-2"></i>
+                    Quy trình ADN Hành chính
                   </h4>
-                  <small>Có giá trị pháp lý, phục vụ thủ tục hành chính</small>
+                  <small>Pháp lý - Chính xác - Uy tín</small>
                 </Card.Header>
                 <Card.Body>
-                  {workflows.atFacility.map((step, index) => (
+                  {workflows.administrativeWorkflow.map((step, index) => (
                     <div key={step.step} className="d-flex align-items-start mb-3">
                       <div className="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center me-3" style={styles.stepNumber}>
                         {step.step}
@@ -331,7 +393,7 @@ const Home = () => {
                   ))}
                   <div className="text-center mt-4">
                     <Badge bg="warning" text="dark" className="px-3 py-2">
-                      Thời gian: 3-5 ngày | Giá: Từ 4.2 triệu VNĐ
+                      Thời gian: 3-5 ngày | Từ 4.2 triệu VNĐ
                     </Badge>
                   </div>
                 </Card.Body>
@@ -341,61 +403,24 @@ const Home = () => {
         </Container>
       </section>
 
-      {/* Enhanced Services Section */}
-      <section className="py-5 bg-light">
+      {/* Featured Services Section */}
+      <section className="py-5">
         <Container>
           <div className="text-center mb-5">
-            <h2 className="display-6 fw-bold">Dịch vụ xét nghiệm ADN</h2>
-            <p className="lead text-muted">Đa dạng dịch vụ phù hợp với mọi nhu cầu</p>
+            <h2 className="display-6 fw-bold">Dịch vụ nổi bật</h2>
+            <p className="lead text-muted">Các dịch vụ được khách hàng lựa chọn nhiều nhất</p>
           </div>
 
-          {/* Civil DNA Services */}
+          {/* Administrative Services */}
           <div className="mb-5">
             <h3 className="mb-4">
-              <i className="bi bi-house text-success me-2"></i>
-              Xét nghiệm ADN Dân sự
-              <Badge bg="success" className="ms-2">Tự thu mẫu</Badge>
-            </h3>
-            <Row>
-              {services.civilDNA.map(service => (
-                <Col key={service.id} md={6} className="mb-4">
-                  <Card className="h-100 border-0 shadow-sm" style={styles.serviceCard}>
-                    <Card.Body>
-                      <div className="d-flex align-items-center mb-3">
-                        <div className="bg-success bg-opacity-10 rounded-circle p-3 me-3" style={styles.serviceIcon}>
-                          <i className={`${service.icon} text-success fs-4`}></i>
-                        </div>
-                        <div>
-                          <Card.Title className="mb-1">{service.title}</Card.Title>
-                          <div className="text-success fw-bold">{service.price}</div>
-                        </div>
-                      </div>
-                      <Card.Text>{service.description}</Card.Text>
-                      <div className="mb-3">
-                        <Badge bg="success" className="me-2">
-                          <i className="bi bi-house me-1"></i>Tự thu mẫu tại nhà
-                        </Badge>
-                      </div>
-                      <Button variant="outline-success" as={Link} to={`/services/${service.id}`} className="w-100">
-                        Đặt lịch ngay
-                      </Button>
-                    </Card.Body>
-                  </Card>
-                </Col>
-              ))}
-            </Row>
-          </div>
-
-          {/* Administrative DNA Services */}
-          <div>
-            <h3 className="mb-4">
-              <i className="bi bi-hospital text-warning me-2"></i>
-              Xét nghiệm ADN Hành chính
+              <i className="bi bi-award text-warning me-2"></i>
+              Dịch vụ ADN Hành chính
               <Badge bg="warning" text="dark" className="ms-2">Có giá trị pháp lý</Badge>
             </h3>
             <Row>
-              {services.administrativeDNA.map(service => (
-                <Col key={service.id} md={6} className="mb-4">
+              {featuredAdminServices.map(service => (
+                <Col key={service.id} lg={6} className="mb-4">
                   <Card className="h-100 border-0 shadow-sm" style={styles.serviceCard}>
                     <Card.Body>
                       <div className="d-flex align-items-center mb-3">
@@ -412,10 +437,65 @@ const Home = () => {
                         <Badge bg="warning" text="dark" className="me-2">
                           <i className="bi bi-award me-1"></i>Giá trị pháp lý
                         </Badge>
+                        <Badge bg="light" text="dark">
+                          <i className="bi bi-clock me-1"></i>{service.duration}
+                        </Badge>
                       </div>
-                      <Button variant="outline-warning" as={Link} to={`/services/${service.id}`} className="w-100">
-                        Đặt lịch ngay
-                      </Button>
+                      <div className="d-grid gap-2">
+                        <Button variant="outline-warning" as={Link} to={`/services/${service.id}`}>
+                          Xem chi tiết
+                        </Button>
+                        <Button variant="warning" as={Link} to="/appointment" state={{ selectedService: service.id }}>
+                          Đặt lịch ngay
+                        </Button>
+                      </div>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          </div>
+
+          {/* Civil Services */}
+          <div>
+            <h3 className="mb-4">
+              <i className="bi bi-house text-success me-2"></i>
+              Dịch vụ ADN Dân sự
+              <Badge bg="success" className="ms-2">Linh hoạt - Riêng tư</Badge>
+            </h3>
+            <Row>
+              {featuredCivilServices.map(service => (
+                <Col key={service.id} lg={6} className="mb-4">
+                  <Card className="h-100 border-0 shadow-sm" style={styles.serviceCard}>
+                    <Card.Body>
+                      <div className="d-flex align-items-center mb-3">
+                        <div className="bg-success bg-opacity-10 rounded-circle p-3 me-3" style={styles.serviceIcon}>
+                          <i className={`${service.icon} text-success fs-4`}></i>
+                        </div>
+                        <div>
+                          <Card.Title className="mb-1">{service.title}</Card.Title>
+                          <div className="text-success fw-bold">{service.price}</div>
+                        </div>
+                      </div>
+                      <Card.Text>{service.description}</Card.Text>
+                      <div className="mb-3">
+                        {service.allowedMethods.includes('self-sample') && (
+                          <Badge bg="success" className="me-2">
+                            <i className="bi bi-house me-1"></i>Tự lấy mẫu
+                          </Badge>
+                        )}
+                        <Badge bg="light" text="dark">
+                          <i className="bi bi-clock me-1"></i>{service.duration}
+                        </Badge>
+                      </div>
+                      <div className="d-grid gap-2">
+                        <Button variant="outline-success" as={Link} to={`/services/${service.id}`}>
+                          Xem chi tiết
+                        </Button>
+                        <Button variant="success" as={Link} to="/appointment" state={{ selectedService: service.id }}>
+                          Đặt lịch ngay
+                        </Button>
+                      </div>
                     </Card.Body>
                   </Card>
                 </Col>
@@ -433,7 +513,7 @@ const Home = () => {
       </section>
 
       {/* Why Choose Us Section */}
-      <section className="py-5">
+      <section className="py-5 bg-light">
         <Container>
           <div className="text-center mb-5">
             <h2 className="display-6 fw-bold">Tại sao chọn chúng tôi?</h2>
@@ -442,7 +522,7 @@ const Home = () => {
 
           <Row>
             {whyChooseUs.map((item, index) => (
-              <Col key={index} md={3} sm={6} className="mb-4">
+              <Col key={index} lg={3} md={6} className="mb-4">
                 <Card className="text-center border-0 h-100" style={styles.testimonialCard}>
                   <Card.Body>
                     <div className="bg-primary bg-opacity-10 rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style={styles.featureIcon}>
@@ -459,16 +539,16 @@ const Home = () => {
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-5 bg-light">
+      <section className="py-5">
         <Container>
           <div className="text-center mb-5">
             <h2 className="display-6 fw-bold">Khách hàng nói về chúng tôi</h2>
-            <p className="lead text-muted">Hơn 10,000 khách hàng đã tin tưởng sử dụng dịch vụ</p>
+            <p className="lead text-muted">Phản hồi từ khách hàng đã sử dụng dịch vụ</p>
           </div>
 
           <Row>
             {testimonials.map(testimonial => (
-              <Col key={testimonial.id} md={4} className="mb-4">
+              <Col key={testimonial.id} lg={4} md={6} className="mb-4">
                 <Card className="border-0 shadow-sm h-100" style={styles.testimonialCard}>
                   <Card.Body>
                     <div className="mb-3">
@@ -484,7 +564,12 @@ const Home = () => {
                       <div>
                         <div className="fw-bold">{testimonial.name}</div>
                         <small className="text-muted">{testimonial.location}</small>
-                        <div className="small text-primary">{testimonial.service}</div>
+                        <div className="small">
+                          <span className="text-primary">{testimonial.service}</span>
+                          <span className="ms-2">
+                            {getServiceTypeBadge(testimonial.serviceType)}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </Card.Body>
