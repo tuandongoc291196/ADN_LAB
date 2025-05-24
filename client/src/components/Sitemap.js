@@ -10,7 +10,7 @@ const Sitemap = () => {
       color: 'primary',
       routes: [
         { path: '/', name: 'Trang chủ', description: 'Landing page với hero section, dịch vụ, testimonials', status: 'ready' },
-        { path: '/about', name: 'Giới thiệu', description: 'Thông tin về trung tâm, đội ngũ chuyên gia', status: 'development' },
+        { path: '/about', name: 'Giới thiệu', description: 'Thông tin về trung tâm, đội ngũ chuyên gia', status: 'ready' },
         { path: '/contact', name: 'Liên hệ', description: 'Thông tin liên hệ, bản đồ, form liên hệ', status: 'development' },
         { path: '/prices', name: 'Bảng giá', description: 'Giá các dịch vụ xét nghiệm ADN', status: 'development' }
       ]
@@ -40,10 +40,10 @@ const Sitemap = () => {
       icon: 'bi-calendar-check',
       color: 'warning',
       routes: [
-        { path: '/appointment', name: 'Đặt lịch xét nghiệm', description: '4-step booking process với validation', status: 'ready' },
-        { path: '/booking-confirmation', name: 'Xác nhận đặt lịch', description: 'Trang xác nhận sau khi đặt lịch thành công', status: 'ready' },
-        { path: '/tracking', name: 'Tra cứu trạng thái', description: 'Search và theo dõi đơn hàng', status: 'ready' },
-        { path: '/tracking/:trackingId', name: 'Chi tiết trạng thái', description: 'Timeline chi tiết với actions', status: 'ready' }
+        { path: '/appointment', name: 'Đặt lịch xét nghiệm', description: '4-step booking process với validation', status: 'development' },
+        { path: '/booking-confirmation', name: 'Xác nhận đặt lịch', description: 'Trang xác nhận sau khi đặt lịch thành công', status: 'development' },
+        { path: '/tracking', name: 'Tra cứu trạng thái', description: 'Search và theo dõi đơn hàng', status: 'development' },
+        { path: '/tracking/:trackingId', name: 'Chi tiết trạng thái', description: 'Timeline chi tiết với actions', status: 'development' }
       ]
     },
     {
@@ -86,7 +86,7 @@ const Sitemap = () => {
       icon: 'bi-shield-check',
       color: 'danger',
       routes: [
-        { path: '/admin', name: 'Dashboard admin', description: 'Trang quản trị hệ thống', status: 'basic' },
+        { path: '/admin', name: 'Dashboard admin', description: 'Trang quản trị hệ thống', status: 'planned' },
         { path: '/admin/users', name: 'Quản lý người dùng', description: 'User management & permissions', status: 'planned' },
         { path: '/admin/system', name: 'Cài đặt hệ thống', description: 'System configuration', status: 'planned' },
         { path: '/admin/analytics', name: 'Analytics', description: 'Thống kê toàn hệ thống', status: 'planned' }
