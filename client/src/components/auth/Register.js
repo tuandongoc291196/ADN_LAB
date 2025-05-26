@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Container, Row, Col, Card, Form, Button, Alert } from 'react-bootstrap';
-import axios from 'axios';
+import { registerWithEmailAndPassword } from '../config/firebase';
+import './Register.css';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -69,11 +69,13 @@ const Register = () => {
     setError(null);
 
     try {
-      // In a real application, this would be an API call to your backend
-      // const response = await axios.post('/api/auth/register', formData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Use Firebase authentication
+      await registerWithEmailAndPassword(
+        formData.fullName,
+        formData.phone,
+        formData.email,
+        formData.password
+      );
       
       // Show success message
       setSuccess(true);
@@ -94,11 +96,29 @@ const Register = () => {
       }, 3000);
       
     } catch (err) {
-      if (err.response && err.response.data && err.response.data.message) {
-        setError(err.response.data.message);
-      } else {
-        setError('Đã xảy ra lỗi. Vui lòng thử lại sau.');
+      // Handle Firebase authentication errors
+      let errorMessage = 'Đã xảy ra lỗi. Vui lòng thử lại sau.';
+      
+      if (err.code) {
+        switch (err.code) {
+          case 'auth/email-already-in-use':
+            errorMessage = 'Email này đã được sử dụng. Vui lòng chọn email khác.';
+            break;
+          case 'auth/invalid-email':
+            errorMessage = 'Định dạng email không hợp lệ.';
+            break;
+          case 'auth/weak-password':
+            errorMessage = 'Mật khẩu quá yếu. Vui lòng chọn mật khẩu mạnh hơn.';
+            break;
+          case 'auth/network-request-failed':
+            errorMessage = 'Lỗi kết nối mạng. Vui lòng kiểm tra kết nối internet.';
+            break;
+          default:
+            errorMessage = err.message || 'Đã xảy ra lỗi. Vui lòng thử lại sau.';
+        }
       }
+      
+      setError(errorMessage);
       console.error('Registration error:', err);
     } finally {
       setLoading(false);
@@ -106,30 +126,34 @@ const Register = () => {
   };
 
   return (
-    <Container className="py-5">
-      <Row className="justify-content-center">
-        <Col md={8}>
-          <Card className="shadow-sm">
-            <Card.Body className="p-4">
-              <div className="text-center mb-4">
-                <h2 className="fw-bold">Đăng ký tài khoản</h2>
-                <p className="text-muted">Tạo tài khoản để sử dụng dịch vụ xét nghiệm ADN</p>
+    <div className="register-container">
+      <div className="register-row">
+        <div className="register-col">
+          <div className="register-card">
+            <div className="register-card-body">
+              <div className="register-header">
+                <h2 className="register-title">Đăng ký tài khoản</h2>
+                <p className="register-subtitle">Tạo tài khoản để sử dụng dịch vụ xét nghiệm ADN</p>
               </div>
               
-              {error && <Alert variant="danger">{error}</Alert>}
+              {error && (
+                <div className="register-alert register-alert-danger">{error}</div>
+              )}
               {success && (
-                <Alert variant="success">
+                <div className="register-alert register-alert-success">
                   Đăng ký tài khoản thành công! Vui lòng chờ trong giây lát, hệ thống sẽ chuyển đến trang đăng nhập.
-                </Alert>
+                </div>
               )}
               
-              <Form onSubmit={handleSubmit}>
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3" controlId="fullName">
-                      <Form.Label>Họ và tên</Form.Label>
-                      <Form.Control
+              <form onSubmit={handleSubmit}>
+                <div className="register-form-row">
+                  <div className="register-form-col">
+                    <div className="register-form-group">
+                      <label className="register-form-label" htmlFor="fullName">Họ và tên</label>
+                      <input
+                        className="register-form-control"
                         type="text"
+                        id="fullName"
                         name="fullName"
                         placeholder="Nhập họ và tên đầy đủ"
                         value={formData.fullName}
@@ -137,13 +161,15 @@ const Register = () => {
                         required
                         disabled={loading || success}
                       />
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3" controlId="phone">
-                      <Form.Label>Số điện thoại</Form.Label>
-                      <Form.Control
+                    </div>
+                  </div>
+                  <div className="register-form-col">
+                    <div className="register-form-group">
+                      <label className="register-form-label" htmlFor="phone">Số điện thoại</label>
+                      <input
+                        className="register-form-control"
                         type="tel"
+                        id="phone"
                         name="phone"
                         placeholder="Nhập số điện thoại"
                         value={formData.phone}
@@ -151,14 +177,16 @@ const Register = () => {
                         required
                         disabled={loading || success}
                       />
-                    </Form.Group>
-                  </Col>
-                </Row>
+                    </div>
+                  </div>
+                </div>
                 
-                <Form.Group className="mb-3" controlId="email">
-                  <Form.Label>Email</Form.Label>
-                  <Form.Control
+                <div className="register-form-group">
+                  <label className="register-form-label" htmlFor="email">Email</label>
+                  <input
+                    className="register-form-control"
                     type="email"
+                    id="email"
                     name="email"
                     placeholder="Nhập địa chỉ email"
                     value={formData.email}
@@ -166,14 +194,16 @@ const Register = () => {
                     required
                     disabled={loading || success}
                   />
-                </Form.Group>
+                </div>
                 
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3" controlId="password">
-                      <Form.Label>Mật khẩu</Form.Label>
-                      <Form.Control
+                <div className="register-form-row">
+                  <div className="register-form-col">
+                    <div className="register-form-group">
+                      <label className="register-form-label" htmlFor="password">Mật khẩu</label>
+                      <input
+                        className="register-form-control"
                         type="password"
+                        id="password"
                         name="password"
                         placeholder="Nhập mật khẩu (ít nhất 6 ký tự)"
                         value={formData.password}
@@ -181,13 +211,15 @@ const Register = () => {
                         required
                         disabled={loading || success}
                       />
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3" controlId="confirmPassword">
-                      <Form.Label>Xác nhận mật khẩu</Form.Label>
-                      <Form.Control
+                    </div>
+                  </div>
+                  <div className="register-form-col">
+                    <div className="register-form-group">
+                      <label className="register-form-label" htmlFor="confirmPassword">Xác nhận mật khẩu</label>
+                      <input
+                        className="register-form-control"
                         type="password"
+                        id="confirmPassword"
                         name="confirmPassword"
                         placeholder="Nhập lại mật khẩu"
                         value={formData.confirmPassword}
@@ -195,58 +227,57 @@ const Register = () => {
                         required
                         disabled={loading || success}
                       />
-                    </Form.Group>
-                  </Col>
-                </Row>
+                    </div>
+                  </div>
+                </div>
                 
-                <Form.Group className="mb-4" controlId="agreeTerms">
-                  <Form.Check
-                    type="checkbox"
-                    name="agreeTerms"
-                    label={
-                      <span>
-                        Tôi đồng ý với{' '}
-                        <Link to="/terms" target="_blank">
-                          Điều khoản dịch vụ
-                        </Link>{' '}
-                        và{' '}
-                        <Link to="/privacy" target="_blank">
-                          Chính sách bảo mật
-                        </Link>
-                      </span>
-                    }
-                    checked={formData.agreeTerms}
-                    onChange={handleChange}
-                    required
-                    disabled={loading || success}
-                  />
-                </Form.Group>
+                <div className="register-checkbox-group">
+                  <div className="register-checkbox">
+                    <label className="register-checkbox-label">
+                      <input
+                        type="checkbox"
+                        name="agreeTerms"
+                        checked={formData.agreeTerms}
+                        onChange={handleChange}
+                        required
+                        disabled={loading || success}
+                      />
+                      Tôi đồng ý với{' '}
+                      <Link to="/terms" target="_blank" className="register-checkbox-link">
+                        Điều khoản dịch vụ
+                      </Link>{' '}
+                      và{' '}
+                      <Link to="/privacy" target="_blank" className="register-checkbox-link">
+                        Chính sách bảo mật
+                      </Link>
+                    </label>
+                  </div>
+                </div>
                 
-                <div className="d-grid">
-                  <Button
-                    variant="primary"
+                <div className="register-submit-container">
+                  <button
+                    className="register-submit-btn"
                     type="submit"
-                    size="lg"
                     disabled={loading || success}
                   >
                     {loading ? 'Đang xử lý...' : 'Đăng ký'}
-                  </Button>
+                  </button>
                 </div>
-              </Form>
+              </form>
               
-              <div className="mt-4 text-center">
-                <p className="mb-0">
+              <div className="register-footer">
+                <p>
                   Đã có tài khoản?{' '}
-                  <Link to="/login" className="text-decoration-none">
+                  <Link to="/login" className="register-footer-link">
                     Đăng nhập
                   </Link>
                 </p>
               </div>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-    </Container>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

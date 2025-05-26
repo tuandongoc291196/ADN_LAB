@@ -1,15 +1,36 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Navbar, Nav, NavDropdown, Container, Button, Badge } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Navbar, Nav, NavDropdown, Container, Button, Badge, Image } from 'react-bootstrap';
+import { auth, logout } from './config/firebase';
+import { useAuthState } from 'react-firebase-hooks/auth';
 
-const MainNavbar = ({ user, setUser }) => {
+const MainNavbar = ({ setUser }) => {
   const [expanded, setExpanded] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const [userAuth, loadingAuth] = useAuthState(auth);
+  const [userData, setUserData] = useState(null);
+
+  useEffect(() => {
+    if (userAuth) {
+      // Get user data from localStorage that was set during login
+      const storedUserData = localStorage.getItem('userData');
+      if (storedUserData) {
+        setUserData(JSON.parse(storedUserData));
+        setUser(JSON.parse(storedUserData));
+      }
+    } else {
+      setUserData(null);
+      setUser(null);
+    }
+  }, [userAuth, setUser]);
 
   const handleLogout = () => {
+    logout();
+    localStorage.removeItem('user_id');
+    localStorage.removeItem('userData');
     setUser(null);
-    // Clear any stored tokens or user data
-    localStorage.removeItem('token');
+    navigate('/');
   };
 
   const handleNavClick = () => {
@@ -246,33 +267,35 @@ const MainNavbar = ({ user, setUser }) => {
 
               {/* User Authentication */}
               <Nav>
-                {user ? (
+                {loadingAuth ? (
+                  <div className="spinner-border spinner-border-sm text-primary" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                ) : userAuth ? (
                   <NavDropdown 
                     title={
-                      <span>
-                        <i className="bi bi-person-circle me-1"></i>
-                        {user.name}
+                      <span className="d-flex align-items-center">
+                        {userAuth.photoURL ? (
+                          <Image 
+                            src={userAuth.photoURL} 
+                            roundedCircle 
+                            width="24" 
+                            height="24" 
+                            className="me-2" 
+                          />
+                        ) : (
+                          <i className="bi bi-person-circle me-1"></i>
+                        )}
+                        {userData?.fullname || userAuth.displayName || userAuth.email}
                       </span>
                     } 
                     id="user-dropdown"
                     align="end"
                   >
-                    {user.role === 'admin' && (
+                    {userData?.role && (
                       <NavDropdown.Item as={Link} to="/admin" onClick={handleNavClick}>
                         <i className="bi bi-shield-check me-2"></i>
                         Quản trị viên
-                      </NavDropdown.Item>
-                    )}
-                    {user.role === 'manager' && (
-                      <NavDropdown.Item as={Link} to="/manager" onClick={handleNavClick}>
-                        <i className="bi bi-briefcase me-2"></i>
-                        Quản lý
-                      </NavDropdown.Item>
-                    )}
-                    {user.role === 'staff' && (
-                      <NavDropdown.Item as={Link} to="/staff" onClick={handleNavClick}>
-                        <i className="bi bi-person-badge me-2"></i>
-                        Nhân viên
                       </NavDropdown.Item>
                     )}
                     <NavDropdown.Item as={Link} to="/user/profile" onClick={handleNavClick}>
