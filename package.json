@@ -15,5 +15,14 @@
   "license": "ISC",
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "@mui/icons-material": "^7.1.0",
+    "@mui/material": "^7.1.0",
+    "firebase": "^11.8.1",
+    "formik": "^2.4.6",
+    "react-firebase-hooks": "^5.1.1",
+    "react-google-button": "^0.8.0",
+    "yup": "^1.6.1"
   }
 }
