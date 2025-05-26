@@ -10,10 +10,10 @@ const MainNavbar = ({ setUser }) => {
   const navigate = useNavigate();
   const [userAuth, loadingAuth] = useAuthState(auth);
   const [userData, setUserData] = useState(null);
+  const [logoUrl] = useState('https://firebasestorage.googleapis.com/v0/b/su25-swp391-g8.firebasestorage.app/o/assets%2Flogo.png?alt=media&token=1c903ba1-852a-4f5b-b498-97c31ffbb742');
 
   useEffect(() => {
     if (userAuth) {
-      // Get user data from localStorage that was set during login
       const storedUserData = localStorage.getItem('userData');
       if (storedUserData) {
         setUserData(JSON.parse(storedUserData));
@@ -58,9 +58,35 @@ const MainNavbar = ({ setUser }) => {
         <Container>
           {/* Brand Logo */}
           <Navbar.Brand as={Link} to="/" className="fw-bold d-flex align-items-center">
-            <div className="bg-primary rounded-circle p-2 me-2">
-              <i className="bi bi-dna text-white fs-5"></i>
+            {/* Logo Section */}
+            <div className="me-2 d-flex align-items-center justify-content-center" style={{ width: '50px', height: '50px' }}>
+              {logoUrl ? (
+                <Image 
+                  src={logoUrl} 
+                  alt="ADN LAB Logo"
+                  style={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    objectFit: 'contain',
+                    borderRadius: '8px'
+                  }}
+                  onError={(e) => {
+                    // Fallback khi logo không load được
+                    e.target.style.display = 'none';
+                    e.target.parentElement.querySelector('.fallback-icon').style.display = 'flex';
+                  }}
+                />
+              ) : null}
+              
+              {/* Fallback icon */}
+              <div 
+                className="bg-primary rounded-circle p-2 fallback-icon"
+                style={{ display: logoUrl ? 'none' : 'flex' }}
+              >
+                <i className="bi bi-dna text-white fs-5"></i>
+              </div>
             </div>
+            
             <div>
               <span className="text-primary fs-4">ADN LAB</span>
               <div className="small text-muted" style={{ fontSize: '0.7rem', lineHeight: '1' }}>
