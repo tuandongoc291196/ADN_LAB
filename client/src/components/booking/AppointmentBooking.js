@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Badge, Form, Alert, Tab, Nav } from 'react-bootstrap';
+import { getServicesByType, getServiceById, getAvailableMethodsForService, COLLECTION_METHODS, canServiceUseSelfSample, isAdministrativeService } from '../data/services-data';
 
 const AppointmentBooking = () => {
   const navigate = useNavigate();
@@ -23,193 +24,6 @@ const AppointmentBooking = () => {
     specialRequests: ''
   });
 
-  // Improved services data based on the analysis table
-  const servicesData = {
-    administrative: [
-      {
-        id: 'admin-birth-cert',
-        title: 'ADN làm giấy khai sinh',
-        description: 'Xác nhận quan hệ huyết thống để hoàn tất thủ tục giấy khai sinh (thường áp dụng khi cha mẹ không đăng ký kết hôn)',
-        price: '4,200,000 VNĐ',
-        duration: '3-5 ngày',
-        icon: 'bi-file-earmark-text',
-        allowedMethods: ['home-visit', 'at-facility'], // NO self-sample
-        participants: ['Cha', 'Mẹ', 'Con'],
-        requiredDocuments: ['CCCD/CMND gốc của tất cả người tham gia', 'Giấy khai sinh tạm thời (nếu có)', 'Giấy chứng nhận kết hôn (nếu có)'],
-        featured: true
-      },
-      {
-        id: 'admin-immigration',
-        title: 'ADN nhập tịch, làm visa, hộ chiếu',
-        description: 'Chứng minh quan hệ huyết thống trong các thủ tục nhập tịch, xin visa, làm hộ chiếu để đảm bảo quyền lợi gia định và công dân',
-        price: '5,800,000 VNĐ',
-        duration: '3-5 ngày',
-        icon: 'bi-passport',
-        allowedMethods: ['home-visit', 'at-facility'], // NO self-sample
-        participants: ['Người bảo lãnh', 'Người được bảo lãnh'],
-        requiredDocuments: ['CCCD/CMND gốc', 'Hộ chiếu', 'Giấy tờ liên quan đến thủ tục'],
-        featured: true
-      },
-      {
-        id: 'admin-inheritance',
-        title: 'ADN xác nhận quyền thừa kế',
-        description: 'Xác định người thừa kế hợp pháp trong tranh chấp tài sản hoặc chia tài sản thừa kế',
-        price: '6,500,000 VNĐ',
-        duration: '3-5 ngày',
-        icon: 'bi-building',
-        allowedMethods: ['home-visit', 'at-facility'], // NO self-sample
-        participants: ['Người để lại tài sản (nếu còn sống)', 'Người thừa kế'],
-        requiredDocuments: ['CCCD/CMND gốc', 'Giấy tờ tài sản', 'Giấy chứng tử (nếu có)']
-      },
-      {
-        id: 'admin-child-support',
-        title: 'ADN xác định trách nhiệm cấp dưỡng',
-        description: 'Hỗ trợ xác định trách nhiệm cấp dưỡng của cha mẹ đối với con trong các vụ ly hôn hoặc tranh chấp gia đình',
-        price: '4,800,000 VNĐ',
-        duration: '3-5 ngày',
-        icon: 'bi-people',
-        allowedMethods: ['home-visit', 'at-facility'], // NO self-sample
-        participants: ['Cha', 'Mẹ', 'Con'],
-        requiredDocuments: ['CCCD/CMND gốc', 'Giấy khai sinh của con', 'Quyết định của tòa án (nếu có)']
-      },
-      {
-        id: 'admin-missing-person',
-        title: 'ADN nhận người thân',
-        description: 'Xác minh và tìm kiếm mối quan hệ huyết thống với người thân bị thất lạc hoặc chưa được công nhận hợp pháp',
-        price: '5,200,000 VNĐ',
-        duration: '3-5 ngày',
-        icon: 'bi-search-heart',
-        allowedMethods: ['home-visit', 'at-facility'], // NO self-sample
-        participants: ['Người tìm kiếm', 'Người được tìm kiếm'],
-        requiredDocuments: ['CCCD/CMND gốc', 'Giấy tờ chứng minh mối quan hệ (nếu có)', 'Báo cáo mất tích (nếu có)']
-      }
-    ],
-    civil: [
-      {
-        id: 'civil-paternity',
-        title: 'ADN huyết thống',
-        description: 'Kiểm tra mối quan hệ huyết thống (cha - con, mẹ - con, anh chị em, họ hàng,...) phục vụ cho mục đích cá nhân',
-        price: '3,500,000 VNĐ',
-        duration: '5-7 ngày',
-        icon: 'bi-people',
-        allowedMethods: ['self-sample', 'home-visit', 'at-facility'], // ALL methods allowed
-        participants: ['Người cần xét nghiệm 1', 'Người cần xét nghiệm 2'],
-        requiredDocuments: ['CCCD/CMND gốc hoặc bản sao'],
-        featured: true
-      },
-      {
-        id: 'civil-prenatal',
-        title: 'ADN trước sinh',
-        description: 'Xác định quan hệ huyết thống giữa thai nhi và người cha giả định; thường được tiến hành từ tuần 7-8 của thai kỳ bằng phương pháp không xâm lấn',
-        price: '8,500,000 VNĐ',
-        duration: '7-10 ngày',
-        icon: 'bi-heart',
-        allowedMethods: ['home-visit', 'at-facility'], // NO self-sample (medical procedure)
-        participants: ['Mẹ bầu', 'Cha giả định'],
-        requiredDocuments: ['CCCD/CMND gốc', 'Giấy khám thai', 'Kết quả siêu âm gần nhất'],
-        featured: true
-      },
-      {
-        id: 'civil-ancestry',
-        title: 'ADN nguồn gốc tổ tiên',
-        description: 'Phân tích nguồn gốc di truyền, giúp xác định tổ tiên và dòng họ cá nhân',
-        price: '6,200,000 VNĐ',
-        duration: '10-14 ngày',
-        icon: 'bi-tree',
-        allowedMethods: ['self-sample', 'home-visit', 'at-facility'], // ALL methods allowed
-        participants: ['Người cần phân tích'],
-        requiredDocuments: ['CCCD/CMND gốc hoặc bản sao']
-      },
-      {
-        id: 'civil-personal',
-        title: 'ADN cá nhân',
-        description: 'Phân tích đặc điểm di truyền cá nhân như khả năng phản ứng với thuốc, nguy cơ mắc bệnh di truyền, hay các đặc tính sinh học khác',
-        price: '4,800,000 VNĐ',
-        duration: '7-10 ngày',
-        icon: 'bi-person-badge',
-        allowedMethods: ['self-sample', 'home-visit', 'at-facility'], // ALL methods allowed
-        participants: ['Người cần phân tích'],
-        requiredDocuments: ['CCCD/CMND gốc hoặc bản sao']
-      },
-      {
-        id: 'civil-confidential',
-        title: 'ADN bí mật',
-        description: 'Thực hiện kiểm tra quan hệ huyết thống một cách ẩn danh, phù hợp khi cần bảo mật và riêng tư toàn diện thông tin xét nghiệm',
-        price: '5,500,000 VNĐ',
-        duration: '5-7 ngày',
-        icon: 'bi-shield-lock',
-        allowedMethods: ['self-sample', 'home-visit', 'at-facility'], // ALL methods allowed
-        participants: ['Người cần xét nghiệm'],
-        requiredDocuments: ['Không yêu cầu giấy tờ tùy thân']
-      }
-    ]
-  };
-
-  // Collection methods with updated logic
-  const COLLECTION_METHODS = {
-    'self-sample': {
-      id: 'self-sample',
-      title: 'Lấy mẫu tại nhà',
-      description: 'Tự lấy mẫu tại nhà theo hướng dẫn chi tiết',
-      icon: 'bi-house',
-      color: 'success',
-      process: [
-        'Đặt hẹn và cung cấp địa chỉ nhận kit',
-        'Nhận kit xét nghiệm qua bưu điện (1-2 ngày)',
-        'Đọc kỹ hướng dẫn và lấy mẫu theo đúng quy trình',
-        'Gửi mẫu về phòng lab bằng phong bì có sẵn',
-        'Theo dõi quá trình xử lý và nhận kết quả'
-      ],
-      note: 'Chỉ áp dụng cho một số dịch vụ ADN dân sự. Tiện lợi, riêng tư nhưng không có giá trị pháp lý.'
-    },
-    'home-visit': {
-      id: 'home-visit',
-      title: 'Nhân viên tới nhà lấy mẫu',
-      description: 'Nhân viên y tế đến tận nơi để thu mẫu',
-      icon: 'bi-truck',
-      color: 'warning',
-      process: [
-        'Đặt lịch hẹn và xác nhận địa chỉ',
-        'Nhân viên liên hệ trước 30 phút',
-        'Nhân viên đến đúng giờ hẹn với đầy đủ dụng cụ',
-        'Thu mẫu tại nhà theo đúng quy trình y tế',
-        'Vận chuyển mẫu về phòng lab ngay lập tức'
-      ],
-      note: 'Phù hợp khi không thể đến cơ sở y tế. Đảm bảo chất lượng mẫu và có thể có giá trị pháp lý.'
-    },
-    'at-facility': {
-      id: 'at-facility',
-      title: 'Tới cơ sở lấy mẫu',
-      description: 'Đến trực tiếp cơ sở y tế để thu mẫu',
-      icon: 'bi-hospital',
-      color: 'primary',
-      process: [
-        'Đặt lịch hẹn và chọn cơ sở thuận tiện',
-        'Đến đúng giờ hẹn với đầy đủ giấy tờ',
-        'Làm thủ tục tại quầy lễ tân',
-        'Thu mẫu tại phòng chuyên khoa',
-        'Thanh toán và nhận biên lai'
-      ],
-      note: 'Đảm bảo cao nhất về chất lượng và tính pháp lý. Bắt buộc với các dịch vụ có giá trị pháp lý.'
-    }
-  };
-
-  // Function to get available methods for a specific service
-  const getAvailableMethodsForService = (serviceId) => {
-    const allServices = [...servicesData.administrative, ...servicesData.civil];
-    const service = allServices.find(s => s.id === serviceId);
-    
-    if (!service) return [];
-    
-    return service.allowedMethods.map(methodId => COLLECTION_METHODS[methodId]);
-  };
-
-  // Function to get service by ID
-  const getServiceById = (serviceId) => {
-    const allServices = [...servicesData.administrative, ...servicesData.civil];
-    return allServices.find(s => s.id === serviceId);
-  };
-
   // Load pre-selected service from navigation state
   useEffect(() => {
     if (location.state?.selectedService) {
@@ -217,7 +31,7 @@ const AppointmentBooking = () => {
       if (service) {
         setBookingData(prev => ({
           ...prev,
-          serviceType: service.serviceType || (servicesData.administrative.find(s => s.id === service.id) ? 'administrative' : 'civil'),
+          serviceType: service.serviceType,
           serviceId: service.id,
           customerInfo: {
             ...prev.customerInfo,
@@ -373,6 +187,38 @@ const AppointmentBooking = () => {
     });
   };
 
+  // Check if a method is disabled for current service
+  const isMethodDisabled = (methodId, service) => {
+    if (!service) return true;
+    
+    // Administrative services cannot use self-sample
+    if (methodId === 'self-sample' && service.serviceType === 'administrative') {
+      return true;
+    }
+    
+    // ADN trước sinh cannot use self-sample (even though it's civil)
+    if (methodId === 'self-sample' && service.id === 'civil-prenatal') {
+      return true;
+    }
+    
+    return !service.allowedMethods.includes(methodId);
+  };
+
+  // Get restriction reason for disabled methods
+  const getMethodRestrictionReason = (methodId, service) => {
+    if (!service) return '';
+    
+    if (methodId === 'self-sample' && service.serviceType === 'administrative') {
+      return 'ADN hành chính bắt buộc phải có giám sát để đảm bảo giá trị pháp lý';
+    }
+    
+    if (methodId === 'self-sample' && service.id === 'civil-prenatal') {
+      return 'ADN trước sinh cần chuyên gia y tế thực hiện để đảm bảo an toàn';
+    }
+    
+    return 'Phương thức này không khả dụng cho dịch vụ đã chọn';
+  };
+
   return (
     <div>
       {/* Header Section */}
@@ -478,16 +324,16 @@ const AppointmentBooking = () => {
                   <Card.Header className="bg-success text-white text-center py-4">
                     <i className="bi bi-house fs-1 mb-3 d-block"></i>
                     <h3 className="mb-2">ADN Dân sự</h3>
-                    <Badge bg="light" text="dark" className="fs-6">Không có giá trị pháp lý</Badge>
+                    <Badge bg="light" text="dark" className="fs-6">Mục đích cá nhân</Badge>
                   </Card.Header>
                   <Card.Body className="p-4">
                     <div className="mb-4">
                       <h5 className="text-success mb-3">Đặc điểm:</h5>
                       <ul className="list-unstyled">
-                        <li className="mb-2"><i className="bi bi-check-circle text-success me-2"></i>Một số dịch vụ cho phép tự lấy mẫu</li>
+                        <li className="mb-2"><i className="bi bi-check-circle text-success me-2"></i>Hầu hết có thể tự lấy mẫu tại nhà</li>
                         <li className="mb-2"><i className="bi bi-check-circle text-success me-2"></i>Bảo mật và riêng tư cao</li>
-                        <li className="mb-2"><i className="bi bi-check-circle text-success me-2"></i>Thuận tiện và linh hoạt</li>
-                        <li className="mb-2"><i className="bi bi-check-circle text-success me-2"></i>Mục đích tham khảo cá nhân</li>
+                        <li className="mb-2"><i className="bi bi-check-circle text-success me-2"></i>Thuận tiện và nhanh chóng</li>
+                        <li className="mb-2"><i className="bi bi-check-circle text-success me-2"></i>Giá thành hợp lý</li>
                       </ul>
                     </div>
                     
@@ -495,11 +341,16 @@ const AppointmentBooking = () => {
                       <h6 className="text-success mb-3">Phù hợp cho:</h6>
                       <ul className="small text-muted">
                         <li>Tìm hiểu quan hệ huyết thống cá nhân</li>
-                        <li>Xét nghiệm thai nhi an toàn</li>
-                        <li>Phân tích nguồn gốc tổ tiên</li>
-                        <li>Xét nghiệm riêng tư, bí mật</li>
+                        <li>Nghiên cứu nguồn gốc gia đình</li>
+                        <li>Phân tích đặc điểm di truyền</li>
+                        <li>Xét nghiệm riêng tư, kín đáo</li>
                       </ul>
                     </div>
+
+                    <Alert variant="info" className="small mb-3">
+                      <i className="bi bi-info-circle me-2"></i>
+                      <strong>Lưu ý:</strong> ADN trước sinh không thể tự lấy mẫu do yêu cầu kỹ thuật đặc biệt
+                    </Alert>
 
                     {bookingData.serviceType === 'civil' && (
                       <div className="text-center">
@@ -530,10 +381,10 @@ const AppointmentBooking = () => {
                     <div className="mb-4">
                       <h5 className="text-warning mb-3">Đặc điểm:</h5>
                       <ul className="list-unstyled">
-                        <li className="mb-2"><i className="bi bi-check-circle text-warning me-2"></i>Có giá trị pháp lý đầy đủ</li>
-                        <li className="mb-2"><i className="bi bi-check-circle text-warning me-2"></i>Được tòa án công nhận</li>
-                        <li className="mb-2"><i className="bi bi-x-circle text-danger me-2"></i>Không cho phép tự lấy mẫu</li>
-                        <li className="mb-2"><i className="bi bi-check-circle text-warning me-2"></i>Thu mẫu có giám sát nghiêm ngặt</li>
+                        <li className="mb-2"><i className="bi bi-shield-check text-warning me-2"></i>Có giá trị pháp lý đầy đủ</li>
+                        <li className="mb-2"><i className="bi bi-shield-check text-warning me-2"></i>Được tòa án công nhận</li>
+                        <li className="mb-2"><i className="bi bi-shield-check text-warning me-2"></i>Thu mẫu có giám sát nghiêm ngặt</li>
+                        <li className="mb-2"><i className="bi bi-shield-check text-warning me-2"></i>Tuân thủ tiêu chuẩn quốc tế</li>
                       </ul>
                     </div>
                     
@@ -541,11 +392,16 @@ const AppointmentBooking = () => {
                       <h6 className="text-warning mb-3">Phù hợp cho:</h6>
                       <ul className="small text-muted">
                         <li>Làm giấy khai sinh</li>
-                        <li>Thủ tục nhập tịch, visa, hộ chiếu</li>
+                        <li>Thủ tục nhập tịch, visa</li>
                         <li>Giải quyết tranh chấp thừa kế</li>
                         <li>Xác định trách nhiệm cấp dưỡng</li>
                       </ul>
                     </div>
+
+                    <Alert variant="warning" className="small mb-3">
+                      <i className="bi bi-exclamation-triangle me-2"></i>
+                      <strong>Bắt buộc:</strong> KHÔNG thể tự lấy mẫu tại nhà. Phải có nhân viên giám sát để đảm bảo giá trị pháp lý.
+                    </Alert>
 
                     {bookingData.serviceType === 'administrative' && (
                       <div className="text-center">
@@ -576,7 +432,7 @@ const AppointmentBooking = () => {
                 </div>
 
                 <Row>
-                  {servicesData[bookingData.serviceType].map(service => (
+                  {getServicesByType(bookingData.serviceType).map(service => (
                     <Col key={service.id} lg={4} md={6} className="mb-4">
                       <Card 
                         className={`h-100 border-0 shadow-sm ${
@@ -604,24 +460,23 @@ const AppointmentBooking = () => {
                         )}
                         
                         <Card.Header className={`border-0 ${
-                          service.serviceType === 'administrative' || bookingData.serviceType === 'administrative' 
-                            ? 'bg-warning bg-opacity-10' : 'bg-success bg-opacity-10'
+                          service.serviceType === 'administrative' ? 'bg-warning bg-opacity-10' : 'bg-success bg-opacity-10'
                         }`}>
                           <div className="d-flex align-items-center mb-2">
                             <div className={`rounded-circle p-2 me-3 ${
-                              bookingData.serviceType === 'administrative' ? 'bg-warning' : 'bg-success'
+                              service.serviceType === 'administrative' ? 'bg-warning' : 'bg-success'
                             }`}>
                               <i className={`${service.icon} text-white fs-5`}></i>
                             </div>
                             <div className="flex-grow-1">
-                              {getServiceTypeBadge(bookingData.serviceType)}
+                              {getServiceTypeBadge(service.serviceType)}
                             </div>
                           </div>
                         </Card.Header>
 
                         <Card.Body className="d-flex flex-column">
                           <Card.Title className="h5 mb-3">{service.title}</Card.Title>
-                          <Card.Text className="text-muted flex-grow-1 small">
+                          <Card.Text className="text-muted flex-grow-1">
                             {service.description}
                           </Card.Text>
                           
@@ -641,6 +496,21 @@ const AppointmentBooking = () => {
                               {getMethodBadges(service.allowedMethods)}
                             </div>
                           </div>
+
+                          {/* Special restrictions */}
+                          {service.serviceType === 'administrative' && (
+                            <Alert variant="warning" className="small mb-3">
+                              <i className="bi bi-shield-check me-2"></i>
+                              Bắt buộc có giám sát khi lấy mẫu
+                            </Alert>
+                          )}
+
+                          {service.id === 'civil-prenatal' && (
+                            <Alert variant="info" className="small mb-3">
+                              <i className="bi bi-heart-pulse me-2"></i>
+                              Cần chuyên gia y tế thực hiện
+                            </Alert>
+                          )}
 
                           {bookingData.serviceId === service.id && (
                             <div className="text-center mt-2">
@@ -680,93 +550,103 @@ const AppointmentBooking = () => {
               <h2 className="display-6 fw-bold">Chọn phương thức lấy mẫu</h2>
               <div className="mt-3">
                 <h5>Dịch vụ đã chọn: <span className="text-primary">{selectedService.title}</span></h5>
-                {getServiceTypeBadge(bookingData.serviceType)}
+                {getServiceTypeBadge(selectedService.serviceType)}
               </div>
             </div>
 
-            {/* Important Notice for Administrative Services */}
-            {bookingData.serviceType === 'administrative' && (
+            {/* Restriction alerts */}
+            {selectedService.serviceType === 'administrative' && (
               <Alert variant="warning" className="mb-4">
-                <div className="d-flex align-items-start">
-                  <i className="bi bi-shield-check me-3 mt-1 fs-4"></i>
-                  <div>
-                    <h6 className="mb-2">Lưu ý quan trọng về dịch vụ có giá trị pháp lý:</h6>
-                    <ul className="mb-0">
-                      <li><strong>Không thể tự lấy mẫu tại nhà</strong> - Để đảm bảo tính chính xác và giá trị pháp lý</li>
-                      <li>Bắt buộc phải có <strong>sự giám sát của nhân viên y tế</strong> trong quá trình thu mẫu</li>
-                      <li>Tất cả đương sự phải <strong>có mặt đồng thời</strong> khi thu mẫu</li>
-                      <li>Kết quả có thể sử dụng tại <strong>tòa án và các cơ quan nhà nước</strong></li>
-                    </ul>
-                  </div>
-                </div>
+                <i className="bi bi-shield-check me-2"></i>
+                <strong>Lưu ý quan trọng:</strong> Với dịch vụ có giá trị pháp lý, bắt buộc phải thu mẫu 
+                có giám sát (tại cơ sở hoặc nhân viên đến nhà) để đảm bảo tính chính xác và giá trị pháp lý.
               </Alert>
             )}
 
-            {/* Special Notice for Prenatal Testing */}
             {selectedService.id === 'civil-prenatal' && (
               <Alert variant="info" className="mb-4">
-                <div className="d-flex align-items-start">
-                  <i className="bi bi-heart me-3 mt-1 fs-4"></i>
-                  <div>
-                    <h6 className="mb-2">Lưu ý đặc biệt về xét nghiệm ADN trước sinh:</h6>
-                    <ul className="mb-0">
-                      <li><strong>Không thể tự lấy mẫu</strong> - Đây là thủ thuật y tế chuyên khoa</li>
-                      <li>Yêu cầu <strong>nhân viên y tế chuyên nghiệp</strong> thực hiện</li>
-                      <li>Cần có <strong>kết quả siêu âm</strong> để xác định tuần thai phù hợp</li>
-                      <li>Thực hiện từ <strong>tuần 7-8 của thai kỳ</strong> bằng phương pháp không xâm lấn</li>
-                    </ul>
-                  </div>
-                </div>
+                <i className="bi bi-heart-pulse me-2"></i>
+                <strong>ADN trước sinh đặc biệt:</strong> Cần có chuyên gia y tế thực hiện do yêu cầu 
+                kỹ thuật cao và để đảm bảo an toàn cho mẹ và bé.
               </Alert>
             )}
 
             <Row>
-              {availableMethods.map(method => (
-                <Col key={method.id} lg={4} md={6} className="mb-4">
-                  <Card 
-                    className={`h-100 cursor-pointer border-2 ${
-                      bookingData.collectionMethod === method.id 
-                        ? `border-${method.color} shadow-lg` 
-                        : `border-${method.color} border-opacity-25`
-                    }`}
-                    style={{ cursor: 'pointer', transition: 'all 0.3s ease' }}
-                    onClick={() => handleMethodSelect(method.id)}
-                  >
-                    <Card.Header className={`bg-${method.color} text-white text-center`}>
-                      <div className="py-2">
-                        <i className={`${method.icon} fs-1 mb-2 d-block`}></i>
-                        <h5 className="mb-0">{method.title}</h5>
-                      </div>
-                    </Card.Header>
-                    <Card.Body>
-                      <Card.Text className="mb-3">{method.description}</Card.Text>
-                      <div className="mb-3">
-                        <strong>Quy trình thực hiện:</strong>
-                        <ol className="mt-2 small">
-                          {method.process.map((step, index) => (
-                            <li key={index} className="mb-1">{step}</li>
-                          ))}
-                        </ol>
-                      </div>
-                      {method.note && (
-                        <Alert variant={`${method.color === 'warning' ? 'warning' : 'info'}`} className="small mb-0">
-                          <i className="bi bi-info-circle me-2"></i>
-                          {method.note}
-                        </Alert>
-                      )}
-
-                      {bookingData.collectionMethod === method.id && (
-                        <div className="text-center mt-3">
-                          <Badge bg={method.color} className="px-3 py-2">
-                            <i className="bi bi-check-circle me-2"></i>
-                            Đã chọn phương thức này
-                          </Badge>
+              {Object.values(COLLECTION_METHODS).map(method => {
+                const isDisabled = isMethodDisabled(method.id, selectedService);
+                const restrictionReason = getMethodRestrictionReason(method.id, selectedService);
+                
+                return (
+                  <Col key={method.id} lg={4} md={6} className="mb-4">
+                    <Card 
+                      className={`h-100 border-2 ${
+                        isDisabled 
+                          ? 'border-light bg-light opacity-50' 
+                          : bookingData.collectionMethod === method.id 
+                            ? `border-${method.color} shadow-lg` 
+                            : `border-${method.color} border-opacity-25 cursor-pointer`
+                      }`}
+                      style={{ 
+                        cursor: isDisabled ? 'not-allowed' : 'pointer', 
+                        transition: 'all 0.3s ease' 
+                      }}
+                      onClick={() => !isDisabled && handleMethodSelect(method.id)}
+                    >
+                      <Card.Header className={`${
+                        isDisabled 
+                          ? 'bg-light text-muted' 
+                          : `bg-${method.color} text-white`
+                      } text-center`}>
+                        <div className="py-2">
+                          <i className={`${method.icon} fs-1 mb-2 d-block`}></i>
+                          <h5 className="mb-0">{method.title}</h5>
+                          {isDisabled && (
+                            <Badge bg="danger" className="mt-2">
+                              Không khả dụng
+                            </Badge>
+                          )}
                         </div>
-                      )}
-                    </Card.Body>
-                  </Card>
-                </Col>
-              ))}
+                      </Card.Header>
+                      <Card.Body>
+                        <Card.Text className="mb-3">{method.description}</Card.Text>
+                        
+                        {isDisabled ? (
+                          <Alert variant="danger" className="small">
+                            <i className="bi bi-x-circle me-2"></i>
+                            {restrictionReason}
+                          </Alert>
+                        ) : (
+                          <>
+                            <div className="mb-3">
+                              <strong>Quy trình thực hiện:</strong>
+                              <ol className="mt-2 small">
+                                {method.process.map((step, index) => (
+                                  <li key={index} className="mb-1">{step}</li>
+                                ))}
+                              </ol>
+                            </div>
+                            {method.note && (
+                              <Alert variant={`${method.color === 'warning' ? 'warning' : 'info'}`} className="small mb-0">
+                                <i className="bi bi-info-circle me-2"></i>
+                                {method.note}
+                              </Alert>
+                            )}
+
+                            {bookingData.collectionMethod === method.id && (
+                              <div className="text-center mt-3">
+                                <Badge bg={method.color} className="px-3 py-2">
+                                  <i className="bi bi-check-circle me-2"></i>
+                                  Đã chọn phương thức này
+                                </Badge>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </Card.Body>
+                    </Card>
+                  </Col>
+                );
+              })}
             </Row>
 
             <Row className="mt-4">
@@ -789,9 +669,557 @@ const AppointmentBooking = () => {
           </>
         )}
 
-        {/* Continue with Steps 3 & 4 - keeping the existing implementation */}
-        {/* ... Rest of the component remains the same ... */}
+        {/* Step 3: Customer Information & Appointment */}
+        {currentStep === 3 && selectedMethod && (
+          <>
+            <div className="text-center mb-5">
+              <h2 className="display-6 fw-bold">Thông tin đặt lịch</h2>
+              <p className="lead text-muted">
+                Vui lòng điền đầy đủ thông tin để hoàn tất việc đặt lịch
+              </p>
+            </div>
+            
+            <Row>
+              {/* Customer Information */}
+              <Col lg={6} className="mb-4">
+                <Card className="shadow-sm">
+                  <Card.Header className="bg-primary text-white">
+                    <h5 className="mb-0">
+                      <i className="bi bi-person me-2"></i>
+                      Thông tin người đặt lịch
+                    </h5>
+                  </Card.Header>
+                  <Card.Body className="p-4">
+                    <Form>
+                      <Row>
+                        <Col md={6} className="mb-3">
+                          <Form.Label>Họ và tên <span className="text-danger">*</span></Form.Label>
+                          <Form.Control
+                            type="text"
+                            placeholder="Nhập họ và tên đầy đủ"
+                            value={bookingData.customerInfo.fullName}
+                            onChange={(e) => handleCustomerInfoChange('fullName', e.target.value)}
+                            required
+                          />
+                        </Col>
+                        <Col md={6} className="mb-3">
+                          <Form.Label>Số điện thoại <span className="text-danger">*</span></Form.Label>
+                          <Form.Control
+                            type="tel"
+                            placeholder="Nhập số điện thoại"
+                            value={bookingData.customerInfo.phone}
+                            onChange={(e) => handleCustomerInfoChange('phone', e.target.value)}
+                            required
+                          />
+                        </Col>
+                      </Row>
+                      <Row>
+                        <Col md={6} className="mb-3">
+                          <Form.Label>Email</Form.Label>
+                          <Form.Control
+                            type="email"
+                            placeholder="Nhập địa chỉ email"
+                            value={bookingData.customerInfo.email}
+                            onChange={(e) => handleCustomerInfoChange('email', e.target.value)}
+                          />
+                        </Col>
+                        <Col md={6} className="mb-3">
+                          <Form.Label>CCCD/CMND <span className="text-danger">*</span></Form.Label>
+                          <Form.Control
+                            type="text"
+                            placeholder="Nhập số CCCD/CMND"
+                            value={bookingData.customerInfo.idNumber}
+                            onChange={(e) => handleCustomerInfoChange('idNumber', e.target.value)}
+                            required
+                          />
+                        </Col>
+                      </Row>
+                      <Form.Group className="mb-3">
+                        <Form.Label>Địa chỉ <span className="text-danger">*</span></Form.Label>
+                        <Form.Control
+                          as="textarea"
+                          rows={2}
+                          placeholder="Nhập địa chỉ đầy đủ"
+                          value={bookingData.customerInfo.address}
+                          onChange={(e) => handleCustomerInfoChange('address', e.target.value)}
+                          required
+                        />
+                      </Form.Group>
+                    </Form>
+                  </Card.Body>
+                </Card>
+
+                {/* Participants Information */}
+                {bookingData.customerInfo.participants.length > 0 && (
+                  <Card className="mt-4 shadow-sm">
+                    <Card.Header className="bg-info text-white">
+                      <h5 className="mb-0">
+                        <i className="bi bi-people me-2"></i>
+                        Thông tin người tham gia xét nghiệm
+                      </h5>
+                    </Card.Header>
+                    <Card.Body className="p-4">
+                      {bookingData.customerInfo.participants.map((participant, index) => (
+                        <div key={index} className="mb-4 p-3 border rounded bg-light">
+                          <h6 className="text-primary mb-3">
+                            <i className="bi bi-person-badge me-2"></i>
+                            {participant.role}
+                          </h6>
+                          <Row>
+                            <Col md={6} className="mb-2">
+                              <Form.Label>Họ và tên <span className="text-danger">*</span></Form.Label>
+                              <Form.Control
+                                type="text"
+                                placeholder="Nhập họ và tên"
+                                value={participant.name}
+                                onChange={(e) => handleParticipantChange(index, 'name', e.target.value)}
+                                required
+                              />
+                            </Col>
+                            <Col md={6} className="mb-2">
+                              <Form.Label>CCCD/CMND <span className="text-danger">*</span></Form.Label>
+                              <Form.Control
+                                type="text"
+                                placeholder="Nhập số CCCD/CMND"
+                                value={participant.idNumber}
+                                onChange={(e) => handleParticipantChange(index, 'idNumber', e.target.value)}
+                                required
+                              />
+                            </Col>
+                          </Row>
+                          <Form.Group>
+                            <Form.Label>Số điện thoại</Form.Label>
+                            <Form.Control
+                              type="tel"
+                              placeholder="Nhập số điện thoại"
+                              value={participant.phone}
+                              onChange={(e) => handleParticipantChange(index, 'phone', e.target.value)}
+                            />
+                          </Form.Group>
+                        </div>
+                      ))}
+                    </Card.Body>
+                  </Card>
+                )}
+              </Col>
+
+              {/* Appointment Date & Time */}
+              <Col lg={6}>
+                {/* Only show date/time selection if not self-sample */}
+                {bookingData.collectionMethod !== 'self-sample' && (
+                  <Card className="mb-4 shadow-sm">
+                    <Card.Header className="bg-warning text-dark">
+                      <h5 className="mb-0">
+                        <i className="bi bi-calendar me-2"></i>
+                        Chọn ngày và giờ hẹn
+                      </h5>
+                    </Card.Header>
+                    <Card.Body className="p-4">
+                      <Form.Group className="mb-4">
+                        <Form.Label>Ngày hẹn <span className="text-danger">*</span></Form.Label>
+                        <Form.Select
+                          value={bookingData.appointmentDate}
+                          onChange={(e) => setBookingData({...bookingData, appointmentDate: e.target.value})}
+                          required
+                        >
+                          <option value="">Chọn ngày hẹn</option>
+                          {generateDateOptions().map(date => (
+                            <option key={date} value={date}>
+                              {formatDate(date)}
+                            </option>
+                          ))}
+                        </Form.Select>
+                        <Form.Text className="text-muted">
+                          <i className="bi bi-info-circle me-1"></i>
+                          Không làm việc vào Chủ nhật
+                        </Form.Text>
+                      </Form.Group>
+
+                      {bookingData.appointmentDate && (
+                        <Form.Group className="mb-3">
+                          <Form.Label>Giờ hẹn <span className="text-danger">*</span></Form.Label>
+                          <Row>
+                            {timeSlots.map(time => (
+                              <Col key={time} xs={4} className="mb-2">
+                                <Button
+                                  variant={bookingData.appointmentTime === time ? 'warning' : 'outline-warning'}
+                                  size="sm"
+                                  className="w-100"
+                                  onClick={() => setBookingData({...bookingData, appointmentTime: time})}
+                                >
+                                  {time}
+                                </Button>
+                              </Col>
+                            ))}
+                          </Row>
+                        </Form.Group>
+                      )}
+                    </Card.Body>
+                  </Card>
+                )}
+
+                {/* Self-sample info */}
+                {bookingData.collectionMethod === 'self-sample' && (
+                  <Card className="mb-4 shadow-sm border-success">
+                    <Card.Header className="bg-success text-white">
+                      <h5 className="mb-0">
+                        <i className="bi bi-box me-2"></i>
+                        Thông tin gửi kit
+                      </h5>
+                    </Card.Header>
+                    <Card.Body>
+                      <Alert variant="success" className="mb-3">
+                        <i className="bi bi-check-circle me-2"></i>
+                        Kit xét nghiệm sẽ được gửi đến địa chỉ của bạn trong <strong>1-2 ngày làm việc</strong>
+                      </Alert>
+                      <ul className="list-unstyled">
+                        <li className="mb-2"><i className="bi bi-box me-2 text-success"></i>Kit bao gồm: Que lấy mẫu, hướng dẫn chi tiết, phong bì trả về</li>
+                        <li className="mb-2"><i className="bi bi-clock me-2 text-warning"></i>Thực hiện thu mẫu trong vòng 3 ngày kể từ khi nhận kit</li>
+                        <li className="mb-2"><i className="bi bi-send me-2 text-primary"></i>Gửi mẫu về phòng lab qua đường bưu điện</li>
+                      </ul>
+                    </Card.Body>
+                  </Card>
+                )}
+
+                {/* Special Requests */}
+                <Card className="mb-4 shadow-sm">
+                  <Card.Header className="bg-success text-white">
+                    <h5 className="mb-0">
+                      <i className="bi bi-chat-text me-2"></i>
+                      Yêu cầu đặc biệt
+                    </h5>
+                  </Card.Header>
+                  <Card.Body>
+                    <Form.Control
+                      as="textarea"
+                      rows={3}
+                      placeholder="Nhập yêu cầu đặc biệt (nếu có)..."
+                      value={bookingData.specialRequests}
+                      onChange={(e) => setBookingData({...bookingData, specialRequests: e.target.value})}
+                    />
+                  </Card.Body>
+                </Card>
+
+                {/* Required Documents Reminder */}
+                {selectedService && (
+                  <Card className="border-info shadow-sm">
+                    <Card.Header className="bg-info text-white">
+                      <h6 className="mb-0">
+                        <i className="bi bi-file-text me-2"></i>
+                        Giấy tờ cần chuẩn bị
+                      </h6>
+                    </Card.Header>
+                    <Card.Body>
+                      <ul className="list-unstyled mb-0">
+                        {selectedService.requiredDocuments.map((doc, index) => (
+                          <li key={index} className="small mb-2">
+                            <i className="bi bi-check text-info me-2"></i>
+                            {doc}
+                          </li>
+                        ))}
+                      </ul>
+                    </Card.Body>
+                  </Card>
+                )}
+              </Col>
+            </Row>
+
+            <Row className="mt-4">
+              <Col>
+                <Button variant="outline-secondary" size="lg" onClick={prevStep}>
+                  <i className="bi bi-arrow-left me-2"></i> Quay lại
+                </Button>
+              </Col>
+              <Col className="text-end">
+                <Button 
+                  variant="primary" 
+                  size="lg"
+                  onClick={nextStep}
+                  disabled={
+                    !bookingData.customerInfo.fullName || 
+                    !bookingData.customerInfo.phone || 
+                    !bookingData.customerInfo.address || 
+                    (bookingData.collectionMethod !== 'self-sample' && (!bookingData.appointmentDate || !bookingData.appointmentTime))
+                  }
+                >
+                  Tiếp tục <i className="bi bi-arrow-right ms-2"></i>
+                </Button>
+              </Col>
+            </Row>
+          </>
+        )}
+
+        {/* Step 4: Confirmation - Same as before but with updated logic */}
+        {currentStep === 4 && (
+          <>
+            <div className="text-center mb-5">
+              <h2 className="display-6 fw-bold">Xác nhận thông tin đặt lịch</h2>
+              <p className="lead text-muted">
+                Vui lòng kiểm tra lại thông tin trước khi xác nhận đặt lịch
+              </p>
+            </div>
+            
+            <Card className="shadow-lg">
+              <Card.Header className="bg-primary text-white">
+                <h5 className="mb-0">
+                  <i className="bi bi-check-circle me-2"></i>
+                  Chi tiết đặt lịch xét nghiệm ADN
+                </h5>
+              </Card.Header>
+              <Card.Body className="p-4">
+                <Tab.Container defaultActiveKey="service-info">
+                  <Nav variant="tabs" className="mb-4">
+                    <Nav.Item>
+                      <Nav.Link eventKey="service-info">
+                        <i className="bi bi-gear me-2"></i>
+                        Thông tin dịch vụ
+                      </Nav.Link>
+                    </Nav.Item>
+                    <Nav.Item>
+                      <Nav.Link eventKey="customer-info">
+                        <i className="bi bi-person me-2"></i>
+                        Thông tin khách hàng
+                      </Nav.Link>
+                    </Nav.Item>
+                    <Nav.Item>
+                      <Nav.Link eventKey="appointment-info">
+                        <i className="bi bi-calendar me-2"></i>
+                        Thông tin lịch hẹn
+                      </Nav.Link>
+                    </Nav.Item>
+                  </Nav>
+
+                  <Tab.Content>
+                    <Tab.Pane eventKey="service-info">
+                      <Row>
+                        <Col md={6}>
+                          <div className="d-flex align-items-center mb-4">
+                            <div className={`rounded-circle p-3 me-3 ${
+                              selectedService.serviceType === 'administrative' ? 'bg-warning' : 'bg-success'
+                            }`}>
+                              <i className={`${selectedService.icon} text-white fs-4`}></i>
+                            </div>
+                            <div>
+                              <h5 className="mb-1">{selectedService.title}</h5>
+                              {getServiceTypeBadge(selectedService.serviceType)}
+                            </div>
+                          </div>
+
+                          <div className="mb-3">
+                            <strong>Mô tả dịch vụ:</strong>
+                            <p className="text-muted mt-1">{selectedService.description}</p>
+                          </div>
+
+                          <div className="mb-3">
+                            <strong>Phương thức lấy mẫu:</strong>
+                            <div className="mt-2">
+                              <Badge bg={selectedMethod.color} className="me-2">
+                                <i className={`${selectedMethod.icon} me-1`}></i>
+                                {selectedMethod.title}
+                              </Badge>
+                              <p className="text-muted small mt-2">{selectedMethod.description}</p>
+                            </div>
+                          </div>
+                        </Col>
+                        <Col md={6}>
+                          <div className="bg-light p-3 rounded">
+                            <h6 className="text-primary mb-3">Chi phí & Thời gian</h6>
+                            <div className="d-flex justify-content-between mb-2">
+                              <span>Giá dịch vụ:</span>
+                              <strong className="text-success">{selectedService.price}</strong>
+                            </div>
+                            <div className="d-flex justify-content-between mb-2">
+                              <span>Thời gian có kết quả:</span>
+                              <strong>{selectedService.duration}</strong>
+                            </div>
+                            <div className="d-flex justify-content-between">
+                              <span>Độ chính xác:</span>
+                              <strong className="text-warning">99.999%</strong>
+                            </div>
+                          </div>
+                        </Col>
+                      </Row>
+                    </Tab.Pane>
+
+                    <Tab.Pane eventKey="customer-info">
+                      <Row>
+                        <Col md={6}>
+                          <h6 className="text-primary mb-3">Người đặt lịch</h6>
+                          <div className="mb-2">
+                            <strong>Họ tên:</strong> {bookingData.customerInfo.fullName}
+                          </div>
+                          <div className="mb-2">
+                            <strong>Điện thoại:</strong> {bookingData.customerInfo.phone}
+                          </div>
+                          <div className="mb-2">
+                            <strong>Email:</strong> {bookingData.customerInfo.email || 'Không có'}
+                          </div>
+                          <div className="mb-2">
+                            <strong>CCCD/CMND:</strong> {bookingData.customerInfo.idNumber}
+                          </div>
+                          <div className="mb-2">
+                            <strong>Địa chỉ:</strong> {bookingData.customerInfo.address}
+                          </div>
+                        </Col>
+                        <Col md={6}>
+                          {bookingData.customerInfo.participants.length > 0 && (
+                            <>
+                              <h6 className="text-primary mb-3">Người tham gia xét nghiệm</h6>
+                              {bookingData.customerInfo.participants.map((participant, index) => (
+                                <Card key={index} className="mb-2 border-light">
+                                  <Card.Body className="p-3">
+                                    <h6 className="text-success mb-2">{participant.role}</h6>
+                                    <div className="small">
+                                      <div><strong>Tên:</strong> {participant.name}</div>
+                                      <div><strong>CCCD:</strong> {participant.idNumber}</div>
+                                      {participant.phone && (
+                                        <div><strong>SĐT:</strong> {participant.phone}</div>
+                                      )}
+                                    </div>
+                                  </Card.Body>
+                                </Card>
+                              ))}
+                            </>
+                          )}
+                        </Col>
+                      </Row>
+                    </Tab.Pane>
+
+                    <Tab.Pane eventKey="appointment-info">
+                      <Row>
+                        <Col md={6}>
+                          {bookingData.collectionMethod === 'self-sample' ? (
+                            <div className="text-center">
+                              <div className="bg-success bg-opacity-10 rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" 
+                                   style={{ width: '80px', height: '80px' }}>
+                                <i className="bi bi-box text-success fs-1"></i>
+                              </div>
+                              <h5 className="text-success mb-3">Tự lấy mẫu tại nhà</h5>
+                              <div className="mb-3">
+                                <strong>Kit sẽ được gửi đến:</strong>
+                                <div className="text-muted mt-1">{bookingData.customerInfo.address}</div>
+                              </div>
+                              <div className="mb-3">
+                                <strong>Thời gian nhận kit:</strong>
+                                <div className="text-warning mt-1">1-2 ngày làm việc</div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-center">
+                              <div className="bg-primary bg-opacity-10 rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" 
+                                   style={{ width: '80px', height: '80px' }}>
+                                <i className="bi bi-calendar-event text-primary fs-1"></i>
+                              </div>
+                              <h5 className="text-primary mb-3">Thông tin lịch hẹn</h5>
+                              <div className="mb-3">
+                                <strong>Ngày hẹn:</strong>
+                                <div className="h5 text-primary mt-1">{formatDate(bookingData.appointmentDate)}</div>
+                              </div>
+                              <div className="mb-3">
+                                <strong>Giờ hẹn:</strong>
+                                <div className="h5 text-warning mt-1">{bookingData.appointmentTime}</div>
+                              </div>
+                            </div>
+                          )}
+                        </Col>
+                        <Col md={6}>
+                          {bookingData.specialRequests && (
+                            <div className="mb-4">
+                              <h6 className="text-primary mb-3">Yêu cầu đặc biệt</h6>
+                              <div className="p-3 bg-light rounded">
+                                <p className="text-muted mb-0">{bookingData.specialRequests}</p>
+                              </div>
+                            </div>
+                          )}
+
+                          <div>
+                            <h6 className="text-primary mb-3">Giấy tờ cần mang theo</h6>
+                            <ul className="list-unstyled">
+                              {selectedService.requiredDocuments.map((doc, index) => (
+                                <li key={index} className="mb-2">
+                                  <i className="bi bi-check-circle text-success me-2"></i>
+                                  {doc}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </Col>
+                      </Row>
+                    </Tab.Pane>
+                  </Tab.Content>
+                </Tab.Container>
+                
+                <hr />
+                
+                <Alert variant="info" className="mb-0">
+                  <div className="d-flex align-items-start">
+                    <i className="bi bi-info-circle me-3 mt-1"></i>
+                    <div>
+                      <strong>Lưu ý quan trọng:</strong>
+                      <ul className="mb-0 mt-2">
+                        {bookingData.collectionMethod !== 'self-sample' && (
+                          <li>Vui lòng có mặt đúng giờ hẹn. Trễ hẹn quá 15 phút có thể bị hủy lịch.</li>
+                        )}
+                        <li>Mang theo CCCD/CMND gốc của tất cả người tham gia xét nghiệm.</li>
+                        {selectedService.serviceType === 'administrative' && (
+                          <li>Xét nghiệm hành chính yêu cầu có mặt đồng thời của tất cả đương sự.</li>
+                        )}
+                        {bookingData.collectionMethod === 'self-sample' && (
+                          <li>Kit xét nghiệm sẽ được gửi đến địa chỉ của bạn trong 1-2 ngày làm việc.</li>
+                        )}
+                        <li>Kết quả sẽ được thông báo qua email và SMS khi có.</li>
+                        <li>Tư vấn miễn phí 24/7 qua hotline: <strong>1900 1234</strong></li>
+                      </ul>
+                    </div>
+                  </div>
+                </Alert>
+              </Card.Body>
+            </Card>
+
+            <Row className="mt-4">
+              <Col>
+                <Button variant="outline-secondary" size="lg" onClick={prevStep}>
+                  <i className="bi bi-arrow-left me-2"></i> Quay lại chỉnh sửa
+                </Button>
+              </Col>
+              <Col className="text-end">
+                <Button variant="success" size="lg" onClick={handleBookingSubmit}>
+                  <i className="bi bi-check-circle me-2"></i> Xác nhận đặt lịch
+                </Button>
+              </Col>
+            </Row>
+          </>
+        )}
       </Container>
+
+      {/* Quick Contact Support */}
+      <section className="bg-light py-4 mt-5">
+        <Container>
+          <Row className="align-items-center">
+            <Col md={8}>
+              <h5 className="mb-2">
+                <i className="bi bi-headset me-2"></i>
+                Cần hỗ trợ trong quá trình đặt lịch?
+              </h5>
+              <p className="text-muted mb-0">
+                Đội ngũ chuyên gia của chúng tôi sẵn sàng tư vấn và hỗ trợ bạn 24/7
+              </p>
+            </Col>
+            <Col md={4} className="text-md-end mt-3 mt-md-0">
+              <div className="d-flex gap-2 justify-content-md-end">
+                <Button variant="primary">
+                  <i className="bi bi-telephone me-2"></i>
+                  1900 1234
+                </Button>
+                <Button variant="outline-primary">
+                  <i className="bi bi-chat-dots me-2"></i>
+                  Chat ngay
+                </Button>
+              </div>
+            </Col>
+          </Row>
+        </Container>
+      </section>
     </div>
   );
 };

@@ -86,7 +86,7 @@ const Sitemap = () => {
       icon: 'bi-shield-check',
       color: 'danger',
       routes: [
-        { path: '/admin', name: 'Dashboard admin', description: 'Trang quản trị hệ thống', status: 'planned' },
+        { path: '/admin', name: 'Dashboard admin', description: 'Trang quản trị hệ thống', status: 'planned ' },
         { path: '/admin/users', name: 'Quản lý người dùng', description: 'User management & permissions', status: 'planned' },
         { path: '/admin/system', name: 'Cài đặt hệ thống', description: 'System configuration', status: 'planned' },
         { path: '/admin/analytics', name: 'Analytics', description: 'Thống kê toàn hệ thống', status: 'planned' }

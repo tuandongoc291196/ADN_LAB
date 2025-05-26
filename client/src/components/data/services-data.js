@@ -18,7 +18,7 @@ export const COLLECTION_METHODS = {
     icon: 'bi-truck',
     color: 'warning',
     process: ['Đặt hẹn', 'Nhân viên đến', 'Thu mẫu', 'Xét nghiệm', 'Nhận kết quả'],
-    note: 'Phí di chuyển: 200,000 VNĐ (trong nội thành)',
+    note: 'Phí dịch vụ nhân viên: 400,000 VNĐ (trong nội thành)',
     allowedFor: ['civil', 'administrative']
   },
   'at-facility': {
