@@ -10,6 +10,7 @@ import Home from './components/Home';
 import About from './components/About';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
+import Reset from './components/auth/Reset';
 import AdminDashboard from './components/admin/AdminDashboard';
 import UserDashboard from './components/user/UserDashboard';
 import ManagerDashboard from './components/manager/ManagerDashboard';
@@ -39,6 +40,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login setUser={setUser} />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/reset" element={<Reset />} />
             
             {/* Services Routes */}
             <Route path="/services" element={<ServiceList />} />
