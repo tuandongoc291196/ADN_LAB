@@ -1,11 +1,16 @@
 const functions = require('firebase-functions');
 const express = require('express');
+const cors = require('cors');
 
 const {addPayment} = require('./controllers/payments/addPayment');
 const {getAllPayments, getPayment} = require('./controllers/payments/getPayment');
 const {refundPayment} = require('./controllers/payments/refundPayment');
 
 const app = express();
+
+app.use(cors({
+  origin: 'http://localhost:3000' // Your frontend origin
+}));
 app.get('/', (req, res) => res.status(200).send("Hey, hey! We've been trying to reach you about your car's extended warranty!"));
 
 app.post('/payments', addPayment);
