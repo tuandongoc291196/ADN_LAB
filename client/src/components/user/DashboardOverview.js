@@ -203,24 +203,24 @@ const DashboardOverview = ({ user }) => {
                             <i className="bi bi-geo-alt me-1"></i>
                             {getMethodText(appointment.method)}
                           </div>
-                          
+
                           {/* Progress Bar */}
                           <div className="mb-2">
                             <div className="d-flex justify-content-between align-items-center mb-1">
                               <small className="text-muted">Tiến độ thực hiện</small>
                               <small className="fw-bold">{appointment.progress}%</small>
                             </div>
-                            <ProgressBar 
-                              now={appointment.progress} 
+                            <ProgressBar
+                              now={appointment.progress}
                               variant={appointment.progress === 100 ? 'success' : 'primary'}
                               style={{ height: '6px' }}
                             />
                           </div>
                         </div>
-                        
+
                         <div className="ms-3">
-                          <Button 
-                            variant="outline-primary" 
+                          <Button
+                            variant="outline-primary"
                             size="sm"
                             as={Link}
                             to={`/tracking/${appointment.id}`}
@@ -263,11 +263,10 @@ const DashboardOverview = ({ user }) => {
                     <div key={notification.id} className="list-group-item px-3 py-3">
                       <div className="d-flex align-items-start">
                         <div className={`bg-${notification.type} bg-opacity-10 rounded-circle p-2 me-3 mt-1`}>
-                          <i className={`bi ${
-                            notification.type === 'success' ? 'bi-check-circle' :
-                            notification.type === 'warning' ? 'bi-exclamation-triangle' :
-                            'bi-info-circle'
-                          } text-${notification.type}`}></i>
+                          <i className={`bi ${notification.type === 'success' ? 'bi-check-circle' :
+                              notification.type === 'warning' ? 'bi-exclamation-triangle' :
+                                'bi-info-circle'
+                            } text-${notification.type}`}></i>
                         </div>
                         <div className="flex-grow-1">
                           <h6 className="mb-1">{notification.title}</h6>

@@ -92,7 +92,7 @@ const Payment = () => {
       setBookingData(location.state.bookingData);
       const id = 'ADN' + Date.now().toString().slice(-6);
       setBookingId(id);
-      
+
       // Pre-fill customer info
       setPaymentData({
         customerName: location.state.bookingData.customerInfo.fullName,
@@ -109,7 +109,7 @@ const Payment = () => {
   // Get service details
   const getServiceDetails = () => {
     if (!bookingData) return null;
-    
+
     // Mock service details - in real app, fetch from services-data
     const servicePrices = {
       'admin-birth-cert': { price: 4200000, name: 'ADN làm giấy khai sinh' },
@@ -143,7 +143,7 @@ const Payment = () => {
   };
 
   const getServiceTypeBadge = (serviceType) => {
-    return serviceType === 'administrative' 
+    return serviceType === 'administrative'
       ? <Badge bg="warning" text="dark">Có giá trị pháp lý</Badge>
       : <Badge bg="success">Dân sự</Badge>;
   };
@@ -159,7 +159,7 @@ const Payment = () => {
 
   const handlePaymentMethodSelect = (methodId) => {
     setPaymentMethod(methodId);
-    
+
     // Show bank modal if bank transfer is selected
     if (methodId === 'bank-transfer') {
       setShowBankModal(true);
@@ -175,25 +175,39 @@ const Payment = () => {
     setLoading(true);
 
     try {
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Gọi API thật
+      const response = await fetch('https://app-bggwpxm32a-uc.a.run.app/payments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          totalAmount,
+          paymentChoice: paymentMethod.toLocaleUpperCase() // Ví dụ: 'MOMO', 'VNPAY', 'ZALOPAY'
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Thanh toán thất bại');
+      }
+
+      const result = await response.json(); // kết quả trả về từ API
 
       const paymentResult = {
         bookingId,
         bookingData,
         paymentMethod,
-        paymentData,
+        paymentData: result, // thông tin từ API trả về
         amount: totalAmount,
         status: 'success',
         timestamp: new Date().toISOString()
       };
 
-      // Navigate to payment success page
-      navigate('/payment-success', { 
-        state: { 
+      navigate('/payment-success', {
+        state: {
           paymentResult,
           paymentMethodInfo: paymentMethods.find(m => m.id === paymentMethod)
-        } 
+        }
       });
 
     } catch (error) {
@@ -324,18 +338,17 @@ const Payment = () => {
                 <Row>
                   {paymentMethods.map(method => (
                     <Col key={method.id} md={6} className="mb-3">
-                      <Card 
-                        className={`h-100 border-2 cursor-pointer ${
-                          paymentMethod === method.id 
-                            ? `border-${method.color} shadow-sm` 
-                            : 'border-light'
-                        }`}
+                      <Card
+                        className={`h-100 border-2 cursor-pointer ${paymentMethod === method.id
+                          ? `border-${method.color} shadow-sm`
+                          : 'border-light'
+                          }`}
                         style={{ cursor: 'pointer', transition: 'all 0.3s ease' }}
                         onClick={() => handlePaymentMethodSelect(method.id)}
                       >
                         <Card.Body className="text-center p-3">
-                          <div className={`bg-${method.color} bg-opacity-10 rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center`} 
-                               style={{ width: '60px', height: '60px' }}>
+                          <div className={`bg-${method.color} bg-opacity-10 rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center`}
+                            style={{ width: '60px', height: '60px' }}>
                             <i className={`${method.icon} text-${method.color} fs-3`}></i>
                           </div>
                           <h6 className={`mb-2 ${paymentMethod === method.id ? `text-${method.color}` : ''}`}>
@@ -343,7 +356,7 @@ const Payment = () => {
                           </h6>
                           <p className="small text-muted mb-2">{method.description}</p>
                           <div className="small text-muted">{method.note}</div>
-                          
+
                           {paymentMethod === method.id && (
                             <div className="mt-3">
                               <Badge bg={method.color} className="px-3 py-2">
@@ -374,7 +387,7 @@ const Payment = () => {
                           <i className="bi bi-shield-check me-2"></i>
                           <strong>Thanh toán trực tuyến an toàn</strong>
                           <p className="mb-0 mt-2">
-                            Bạn sẽ được chuyển đến cổng thanh toán {selectedPaymentMethod.name} để hoàn tất giao dịch. 
+                            Bạn sẽ được chuyển đến cổng thanh toán {selectedPaymentMethod.name} để hoàn tất giao dịch.
                             Thông tin thanh toán được mã hóa và bảo mật tuyệt đối.
                           </p>
                         </Alert>
@@ -430,7 +443,7 @@ const Payment = () => {
                           <i className="bi bi-cash me-2"></i>
                           <strong>Thanh toán khi nhận dịch vụ</strong>
                           <p className="mb-0 mt-2">
-                            Bạn sẽ thanh toán bằng tiền mặt khi sử dụng dịch vụ. 
+                            Bạn sẽ thanh toán bằng tiền mặt khi sử dụng dịch vụ.
                             {bookingData.collectionMethod === 'at-facility' && ' Thanh toán tại quầy lễ tân trước khi xét nghiệm.'}
                             {bookingData.collectionMethod === 'home-visit' && ' Thanh toán trực tiếp cho nhân viên khi họ đến nhà.'}
                             {bookingData.collectionMethod === 'self-sample' && ' Không áp dụng với phương thức tự lấy mẫu.'}
@@ -447,7 +460,7 @@ const Payment = () => {
                             <Form.Control
                               type="text"
                               value={paymentData.customerName}
-                              onChange={(e) => setPaymentData({...paymentData, customerName: e.target.value})}
+                              onChange={(e) => setPaymentData({ ...paymentData, customerName: e.target.value })}
                               placeholder="Nhập họ tên"
                             />
                           </Col>
@@ -456,7 +469,7 @@ const Payment = () => {
                             <Form.Control
                               type="tel"
                               value={paymentData.customerPhone}
-                              onChange={(e) => setPaymentData({...paymentData, customerPhone: e.target.value})}
+                              onChange={(e) => setPaymentData({ ...paymentData, customerPhone: e.target.value })}
                               placeholder="Nhập số điện thoại"
                             />
                           </Col>
@@ -466,7 +479,7 @@ const Payment = () => {
                           <Form.Control
                             type="email"
                             value={paymentData.customerEmail}
-                            onChange={(e) => setPaymentData({...paymentData, customerEmail: e.target.value})}
+                            onChange={(e) => setPaymentData({ ...paymentData, customerEmail: e.target.value })}
                             placeholder="Nhập email nhận hóa đơn"
                           />
                         </Form.Group>
@@ -479,7 +492,7 @@ const Payment = () => {
                 <div className="mt-4">
                   <Card className="border-info">
                     <Card.Body>
-                      <Form.Check 
+                      <Form.Check
                         type="checkbox"
                         id="terms-agreement"
                         label={
@@ -507,8 +520,8 @@ const Payment = () => {
 
                 {/* Submit Button */}
                 <div className="text-center mt-4">
-                  <Button 
-                    variant="success" 
+                  <Button
+                    variant="success"
                     size="lg"
                     onClick={handlePaymentSubmit}
                     disabled={!paymentMethod || loading}
