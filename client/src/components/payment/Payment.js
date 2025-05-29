@@ -175,7 +175,6 @@ const Payment = () => {
     setLoading(true);
 
     try {
-      // Gọi API thật
       const response = await fetch('https://app-bggwpxm32a-uc.a.run.app/payments', {
         method: 'POST',
         headers: {
@@ -183,7 +182,7 @@ const Payment = () => {
         },
         body: JSON.stringify({
           totalAmount,
-          paymentChoice: paymentMethod.toLocaleUpperCase() // Ví dụ: 'MOMO', 'VNPAY', 'ZALOPAY'
+          paymentChoice: paymentMethod.toLocaleUpperCase()
         }),
       });
 
@@ -191,13 +190,13 @@ const Payment = () => {
         throw new Error('Thanh toán thất bại');
       }
 
-      const result = await response.json(); // kết quả trả về từ API
+      const result = await response.json();
 
       const paymentResult = {
         bookingId,
         bookingData,
         paymentMethod,
-        paymentData: result, // thông tin từ API trả về
+        paymentData: result,
         amount: totalAmount,
         status: 'success',
         timestamp: new Date().toISOString()
