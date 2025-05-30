@@ -98,157 +98,44 @@ function App() {
             <Route path="/register" element={<Register setUser={setUser} />} />
             <Route path="/reset" element={<Reset />} />
             
-            {/* ======================== SERVICES ROUTES ======================== */}
+            {/* Services Routes */}
             <Route path="/services" element={<ServiceList />} />
             <Route path="/services/:id" element={<ServiceDetail />} />
             <Route path="/services/category/:category" element={<ServiceList />} />
             <Route path="/feedback/:serviceId" element={<FeedbackForm user={user} />} />
             
-            {/* ======================== BOOKING SYSTEM ROUTES ======================== */}
+            {/* Booking System Routes */}
             <Route path="/appointment" element={<AppointmentBooking />} />
             <Route path="/booking-confirmation" element={<BookingConfirmation />} />
             <Route path="/tracking" element={<OrderTracking />} />
             <Route path="/tracking/:trackingId" element={<OrderTracking />} />
             
-            {/* ======================== PAYMENT SYSTEM ROUTES ======================== */}
+            {/* Payment System Routes (NEW) */}
             <Route path="/payment" element={<Payment />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
             
-            {/* ======================== PROTECTED DASHBOARD ROUTES ======================== */}
-            
             {/* Customer Dashboard Routes */}
-            <Route 
-              path="/user/*" 
-              element={
-                <ProtectedRoute user={user} requiredRole="customer">
-                  <UserDashboard user={user} />
-                </ProtectedRoute>
-              } 
-            />
+            <Route path="/user/*" element={<UserDashboard user={user} />} />
+            <Route path="/user/appointments" element={<UserDashboard user={user} />} />
+            <Route path="/user/profile" element={<UserDashboard user={user} />} />
+            <Route path="/user/results" element={<UserDashboard user={user} />} />
             
             {/* Staff Dashboard Routes */}
-            <Route 
-              path="/staff/*" 
-              element={
-                <ProtectedRoute user={user} requiredRole="staff">
-                  <StaffDashboard user={user} />
-                </ProtectedRoute>
-              } 
-            />
+            <Route path="/staff/*" element={<StaffDashboard />} />
             
             {/* Manager Dashboard Routes */}
-            <Route 
-              path="/manager/*" 
-              element={
-                <ProtectedRoute user={user} requiredRole="manager">
-                  <ManagerDashboard user={user} />
-                </ProtectedRoute>
-              } 
-            />
+            <Route path="/manager/*" element={<ManagerDashboard />} />
             
-            {/* Admin Dashboard Routes - Most Secure */}
-            <Route 
-              path="/admin" 
-              element={
-                <ProtectedRoute user={user} requiredRole="admin">
-                  <AdminDashboard user={user} />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin/*" 
-              element={
-                <ProtectedRoute user={user} requiredRole="admin">
-                  <AdminDashboard user={user} />
-                </ProtectedRoute>
-              } 
-            />
+            {/* Admin Dashboard Routes */}
+            <Route path="/admin/*" element={<AdminDashboard />} />
             
-            {/* ======================== INFORMATION & LIBRARY PAGES ======================== */}
-            <Route path="/library" element={
-              <div className="container py-5">
-                <div className="text-center mb-5">
-                  <h2>
-                    <i className="bi bi-journal-bookmark text-primary me-3"></i>
-                    Thư viện ADN
-                  </h2>
-                  <p className="lead text-muted">Kho tàng kiến thức về công nghệ ADN</p>
-                </div>
-                <div className="row">
-                  <div className="col-md-4 mb-4">
-                    <div className="card border-0 shadow-sm h-100">
-                      <div className="card-body text-center">
-                        <i className="bi bi-cpu text-warning fs-1 mb-3"></i>
-                        <h5>Công nghệ ADN</h5>
-                        <p className="text-muted">Tìm hiểu về các công nghệ tiên tiến</p>
-                        <a href="/library/technology" className="btn btn-outline-warning">Xem thêm</a>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col-md-4 mb-4">
-                    <div className="card border-0 shadow-sm h-100">
-                      <div className="card-body text-center">
-                        <i className="bi bi-droplet text-info fs-1 mb-3"></i>
-                        <h5>Mẫu xét nghiệm</h5>
-                        <p className="text-muted">Hướng dẫn chuẩn bị mẫu</p>
-                        <a href="/library/samples" className="btn btn-outline-info">Xem thêm</a>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="col-md-4 mb-4">
-                    <div className="card border-0 shadow-sm h-100">
-                      <div className="card-body text-center">
-                        <i className="bi bi-book text-success fs-1 mb-3"></i>
-                        <h5>Hướng dẫn</h5>
-                        <p className="text-muted">Tài liệu hướng dẫn chi tiết</p>
-                        <a href="/library/guides" className="btn btn-outline-success">Xem thêm</a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            } />
+            {/* Information & Library Pages */}
+            <Route path="/library" element={<div className="container py-5"><h2>Thư viện ADN</h2><p>Thư viện kiến thức đang được phát triển...</p></div>} />
+            <Route path="/library/technology" element={<div className="container py-5"><h2>Công nghệ ADN</h2><p>Nội dung đang được cập nhật...</p></div>} />
+            <Route path="/library/samples" element={<div className="container py-5"><h2>Mẫu xét nghiệm</h2><p>Nội dung đang được cập nhật...</p></div>} />
+            <Route path="/library/guides" element={<div className="container py-5"><h2>Hướng dẫn</h2><p>Nội dung đang được cập nhật...</p></div>} />
             
-            <Route path="/library/technology" element={
-              <div className="container py-5">
-                <h2>
-                  <i className="bi bi-cpu text-warning me-2"></i>
-                  Công nghệ ADN
-                </h2>
-                <div className="alert alert-info mt-4">
-                  <i className="bi bi-info-circle me-2"></i>
-                  Nội dung đang được cập nhật. Vui lòng quay lại sau.
-                </div>
-              </div>
-            } />
-            
-            <Route path="/library/samples" element={
-              <div className="container py-5">
-                <h2>
-                  <i className="bi bi-droplet text-info me-2"></i>
-                  Mẫu xét nghiệm
-                </h2>
-                <div className="alert alert-info mt-4">
-                  <i className="bi bi-info-circle me-2"></i>
-                  Nội dung đang được cập nhật. Vui lòng quay lại sau.
-                </div>
-              </div>
-            } />
-            
-            <Route path="/library/guides" element={
-              <div className="container py-5">
-                <h2>
-                  <i className="bi bi-book text-success me-2"></i>
-                  Hướng dẫn
-                </h2>
-                <div className="alert alert-info mt-4">
-                  <i className="bi bi-info-circle me-2"></i>
-                  Nội dung đang được cập nhật. Vui lòng quay lại sau.
-                </div>
-              </div>
-            } />
-            
-            {/* ======================== BUSINESS PAGES ======================== */}
+            {/* Business Pages */}
             <Route path="/prices" element={
               <div className="container py-5">
                 <div className="text-center mb-5">
@@ -285,7 +172,7 @@ function App() {
                 </div>
               </div>
             } />
-            
+
             <Route path="/contact" element={
               <div className="container py-5">
                 <div className="text-center mb-5">
@@ -375,7 +262,7 @@ function App() {
               </div>
             } />
             
-            {/* ======================== LEGAL & POLICY PAGES ======================== */}
+            {/* Legal & Policy Pages */}
             <Route path="/terms" element={
               <div className="container py-5">
                 <h2>
@@ -401,7 +288,7 @@ function App() {
                 </div>
               </div>
             } />
-            
+
             <Route path="/privacy" element={
               <div className="container py-5">
                 <h2>
@@ -451,10 +338,10 @@ function App() {
               </div>
             } />
             
-            {/* ======================== UTILITY PAGES ======================== */}
+            {/* Utility Pages */}
             <Route path="/sitemap" element={<Sitemap />} />
             
-            {/* ======================== 404 PAGE - ENHANCED ======================== */}
+            {/* 404 Page - Enhanced */}
             <Route path="*" element={
               <div className="container py-5">
                 <div className="row justify-content-center">
@@ -465,11 +352,11 @@ function App() {
                     <h1 className="display-4 fw-bold text-primary mb-3">404</h1>
                     <h2 className="mb-3">Không tìm thấy trang</h2>
                     <p className="text-muted mb-4">
-                      Trang bạn đang tìm kiếm có thể đã được di chuyển, xóa hoặc không tồn tại. 
+                      Trang bạn đang tìm kiếm có thể đã được di chuyển, xóa hoặc không tồn tại.
                       Vui lòng kiểm tra lại đường dẫn hoặc sử dụng các liên kết bên dưới.
                     </p>
                     
-                    <div className="d-flex gap-3 justify-content-center flex-wrap mb-5">
+                    <div className="d-flex gap-3 justify-content-center flex-wrap mb-4">
                       <a href="/" className="btn btn-primary btn-lg">
                         <i className="bi bi-house me-2"></i>
                         Về trang chủ
