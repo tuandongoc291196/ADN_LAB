@@ -46,44 +46,44 @@ function App() {
             <Route path="/login" element={<Login setUser={setUser} />} />
             <Route path="/register" element={<Register />} />
             <Route path="/reset" element={<Reset />} />
-            
+
             {/* Services Routes */}
             <Route path="/services" element={<ServiceList />} />
             <Route path="/services/:id" element={<ServiceDetail />} />
             <Route path="/services/category/:category" element={<ServiceList />} />
             <Route path="/feedback/:serviceId" element={<FeedbackForm user={user} />} />
-            
+
             {/* Booking System Routes */}
             <Route path="/appointment" element={<AppointmentBooking />} />
             <Route path="/booking-confirmation" element={<BookingConfirmation />} />
             <Route path="/tracking" element={<OrderTracking />} />
             <Route path="/tracking/:trackingId" element={<OrderTracking />} />
-            
+
             {/* Payment System Routes (NEW) */}
             <Route path="/payment" element={<Payment />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
-            
+
             {/* Customer Dashboard Routes */}
             <Route path="/user/*" element={<UserDashboard user={user} />} />
             <Route path="/user/appointments" element={<UserDashboard user={user} />} />
             <Route path="/user/profile" element={<UserDashboard user={user} />} />
             <Route path="/user/results" element={<UserDashboard user={user} />} />
-            
+
             {/* Staff Dashboard Routes */}
             <Route path="/staff/*" element={<StaffDashboard />} />
-            
+
             {/* Manager Dashboard Routes */}
             <Route path="/manager/*" element={<ManagerDashboard />} />
-            
+
             {/* Admin Dashboard Routes */}
             <Route path="/admin/*" element={<AdminDashboard />} />
-            
+
             {/* Information & Library Pages */}
             <Route path="/library" element={<div className="container py-5"><h2>Thư viện ADN</h2><p>Thư viện kiến thức đang được phát triển...</p></div>} />
             <Route path="/library/technology" element={<div className="container py-5"><h2>Công nghệ ADN</h2><p>Nội dung đang được cập nhật...</p></div>} />
             <Route path="/library/samples" element={<div className="container py-5"><h2>Mẫu xét nghiệm</h2><p>Nội dung đang được cập nhật...</p></div>} />
             <Route path="/library/guides" element={<div className="container py-5"><h2>Hướng dẫn</h2><p>Nội dung đang được cập nhật...</p></div>} />
-            
+
             {/* Business Pages */}
             <Route path="/prices" element={
               <div className="container py-5">
@@ -97,7 +97,7 @@ function App() {
                 </div>
               </div>
             } />
-            
+
             <Route path="/contact" element={
               <div className="container py-5">
                 <div className="text-center mb-5">
@@ -140,7 +140,7 @@ function App() {
                 </div>
               </div>
             } />
-            
+
             {/* Legal & Policy Pages */}
             <Route path="/terms" element={
               <div className="container py-5">
@@ -160,7 +160,7 @@ function App() {
                 </div>
               </div>
             } />
-            
+
             <Route path="/privacy" element={
               <div className="container py-5">
                 <h2>Chính sách bảo mật thông tin</h2>
@@ -186,10 +186,10 @@ function App() {
                 </div>
               </div>
             } />
-            
+
             {/* Utility Pages */}
             <Route path="/sitemap" element={<Sitemap />} />
-            
+
             {/* 404 Page - Enhanced */}
             <Route path="*" element={
               <div className="container py-5">
@@ -201,10 +201,10 @@ function App() {
                     <h1 className="display-4 fw-bold text-primary mb-3">404</h1>
                     <h2 className="mb-3">Không tìm thấy trang</h2>
                     <p className="text-muted mb-4">
-                      Trang bạn đang tìm kiếm có thể đã được di chuyển, xóa hoặc không tồn tại. 
+                      Trang bạn đang tìm kiếm có thể đã được di chuyển, xóa hoặc không tồn tại.
                       Vui lòng kiểm tra lại đường dẫn hoặc sử dụng các liên kết bên dưới.
                     </p>
-                    
+
                     <div className="d-flex gap-3 justify-content-center flex-wrap mb-4">
                       <a href="/" className="btn btn-primary btn-lg">
                         <i className="bi bi-house me-2"></i>

@@ -307,6 +307,7 @@ module.exports.addPayment = async (req, res) => {
             console.log("Making ZALOPAY payment");
             console.log(requestBodyPaymentZALOPAY);
             result = await axios(paymentZALOPAYRequestBody);
+            console.log(result);
             console.log(result.data);
             res.status(200).json(result.data);
         }   
