@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Container, Row, Col, Card, Button, Form, Alert, InputGroup } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Form, Alert, InputGroup, Badge } from 'react-bootstrap';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { 
   auth, 
   logInWithEmailAndPassword, 
-  signInWithGoogle 
+  signInWithGoogle,
+  createAppUserObject,
+  determineRole,
+  adminEmails,
+  staffEmails,
+  managerEmails
 } from '../config/firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
 
@@ -16,22 +21,46 @@ const Login = ({ setUser }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showQuickLogin, setShowQuickLogin] = useState(false);
+
+  // Function to get redirect path based on role
+  const getRedirectPath = (role) => {
+    switch (role) {
+      case 'admin': return '/admin';
+      case 'staff': return '/staff';
+      case 'manager': return '/manager';
+      case 'customer': return '/user';
+      default: return '/user';
+    }
+  };
 
   useEffect(() => {
-    if (loading) return;
-    if (user) {
-      // Set the user in the parent component
-      setUser({
-        id: user.uid,
-        name: user.displayName || 'User',
-        email: user.email,
-        role: 'user' // Default role, could be fetched from Firebase if needed
-      });
+    const handleUserLogin = async () => {
+      if (loading) return;
       
-      // Determine redirect based on user role
-      // This could be enhanced to check the role from Firestore
-      navigate('/user');
-    }
+      if (user) {
+        try {
+          // Create app user object with role detection
+          const appUser = await createAppUserObject(user);
+          
+          setUser(appUser);
+          
+          // Save to localStorage for persistence (compatible with existing format)
+          localStorage.setItem('user', JSON.stringify(appUser));
+          localStorage.setItem('isAuthenticated', 'true');
+          
+          console.log('✅ User logged in:', appUser.name, '-', appUser.role);
+          
+          // Redirect based on role
+          navigate(getRedirectPath(appUser.role));
+        } catch (error) {
+          console.error('Error processing user login:', error);
+          setLoginError('Đã có lỗi xảy ra khi đăng nhập. Vui lòng thử lại.');
+        }
+      }
+    };
+
+    handleUserLogin();
   }, [user, loading, navigate, setUser]);
 
   const handleGoogleSignIn = async () => {
@@ -39,9 +68,79 @@ const Login = ({ setUser }) => {
       setIsLoading(true);
       setLoginError('');
       await signInWithGoogle();
+      // User state will be handled by useEffect above
     } catch (error) {
       setLoginError('Đăng nhập Google thất bại. Vui lòng thử lại.');
       console.error('Google sign in error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Quick login for testing - creates mock users if Firebase accounts don't exist
+  const handleQuickLogin = async (role) => {
+    try {
+      setIsLoading(true);
+      setLoginError('');
+      
+      const testAccounts = {
+        admin: { email: 'admin@adnlab.vn', password: 'admin123' },
+        staff: { email: 'staff@adnlab.vn', password: 'staff123' },
+        manager: { email: 'manager@adnlab.vn', password: 'manager123' },
+        customer: { email: 'customer@adnlab.vn', password: 'customer123' }
+      };
+
+      const account = testAccounts[role];
+      if (account) {
+        // Auto-fill form
+        formik.setValues({
+          email: account.email,
+          password: account.password
+        });
+        
+        try {
+          // Try to login with existing Firebase account
+          await logInWithEmailAndPassword(account.email, account.password);
+          // Success will be handled by useAuthState effect
+        } catch (firebaseError) {
+          console.log('Firebase account not found, creating mock user for testing...');
+          
+          // Create mock user for testing purposes
+          const mockUser = {
+            id: `mock_${role}_${Date.now()}`,
+            name: `${role.charAt(0).toUpperCase() + role.slice(1)} User`,
+            email: account.email,
+            role: role,
+            avatar: null,
+            verified: true,
+            phone: '1900-1234',
+            department: role === 'admin' ? 'Administration' : 
+                       role === 'staff' ? 'Laboratory' :
+                       role === 'manager' ? 'Management' : null,
+            permissions: role === 'admin' ? ['all'] : 
+                        role === 'staff' ? ['tests', 'reports'] :
+                        role === 'manager' ? ['users', 'reports', 'guides'] :
+                        ['profile', 'tests'],
+            // Mock Firebase-like data
+            user_id: `mock_${role}_${Date.now()}`,
+            fullname: `${role.charAt(0).toUpperCase() + role.slice(1)} User`,
+            authProvider: 'mock',
+            account_status: 'active',
+            role_string: role
+          };
+
+          setUser(mockUser);
+          localStorage.setItem('user', JSON.stringify(mockUser));
+          localStorage.setItem('isAuthenticated', 'true');
+          localStorage.setItem('userData', JSON.stringify(mockUser)); // For backward compatibility
+          
+          console.log('✅ Mock user created:', mockUser.name, '-', mockUser.role);
+          navigate(getRedirectPath(role));
+        }
+      }
+    } catch (error) {
+      setLoginError('Đăng nhập test thất bại. Vui lòng thử lại.');
+      console.error('Quick login error:', error);
     } finally {
       setIsLoading(false);
     }
@@ -58,6 +157,7 @@ const Login = ({ setUser }) => {
         setLoginError('');
         const { email, password } = values;
         await logInWithEmailAndPassword(email, password);
+        // Success will be handled by useAuthState effect
       } catch (error) {
         setLoginError('Email hoặc mật khẩu không đúng. Vui lòng thử lại.');
         console.error('Login error:', error);
@@ -125,6 +225,86 @@ const Login = ({ setUser }) => {
                   </Alert>
                 )}
 
+                {/* Quick Login Toggle for Development */}
+                <div className="text-center mb-3">
+                  <Button 
+                    variant="outline-secondary" 
+                    size="sm"
+                    onClick={() => setShowQuickLogin(!showQuickLogin)}
+                  >
+                    <i className="bi bi-lightning me-1"></i>
+                    {showQuickLogin ? 'Ẩn' : 'Hiện'} Quick Login (Dev)
+                  </Button>
+                </div>
+
+                {/* Quick Login Section for Development */}
+                {showQuickLogin && (
+                  <Card className="bg-light mb-4">
+                    <Card.Body className="p-3">
+                      <h6 className="text-center mb-3">
+                        <i className="bi bi-lightning text-warning me-1"></i>
+                        Quick Login for Testing
+                      </h6>
+                      <Row>
+                        <Col xs={6} className="mb-2">
+                          <Button 
+                            variant="outline-danger" 
+                            size="sm" 
+                            className="w-100"
+                            onClick={() => handleQuickLogin('admin')}
+                            disabled={isLoading || loading}
+                          >
+                            <i className="bi bi-crown me-1"></i>
+                            Admin
+                          </Button>
+                        </Col>
+                        <Col xs={6} className="mb-2">
+                          <Button 
+                            variant="outline-info" 
+                            size="sm" 
+                            className="w-100"
+                            onClick={() => handleQuickLogin('staff')}
+                            disabled={isLoading || loading}
+                          >
+                            <i className="bi bi-person-badge me-1"></i>
+                            Staff
+                          </Button>
+                        </Col>
+                        <Col xs={6} className="mb-2">
+                          <Button 
+                            variant="outline-warning" 
+                            size="sm" 
+                            className="w-100"
+                            onClick={() => handleQuickLogin('manager')}
+                            disabled={isLoading || loading}
+                          >
+                            <i className="bi bi-briefcase me-1"></i>
+                            Manager
+                          </Button>
+                        </Col>
+                        <Col xs={6} className="mb-2">
+                          <Button 
+                            variant="outline-primary" 
+                            size="sm" 
+                            className="w-100"
+                            onClick={() => handleQuickLogin('customer')}
+                            disabled={isLoading || loading}
+                          >
+                            <i className="bi bi-person me-1"></i>
+                            Customer
+                          </Button>
+                        </Col>
+                      </Row>
+                      <div className="mt-2">
+                        <small className="text-muted">
+                          <i className="bi bi-info-circle me-1"></i>
+                          Sử dụng Firebase Auth hoặc Mock user cho testing
+                        </small>
+                      </div>
+                    </Card.Body>
+                  </Card>
+                )}
+
                 {/* Login Form */}
                 <Form onSubmit={formik.handleSubmit}>
                   <Form.Group className="mb-3">
@@ -145,6 +325,9 @@ const Login = ({ setUser }) => {
                     <Form.Control.Feedback type="invalid">
                       {formik.errors.email}
                     </Form.Control.Feedback>
+                    <Form.Text className="text-muted">
+                      💡 Tip: Sử dụng admin@adnlab.vn để truy cập Admin Dashboard
+                    </Form.Text>
                   </Form.Group>
 
                   <Form.Group className="mb-3">
@@ -250,6 +433,34 @@ const Login = ({ setUser }) => {
               </Card.Body>
             </Card>
 
+            {/* Admin Info Card */}
+            <Card className="border-0 bg-warning bg-opacity-10 mt-3">
+              <Card.Body className="p-3">
+                <h6 className="text-warning mb-2">
+                  <i className="bi bi-crown me-1"></i>
+                  Admin Access Information
+                </h6>
+                <div className="small text-muted">
+                  <div className="mb-1">
+                    <strong>Admin Emails:</strong> {adminEmails.join(', ')}
+                  </div>
+                  <div className="mb-1">
+                    <strong>Staff Emails:</strong> {staffEmails.join(', ')}
+                  </div>
+                  <div>
+                    <strong>Manager Emails:</strong> {managerEmails.join(', ')}
+                  </div>
+                  <hr className="my-2" />
+                  <div className="text-center">
+                    <small>
+                      <i className="bi bi-info-circle me-1"></i>
+                      Tự động phân quyền dựa trên email đăng nhập và Firestore data
+                    </small>
+                  </div>
+                </div>
+              </Card.Body>
+            </Card>
+
             {/* Footer Info */}
             <div className="text-center mt-4">
               <div className="mb-3">
@@ -282,25 +493,32 @@ const Login = ({ setUser }) => {
                   Lợi ích khi có tài khoản ADN LAB
                 </h5>
                 <Row>
-                  <Col md={4} className="text-center mb-3">
+                  <Col md={3} className="text-center mb-3">
                     <i className="bi bi-calendar-check text-success fs-1 mb-2 d-block"></i>
                     <h6>Quản lý lịch hẹn</h6>
                     <small className="text-muted">
                       Theo dõi và quản lý tất cả lịch hẹn xét nghiệm của bạn
                     </small>
                   </Col>
-                  <Col md={4} className="text-center mb-3">
+                  <Col md={3} className="text-center mb-3">
                     <i className="bi bi-file-earmark-check text-info fs-1 mb-2 d-block"></i>
                     <h6>Xem kết quả trực tuyến</h6>
                     <small className="text-muted">
                       Nhận và tải kết quả xét nghiệm ngay khi có
                     </small>
                   </Col>
-                  <Col md={4} className="text-center mb-3">
+                  <Col md={3} className="text-center mb-3">
                     <i className="bi bi-bell text-warning fs-1 mb-2 d-block"></i>
                     <h6>Thông báo tự động</h6>
                     <small className="text-muted">
                       Nhận thông báo về lịch hẹn và kết quả qua email/SMS
+                    </small>
+                  </Col>
+                  <Col md={3} className="text-center mb-3">
+                    <i className="bi bi-shield-lock text-danger fs-1 mb-2 d-block"></i>
+                    <h6>Admin Dashboard</h6>
+                    <small className="text-muted">
+                      Quản lý hệ thống và dữ liệu (dành cho admin)
                     </small>
                   </Col>
                 </Row>
