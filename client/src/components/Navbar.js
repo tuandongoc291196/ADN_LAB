@@ -12,16 +12,112 @@ const MainNavbar = ({ setUser }) => {
   const [userData, setUserData] = useState(null);
   const [logoUrl] = useState('https://firebasestorage.googleapis.com/v0/b/su25-swp391-g8.firebasestorage.app/o/assets%2Flogo.png?alt=media&token=1c903ba1-852a-4f5b-b498-97c31ffbb742');
 
+  // Role detection logic
+  const adminEmails = [
+    'admin@adnlab.vn',
+    'admin@gmail.com',
+    'test.admin@adnlab.vn',
+    'adnlab.admin@gmail.com'
+  ];
+
+  const staffEmails = [
+    'staff@adnlab.vn',
+    'staff@gmail.com',
+    'lab@adnlab.vn'
+  ];
+
+  const managerEmails = [
+    'manager@adnlab.vn',
+    'manager@gmail.com'
+  ];
+
+  const getUserRole = (email) => {
+    if (adminEmails.includes(email)) return 'admin';
+    if (staffEmails.includes(email)) return 'staff';
+    if (managerEmails.includes(email)) return 'manager';
+    return 'customer';
+  };
+
+  const getRoleBadge = (role) => {
+    const roleConfig = {
+      admin: { bg: 'danger', icon: 'bi-crown', text: 'Admin' },
+      staff: { bg: 'info', icon: 'bi-person-badge', text: 'Staff' },
+      manager: { bg: 'warning', icon: 'bi-briefcase', text: 'Manager' },
+      customer: { bg: 'primary', icon: 'bi-person', text: 'Khách hàng' }
+    };
+    
+    const config = roleConfig[role] || roleConfig.customer;
+    return (
+      <Badge bg={config.bg} className="ms-2">
+        <i className={`${config.icon} me-1`}></i>
+        {config.text}
+      </Badge>
+    );
+  };
+
+  const getDashboardLink = (role) => {
+    switch (role) {
+      case 'admin': return '/admin';
+      case 'staff': return '/staff';
+      case 'manager': return '/manager';
+      case 'customer': return '/user';
+      default: return '/user';
+    }
+  };
+
   useEffect(() => {
     if (userAuth) {
       const storedUserData = localStorage.getItem('userData');
+      let enhancedUserData = null;
+      
       if (storedUserData) {
-        setUserData(JSON.parse(storedUserData));
-        setUser(JSON.parse(storedUserData));
+        const parsed = JSON.parse(storedUserData);
+        const detectedRole = getUserRole(userAuth.email);
+        
+        // Enhance user data with role detection
+        enhancedUserData = {
+          ...parsed,
+          role_string: detectedRole,
+          role: ['admin', 'staff', 'manager'].includes(detectedRole), // Keep boolean for backward compatibility
+          email: userAuth.email,
+          displayName: userAuth.displayName,
+          photoURL: userAuth.photoURL
+        };
+        
+        setUserData(enhancedUserData);
+        setUser(enhancedUserData);
+        
+        // Update localStorage with enhanced data
+        localStorage.setItem('userData', JSON.stringify(enhancedUserData));
+        localStorage.setItem('user', JSON.stringify(enhancedUserData));
+        localStorage.setItem('isAuthenticated', 'true');
+      } else {
+        // Create user data if not exists
+        const detectedRole = getUserRole(userAuth.email);
+        enhancedUserData = {
+          user_id: userAuth.uid,
+          fullname: userAuth.displayName || userAuth.email.split('@')[0],
+          email: userAuth.email,
+          role_string: detectedRole,
+          role: ['admin', 'staff', 'manager'].includes(detectedRole),
+          avatar: userAuth.photoURL,
+          verified: userAuth.emailVerified,
+          authProvider: 'firebase'
+        };
+        
+        setUserData(enhancedUserData);
+        setUser(enhancedUserData);
+        
+        // Save to localStorage
+        localStorage.setItem('userData', JSON.stringify(enhancedUserData));
+        localStorage.setItem('user', JSON.stringify(enhancedUserData));
+        localStorage.setItem('isAuthenticated', 'true');
       }
     } else {
       setUserData(null);
       setUser(null);
+      localStorage.removeItem('user');
+      localStorage.removeItem('isAuthenticated');
     }
   }, [userAuth, setUser]);
 
@@ -29,6 +125,8 @@ const MainNavbar = ({ setUser }) => {
     logout();
     localStorage.removeItem('user_id');
     localStorage.removeItem('userData');
+    localStorage.removeItem('user');
+    localStorage.removeItem('isAuthenticated');
     setUser(null);
     navigate('/');
   };
@@ -43,6 +141,11 @@ const MainNavbar = ({ setUser }) => {
 
   const isServiceActive = () => {
     return location.pathname.startsWith('/services');
+  };
+
+  // Check if user has admin/staff/manager access
+  const hasAdminAccess = () => {
+    return userData?.role || userData?.role_string === 'admin' || userData?.role_string === 'staff' || userData?.role_string === 'manager';
   };
 
   return (
@@ -312,18 +415,55 @@ const MainNavbar = ({ setUser }) => {
                         ) : (
                           <i className="bi bi-person-circle me-1"></i>
                         )}
-                        {userData?.fullname || userAuth.displayName || userAuth.email}
+                        <span className="me-1">
+                          {userData?.fullname || userAuth.displayName || userAuth.email}
+                        </span>
+                        {userData?.role_string && getRoleBadge(userData.role_string)}
                       </span>
                     } 
                     id="user-dropdown"
                     align="end"
                   >
-                    {userData?.role && (
-                      <NavDropdown.Item as={Link} to="/admin" onClick={handleNavClick}>
-                        <i className="bi bi-shield-check me-2"></i>
-                        Quản trị viên
-                      </NavDropdown.Item>
+                    {/* Dashboard Links based on role */}
+                    {hasAdminAccess() && (
+                      <>
+                        <NavDropdown.Item 
+                          as={Link} 
+                          to={getDashboardLink(userData?.role_string || 'user')} 
+                          onClick={handleNavClick}
+                        >
+                          <i className="bi bi-speedometer2 me-2"></i>
+                          Dashboard
+                          {userData?.role_string && (
+                            <Badge bg="secondary" className="ms-2 small">
+                              {userData.role_string.charAt(0).toUpperCase() + userData.role_string.slice(1)}
+                            </Badge>
+                          )}
+                        </NavDropdown.Item>
+                        <NavDropdown.Divider />
+                      </>
                     )}
+
+                    {/* Admin specific links */}
+                    {userData?.role_string === 'admin' && (
+                      <>
+                        <NavDropdown.Item as={Link} to="/admin/users" onClick={handleNavClick}>
+                          <i className="bi bi-people me-2"></i>
+                          Quản lý người dùng
+                        </NavDropdown.Item>
+                        <NavDropdown.Item as={Link} to="/admin/reports" onClick={handleNavClick}>
+                          <i className="bi bi-graph-up me-2"></i>
+                          Báo cáo & Thống kê
+                        </NavDropdown.Item>
+                        <NavDropdown.Item as={Link} to="/admin/settings" onClick={handleNavClick}>
+                          <i className="bi bi-gear me-2"></i>
+                          Cài đặt hệ thống
+                        </NavDropdown.Item>
+                        <NavDropdown.Divider />
+                      </>
+                    )}
+
+                    {/* Regular user links */}
                     <NavDropdown.Item as={Link} to="/user/profile" onClick={handleNavClick}>
                       <i className="bi bi-person me-2"></i>
                       Hồ sơ cá nhân

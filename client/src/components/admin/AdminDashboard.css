@@ -1,0 +1,441 @@
+/* Admin Dashboard Custom Styles */
+
+/* ========== GENERAL STYLES ========== */
+.admin-dashboard {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+}
+
+/* ========== SIDEBAR STYLES ========== */
+.admin-sidebar {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  position: sticky;
+  top: 0;
+}
+
+.admin-sidebar .nav-link {
+  color: rgba(255, 255, 255, 0.8);
+  padding: 1rem 1.5rem;
+  border-radius: 0.5rem;
+  margin: 0.25rem 0;
+  transition: all 0.3s ease;
+}
+
+.admin-sidebar .nav-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  transform: translateX(5px);
+}
+
+.admin-sidebar .nav-link.active {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border-left: 4px solid #ffc107;
+}
+
+/* ========== CARD STYLES ========== */
+.admin-card {
+  border: none;
+  border-radius: 1rem;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.admin-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.admin-card-header {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid #dee2e6;
+  padding: 1.25rem;
+}
+
+.admin-card-body {
+  padding: 1.5rem;
+}
+
+/* ========== STATS CARDS ========== */
+.stats-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 1rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.stats-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100px;
+  height: 100px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  transform: translate(30px, -30px);
+}
+
+.stats-card-primary {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+}
+
+.stats-card-success {
+  background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+}
+
+.stats-card-warning {
+  background: linear-gradient(135deg, #ffc107 0%, #d39e00 100%);
+}
+
+.stats-card-danger {
+  background: linear-gradient(135deg, #dc3545 0%, #bd2130 100%);
+}
+
+.stats-card-info {
+  background: linear-gradient(135deg, #17a2b8 0%, #117a8b 100%);
+}
+
+/* ========== TABLE STYLES ========== */
+.admin-table {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.admin-table thead {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.admin-table thead th {
+  border: none;
+  font-weight: 600;
+  color: #495057;
+  padding: 1rem;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.admin-table tbody tr {
+  transition: all 0.2s ease;
+}
+
+.admin-table tbody tr:hover {
+  background-color: #f8f9fa;
+  transform: scale(1.01);
+}
+
+.admin-table tbody td {
+  padding: 1rem;
+  vertical-align: middle;
+  border-color: #f1f3f4;
+}
+
+/* ========== BUTTON STYLES ========== */
+.admin-btn {
+  border-radius: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  border: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.admin-btn:hover::before {
+  left: 100%;
+}
+
+.admin-btn-primary {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  color: white;
+}
+
+.admin-btn-success {
+  background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+  color: white;
+}
+
+.admin-btn-warning {
+  background: linear-gradient(135deg, #ffc107 0%, #d39e00 100%);
+  color: #212529;
+}
+
+.admin-btn-danger {
+  background: linear-gradient(135deg, #dc3545 0%, #bd2130 100%);
+  color: white;
+}
+
+/* ========== MODAL STYLES ========== */
+.admin-modal .modal-content {
+  border: none;
+  border-radius: 1rem;
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+}
+
+.admin-modal .modal-header {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid #dee2e6;
+  border-radius: 1rem 1rem 0 0;
+  padding: 1.5rem;
+}
+
+.admin-modal .modal-body {
+  padding: 2rem;
+}
+
+.admin-modal .modal-footer {
+  border-top: 1px solid #dee2e6;
+  padding: 1.5rem;
+  background-color: #f8f9fa;
+  border-radius: 0 0 1rem 1rem;
+}
+
+/* ========== BADGE STYLES ========== */
+.admin-badge {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ========== PROGRESS STYLES ========== */
+.admin-progress {
+  height: 0.75rem;
+  border-radius: 0.5rem;
+  background-color: #e9ecef;
+  overflow: hidden;
+}
+
+.admin-progress-bar {
+  background: linear-gradient(45deg, #007bff, #0056b3);
+  transition: width 0.6s ease;
+  border-radius: 0.5rem;
+}
+
+/* ========== FORM STYLES ========== */
+.admin-form-control {
+  border: 2px solid #e9ecef;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  transition: all 0.3s ease;
+  background-color: #fff;
+}
+
+.admin-form-control:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  background-color: #fff;
+}
+
+.admin-form-label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+}
+
+/* ========== CHART STYLES ========== */
+.admin-chart-container {
+  position: relative;
+  height: 400px;
+  margin: 1rem 0;
+}
+
+.admin-chart-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+/* ========== ANIMATION STYLES ========== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.slide-in-left {
+  animation: slideInLeft 0.6s ease-out;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.pulse {
+  animation: pulse 2s infinite;
+}
+
+/* ========== RESPONSIVE STYLES ========== */
+@media (max-width: 768px) {
+  .admin-sidebar {
+    position: relative;
+    min-height: auto;
+  }
+  
+  .admin-card {
+    margin-bottom: 1rem;
+  }
+  
+  .stats-card {
+    margin-bottom: 1rem;
+  }
+  
+  .admin-table {
+    font-size: 0.875rem;
+  }
+  
+  .admin-chart-container {
+    height: 300px;
+  }
+}
+
+/* ========== UTILITY CLASSES ========== */
+.text-gradient {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+}
+
+.bg-gradient-success {
+  background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+}
+
+.bg-gradient-warning {
+  background: linear-gradient(135deg, #ffc107 0%, #d39e00 100%);
+}
+
+.bg-gradient-danger {
+  background: linear-gradient(135deg, #dc3545 0%, #bd2130 100%);
+}
+
+.bg-gradient-info {
+  background: linear-gradient(135deg, #17a2b8 0%, #117a8b 100%);
+}
+
+.shadow-sm-custom {
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.shadow-lg-custom {
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+}
+
+.border-radius-lg {
+  border-radius: 1rem;
+}
+
+.border-radius-xl {
+  border-radius: 1.5rem;
+}
+
+/* ========== LOADING STYLES ========== */
+.admin-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+.admin-spinner {
+  width: 3rem;
+  height: 3rem;
+  border: 4px solid #e9ecef;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ========== TOAST STYLES ========== */
+.admin-toast {
+  border: none;
+  border-radius: 0.75rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.admin-toast-header {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid #dee2e6;
+}
+
+/* ========== DARK MODE SUPPORT ========== */
+@media (prefers-color-scheme: dark) {
+  .admin-dashboard {
+    background-color: #121212;
+    color: #ffffff;
+  }
+  
+  .admin-card {
+    background-color: #1e1e1e;
+    color: #ffffff;
+  }
+  
+  .admin-table {
+    background-color: #1e1e1e;
+    color: #ffffff;
+  }
+  
+  .admin-form-control {
+    background-color: #2d2d2d;
+    border-color: #404040;
+    color: #ffffff;
+  }
+}
