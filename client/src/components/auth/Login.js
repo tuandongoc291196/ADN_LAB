@@ -7,12 +7,12 @@ import {
   auth, 
   logInWithEmailAndPassword, 
   signInWithGoogle,
-  createAppUserObject,
-  determineRole,
   adminEmails,
   staffEmails,
-  managerEmails
+  managerEmails,
+  db
 } from '../config/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 
 const Login = ({ setUser }) => {
@@ -22,6 +22,7 @@ const Login = ({ setUser }) => {
   const [loginError, setLoginError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showQuickLogin, setShowQuickLogin] = useState(false);
+  const [isQuickLogin, setIsQuickLogin] = useState(false);
 
   // Function to get redirect path based on role
   const getRedirectPath = (role) => {
@@ -38,21 +39,44 @@ const Login = ({ setUser }) => {
     const handleUserLogin = async () => {
       if (loading) return;
       
+      if (isQuickLogin) return;
+      
       if (user) {
         try {
-          // Create app user object with role detection
-          const appUser = await createAppUserObject(user);
+          const userDocRef = doc(db, "users", user.uid);
+          const userDocSnap = await getDoc(userDocRef);
           
-          setUser(appUser);
-          
-          // Save to localStorage for persistence (compatible with existing format)
-          localStorage.setItem('user', JSON.stringify(appUser));
-          localStorage.setItem('isAuthenticated', 'true');
-          
-          console.log('✅ User logged in:', appUser.name, '-', appUser.role);
-          
-          // Redirect based on role
-          navigate(getRedirectPath(appUser.role));
+          if (userDocSnap.exists()) {
+            const userData = userDocSnap.data();
+            
+            localStorage.setItem('userData', JSON.stringify(userData));
+            
+            const appUser = {
+              ...userData,
+              id: userData.user_id,
+              name: userData.fullname,
+              email: userData.email,
+              role: userData.role_string,
+              avatar: userData.avatar,
+              verified: user.emailVerified,
+              phone: userData.phone,
+              department: userData.role_string === 'admin' ? 'Administration' : 
+                         userData.role_string === 'staff' ? 'Laboratory' :
+                         userData.role_string === 'manager' ? 'Management' : null,
+              permissions: userData.role_string === 'admin' ? ['all'] : 
+                          userData.role_string === 'staff' ? ['tests', 'reports'] :
+                          userData.role_string === 'manager' ? ['users', 'reports', 'guides'] :
+                          ['profile', 'tests']
+            };
+
+            setUser(appUser);
+            localStorage.setItem('user', JSON.stringify(appUser));
+            localStorage.setItem('isAuthenticated', 'true');
+            
+            navigate(getRedirectPath(appUser.role));
+          } else {
+            setLoginError('Không tìm thấy thông tin người dùng trong hệ thống.');
+          }
         } catch (error) {
           console.error('Error processing user login:', error);
           setLoginError('Đã có lỗi xảy ra khi đăng nhập. Vui lòng thử lại.');
@@ -61,14 +85,13 @@ const Login = ({ setUser }) => {
     };
 
     handleUserLogin();
-  }, [user, loading, navigate, setUser]);
+  }, [user, loading, navigate, setUser, isQuickLogin]);
 
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
       setLoginError('');
       await signInWithGoogle();
-      // User state will be handled by useEffect above
     } catch (error) {
       setLoginError('Đăng nhập Google thất bại. Vui lòng thử lại.');
       console.error('Google sign in error:', error);
@@ -77,72 +100,78 @@ const Login = ({ setUser }) => {
     }
   };
 
-  // Quick login for testing - creates mock users if Firebase accounts don't exist
+  // Quick login for testing
   const handleQuickLogin = async (role) => {
     try {
       setIsLoading(true);
       setLoginError('');
+      setIsQuickLogin(true);
       
-      const testAccounts = {
-        admin: { email: 'admin@adnlab.vn', password: 'admin123' },
-        staff: { email: 'staff@adnlab.vn', password: 'staff123' },
-        manager: { email: 'manager@adnlab.vn', password: 'manager123' },
-        customer: { email: 'customer@adnlab.vn', password: 'customer123' }
+      const mockUsers = {
+        admin: {
+          id: 'admin-test-id',
+          name: 'Test Admin',
+          email: 'admin@adnlab.vn',
+          role: 'admin',
+          role_string: 'admin',
+          avatar: null,
+          verified: true,
+          phone: '0123456789',
+          department: 'Administration',
+          permissions: ['all']
+        },
+        staff: {
+          id: 'staff-test-id',
+          name: 'Test Staff',
+          email: 'staff@adnlab.vn',
+          role: 'staff',
+          role_string: 'staff',
+          avatar: null,
+          verified: true,
+          phone: '0123456788',
+          department: 'Laboratory',
+          permissions: ['tests', 'reports']
+        },
+        manager: {
+          id: 'manager-test-id',
+          name: 'Test Manager',
+          email: 'manager@adnlab.vn',
+          role: 'manager',
+          role_string: 'manager',
+          avatar: null,
+          verified: true,
+          phone: '0123456787',
+          department: 'Management',
+          permissions: ['users', 'reports', 'guides']
+        },
+        customer: {
+          id: 'customer-test-id',
+          name: 'Test Customer',
+          email: 'customer@adnlab.vn',
+          role: 'customer',
+          role_string: 'customer',
+          avatar: null,
+          verified: true,
+          phone: '0123456786',
+          department: null,
+          permissions: ['profile', 'tests']
+        }
       };
 
-      const account = testAccounts[role];
-      if (account) {
-        // Auto-fill form
-        formik.setValues({
-          email: account.email,
-          password: account.password
-        });
+      const mockUser = mockUsers[role];
+      if (mockUser) {
+        localStorage.setItem('user', JSON.stringify(mockUser));
+        localStorage.setItem('userData', JSON.stringify(mockUser));
+        localStorage.setItem('isAuthenticated', 'true');
         
-        try {
-          // Try to login with existing Firebase account
-          await logInWithEmailAndPassword(account.email, account.password);
-          // Success will be handled by useAuthState effect
-        } catch (firebaseError) {
-          console.log('Firebase account not found, creating mock user for testing...');
-          
-          // Create mock user for testing purposes
-          const mockUser = {
-            id: `mock_${role}_${Date.now()}`,
-            name: `${role.charAt(0).toUpperCase() + role.slice(1)} User`,
-            email: account.email,
-            role: role,
-            avatar: null,
-            verified: true,
-            phone: '1900-1234',
-            department: role === 'admin' ? 'Administration' : 
-                       role === 'staff' ? 'Laboratory' :
-                       role === 'manager' ? 'Management' : null,
-            permissions: role === 'admin' ? ['all'] : 
-                        role === 'staff' ? ['tests', 'reports'] :
-                        role === 'manager' ? ['users', 'reports', 'guides'] :
-                        ['profile', 'tests'],
-            // Mock Firebase-like data
-            user_id: `mock_${role}_${Date.now()}`,
-            fullname: `${role.charAt(0).toUpperCase() + role.slice(1)} User`,
-            authProvider: 'mock',
-            account_status: 'active',
-            role_string: role
-          };
-
-          setUser(mockUser);
-          localStorage.setItem('user', JSON.stringify(mockUser));
-          localStorage.setItem('isAuthenticated', 'true');
-          localStorage.setItem('userData', JSON.stringify(mockUser)); // For backward compatibility
-          
-          console.log('✅ Mock user created:', mockUser.name, '-', mockUser.role);
-          navigate(getRedirectPath(role));
-        }
+        navigate(getRedirectPath(mockUser.role));
       }
     } catch (error) {
-      setLoginError('Đăng nhập test thất bại. Vui lòng thử lại.');
+      setLoginError(`Không thể mô phỏng đăng nhập với tài khoản ${role}.`);
       console.error('Quick login error:', error);
     } finally {
       setIsLoading(false);
+      setTimeout(() => setIsQuickLogin(false), 1000);
     }
   };
 
@@ -157,7 +186,6 @@ const Login = ({ setUser }) => {
         setLoginError('');
         const { email, password } = values;
         await logInWithEmailAndPassword(email, password);
-        // Success will be handled by useAuthState effect
       } catch (error) {
         setLoginError('Email hoặc mật khẩu không đúng. Vui lòng thử lại.');
         console.error('Login error:', error);
@@ -225,7 +253,7 @@ const Login = ({ setUser }) => {
                   </Alert>
                 )}
 
-                {/* Quick Login Toggle for Development */}
+                {/* Quick Login Toggle */}
                 <div className="text-center mb-3">
                   <Button 
                     variant="outline-secondary" 
@@ -237,7 +265,7 @@ const Login = ({ setUser }) => {
                   </Button>
                 </div>
 
-                {/* Quick Login Section for Development */}
+                {/* Quick Login Section */}
                 {showQuickLogin && (
                   <Card className="bg-light mb-4">
                     <Card.Body className="p-3">
@@ -298,7 +326,7 @@ const Login = ({ setUser }) => {
                       <div className="mt-2">
                         <small className="text-muted">
                           <i className="bi bi-info-circle me-1"></i>
-                          Sử dụng Firebase Auth hoặc Mock user cho testing
+                          Simulates login and direct redirect (bypasses Firebase)
                         </small>
                       </div>
                     </Card.Body>
@@ -454,7 +482,7 @@ const Login = ({ setUser }) => {
                   <div className="text-center">
                     <small>
                       <i className="bi bi-info-circle me-1"></i>
-                      Tự động phân quyền dựa trên email đăng nhập và Firestore data
+                      Auto role assignment based on login email and Firestore data
                     </small>
                   </div>
                 </div>
