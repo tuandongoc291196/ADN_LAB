@@ -167,7 +167,7 @@ const Home = () => {
                 Đạt chuẩn ISO 15189
               </Badge>
               <h1 className="display-4 fw-bold mb-4">
-                Trung tâm Xét nghiệm <span className="text-warning">ADN</span> Hàng đầu
+                ADN LAB -  TRUNG TÂM XÉT NGHIỆM <span className="text-warning">ADN</span>
               </h1>
               <p className="lead mb-4">
                 Công nghệ tiên tiến - Kết quả chính xác 99.999% - Bảo mật tuyệt đối
@@ -206,9 +206,9 @@ const Home = () => {
             <Col lg={6} className="text-center">
               <div className="hero-image">
                 <img 
-                  src="https://via.placeholder.com/500x400/ffffff/667eea?text=DNA+Testing" 
+                  src="https://firebasestorage.googleapis.com/v0/b/su25-swp391-g8.firebasestorage.app/o/process-thumb.png?alt=media&token=4bcf6823-6ce1-44b6-8622-b265d7d32a12" 
                   alt="DNA Testing" 
-                  className="img-fluid rounded-4 shadow-lg"
+                  className="img-fluid"
                 />
               </div>
             </Col>

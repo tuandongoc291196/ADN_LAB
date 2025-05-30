@@ -329,7 +329,7 @@ const AppointmentBooking = () => {
                   <Card.Body className="p-4">
                     <div className="mb-4">
                       <h5 className="text-success mb-3">Đặc điểm:</h5>
-                      <ul className="list-unstyled">
+                      <ul className="list-unstyled ps-3">
                         <li className="mb-2"><i className="bi bi-check-circle text-success me-2"></i>Hầu hết có thể tự lấy mẫu tại nhà</li>
                         <li className="mb-2"><i className="bi bi-check-circle text-success me-2"></i>Bảo mật và riêng tư cao</li>
                         <li className="mb-2"><i className="bi bi-check-circle text-success me-2"></i>Thuận tiện và nhanh chóng</li>
@@ -339,7 +339,7 @@ const AppointmentBooking = () => {
                     
                     <div className="mb-4">
                       <h6 className="text-success mb-3">Phù hợp cho:</h6>
-                      <ul className="small text-muted">
+                      <ul className="small text-muted ps-3">
                         <li>Tìm hiểu quan hệ huyết thống cá nhân</li>
                         <li>Nghiên cứu nguồn gốc gia đình</li>
                         <li>Phân tích đặc điểm di truyền</li>
