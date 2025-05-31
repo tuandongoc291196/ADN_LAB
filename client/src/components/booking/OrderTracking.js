@@ -63,7 +63,64 @@ const OrderTracking = () => {
       progress: 75,
       statusHistory: orderStatuses['at-facility'],
       labCode: 'LAB-ADN-2024-0116-002'
-    }
+    },
+    'ADN123458': {
+    id: 'ADN123458',
+    serviceTitle: 'Xét nghiệm ADN nhập tịch',
+    serviceType: 'administrative',
+    collectionMethod: 'home-visit',
+    customerName: 'Lê Văn C',
+    orderDate: '2024-01-18',
+    expectedDate: '2024-01-23',
+    currentStatus: 'Đang phân tích mẫu',
+    progress: 80,
+    statusHistory: orderStatuses['home-visit'],
+    labCode: 'LAB-ADN-2024-0118-003'
+  },
+
+  // Additional diverse orders
+  'ADN123459': {
+    id: 'ADN123459',
+    serviceTitle: 'Xét nghiệm ADN trước sinh',
+    serviceType: 'civil',
+    collectionMethod: 'at-facility',
+    customerName: 'Phạm Thị D',
+    orderDate: '2024-01-20',
+    expectedDate: '2024-01-27',
+    currentStatus: 'Đã có mặt và thu mẫu thành công',
+    progress: 50,
+    statusHistory: orderStatuses['at-facility'],
+    labCode: 'LAB-ADN-2024-0120-004'
+  },
+
+  'ADN123460': {
+    id: 'ADN123460',
+    serviceTitle: 'Xét nghiệm ADN bí mật',
+    serviceType: 'civil',
+    collectionMethod: 'self-sample',
+    customerName: 'Hoàng Văn E',
+    orderDate: '2024-01-22',
+    expectedDate: '2024-01-29',
+    currentStatus: 'Kit đã được gửi đến địa chỉ của bạn',
+    progress: 40,
+    statusHistory: orderStatuses['self-sample'],
+    kitTrackingNumber: 'VTP987654321',
+    labCode: 'LAB-ADN-2024-0122-005'
+  },
+
+  'ADN123461': {
+    id: 'ADN123461',
+    serviceTitle: 'Xét nghiệm ADN anh chị em',
+    serviceType: 'civil',
+    collectionMethod: 'home-visit',
+    customerName: 'Vũ Thị F',
+    orderDate: '2024-01-25',
+    expectedDate: '2024-02-01',
+    currentStatus: 'Nhân viên đã đến và thu mẫu thành công',
+    progress: 60,
+    statusHistory: orderStatuses['home-visit'],
+    labCode: 'LAB-ADN-2024-0125-006'
+  }
   };
 
   const handleSearch = async () => {

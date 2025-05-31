@@ -8,7 +8,7 @@ const TestResults = ({ user }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
-  // Mock test results data
+  // Improved mock test results data - focused on displaying results
   const testResults = [
     {
       id: 'ADN123458',
@@ -20,18 +20,21 @@ const TestResults = ({ user }) => {
       result: 'positive',
       confidence: '99.999%',
       participants: [
-        { name: 'Nguyễn Văn E', role: 'Cha', relationship: 'Biological Father' },
-        { name: 'Nguyễn Thị F', role: 'Con', relationship: 'Child' }
+        { name: 'Nguyễn Văn E', role: 'Cha', idNumber: '001234567890' },
+        { name: 'Nguyễn Thị F', role: 'Con', idNumber: '001234567891' }
       ],
-      conclusion: 'Kết quả xét nghiệm xác nhận mối quan hệ huyết thống cha-con giữa hai đương sự.',
+      conclusion: 'Kết quả xét nghiệm xác nhận mối quan hệ huyết thống cha-con giữa hai đương sự với độ chính xác 99.999%.',
       labCode: 'LAB-ADN-2024-0120-001',
       technician: 'TS. Nguyễn Văn X',
+      labAddress: 'Phòng Lab ADN - 123 Đường ABC, Quận XYZ, Hà Nội',
       hasLegalValue: true,
-      downloadCount: 3,
-      fileSize: '2.4 MB',
+      reportNumber: 'RPT-2024-001',
+      analysisMethod: 'STR Analysis với 21 locis',
+      sampleType: 'Tế bào má (Buccal Swab)',
       files: [
         { name: 'Báo cáo chính thức.pdf', size: '1.8 MB', type: 'official' },
-        { name: 'Kết quả chi tiết.pdf', size: '600 KB', type: 'detailed' }
+        { name: 'Kết quả chi tiết.pdf', size: '600 KB', type: 'detailed' },
+        { name: 'Chứng nhận pháp lý.pdf', size: '400 KB', type: 'certificate' }
       ]
     },
     {
@@ -44,17 +47,21 @@ const TestResults = ({ user }) => {
       result: 'positive',
       confidence: '99.99%',
       participants: [
-        { name: 'Nguyễn Thị C', role: 'Mẹ mang thai', relationship: 'Mother' },
-        { name: 'Nguyễn Văn D', role: 'Cha nghi ngờ', relationship: 'Alleged Father' }
+        { name: 'Nguyễn Thị C', role: 'Mẹ mang thai', idNumber: '001234567892' },
+        { name: 'Nguyễn Văn D', role: 'Cha nghi ngờ', idNumber: '001234567893' }
       ],
-      conclusion: 'Kết quả xét nghiệm xác nhận mối quan hệ huyết thống cha-con.',
+      conclusion: 'Kết quả xét nghiệm ADN trước sinh xác nhận mối quan hệ huyết thống cha-con với độ chính xác 99.99%. Xét nghiệm được thực hiện an toàn, không ảnh hưởng đến thai nhi.',
       labCode: 'LAB-ADN-2024-0118-002',
       technician: 'ThS. Trần Thị Y',
+      labAddress: 'Phòng Lab ADN - 123 Đường ABC, Quận XYZ, Hà Nội',
       hasLegalValue: false,
-      downloadCount: 1,
-      fileSize: '1.9 MB',
+      reportNumber: 'RPT-2024-002',
+      analysisMethod: 'NIPT (Non-Invasive Prenatal Testing)',
+      sampleType: 'Máu tĩnh mạch mẹ',
+      gestationalAge: '8 tuần',
       files: [
-        { name: 'Báo cáo xét nghiệm.pdf', size: '1.9 MB', type: 'standard' }
+        { name: 'Báo cáo xét nghiệm.pdf', size: '1.5 MB', type: 'standard' },
+        { name: 'Hướng dẫn chăm sóc.pdf', size: '300 KB', type: 'guide' }
       ]
     },
     {
@@ -67,31 +74,68 @@ const TestResults = ({ user }) => {
       result: 'negative',
       confidence: '99.999%',
       participants: [
-        { name: 'Nguyễn Văn A', role: 'Cha nghi ngờ', relationship: 'Alleged Father' },
-        { name: 'Nguyễn Văn B', role: 'Con', relationship: 'Child' }
+        { name: 'Nguyễn Văn A', role: 'Cha nghi ngờ', idNumber: '001234567894' },
+        { name: 'Nguyễn Văn B', role: 'Con', idNumber: '001234567895' }
       ],
-      conclusion: 'Kết quả xét nghiệm loại trừ mối quan hệ huyết thống cha-con giữa hai đương sự.',
+      conclusion: 'Kết quả xét nghiệm loại trừ mối quan hệ huyết thống cha-con giữa hai đương sự với độ chính xác 99.999%. Nguyễn Văn A không phải là cha sinh học của Nguyễn Văn B.',
       labCode: 'LAB-ADN-2024-0110-003',
       technician: 'TS. Lê Văn Z',
+      labAddress: 'Phòng Lab ADN - 123 Đường ABC, Quận XYZ, Hà Nội',
       hasLegalValue: false,
-      downloadCount: 5,
-      fileSize: '1.7 MB',
+      reportNumber: 'RPT-2024-003',
+      analysisMethod: 'STR Analysis với 21 locis',
+      sampleType: 'Tế bào má (Buccal Swab)',
       files: [
-        { name: 'Báo cáo xét nghiệm.pdf', size: '1.7 MB', type: 'standard' }
+        { name: 'Báo cáo xét nghiệm.pdf', size: '1.4 MB', type: 'standard' },
+        { name: 'Giải thích kết quả.pdf', size: '200 KB', type: 'explanation' }
+      ]
+    },
+    {
+      id: 'ADN123459',
+      service: 'Xét nghiệm ADN anh chị em',
+      serviceType: 'civil',
+      testDate: '2024-01-25',
+      resultDate: '2024-01-28',
+      status: 'completed',
+      result: 'positive',
+      confidence: '99.9%',
+      participants: [
+        { name: 'Nguyễn Văn G', role: 'Anh/Em trai', idNumber: '001234567896' },
+        { name: 'Nguyễn Văn H', role: 'Anh/Em trai', idNumber: '001234567897' }
+      ],
+      conclusion: 'Kết quả xét nghiệm xác nhận mối quan hệ anh em ruột giữa hai đương sự với độ chính xác 99.9%. Hai người có chung cha mẹ sinh học.',
+      labCode: 'LAB-ADN-2024-0125-004',
+      technician: 'TS. Phạm Thị K',
+      labAddress: 'Phòng Lab ADN - 123 Đường ABC, Quận XYZ, Hà Nội',
+      hasLegalValue: false,
+      reportNumber: 'RPT-2024-004',
+      analysisMethod: 'STR Analysis với hệ thống mở rộng',
+      sampleType: 'Tế bào má (Buccal Swab)',
+      files: [
+        { name: 'Báo cáo xét nghiệm.pdf', size: '1.6 MB', type: 'standard' }
       ]
     }
   ];
 
-  // Mock in-progress tests
+  // Mock in-progress tests - simplified
   const inProgressTests = [
     {
-      id: 'ADN123456',
+      id: 'ADN123460',
       service: 'Xét nghiệm ADN huyết thống cha-con',
-      testDate: '2024-01-22',
-      expectedDate: '2024-01-25',
+      testDate: '2024-01-29',
+      expectedDate: '2024-02-01',
       status: 'in-progress',
       progress: 75,
       currentStep: 'Đang phân tích mẫu tại phòng lab'
+    },
+    {
+      id: 'ADN123461',
+      service: 'Xét nghiệm ADN nguồn gốc',
+      testDate: '2024-01-30',
+      expectedDate: '2024-02-05',
+      status: 'in-progress',
+      progress: 45,
+      currentStep: 'Đang chuẩn bị mẫu cho phân tích'
     }
   ];
 
@@ -114,10 +158,8 @@ const TestResults = ({ user }) => {
   };
 
   const handleDownload = (result, fileType = 'all') => {
-    // TODO: Implement download functionality
     console.log('Downloading result:', result.id, 'Type:', fileType);
-    // Simulate download
-    alert(`Đang tải xuống kết quả ${result.id}...`);
+    alert(`Đang tải xuống kết quả ${result.id} - ${fileType}...`);
   };
 
   const filteredResults = testResults.filter(result => {
@@ -248,7 +290,7 @@ const TestResults = ({ user }) => {
         <Card.Body className="p-0">
           {filteredResults.length > 0 ? (
             <div className="list-group list-group-flush">
-              {filteredResults.map((result, index) => (
+              {filteredResults.map((result) => (
                 <div key={result.id} className="list-group-item p-4">
                   <Row>
                     <Col lg={8}>
@@ -302,13 +344,13 @@ const TestResults = ({ user }) => {
                         </Row>
                       </div>
 
-                      {/* Conclusion */}
+                      {/* Conclusion Summary */}
                       <Alert 
                         variant={result.result === 'positive' ? 'success' : result.result === 'negative' ? 'danger' : 'warning'}
                         className="mb-3 py-2"
                       >
                         <i className="bi bi-clipboard-check me-2"></i>
-                        <strong>Kết luận:</strong> {result.conclusion}
+                        <strong>Kết luận:</strong> {result.conclusion.substring(0, 100)}...
                       </Alert>
 
                       {/* Technical Info */}
@@ -324,8 +366,8 @@ const TestResults = ({ user }) => {
                           </Col>
                         </Row>
                         <div className="mt-1">
-                          <i className="bi bi-download me-1"></i>
-                          Đã tải: {result.downloadCount} lần • Kích thước: {result.fileSize}
+                          <i className="bi bi-files me-1"></i>
+                          Số file: {result.files.length} • Báo cáo số: {result.reportNumber}
                         </div>
                       </div>
                     </Col>
@@ -338,7 +380,7 @@ const TestResults = ({ user }) => {
                           onClick={() => handleViewResult(result)}
                         >
                           <i className="bi bi-eye me-2"></i>
-                          Xem chi tiết
+                          Xem báo cáo chi tiết
                         </Button>
 
                         <Button 
@@ -346,7 +388,7 @@ const TestResults = ({ user }) => {
                           onClick={() => handleDownload(result)}
                         >
                           <i className="bi bi-download me-2"></i>
-                          Tải kết quả
+                          Tải tất cả file
                         </Button>
 
                         {result.files.length > 1 && (
@@ -354,16 +396,16 @@ const TestResults = ({ user }) => {
                             <Button 
                               variant="outline-success" 
                               onClick={() => handleDownload(result, 'official')}
-                              className="flex-fill"
+                              className="flex-fill small"
                             >
-                              Báo cáo chính thức
+                              Báo cáo chính
                             </Button>
                             <Button 
                               variant="outline-info"
                               onClick={() => handleDownload(result, 'detailed')}
-                              className="flex-fill"
+                              className="flex-fill small"
                             >
-                              Báo cáo chi tiết
+                              Chi tiết
                             </Button>
                           </div>
                         )}
@@ -371,11 +413,6 @@ const TestResults = ({ user }) => {
                         <Button variant="outline-primary" as={Link} to="/user/support">
                           <i className="bi bi-question-circle me-2"></i>
                           Tư vấn kết quả
-                        </Button>
-
-                        <Button variant="outline-secondary">
-                          <i className="bi bi-share me-2"></i>
-                          Chia sẻ kết quả
                         </Button>
                       </div>
                     </Col>
@@ -406,73 +443,146 @@ const TestResults = ({ user }) => {
         </Card.Body>
       </Card>
 
-      {/* Result Detail Modal */}
+      {/* Result Detail Modal - Invoice Style */}
       <Modal show={showResultModal} onHide={() => setShowResultModal(false)} size="lg">
         <Modal.Header closeButton>
-          <Modal.Title>Chi tiết kết quả xét nghiệm</Modal.Title>
+          <Modal.Title>
+            <i className="bi bi-file-earmark-medical me-2"></i>
+            Báo cáo kết quả xét nghiệm
+          </Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {selectedResult && (
-            <>
+            <div className="result-report">
+              {/* Header - Company Info */}
               <div className="text-center mb-4">
-                <h4>{selectedResult.service}</h4>
-                <p className="text-muted">Mã xét nghiệm: {selectedResult.id}</p>
-                {getResultBadge(selectedResult.result)}
+                <h4>TRUNG TÂM XÉT NGHIỆM ADN LAB</h4>
+                <p className="text-muted">123 Đường ABC, Quận XYZ, Hà Nội</p>
+                <p className="text-muted">Hotline: 1900 1234 | Email: info@adnlab.vn</p>
+                <hr />
+                <h5>BÁO CÁO KẾT QUẢ XÉT NGHIỆM ADN</h5>
+                <p>Số báo cáo: <strong>{selectedResult.reportNumber}</strong></p>
               </div>
 
-              <Table striped bordered>
+              {/* Customer & Test Info */}
+              <Table borderless className="mb-4">
                 <tbody>
                   <tr>
-                    <td><strong>Ngày xét nghiệm</strong></td>
-                    <td>{formatDate(selectedResult.testDate)}</td>
+                    <td><strong>Mã xét nghiệm:</strong></td>
+                    <td>{selectedResult.id}</td>
+                    <td><strong>Dịch vụ:</strong></td>
+                    <td>{selectedResult.service}</td>
                   </tr>
                   <tr>
-                    <td><strong>Ngày có kết quả</strong></td>
+                    <td><strong>Ngày lấy mẫu:</strong></td>
+                    <td>{formatDate(selectedResult.testDate)}</td>
+                    <td><strong>Ngày có kết quả:</strong></td>
                     <td>{formatDate(selectedResult.resultDate)}</td>
                   </tr>
                   <tr>
-                    <td><strong>Độ chính xác</strong></td>
-                    <td>{selectedResult.confidence}</td>
-                  </tr>
-                  <tr>
-                    <td><strong>Mã phòng lab</strong></td>
+                    <td><strong>Mã phòng lab:</strong></td>
                     <td>{selectedResult.labCode}</td>
-                  </tr>
-                  <tr>
-                    <td><strong>Kỹ thuật viên</strong></td>
+                    <td><strong>Kỹ thuật viên:</strong></td>
                     <td>{selectedResult.technician}</td>
                   </tr>
                   <tr>
-                    <td><strong>Giá trị pháp lý</strong></td>
-                    <td>
-                      {selectedResult.hasLegalValue ? (
-                        <Badge bg="success">Có giá trị pháp lý</Badge>
-                      ) : (
-                        <Badge bg="secondary">Chỉ mang tính tham khảo</Badge>
-                      )}
-                    </td>
+                    <td><strong>Phương pháp phân tích:</strong></td>
+                    <td colSpan="3">{selectedResult.analysisMethod}</td>
                   </tr>
                 </tbody>
               </Table>
 
-              <div className="mb-3">
-                <h6>Người tham gia xét nghiệm:</h6>
-                {selectedResult.participants.map((participant, idx) => (
-                  <div key={idx} className="mb-2 p-2 bg-light rounded">
-                    <strong>{participant.name}</strong> - {participant.role}
-                  </div>
-                ))}
+              <hr />
+
+              {/* Participants Info */}
+              <div className="mb-4">
+                <h6 className="text-primary mb-3">Thông tin người tham gia</h6>
+                <Table bordered>
+                  <thead>
+                    <tr>
+                      <th>Họ và tên</th>
+                      <th>Vai trò</th>
+                      <th>CCCD/CMND</th>
+                      <th>Loại mẫu</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedResult.participants.map((participant, index) => (
+                      <tr key={index}>
+                        <td><strong>{participant.name}</strong></td>
+                        <td>{participant.role}</td>
+                        <td>{participant.idNumber}</td>
+                        <td>{selectedResult.sampleType}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
               </div>
 
-              <Alert variant={selectedResult.result === 'positive' ? 'success' : 'danger'}>
-                <h6>Kết luận:</h6>
+              <hr />
+
+              {/* Test Results */}
+              <div className="mb-4">
+                <h6 className="text-primary mb-3">Kết quả xét nghiệm</h6>
+                <Table bordered>
+                  <tbody>
+                    <tr>
+                      <td><strong>Kết quả:</strong></td>
+                      <td>
+                        {getResultBadge(selectedResult.result)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td><strong>Độ chính xác:</strong></td>
+                      <td><strong className="text-success">{selectedResult.confidence}</strong></td>
+                    </tr>
+                    <tr>
+                      <td><strong>Phương pháp:</strong></td>
+                      <td>{selectedResult.analysisMethod}</td>
+                    </tr>
+                    {selectedResult.gestationalAge && (
+                      <tr>
+                        <td><strong>Tuổi thai:</strong></td>
+                        <td>{selectedResult.gestationalAge}</td>
+                      </tr>
+                    )}
+                    <tr>
+                      <td><strong>Giá trị pháp lý:</strong></td>
+                      <td>
+                        {selectedResult.hasLegalValue ? (
+                          <Badge bg="success">Có giá trị pháp lý đầy đủ</Badge>
+                        ) : (
+                          <Badge bg="secondary">Chỉ mang tính tham khảo</Badge>
+                        )}
+                      </td>
+                    </tr>
+                  </tbody>
+                </Table>
+              </div>
+
+              {/* Conclusion */}
+              <Alert variant={selectedResult.result === 'positive' ? 'success' : selectedResult.result === 'negative' ? 'danger' : 'warning'}>
+                <Alert.Heading>
+                  <i className="bi bi-clipboard-check me-2"></i>
+                  Kết luận chuyên môn:
+                </Alert.Heading>
                 <p className="mb-0">{selectedResult.conclusion}</p>
               </Alert>
 
-              <div className="mt-3">
-                <h6>Các file có thể tải:</h6>
-                {selectedResult.files.map((file, idx) => (
-                  <div key={idx} className="d-flex justify-content-between align-items-center p-2 border rounded mb-2">
+              {/* Legal Notice */}
+              {selectedResult.hasLegalValue && (
+                <Alert variant="warning">
+                  <i className="bi bi-shield-check me-2"></i>
+                  <strong>Lưu ý:</strong> Báo cáo này có đầy đủ giá trị pháp lý và được công nhận bởi các cơ quan tòa án, 
+                  cơ quan nhà nước trong các thủ tục hành chính.
+                </Alert>
+              )}
+
+              {/* Available Files */}
+              <div className="mb-4">
+                <h6 className="text-primary mb-3">File báo cáo đính kèm</h6>
+                {selectedResult.files.map((file, index) => (
+                  <div key={index} className="d-flex justify-content-between align-items-center p-2 border rounded mb-2">
                     <div>
                       <i className="bi bi-file-earmark-pdf text-danger me-2"></i>
                       <strong>{file.name}</strong>
@@ -484,16 +594,31 @@ const TestResults = ({ user }) => {
                   </div>
                 ))}
               </div>
-            </>
+
+              {/* Lab Info */}
+              <div className="mt-4 text-center">
+                <small className="text-muted">
+                  <strong>Địa chỉ phòng lab:</strong> {selectedResult.labAddress}
+                  <br />
+                  Báo cáo này được ký và xác nhận bởi kỹ thuật viên: <strong>{selectedResult.technician}</strong>
+                  <br />
+                  <em>Mọi thắc mắc xin liên hệ hotline: 1900 1234</em>
+                </small>
+              </div>
+            </div>
           )}
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowResultModal(false)}>
             Đóng
           </Button>
-          <Button variant="success" onClick={() => handleDownload(selectedResult)}>
+          <Button variant="info" onClick={() => handleDownload(selectedResult)}>
             <i className="bi bi-download me-2"></i>
-            Tải kết quả
+            Tải báo cáo
+          </Button>
+          <Button variant="primary" onClick={() => window.print()}>
+            <i className="bi bi-printer me-2"></i>
+            In báo cáo
           </Button>
         </Modal.Footer>
       </Modal>

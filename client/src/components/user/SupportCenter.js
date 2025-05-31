@@ -591,18 +591,6 @@ const SupportCenter = ({ user }) => {
                   <p className="text-muted small">Dựa trên 3 đánh giá</p>
                 </Card.Body>
               </Card>
-
-              <Card className="shadow-sm mt-3">
-                <Card.Header>
-                  <h6 className="mb-0">Ưu đãi cho feedback</h6>
-                </Card.Header>
-                <Card.Body>
-                  <Alert variant="info" className="mb-0">
-                    <i className="bi bi-gift me-2"></i>
-                    <strong>Nhận 50 điểm thưởng</strong> cho mỗi đánh giá chi tiết!
-                  </Alert>
-                </Card.Body>
-              </Card>
             </Col>
           </Row>
         </Tab>

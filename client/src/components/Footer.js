@@ -7,14 +7,14 @@ const Footer = () => {
     <footer className="bg-dark text-light py-5 mt-5">
       <Container>
         <Row>
-          <Col lg={4} md={6} className="mb-4 mb-md-0">
+          <Col lg={4} md={6} className="mb-4 mb-md-0 d-flex flex-column">
             <h5 className="text-uppercase mb-4">Trung tâm Xét nghiệm ADN</h5>
-            <p>
+            <p>  
               Trung tâm xét nghiệm ADN cung cấp các dịch vụ xét nghiệm ADN với độ chính xác cao, 
               bảo mật thông tin và giá cả cạnh tranh. Chúng tôi cam kết mang đến những dịch vụ 
               chất lượng nhất cho khách hàng.
             </p>
-            <div className="d-flex mt-4">
+            <div className="d-flex justify-content-center mt-4 mt-auto">
               <a href="https://facebook.com" className="text-light me-3" target="_blank" rel="noreferrer">
                 <i className="bi bi-facebook fs-4"></i>
               </a>
@@ -31,27 +31,27 @@ const Footer = () => {
             <h5 className="text-uppercase mb-4">Hệ thống văn phòng</h5>
             
             <div className="mb-3">
-              <h6 className="fw-bold">Trụ sở Hà Nội</h6>
-              <p className="mb-1">Tòa nhà ADN, Số 123 Đường ABC, Quận XYZ, Hà Nội</p>
-              <p className="mb-0">
+              <h6 className="fw-bold">CN1: Chi nhánh Hà Nội</h6>
+              <p className="mb-1 small">Tòa nhà ADN, Số 123 Đường ABC, Quận XYZ, Hà Nội</p>
+              <p className="mb-0 small">
                 <i className="bi bi-telephone me-2"></i>
                 <a href="tel:0834243399" className="text-light text-decoration-none">083.424.3399</a>
               </p>
             </div>
             
             <div className="mb-3">
-              <h6 className="fw-bold">Chi nhánh TP.HCM</h6>
-              <p className="mb-1">Tòa nhà DEF, Số 456 Đường GHI, Quận JKL, TP. Hồ Chí Minh</p>
-              <p className="mb-0">
+              <h6 className="fw-bold">CN2: Chi nhánh TP.HCM</h6>
+              <p className="mb-1 small">Tòa nhà DEF, Số 456 Đường GHI, Quận JKL, TP. Hồ Chí Minh</p>
+              <p className="mb-0 small">
                 <i className="bi bi-telephone me-2"></i>
                 <a href="tel:0888109486" className="text-light text-decoration-none">0888.109.486</a>
               </p>
             </div>
             
             <div>
-              <h6 className="fw-bold">Chi nhánh Đà Nẵng</h6>
-              <p className="mb-1">Tòa nhà MNO, Số 789 Đường PQR, Quận STU, Đà Nẵng</p>
-              <p className="mb-0">
+              <h6 className="fw-bold">CN3: Chi nhánh Đà Nẵng</h6>
+              <p className="mb-1 small">Tòa nhà MNO, Số 789 Đường PQR, Quận STU, Đà Nẵng</p>
+              <p className="mb-0 small">
                 <i className="bi bi-telephone me-2"></i>
                 <a href="tel:09111855777" className="text-light text-decoration-none">0911.18.5577</a>
               </p>
@@ -115,7 +115,7 @@ const Footer = () => {
         <Row>
           <Col className="text-center">
             <p className="mb-0">
-              &copy; {new Date().getFullYear()} Trung tâm xét nghiệm ADN. Tất cả các quyền được bảo lưu.
+              &copy; {new Date().getFullYear()} - Bản quyền thuộc về ADN LAB.
             </p>
           </Col>
         </Row>
