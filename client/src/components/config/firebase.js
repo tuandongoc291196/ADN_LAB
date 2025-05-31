@@ -51,12 +51,13 @@ const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 const storage = getStorage(app);
 
-// Admin email detection lists
+// Admin email detection lists (kept for display purposes only)
 const adminEmails = [
   'admin@adnlab.vn',
   'admin@gmail.com',
   'test.admin@adnlab.vn',
-  'adnlab.admin@gmail.com'
+  'adnlab.admin@gmail.com',
+  'hieuntse184626@fpt.edu.vn'
 ];
 
 const staffEmails = [
@@ -70,19 +71,11 @@ const managerEmails = [
   'manager@gmail.com'
 ];
 
-// Helper function to determine role based on email
-const determineRole = (email) => {
-  if (adminEmails.includes(email)) return 'admin';
-  if (staffEmails.includes(email)) return 'staff';
-  if (managerEmails.includes(email)) return 'manager';
-  return 'customer';
-};
+// Helper function to determine role based on email (removed)
+// Role is now determined from database userData.role_string field
 
-// Helper function to convert role to boolean (for backward compatibility)
-const getRoleBoolean = (roleString) => {
-  // For backward compatibility: admin/staff/manager = true, customer = false
-  return ['admin', 'staff', 'manager'].includes(roleString);
-};
+// Helper function to convert role to boolean (removed)
+// Not needed anymore since roles come from database
 
 // EXISTING FUNCTIONS (Unchanged for backward compatibility)
 
@@ -93,10 +86,8 @@ const signInWithGoogle = async () => {
     const q = query(collection(db, "users"), where("user_id", "==", user.uid));
     const docs = await getDocs(q);
     
-    // Determine role based on email
-    const userRole = determineRole(user.email);
-    
     if (docs.docs.length === 0) {
+      // Create new user with default customer role
       const userData = doc(db, "users", user.uid);
       await setDoc(userData, {
         user_id: user.uid,
@@ -109,16 +100,14 @@ const signInWithGoogle = async () => {
         authProvider: "google",
         phone: "",
         address_shipping: "",
-        role: getRoleBoolean(userRole), // Keep backward compatibility
-        role_string: userRole, // New field for detailed role
+        role: false, // Default customer role
+        role_string: "customer",
         created_at: new Date().toISOString(),
       });
     } else {
-      // Update existing user with role info
+      // Update existing user login time
       const userDocRef = doc(db, "users", user.uid);
       await updateDoc(userDocRef, {
-        role_string: userRole,
-        role: getRoleBoolean(userRole),
         last_login: new Date().toISOString(),
       });
     }
@@ -141,21 +130,16 @@ const logInWithEmailAndPassword = async (email, password) => {
     const res = await signInWithEmailAndPassword(auth, email, password);
     const user = res.user;
     
-    // Determine role and update user data
-    const userRole = determineRole(user.email);
+    // Update last login time only
     const userDocRef = doc(db, "users", user.uid);
     const userDocSnap = await getDoc(userDocRef);
     
     if (userDocSnap.exists()) {
-      // Update existing user
       await updateDoc(userDocRef, {
-        role_string: userRole,
-        role: getRoleBoolean(userRole),
         last_login: new Date().toISOString(),
       });
     }
-    
-    // Store user data in localStorage
+
     localStorage.setItem("user_id", user.uid);
     const updatedUserDataSnap = await getDoc(userDocRef);
     const userDataDoc = updatedUserDataSnap.data();
@@ -174,9 +158,7 @@ const registerWithEmailAndPassword = async (name, phone, email, password) => {
     const res = await createUserWithEmailAndPassword(auth, email, password);
     const user = res.user;
     
-    // Determine role based on email
-    const userRole = determineRole(user.email);
-    
+    // Default role for new registrations is customer
     const userData = doc(db, "users", user.uid);
     await setDoc(userData, {
       user_id: user.uid,
@@ -189,8 +171,8 @@ const registerWithEmailAndPassword = async (name, phone, email, password) => {
       authProvider: "email",
       phone: phone,
       address_shipping: "",
-      role: getRoleBoolean(userRole), // Keep backward compatibility
-      role_string: userRole, // New field for detailed role
+      role: false, // Customer role
+      role_string: "customer", 
       created_at: new Date().toISOString(),
     });
     
@@ -219,12 +201,9 @@ const sendPasswordReset = async (email) => {
 };
 
 const logout = () => {
-  // Clear localStorage
   localStorage.removeItem("user_id");
   localStorage.removeItem("userData");
-  localStorage.removeItem("user");
   localStorage.removeItem("isAuthenticated");
-  
   signOut(auth);
 };
 
@@ -258,126 +237,12 @@ function getMessages(roomId, callback) {
   );
 }
 
-// NEW FUNCTIONS for Admin Dashboard Integration
-
-// Get user role from Firestore
-const getUserRole = async (uid) => {
-  try {
-    const userRef = doc(db, 'users', uid);
-    const userSnap = await getDoc(userRef);
-    
-    if (userSnap.exists()) {
-      const userData = userSnap.data();
-      // Check new role_string field first, fallback to email-based detection
-      return userData.role_string || determineRole(userData.email);
-    }
-    return 'customer';
-  } catch (error) {
-    console.error('Error getting user role:', error);
-    return 'customer';
-  }
+// Check if user is admin (based on userData from DB)
+const isAdmin = (userData) => {
+  return userData.role_string === 'admin';
 };
 
-// Update user role
-const updateUserRole = async (uid, newRole) => {
-  try {
-    const userRef = doc(db, 'users', uid);
-    await updateDoc(userRef, {
-      role_string: newRole,
-      role: getRoleBoolean(newRole),
-      updated_at: new Date().toISOString()
-    });
-    console.log('User role updated:', uid, newRole);
-  } catch (error) {
-    console.error('Error updating user role:', error);
-    throw error;
-  }
-};
-
-// Get all users for admin dashboard
-const getAllUsers = async () => {
-  try {
-    const usersCollection = collection(db, 'users');
-    const usersSnapshot = await getDocs(usersCollection);
-    const usersList = usersSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-    return usersList;
-  } catch (error) {
-    console.error('Error getting users:', error);
-    throw error;
-  }
-};
-
-// Get users by role
-const getUsersByRole = async (role) => {
-  try {
-    const usersCollection = collection(db, 'users');
-    const q = query(usersCollection, where('role_string', '==', role));
-    const usersSnapshot = await getDocs(q);
-    const usersList = usersSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-    return usersList;
-  } catch (error) {
-    console.error('Error getting users by role:', error);
-    throw error;
-  }
-};
-
-// Create app user object from Firebase user (for Login component)
-const createAppUserObject = async (firebaseUser) => {
-  try {
-    const userRole = determineRole(firebaseUser.email);
-    
-    // Get additional data from Firestore if exists
-    const userDocRef = doc(db, 'users', firebaseUser.uid);
-    const userDocSnap = await getDoc(userDocRef);
-    const firestoreData = userDocSnap.exists() ? userDocSnap.data() : {};
-    
-    const appUser = {
-      id: firebaseUser.uid,
-      name: firebaseUser.displayName || firestoreData.fullname || firebaseUser.email.split('@')[0],
-      email: firebaseUser.email,
-      role: userRole,
-      avatar: firebaseUser.photoURL || firestoreData.avatar,
-      verified: firebaseUser.emailVerified,
-      phone: firestoreData.phone || '',
-      department: userRole === 'admin' ? 'Administration' : 
-                 userRole === 'staff' ? 'Laboratory' :
-                 userRole === 'manager' ? 'Management' : null,
-      permissions: userRole === 'admin' ? ['all'] : 
-                  userRole === 'staff' ? ['tests', 'reports'] :
-                  userRole === 'manager' ? ['users', 'reports', 'guides'] :
-                  ['profile', 'tests'],
-      // Include original Firestore data for backward compatibility
-      ...firestoreData
-    };
-    
-    return appUser;
-  } catch (error) {
-    console.error('Error creating app user object:', error);
-    throw error;
-  }
-};
-
-// Check if user is admin (multiple ways for flexibility)
-const isAdmin = (user) => {
-  // Check by role_string field
-  if (user.role_string === 'admin') return true;
-  
-  // Check by email
-  if (adminEmails.includes(user.email)) return true;
-  
-  // Check by legacy role field (if it's true and email matches)
-  if (user.role === true && adminEmails.includes(user.email)) return true;
-  
-  return false;
-};
-
-// Export everything (keeping all existing exports + new ones)
+// Export everything
 export {
   auth,
   db,
@@ -389,14 +254,7 @@ export {
   logout,
   getMessages,
   sendMessage,
-  // New exports for admin functionality
-  getUserRole,
-  updateUserRole,
-  getAllUsers,
-  getUsersByRole,
-  createAppUserObject,
   isAdmin,
-  determineRole,
   adminEmails,
   staffEmails,
   managerEmails

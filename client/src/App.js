@@ -110,7 +110,7 @@ function App() {
             <Route path="/tracking" element={<OrderTracking />} />
             <Route path="/tracking/:trackingId" element={<OrderTracking />} />
             
-            {/* Payment System Routes (NEW) */}
+            {/* Payment System Routes */}
             <Route path="/payment" element={<Payment />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
             

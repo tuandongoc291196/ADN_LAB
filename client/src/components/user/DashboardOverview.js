@@ -145,34 +145,9 @@ const DashboardOverview = ({ user }) => {
         </Col>
       </Row>
 
-      {/* Quick Stats */}
-      <Row className="mb-4">
-        {quickStats.map((stat, index) => (
-          <Col key={index} lg={3} md={6} className="mb-3">
-            <Card className="border-0 shadow-sm h-100">
-              <Card.Body>
-                <div className="d-flex align-items-center">
-                  <div className={`bg-${stat.color} bg-opacity-10 rounded-circle p-3 me-3`}>
-                    <i className={`${stat.icon} text-${stat.color} fs-4`}></i>
-                  </div>
-                  <div className="flex-grow-1">
-                    <div className="fw-bold mb-0 fs-4">{stat.value}</div>
-                    <div className="text-muted small">{stat.title}</div>
-                    <div className={`text-${stat.color} small`}>
-                      <i className="bi bi-arrow-up-short"></i>
-                      {stat.trend}
-                    </div>
-                  </div>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-        ))}
-      </Row>
-
       <Row>
         {/* Recent Appointments */}
-        <Col lg={8} className="mb-4">
+        <Col className="mb-4">
           <Card className="shadow-sm">
             <Card.Header className="bg-white border-bottom">
               <div className="d-flex justify-content-between align-items-center">
@@ -246,9 +221,8 @@ const DashboardOverview = ({ user }) => {
           </Card>
         </Col>
 
-        {/* Notifications & Quick Actions */}
-        <Col lg={4}>
-          {/* Notifications */}
+        {/* Notifications */}
+        {/* <Col lg={4}>
           <Card className="shadow-sm mb-4">
             <Card.Header className="bg-white border-bottom">
               <h5 className="mb-0">
@@ -290,70 +264,7 @@ const DashboardOverview = ({ user }) => {
               )}
             </Card.Body>
           </Card>
-
-          {/* Quick Actions */}
-          <Card className="shadow-sm">
-            <Card.Header className="bg-white border-bottom">
-              <h5 className="mb-0">
-                <i className="bi bi-lightning me-2 text-primary"></i>
-                Hành động nhanh
-              </h5>
-            </Card.Header>
-            <Card.Body>
-              <div className="d-grid gap-2">
-                <Button variant="warning" as={Link} to="/appointment">
-                  <i className="bi bi-plus-circle me-2"></i>
-                  Đặt lịch xét nghiệm mới
-                </Button>
-                <Button variant="outline-primary" as={Link} to="/tracking">
-                  <i className="bi bi-search me-2"></i>
-                  Tra cứu trạng thái đơn hàng
-                </Button>
-                <Button variant="outline-success" as={Link} to="/user/results">
-                  <i className="bi bi-download me-2"></i>
-                  Tải kết quả xét nghiệm
-                </Button>
-                <Button variant="outline-info" as={Link} to="/user/support">
-                  <i className="bi bi-headset me-2"></i>
-                  Liên hệ hỗ trợ
-                </Button>
-              </div>
-            </Card.Body>
-          </Card>
-
-          {/* Member Benefits */}
-          <Card className="shadow-sm mt-4 border-warning">
-            <Card.Header className="bg-warning text-dark">
-              <h6 className="mb-0">
-                <i className="bi bi-star me-2"></i>
-                Ưu đãi thành viên
-              </h6>
-            </Card.Header>
-            <Card.Body>
-              <ul className="list-unstyled mb-3">
-                <li className="mb-2">
-                  <i className="bi bi-check-circle text-success me-2"></i>
-                  Giảm 10% từ lần đặt thứ 3
-                </li>
-                <li className="mb-2">
-                  <i className="bi bi-check-circle text-success me-2"></i>
-                  Ưu tiên lịch hẹn khẩn cấp
-                </li>
-                <li className="mb-2">
-                  <i className="bi bi-check-circle text-success me-2"></i>
-                  Tư vấn miễn phí 24/7
-                </li>
-                <li className="mb-0">
-                  <i className="bi bi-check-circle text-success me-2"></i>
-                  Báo cáo chi tiết kèm tư vấn
-                </li>
-              </ul>
-              <Button variant="outline-warning" size="sm" className="w-100">
-                Tìm hiểu thêm
-              </Button>
-            </Card.Body>
-          </Card>
-        </Col>
+        </Col> */}
       </Row>
     </>
   );
