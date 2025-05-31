@@ -40,13 +40,6 @@ const UserDashboard = ({ user }) => {
 
   const menuItems = [
     {
-      key: 'overview',
-      label: 'Tổng quan',
-      icon: 'bi-speedometer2',
-      path: '/user',
-      color: 'primary'
-    },
-    {
       key: 'appointments',
       label: 'Lịch hẹn của tôi',
       icon: 'bi-calendar-event',
