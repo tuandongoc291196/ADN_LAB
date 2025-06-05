@@ -1,3 +1,8 @@
+/**
+ * @fileoverview Payment controller for handling MOMO, VNPAY, and ZALOPAY payments
+ * @description This module provides functionality to create payment URLs for different payment providers
+ */
+
 const  {default: axios} = require('axios');
 const { ProductCode, VnpLocale, getDateInGMT7, dateFormat} = require('vnpay');
 const { vnpay } = require('../../config/vnPay');
@@ -7,7 +12,96 @@ const crypto = require('crypto');
 const moment = require('moment');
 const { randomAlphanumeric, generateOrderId, generateRequestId } = require('../utils/utilities');
 
+/**
+ * @swagger
+ * components:
+ *   examples:
+ *     MomoPaymentExample:
+ *       summary: MoMo payment request
+ *       value:
+ *         totalAmount: 50000
+ *         paymentChoice: "MOMO"
+ *     VnpayPaymentExample:
+ *       summary: VNPay payment request
+ *       value:
+ *         totalAmount: 100000
+ *         paymentChoice: "VNPAY"
+ *     ZalopayPaymentExample:
+ *       summary: ZaloPay payment request
+ *       value:
+ *         totalAmount: 75000
+ *         paymentChoice: "ZALOPAY"
+ */
 
+/**
+ * @swagger
+ * /payments:
+ *   post:
+ *     tags:
+ *       - Payments
+ *     summary: Create a new payment
+ *     description: Creates a payment URL for MOMO, VNPAY, or ZALOPAY payment methods
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/PaymentRequest'
+ *           examples:
+ *             MoMo:
+ *               $ref: '#/components/examples/MomoPaymentExample'
+ *             VNPay:
+ *               $ref: '#/components/examples/VnpayPaymentExample'
+ *             ZaloPay:
+ *               $ref: '#/components/examples/ZalopayPaymentExample'
+ *     responses:
+ *       200:
+ *         description: Payment URL generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PaymentResponse'
+ *       400:
+ *         description: Bad request - Missing required fields
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+
+/**
+ * Creates a payment URL for the specified payment method
+ * 
+ * @async
+ * @function addPayment
+ * @description Processes payment requests and generates payment URLs for MOMO, VNPAY, or ZALOPAY
+ * @param {Object} req - Express request object
+ * @param {Object} req.body - Request body
+ * @param {number} req.body.totalAmount - Payment amount in VND (minimum 1,000)
+ * @param {string} req.body.paymentChoice - Payment method: "MOMO", "VNPAY", or "ZALOPAY"
+ * @param {Object} res - Express response object
+ * @returns {Promise<void>} Returns payment URL or error response
+ * 
+ * @example
+ * // Request body for MOMO payment
+ * {
+ *   "totalAmount": 50000,
+ *   "paymentChoice": "MOMO"
+ * }
+ * 
+ * @example
+ * // Successful response
+ * {
+ *   "statusCode": 200,
+ *   "payUrl": "https://test-payment.momo.vn/v2/gateway/pay?..."
+ * }
+ */
 module.exports.addPayment = async (req, res) => {
     const {totalAmount, paymentChoice} = req.body;
 
