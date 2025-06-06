@@ -24,7 +24,7 @@ const swaggerOptions = {
         description: 'Development server'
       },
       {
-        url: 'https://us-central1-su25-swp391-g8.cloudfunctions.net/app',
+        url: 'https://app-bggwpxm32a-uc.a.run.app',
         description: 'Production server'
       }
     ],
