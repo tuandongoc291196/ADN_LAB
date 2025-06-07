@@ -1,181 +1,143 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Row, Col, Card, Button, Badge, Alert, Modal, Form, Table } from 'react-bootstrap';
+import { Row, Col, Card, Button, Badge, Alert, Modal, Form } from 'react-bootstrap';
 
 const TestResults = ({ user }) => {
   const [showResultModal, setShowResultModal] = useState(false);
   const [selectedResult, setSelectedResult] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
 
-  // Improved mock test results data - focused on displaying results
-  const testResults = [
+  // Mock data cho các lịch hẹn đã hoàn thành có kết quả
+  const completedAppointments = [
     {
       id: 'ADN123458',
       service: 'Xét nghiệm ADN khai sinh',
       serviceType: 'administrative',
-      testDate: '2024-01-20',
-      resultDate: '2024-01-23',
-      status: 'completed',
-      result: 'positive',
-      confidence: '99.999%',
+      appointmentDate: '2024-01-20',
+      completionDate: '2024-01-23',
       participants: [
-        { name: 'Nguyễn Văn E', role: 'Cha', idNumber: '001234567890' },
-        { name: 'Nguyễn Thị F', role: 'Con', idNumber: '001234567891' }
+        { name: 'Nguyễn Văn E', role: 'Cha', relationship: 'Người yêu cầu' },
+        { name: 'Nguyễn Thị F', role: 'Con', relationship: 'Đối tượng xét nghiệm' }
       ],
-      conclusion: 'Kết quả xét nghiệm xác nhận mối quan hệ huyết thống cha-con giữa hai đương sự với độ chính xác 99.999%.',
-      labCode: 'LAB-ADN-2024-0120-001',
-      technician: 'TS. Nguyễn Văn X',
-      labAddress: 'Phòng Lab ADN - 123 Đường ABC, Quận XYZ, Hà Nội',
-      hasLegalValue: true,
-      reportNumber: 'RPT-2024-001',
-      analysisMethod: 'STR Analysis với 21 locis',
-      sampleType: 'Tế bào má (Buccal Swab)',
-      files: [
-        { name: 'Báo cáo chính thức.pdf', size: '1.8 MB', type: 'official' },
-        { name: 'Kết quả chi tiết.pdf', size: '600 KB', type: 'detailed' },
-        { name: 'Chứng nhận pháp lý.pdf', size: '400 KB', type: 'certificate' }
-      ]
+      result: {
+        conclusion: 'POSITIVE',
+        confidence: '99.999%',
+        summary: 'Kết quả xét nghiệm xác nhận mối quan hệ huyết thống cha-con giữa hai đương sự.',
+        details: 'Dựa trên phân tích 21 locus STR, kết quả cho thấy Nguyễn Văn E là cha sinh học của Nguyễn Thị F với độ chính xác 99.999%.',
+        method: 'STR Analysis (Short Tandem Repeat)',
+        sampleType: 'Tế bào má (Buccal Swab)',
+        labCode: 'LAB-ADN-2024-0120-001',
+        technician: 'TS. Nguyễn Văn X',
+        hasLegalValue: true
+      }
     },
     {
       id: 'ADN123457',
       service: 'Xét nghiệm ADN thai nhi',
       serviceType: 'civil',
-      testDate: '2024-01-18',
-      resultDate: '2024-01-21',
-      status: 'completed',
-      result: 'positive',
-      confidence: '99.99%',
+      appointmentDate: '2024-01-18',
+      completionDate: '2024-01-21',
       participants: [
-        { name: 'Nguyễn Thị C', role: 'Mẹ mang thai', idNumber: '001234567892' },
-        { name: 'Nguyễn Văn D', role: 'Cha nghi ngờ', idNumber: '001234567893' }
+        { name: 'Nguyễn Thị C', role: 'Mẹ mang thai', relationship: 'Người yêu cầu' },
+        { name: 'Nguyễn Văn D', role: 'Cha nghi ngờ', relationship: 'Đối tượng xét nghiệm' }
       ],
-      conclusion: 'Kết quả xét nghiệm ADN trước sinh xác nhận mối quan hệ huyết thống cha-con với độ chính xác 99.99%. Xét nghiệm được thực hiện an toàn, không ảnh hưởng đến thai nhi.',
-      labCode: 'LAB-ADN-2024-0118-002',
-      technician: 'ThS. Trần Thị Y',
-      labAddress: 'Phòng Lab ADN - 123 Đường ABC, Quận XYZ, Hà Nội',
-      hasLegalValue: false,
-      reportNumber: 'RPT-2024-002',
-      analysisMethod: 'NIPT (Non-Invasive Prenatal Testing)',
-      sampleType: 'Máu tĩnh mạch mẹ',
-      gestationalAge: '8 tuần',
-      files: [
-        { name: 'Báo cáo xét nghiệm.pdf', size: '1.5 MB', type: 'standard' },
-        { name: 'Hướng dẫn chăm sóc.pdf', size: '300 KB', type: 'guide' }
-      ]
+      result: {
+        conclusion: 'POSITIVE',
+        confidence: '99.99%',
+        summary: 'Kết quả xét nghiệm ADN trước sinh xác nhận mối quan hệ huyết thống cha-con.',
+        details: 'Xét nghiệm được thực hiện an toàn qua mẫu máu tĩnh mạch của mẹ. Kết quả xác nhận Nguyễn Văn D là cha sinh học của thai nhi.',
+        method: 'NIPT (Non-Invasive Prenatal Testing)',
+        sampleType: 'Máu tĩnh mạch mẹ',
+        gestationalAge: '8 tuần',
+        labCode: 'LAB-ADN-2024-0118-002',
+        technician: 'ThS. Trần Thị Y',
+        hasLegalValue: false
+      }
     },
     {
       id: 'ADN123455',
       service: 'Xét nghiệm ADN huyết thống cha-con',
       serviceType: 'civil',
-      testDate: '2024-01-10',
-      resultDate: '2024-01-13',
-      status: 'completed',
-      result: 'negative',
-      confidence: '99.999%',
+      appointmentDate: '2024-01-10',
+      completionDate: '2024-01-13',
       participants: [
-        { name: 'Nguyễn Văn A', role: 'Cha nghi ngờ', idNumber: '001234567894' },
-        { name: 'Nguyễn Văn B', role: 'Con', idNumber: '001234567895' }
+        { name: 'Nguyễn Văn A', role: 'Cha nghi ngờ', relationship: 'Người yêu cầu' },
+        { name: 'Nguyễn Văn B', role: 'Con', relationship: 'Đối tượng xét nghiệm' }
       ],
-      conclusion: 'Kết quả xét nghiệm loại trừ mối quan hệ huyết thống cha-con giữa hai đương sự với độ chính xác 99.999%. Nguyễn Văn A không phải là cha sinh học của Nguyễn Văn B.',
-      labCode: 'LAB-ADN-2024-0110-003',
-      technician: 'TS. Lê Văn Z',
-      labAddress: 'Phòng Lab ADN - 123 Đường ABC, Quận XYZ, Hà Nội',
-      hasLegalValue: false,
-      reportNumber: 'RPT-2024-003',
-      analysisMethod: 'STR Analysis với 21 locis',
-      sampleType: 'Tế bào má (Buccal Swab)',
-      files: [
-        { name: 'Báo cáo xét nghiệm.pdf', size: '1.4 MB', type: 'standard' },
-        { name: 'Giải thích kết quả.pdf', size: '200 KB', type: 'explanation' }
-      ]
-    },
-    {
-      id: 'ADN123459',
-      service: 'Xét nghiệm ADN anh chị em',
-      serviceType: 'civil',
-      testDate: '2024-01-25',
-      resultDate: '2024-01-28',
-      status: 'completed',
-      result: 'positive',
-      confidence: '99.9%',
-      participants: [
-        { name: 'Nguyễn Văn G', role: 'Anh/Em trai', idNumber: '001234567896' },
-        { name: 'Nguyễn Văn H', role: 'Anh/Em trai', idNumber: '001234567897' }
-      ],
-      conclusion: 'Kết quả xét nghiệm xác nhận mối quan hệ anh em ruột giữa hai đương sự với độ chính xác 99.9%. Hai người có chung cha mẹ sinh học.',
-      labCode: 'LAB-ADN-2024-0125-004',
-      technician: 'TS. Phạm Thị K',
-      labAddress: 'Phòng Lab ADN - 123 Đường ABC, Quận XYZ, Hà Nội',
-      hasLegalValue: false,
-      reportNumber: 'RPT-2024-004',
-      analysisMethod: 'STR Analysis với hệ thống mở rộng',
-      sampleType: 'Tế bào má (Buccal Swab)',
-      files: [
-        { name: 'Báo cáo xét nghiệm.pdf', size: '1.6 MB', type: 'standard' }
-      ]
-    }
-  ];
-
-  // Mock in-progress tests - simplified
-  const inProgressTests = [
-    {
-      id: 'ADN123460',
-      service: 'Xét nghiệm ADN huyết thống cha-con',
-      testDate: '2024-01-29',
-      expectedDate: '2024-02-01',
-      status: 'in-progress',
-      progress: 75,
-      currentStep: 'Đang phân tích mẫu tại phòng lab'
+      result: {
+        conclusion: 'NEGATIVE',
+        confidence: '99.999%',
+        summary: 'Kết quả xét nghiệm loại trừ mối quan hệ huyết thống cha-con giữa hai đương sự.',
+        details: 'Dựa trên phân tích 21 locus STR, kết quả cho thấy Nguyễn Văn A KHÔNG PHẢI là cha sinh học của Nguyễn Văn B.',
+        method: 'STR Analysis (Short Tandem Repeat)',
+        sampleType: 'Tế bào má (Buccal Swab)',
+        labCode: 'LAB-ADN-2024-0110-003',
+        technician: 'TS. Lê Văn Z',
+        hasLegalValue: false
+      }
     },
     {
       id: 'ADN123461',
-      service: 'Xét nghiệm ADN nguồn gốc',
-      testDate: '2024-01-30',
-      expectedDate: '2024-02-05',
-      status: 'in-progress',
-      progress: 45,
-      currentStep: 'Đang chuẩn bị mẫu cho phân tích'
+      service: 'Xét nghiệm ADN anh chị em',
+      serviceType: 'civil',
+      appointmentDate: '2024-01-25',
+      completionDate: '2024-01-28',
+      participants: [
+        { name: 'Nguyễn Văn G', role: 'Anh/Em trai', relationship: 'Người yêu cầu' },
+        { name: 'Nguyễn Văn H', role: 'Anh/Em trai', relationship: 'Đối tượng xét nghiệm' }
+      ],
+      result: {
+        conclusion: 'POSITIVE',
+        confidence: '99.9%',
+        summary: 'Kết quả xét nghiệm xác nhận mối quan hệ anh em ruột giữa hai đương sự.',
+        details: 'Phân tích ADN cho thấy hai người có chung cha mẹ sinh học với độ tin cậy cao.',
+        method: 'STR Analysis với hệ thống mở rộng',
+        sampleType: 'Tế bào má (Buccal Swab)',
+        labCode: 'LAB-ADN-2024-0125-004',
+        technician: 'TS. Phạm Thị K',
+        hasLegalValue: false
+      }
     }
   ];
 
-  const getResultBadge = (result) => {
-    switch (result) {
-      case 'positive':
-        return <Badge bg="success">Xác nhận quan hệ</Badge>;
-      case 'negative':
-        return <Badge bg="danger">Loại trừ quan hệ</Badge>;
-      case 'inconclusive':
-        return <Badge bg="warning">Không kết luận</Badge>;
+  const getResultBadge = (conclusion) => {
+    switch (conclusion) {
+      case 'POSITIVE':
+        return <Badge bg="success" className="fs-6">XÁC NHẬN QUAN HỆ</Badge>;
+      case 'NEGATIVE':
+        return <Badge bg="danger" className="fs-6">LOẠI TRỪ QUAN HỆ</Badge>;
+      case 'INCONCLUSIVE':
+        return <Badge bg="warning" className="fs-6">KHÔNG KẾT LUẬN</Badge>;
       default:
-        return <Badge bg="secondary">Chưa có kết quả</Badge>;
+        return <Badge bg="secondary" className="fs-6">CHƯA XÁC ĐỊNH</Badge>;
     }
   };
 
-  const handleViewResult = (result) => {
-    setSelectedResult(result);
+  const getServiceTypeBadge = (serviceType) => {
+    return serviceType === 'administrative' 
+      ? <Badge bg="warning" text="dark">Có giá trị pháp lý</Badge>
+      : <Badge bg="info">Dân sự</Badge>;
+  };
+
+  const handleViewResult = (appointment) => {
+    setSelectedResult(appointment);
     setShowResultModal(true);
   };
 
-  const handleDownload = (result, fileType = 'all') => {
-    console.log('Downloading result:', result.id, 'Type:', fileType);
-    alert(`Đang tải xuống kết quả ${result.id} - ${fileType}...`);
+  const handlePrintResult = () => {
+    window.print();
   };
-
-  const filteredResults = testResults.filter(result => {
-    const matchesSearch = result.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         result.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         result.participants.some(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesFilter = filterStatus === 'all' || result.result === filterStatus;
-    
-    return matchesSearch && matchesFilter;
-  });
 
   const formatDate = (dateString) => {
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     return new Date(dateString).toLocaleDateString('vi-VN', options);
   };
+
+  const filteredResults = completedAppointments.filter(appointment => 
+    appointment.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    appointment.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    appointment.participants.some(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
   return (
     <>
@@ -185,7 +147,7 @@ const TestResults = ({ user }) => {
           <div className="d-flex justify-content-between align-items-center">
             <div>
               <h2 className="mb-1">Kết quả xét nghiệm</h2>
-              <p className="text-muted mb-0">Xem và tải xuống kết quả xét nghiệm ADN</p>
+              <p className="text-muted mb-0">Xem và in kết quả xét nghiệm ADN của bạn</p>
             </div>
             <div className="d-none d-md-block">
               <Button variant="outline-primary" as={Link} to="/user/appointments">
@@ -197,7 +159,7 @@ const TestResults = ({ user }) => {
         </Col>
       </Row>
 
-      {/* Search and Filter */}
+      {/* Search */}
       <Row className="mb-4">
         <Col lg={6}>
           <Form.Control
@@ -207,121 +169,57 @@ const TestResults = ({ user }) => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </Col>
-        <Col lg={6} className="mt-3 mt-lg-0">
-          <Row>
-            <Col>
-              <Form.Select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-              >
-                <option value="all">Tất cả kết quả</option>
-                <option value="positive">Xác nhận quan hệ</option>
-                <option value="negative">Loại trừ quan hệ</option>
-                <option value="inconclusive">Không kết luận</option>
-              </Form.Select>
-            </Col>
-            <Col xs="auto">
-              <Button variant="outline-secondary">
-                <i className="bi bi-download me-1"></i>
-                Tải tất cả
-              </Button>
-            </Col>
-          </Row>
+        <Col lg={6} className="mt-3 mt-lg-0 text-lg-end">
+          <small className="text-muted">
+            <i className="bi bi-info-circle me-1"></i>
+            Hiển thị {filteredResults.length} kết quả đã hoàn thành
+          </small>
         </Col>
       </Row>
 
-      {/* In-Progress Tests */}
-      {inProgressTests.length > 0 && (
-        <Card className="shadow-sm mb-4">
-          <Card.Header className="bg-warning text-dark">
-            <h5 className="mb-0">
-              <i className="bi bi-clock me-2"></i>
-              Đang chờ kết quả ({inProgressTests.length})
-            </h5>
-          </Card.Header>
-          <Card.Body>
-            {inProgressTests.map(test => (
-              <div key={test.id} className="d-flex justify-content-between align-items-center p-3 bg-light rounded mb-2">
-                <div>
-                  <h6 className="mb-1">{test.service}</h6>
-                  <p className="text-muted small mb-2">
-                    Mã: {test.id} • Ngày xét nghiệm: {formatDate(test.testDate)}
-                  </p>
-                  <div className="mb-2">
-                    <div className="d-flex justify-content-between align-items-center mb-1">
-                      <small className="text-muted">{test.currentStep}</small>
-                      <small className="fw-bold">{test.progress}%</small>
-                    </div>
-                    <div className="progress" style={{ height: '6px' }}>
-                      <div 
-                        className="progress-bar bg-warning"
-                        style={{ width: `${test.progress}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                  <small className="text-success">
-                    <i className="bi bi-calendar-check me-1"></i>
-                    Dự kiến có kết quả: {formatDate(test.expectedDate)}
-                  </small>
-                </div>
-                <Button variant="outline-primary" as={Link} to={`/tracking/${test.id}`}>
-                  Theo dõi
-                </Button>
-              </div>
-            ))}
-          </Card.Body>
-        </Card>
-      )}
-
-      {/* Completed Results */}
+      {/* Results List */}
       <Card className="shadow-sm">
         <Card.Header className="bg-white border-bottom">
-          <div className="d-flex justify-content-between align-items-center">
-            <h5 className="mb-0">
-              <i className="bi bi-file-earmark-check me-2 text-success"></i>
-              Kết quả đã có ({filteredResults.length})
-            </h5>
-            <div>
-              <Badge bg="primary" className="me-2">{testResults.filter(r => r.hasLegalValue).length} có giá trị pháp lý</Badge>
-              <Badge bg="secondary">{testResults.filter(r => !r.hasLegalValue).length} dân sự</Badge>
-            </div>
-          </div>
+          <h5 className="mb-0">
+            <i className="bi bi-file-earmark-check me-2 text-success"></i>
+            Danh sách kết quả ({filteredResults.length})
+          </h5>
         </Card.Header>
         <Card.Body className="p-0">
           {filteredResults.length > 0 ? (
             <div className="list-group list-group-flush">
-              {filteredResults.map((result) => (
-                <div key={result.id} className="list-group-item p-4">
+              {filteredResults.map((appointment) => (
+                <div key={appointment.id} className="list-group-item p-4">
                   <Row>
                     <Col lg={8}>
                       {/* Result Header */}
                       <div className="d-flex justify-content-between align-items-start mb-3">
                         <div>
                           <h5 className="mb-2">
-                            {result.service}
-                            {result.hasLegalValue && (
-                              <Badge bg="warning" text="dark" className="ms-2">Có giá trị pháp lý</Badge>
-                            )}
+                            {appointment.service}
+                            <div className="mt-1">
+                              {getServiceTypeBadge(appointment.serviceType)}
+                            </div>
                           </h5>
                           <div className="d-flex align-items-center gap-3 text-muted mb-2">
                             <span>
                               <i className="bi bi-hash me-1"></i>
-                              {result.id}
+                              Mã: {appointment.id}
                             </span>
                             <span>
                               <i className="bi bi-calendar me-1"></i>
-                              Ngày xét nghiệm: {formatDate(result.testDate)}
+                              Xét nghiệm: {formatDate(appointment.appointmentDate)}
                             </span>
                             <span>
                               <i className="bi bi-check-circle me-1"></i>
-                              Ngày có KQ: {formatDate(result.resultDate)}
+                              Có kết quả: {formatDate(appointment.completionDate)}
                             </span>
                           </div>
                         </div>
                         <div className="text-end">
-                          {getResultBadge(result.result)}
+                          {getResultBadge(appointment.result.conclusion)}
                           <div className="text-muted small mt-1">
-                            Độ chính xác: {result.confidence}
+                            Độ chính xác: {appointment.result.confidence}
                           </div>
                         </div>
                       </div>
@@ -330,7 +228,7 @@ const TestResults = ({ user }) => {
                       <div className="mb-3">
                         <strong className="text-muted small">Người tham gia xét nghiệm:</strong>
                         <Row className="mt-2">
-                          {result.participants.map((participant, idx) => (
+                          {appointment.participants.map((participant, idx) => (
                             <Col key={idx} sm={6} className="mb-2">
                               <div className="d-flex align-items-center p-2 bg-light rounded">
                                 <i className="bi bi-person me-2 text-primary"></i>
@@ -344,13 +242,16 @@ const TestResults = ({ user }) => {
                         </Row>
                       </div>
 
-                      {/* Conclusion Summary */}
+                      {/* Result Summary */}
                       <Alert 
-                        variant={result.result === 'positive' ? 'success' : result.result === 'negative' ? 'danger' : 'warning'}
+                        variant={
+                          appointment.result.conclusion === 'POSITIVE' ? 'success' : 
+                          appointment.result.conclusion === 'NEGATIVE' ? 'danger' : 'warning'
+                        }
                         className="mb-3 py-2"
                       >
                         <i className="bi bi-clipboard-check me-2"></i>
-                        <strong>Kết luận:</strong> {result.conclusion.substring(0, 100)}...
+                        <strong>Kết luận:</strong> {appointment.result.summary}
                       </Alert>
 
                       {/* Technical Info */}
@@ -358,17 +259,13 @@ const TestResults = ({ user }) => {
                         <Row>
                           <Col sm={6}>
                             <i className="bi bi-flask me-1"></i>
-                            Mã phòng lab: {result.labCode}
+                            Mã lab: {appointment.result.labCode}
                           </Col>
                           <Col sm={6}>
                             <i className="bi bi-person-badge me-1"></i>
-                            Kỹ thuật viên: {result.technician}
+                            KTV: {appointment.result.technician}
                           </Col>
                         </Row>
-                        <div className="mt-1">
-                          <i className="bi bi-files me-1"></i>
-                          Số file: {result.files.length} • Báo cáo số: {result.reportNumber}
-                        </div>
                       </div>
                     </Col>
 
@@ -377,38 +274,22 @@ const TestResults = ({ user }) => {
                       <div className="d-grid gap-2">
                         <Button 
                           variant="primary"
-                          onClick={() => handleViewResult(result)}
+                          onClick={() => handleViewResult(appointment)}
                         >
                           <i className="bi bi-eye me-2"></i>
-                          Xem báo cáo chi tiết
+                          Xem kết quả chi tiết
                         </Button>
 
                         <Button 
                           variant="success"
-                          onClick={() => handleDownload(result)}
+                          onClick={() => {
+                            setSelectedResult(appointment);
+                            setTimeout(() => window.print(), 500);
+                          }}
                         >
-                          <i className="bi bi-download me-2"></i>
-                          Tải tất cả file
+                          <i className="bi bi-printer me-2"></i>
+                          In kết quả
                         </Button>
-
-                        {result.files.length > 1 && (
-                          <div className="btn-group" role="group">
-                            <Button 
-                              variant="outline-success" 
-                              onClick={() => handleDownload(result, 'official')}
-                              className="flex-fill small"
-                            >
-                              Báo cáo chính
-                            </Button>
-                            <Button 
-                              variant="outline-info"
-                              onClick={() => handleDownload(result, 'detailed')}
-                              className="flex-fill small"
-                            >
-                              Chi tiết
-                            </Button>
-                          </div>
-                        )}
 
                         <Button variant="outline-primary" as={Link} to="/user/support">
                           <i className="bi bi-question-circle me-2"></i>
@@ -424,15 +305,15 @@ const TestResults = ({ user }) => {
             <div className="text-center py-5">
               <i className="bi bi-file-earmark-x text-muted" style={{ fontSize: '4rem' }}></i>
               <h5 className="text-muted mt-3">
-                {searchTerm || filterStatus !== 'all' ? 'Không tìm thấy kết quả nào' : 'Chưa có kết quả xét nghiệm'}
+                {searchTerm ? 'Không tìm thấy kết quả nào' : 'Chưa có kết quả xét nghiệm'}
               </h5>
               <p className="text-muted">
-                {searchTerm || filterStatus !== 'all' 
-                  ? 'Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc'
+                {searchTerm 
+                  ? 'Thử thay đổi từ khóa tìm kiếm'
                   : 'Kết quả sẽ hiển thị ở đây sau khi xét nghiệm hoàn tất'
                 }
               </p>
-              {!searchTerm && filterStatus === 'all' && (
+              {!searchTerm && (
                 <Button variant="warning" as={Link} to="/appointment">
                   <i className="bi bi-plus-circle me-2"></i>
                   Đặt lịch xét nghiệm
@@ -443,164 +324,157 @@ const TestResults = ({ user }) => {
         </Card.Body>
       </Card>
 
-      {/* Result Detail Modal - Invoice Style */}
-      <Modal show={showResultModal} onHide={() => setShowResultModal(false)} size="lg">
+      {/* Result Detail Modal */}
+      <Modal show={showResultModal} onHide={() => setShowResultModal(false)} size="xl">
         <Modal.Header closeButton>
           <Modal.Title>
             <i className="bi bi-file-earmark-medical me-2"></i>
-            Báo cáo kết quả xét nghiệm
+            Kết quả xét nghiệm chi tiết
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {selectedResult && (
-            <div className="result-report">
-              {/* Header - Company Info */}
-              <div className="text-center mb-4">
-                <h4>TRUNG TÂM XÉT NGHIỆM ADN LAB</h4>
-                <p className="text-muted">123 Đường ABC, Quận XYZ, Hà Nội</p>
-                <p className="text-muted">Hotline: 1900 1234 | Email: info@adnlab.vn</p>
-                <hr />
-                <h5>BÁO CÁO KẾT QUẢ XÉT NGHIỆM ADN</h5>
-                <p>Số báo cáo: <strong>{selectedResult.reportNumber}</strong></p>
+            <div className="result-report" id="printable-result">
+              {/* Header */}
+              <div className="text-center mb-4 border-bottom pb-3">
+                <h3>TRUNG TÂM XÉT NGHIỆM ADN LAB</h3>
+                <p className="text-muted mb-1">123 Đường ABC, Quận XYZ, Hà Nội</p>
+                <p className="text-muted mb-1">Hotline: 1900 1234 | Email: info@adnlab.vn</p>
+                <h4 className="text-primary mt-3 mb-0">KẾT QUẢ XÉT NGHIỆM ADN</h4>
+                <p className="mb-0">Mã xét nghiệm: <strong>{selectedResult.id}</strong></p>
               </div>
 
-              {/* Customer & Test Info */}
-              <Table borderless className="mb-4">
-                <tbody>
-                  <tr>
-                    <td><strong>Mã xét nghiệm:</strong></td>
-                    <td>{selectedResult.id}</td>
-                    <td><strong>Dịch vụ:</strong></td>
-                    <td>{selectedResult.service}</td>
-                  </tr>
-                  <tr>
-                    <td><strong>Ngày lấy mẫu:</strong></td>
-                    <td>{formatDate(selectedResult.testDate)}</td>
-                    <td><strong>Ngày có kết quả:</strong></td>
-                    <td>{formatDate(selectedResult.resultDate)}</td>
-                  </tr>
-                  <tr>
-                    <td><strong>Mã phòng lab:</strong></td>
-                    <td>{selectedResult.labCode}</td>
-                    <td><strong>Kỹ thuật viên:</strong></td>
-                    <td>{selectedResult.technician}</td>
-                  </tr>
-                  <tr>
-                    <td><strong>Phương pháp phân tích:</strong></td>
-                    <td colSpan="3">{selectedResult.analysisMethod}</td>
-                  </tr>
-                </tbody>
-              </Table>
+              {/* Basic Info */}
+              <Row className="mb-4">
+                <Col md={6}>
+                  <h6 className="text-primary mb-3">Thông tin chung</h6>
+                  <table className="table table-borderless table-sm">
+                    <tbody>
+                      <tr>
+                        <td><strong>Dịch vụ:</strong></td>
+                        <td>{selectedResult.service}</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Loại xét nghiệm:</strong></td>
+                        <td>{getServiceTypeBadge(selectedResult.serviceType)}</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Ngày lấy mẫu:</strong></td>
+                        <td>{formatDate(selectedResult.appointmentDate)}</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Ngày có kết quả:</strong></td>
+                        <td>{formatDate(selectedResult.completionDate)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </Col>
+                <Col md={6}>
+                  <h6 className="text-primary mb-3">Thông tin kỹ thuật</h6>
+                  <table className="table table-borderless table-sm">
+                    <tbody>
+                      <tr>
+                        <td><strong>Phương pháp:</strong></td>
+                        <td>{selectedResult.result.method}</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Loại mẫu:</strong></td>
+                        <td>{selectedResult.result.sampleType}</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Mã phòng lab:</strong></td>
+                        <td>{selectedResult.result.labCode}</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Kỹ thuật viên:</strong></td>
+                        <td>{selectedResult.result.technician}</td>
+                      </tr>
+                      {selectedResult.result.gestationalAge && (
+                        <tr>
+                          <td><strong>Tuổi thai:</strong></td>
+                          <td>{selectedResult.result.gestationalAge}</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </Col>
+              </Row>
 
-              <hr />
-
-              {/* Participants Info */}
+              {/* Participants */}
               <div className="mb-4">
                 <h6 className="text-primary mb-3">Thông tin người tham gia</h6>
-                <Table bordered>
-                  <thead>
-                    <tr>
-                      <th>Họ và tên</th>
-                      <th>Vai trò</th>
-                      <th>CCCD/CMND</th>
-                      <th>Loại mẫu</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedResult.participants.map((participant, index) => (
-                      <tr key={index}>
-                        <td><strong>{participant.name}</strong></td>
-                        <td>{participant.role}</td>
-                        <td>{participant.idNumber}</td>
-                        <td>{selectedResult.sampleType}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              </div>
-
-              <hr />
-
-              {/* Test Results */}
-              <div className="mb-4">
-                <h6 className="text-primary mb-3">Kết quả xét nghiệm</h6>
-                <Table bordered>
-                  <tbody>
-                    <tr>
-                      <td><strong>Kết quả:</strong></td>
-                      <td>
-                        {getResultBadge(selectedResult.result)}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td><strong>Độ chính xác:</strong></td>
-                      <td><strong className="text-success">{selectedResult.confidence}</strong></td>
-                    </tr>
-                    <tr>
-                      <td><strong>Phương pháp:</strong></td>
-                      <td>{selectedResult.analysisMethod}</td>
-                    </tr>
-                    {selectedResult.gestationalAge && (
+                <div className="table-responsive">
+                  <table className="table table-bordered">
+                    <thead className="table-light">
                       <tr>
-                        <td><strong>Tuổi thai:</strong></td>
-                        <td>{selectedResult.gestationalAge}</td>
+                        <th>Họ và tên</th>
+                        <th>Vai trò</th>
+                        <th>Mối quan hệ</th>
+                        <th>Loại mẫu</th>
                       </tr>
-                    )}
-                    <tr>
-                      <td><strong>Giá trị pháp lý:</strong></td>
-                      <td>
-                        {selectedResult.hasLegalValue ? (
-                          <Badge bg="success">Có giá trị pháp lý đầy đủ</Badge>
-                        ) : (
-                          <Badge bg="secondary">Chỉ mang tính tham khảo</Badge>
-                        )}
-                      </td>
-                    </tr>
-                  </tbody>
-                </Table>
+                    </thead>
+                    <tbody>
+                      {selectedResult.participants.map((participant, index) => (
+                        <tr key={index}>
+                          <td><strong>{participant.name}</strong></td>
+                          <td>{participant.role}</td>
+                          <td>{participant.relationship}</td>
+                          <td>{selectedResult.result.sampleType}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
-              {/* Conclusion */}
-              <Alert variant={selectedResult.result === 'positive' ? 'success' : selectedResult.result === 'negative' ? 'danger' : 'warning'}>
-                <Alert.Heading>
+              {/* Main Result */}
+              <div className="mb-4 p-4 border rounded">
+                <h5 className="text-center mb-3">
                   <i className="bi bi-clipboard-check me-2"></i>
-                  Kết luận chuyên môn:
-                </Alert.Heading>
-                <p className="mb-0">{selectedResult.conclusion}</p>
-              </Alert>
+                  KẾT QUẢ XÉT NGHIỆM
+                </h5>
+                
+                <div className="text-center mb-4">
+                  {getResultBadge(selectedResult.result.conclusion)}
+                  <div className="h4 text-primary mt-2">
+                    Độ chính xác: {selectedResult.result.confidence}
+                  </div>
+                </div>
+
+                <Alert 
+                  variant={
+                    selectedResult.result.conclusion === 'POSITIVE' ? 'success' : 
+                    selectedResult.result.conclusion === 'NEGATIVE' ? 'danger' : 'warning'
+                  }
+                  className="text-center"
+                >
+                  <Alert.Heading>Kết luận:</Alert.Heading>
+                  <p className="mb-0 h6">{selectedResult.result.summary}</p>
+                </Alert>
+
+                <div className="mt-3">
+                  <h6>Chi tiết kết quả:</h6>
+                  <p className="mb-0">{selectedResult.result.details}</p>
+                </div>
+              </div>
 
               {/* Legal Notice */}
-              {selectedResult.hasLegalValue && (
-                <Alert variant="warning">
+              {selectedResult.result.hasLegalValue && (
+                <Alert variant="warning" className="mb-4">
                   <i className="bi bi-shield-check me-2"></i>
-                  <strong>Lưu ý:</strong> Báo cáo này có đầy đủ giá trị pháp lý và được công nhận bởi các cơ quan tòa án, 
-                  cơ quan nhà nước trong các thủ tục hành chính.
+                  <strong>Giá trị pháp lý:</strong> Kết quả này có đầy đủ giá trị pháp lý và được 
+                  công nhận bởi các cơ quan tòa án, cơ quan nhà nước trong các thủ tục hành chính.
                 </Alert>
               )}
 
-              {/* Available Files */}
-              <div className="mb-4">
-                <h6 className="text-primary mb-3">File báo cáo đính kèm</h6>
-                {selectedResult.files.map((file, index) => (
-                  <div key={index} className="d-flex justify-content-between align-items-center p-2 border rounded mb-2">
-                    <div>
-                      <i className="bi bi-file-earmark-pdf text-danger me-2"></i>
-                      <strong>{file.name}</strong>
-                      <span className="text-muted ms-2">({file.size})</span>
-                    </div>
-                    <Button size="sm" variant="outline-primary">
-                      <i className="bi bi-download"></i>
-                    </Button>
-                  </div>
-                ))}
-              </div>
-
-              {/* Lab Info */}
-              <div className="mt-4 text-center">
+              {/* Footer */}
+              <div className="mt-4 pt-3 border-top text-center">
                 <small className="text-muted">
-                  <strong>Địa chỉ phòng lab:</strong> {selectedResult.labAddress}
+                  <strong>Địa chỉ phòng lab:</strong> 123 Đường ABC, Quận XYZ, Hà Nội
                   <br />
-                  Báo cáo này được ký và xác nhận bởi kỹ thuật viên: <strong>{selectedResult.technician}</strong>
+                  Kết quả được ký và xác nhận bởi: <strong>{selectedResult.result.technician}</strong>
+                  <br />
+                  <em>Ngày in: {new Date().toLocaleDateString('vi-VN')}</em>
                   <br />
                   <em>Mọi thắc mắc xin liên hệ hotline: 1900 1234</em>
                 </small>
@@ -608,20 +482,57 @@ const TestResults = ({ user }) => {
             </div>
           )}
         </Modal.Body>
-        <Modal.Footer>
+        <Modal.Footer className="d-print-none">
           <Button variant="secondary" onClick={() => setShowResultModal(false)}>
             Đóng
           </Button>
-          <Button variant="info" onClick={() => handleDownload(selectedResult)}>
-            <i className="bi bi-download me-2"></i>
-            Tải báo cáo
-          </Button>
-          <Button variant="primary" onClick={() => window.print()}>
+          <Button variant="success" onClick={handlePrintResult}>
             <i className="bi bi-printer me-2"></i>
-            In báo cáo
+            In kết quả
           </Button>
         </Modal.Footer>
       </Modal>
+
+      {/* Print Styles */}
+      <style jsx>{`
+        @media print {
+          .d-print-none {
+            display: none !important;
+          }
+          
+          .result-report {
+            font-size: 12px;
+            line-height: 1.4;
+          }
+          
+          .result-report h3 {
+            font-size: 18px;
+          }
+          
+          .result-report h4 {
+            font-size: 16px;
+          }
+          
+          .result-report h5, .result-report h6 {
+            font-size: 14px;
+          }
+          
+          .table {
+            font-size: 11px;
+          }
+          
+          .alert {
+            border: 1px solid #ccc !important;
+            background-color: #f8f9fa !important;
+          }
+          
+          .badge {
+            border: 1px solid #000 !important;
+            background-color: #fff !important;
+            color: #000 !important;
+          }
+        }
+      `}</style>
     </>
   );
 };

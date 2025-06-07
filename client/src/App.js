@@ -33,6 +33,10 @@ import PaymentSuccess from './components/payment/PaymentSuccess';
 import Sitemap from './components/Sitemap';
 import LoadingSpinner from './components/common/LoadingSpinner';
 
+// Test Results Components
+import TestResults from './components/user/TestResults';
+import PrintableResult from './components/user/PrintableResult';
+
 // Protected Route Component
 const ProtectedRoute = ({ children, user, requiredRole }) => {
   if (!user) {
@@ -118,7 +122,13 @@ function App() {
             <Route path="/user/*" element={<UserDashboard user={user} />} />
             <Route path="/user/appointments" element={<UserDashboard user={user} />} />
             <Route path="/user/profile" element={<UserDashboard user={user} />} />
-            <Route path="/user/results" element={<UserDashboard user={user} />} />
+            <Route path="/results" element={<TestResults user={user} />} />
+            <Route path="/results/:resultId" element={<TestResults user={user} />} />
+            <Route path="/print-result/:resultId" element={
+              <div className="container-fluid p-0">
+                <PrintableResult />
+              </div>
+            } />
             
             {/* Staff Dashboard Routes */}
             <Route path="/staff/*" element={<StaffDashboard />} />

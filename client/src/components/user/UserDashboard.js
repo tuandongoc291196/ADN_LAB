@@ -38,8 +38,13 @@ const UserDashboard = ({ user }) => {
     pendingResults: 2
   };
 
-  const menuItems = [
-    {
+  const menuItems = [    {
+      key: 'overview',
+      label: 'Tổng quan',
+      icon: 'bi-house',
+      path: '/user',
+      color: 'primary',
+    },{
       key: 'appointments',
       label: 'Lịch hẹn của tôi',
       icon: 'bi-calendar-event',

@@ -153,9 +153,9 @@ const About = () => {
             </Col>
             <Col lg={4} className="text-center">
               <img 
-                src="https://via.placeholder.com/400x300/ffffff/007bff?text=DNA+LAB" 
+                src="https://firebasestorage.googleapis.com/v0/b/su25-swp391-g8.firebasestorage.app/o/logo_white.png?alt=media&token=44fdd000-d567-4b01-b3b0-590270b573e9" 
                 alt="ADN LAB" 
-                className="img-fluid rounded-4 shadow-lg"
+                className="img-fluid"
               />
             </Col>
           </Row>
