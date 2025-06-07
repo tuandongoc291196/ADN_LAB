@@ -1,96 +1,33 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Row, Col, Card, Button, Alert, Badge, ProgressBar } from 'react-bootstrap';
+import ResultsSummary from './ResultsSummary';
 
 const DashboardOverview = ({ user }) => {
   // Mock data for recent activities and upcoming appointments
   const recentAppointments = [
     {
-      id: 'ADN123456',
+      id: 'ADN123460',
       service: 'Xét nghiệm ADN huyết thống cha-con',
-      date: '2024-01-20',
+      date: '2024-02-01',
       time: '09:00',
       status: 'confirmed',
-      method: 'self-sample',
-      progress: 60
+      method: 'at-facility',
+      progress: 20,
+      nextAction: 'Chuẩn bị cho lịch hẹn'
     },
     {
-      id: 'ADN123457',
-      service: 'Xét nghiệm ADN thai nhi',
-      date: '2024-01-18',
+      id: 'ADN123461',
+      service: 'Xét nghiệm ADN anh chị em',
+      date: '2024-01-29',
       time: '14:30',
-      status: 'completed',
-      method: 'at-facility',
-      progress: 100
-    },
-    {
-      id: 'ADN123458',
-      service: 'Xét nghiệm ADN khai sinh',
-      date: '2024-01-15',
-      time: '10:00',
       status: 'in-progress',
-      method: 'at-facility',
-      progress: 80
+      method: 'home-visit',
+      progress: 75,
+      nextAction: 'Đang phân tích mẫu tại phòng lab'
     }
   ];
 
-  const notifications = [
-    {
-      id: 1,
-      type: 'success',
-      title: 'Kết quả đã sẵn sàng',
-      message: 'Kết quả xét nghiệm ADN123457 đã có thể tải về',
-      time: '2 giờ trước',
-      action: 'Xem kết quả'
-    },
-    {
-      id: 2,
-      type: 'warning',
-      title: 'Nhắc nhở thu mẫu',
-      message: 'Vui lòng thu mẫu cho đơn ADN123456 và gửi về trong 2 ngày',
-      time: '1 ngày trước',
-      action: 'Xem hướng dẫn'
-    },
-    {
-      id: 3,
-      type: 'info',
-      title: 'Lịch hẹn sắp tới',
-      message: 'Bạn có lịch hẹn vào ngày mai lúc 09:00',
-      time: '1 ngày trước',
-      action: 'Xem chi tiết'
-    }
-  ];
-
-  const quickStats = [
-    {
-      title: 'Lịch hẹn tổng',
-      value: user.totalAppointments,
-      icon: 'bi-calendar-event',
-      color: 'primary',
-      trend: '+2 tháng này'
-    },
-    {
-      title: 'Đã hoàn thành',
-      value: user.completedTests,
-      icon: 'bi-check-circle',
-      color: 'success',
-      trend: '+1 tuần này'
-    },
-    {
-      title: 'Chờ kết quả',
-      value: user.pendingResults,
-      icon: 'bi-clock-history',
-      color: 'warning',
-      trend: 'Dự kiến 2-3 ngày'
-    },
-    {
-      title: 'Đánh giá',
-      value: '4.8/5',
-      icon: 'bi-star-fill',
-      color: 'info',
-      trend: 'Dựa trên 5 đánh giá'
-    }
-  ];
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -145,15 +82,18 @@ const DashboardOverview = ({ user }) => {
         </Col>
       </Row>
 
-      <Row>
-        {/* Recent Appointments */}
-        <Col className="mb-4">
+      {/* Results Summary */}
+      <ResultsSummary user={user} />
+
+      {/* Recent Appointments */}
+      <Row className="mt-4">
+        <Col lg={8} className="mb-4">
           <Card className="shadow-sm">
             <Card.Header className="bg-white border-bottom">
               <div className="d-flex justify-content-between align-items-center">
                 <h5 className="mb-0">
                   <i className="bi bi-calendar-event me-2 text-primary"></i>
-                  Lịch hẹn gần đây
+                  Lịch hẹn sắp tới
                 </h5>
                 <Button variant="outline-primary" size="sm" as={Link} to="/user/appointments">
                   Xem tất cả
@@ -182,12 +122,12 @@ const DashboardOverview = ({ user }) => {
                           {/* Progress Bar */}
                           <div className="mb-2">
                             <div className="d-flex justify-content-between align-items-center mb-1">
-                              <small className="text-muted">Tiến độ thực hiện</small>
+                              <small className="text-muted">{appointment.nextAction}</small>
                               <small className="fw-bold">{appointment.progress}%</small>
                             </div>
                             <ProgressBar
                               now={appointment.progress}
-                              variant={appointment.progress === 100 ? 'success' : 'primary'}
+                              variant={appointment.progress === 100 ? 'success' : appointment.progress > 50 ? 'warning' : 'primary'}
                               style={{ height: '6px' }}
                             />
                           </div>
@@ -211,7 +151,7 @@ const DashboardOverview = ({ user }) => {
               ) : (
                 <div className="text-center py-5">
                   <i className="bi bi-calendar-x text-muted" style={{ fontSize: '3rem' }}></i>
-                  <h6 className="text-muted mt-3">Chưa có lịch hẹn nào</h6>
+                  <h6 className="text-muted mt-3">Không có lịch hẹn sắp tới</h6>
                   <Button variant="primary" as={Link} to="/appointment">
                     Đặt lịch đầu tiên
                   </Button>
@@ -220,51 +160,36 @@ const DashboardOverview = ({ user }) => {
             </Card.Body>
           </Card>
         </Col>
+      </Row>
 
-        {/* Notifications */}
-        {/* <Col lg={4}>
-          <Card className="shadow-sm mb-4">
-            <Card.Header className="bg-white border-bottom">
-              <h5 className="mb-0">
-                <i className="bi bi-bell me-2 text-warning"></i>
-                Thông báo
-              </h5>
-            </Card.Header>
-            <Card.Body className="p-0">
-              {notifications.length > 0 ? (
-                <div className="list-group list-group-flush">
-                  {notifications.slice(0, 3).map(notification => (
-                    <div key={notification.id} className="list-group-item px-3 py-3">
-                      <div className="d-flex align-items-start">
-                        <div className={`bg-${notification.type} bg-opacity-10 rounded-circle p-2 me-3 mt-1`}>
-                          <i className={`bi ${notification.type === 'success' ? 'bi-check-circle' :
-                              notification.type === 'warning' ? 'bi-exclamation-triangle' :
-                                'bi-info-circle'
-                            } text-${notification.type}`}></i>
-                        </div>
-                        <div className="flex-grow-1">
-                          <h6 className="mb-1">{notification.title}</h6>
-                          <p className="mb-2 small text-muted">{notification.message}</p>
-                          <div className="d-flex justify-content-between align-items-center">
-                            <small className="text-muted">{notification.time}</small>
-                            <Button variant={`outline-${notification.type}`} size="sm">
-                              {notification.action}
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-4">
-                  <i className="bi bi-bell-slash text-muted fs-1"></i>
-                  <p className="text-muted mt-2 mb-0">Không có thông báo mới</p>
-                </div>
-              )}
+      {/* Quick Actions */}
+      <Row>
+        <Col>
+          <Card className="border-0 shadow-sm bg-light">
+            <Card.Body className="py-3">
+              <Row className="align-items-center">
+                <Col md={8}>
+                  <h6 className="mb-1">Cần hỗ trợ hoặc có thắc mắc?</h6>
+                  <p className="text-muted small mb-0">
+                    Đội ngũ chuyên gia của chúng tôi sẵn sàng tư vấn và hỗ trợ bạn 24/7
+                  </p>
+                </Col>
+                <Col md={4} className="text-md-end mt-3 mt-md-0">
+                  <div className="d-flex gap-2 justify-content-md-end">
+                    <Button variant="primary" size="sm">
+                      <i className="bi bi-telephone me-1"></i>
+                      1900 1234
+                    </Button>
+                    <Button variant="outline-primary" size="sm" as={Link} to="/user/support">
+                      <i className="bi bi-headset me-1"></i>
+                      Hỗ trợ
+                    </Button>
+                  </div>
+                </Col>
+              </Row>
             </Card.Body>
           </Card>
-        </Col> */}
+        </Col>
       </Row>
     </>
   );
