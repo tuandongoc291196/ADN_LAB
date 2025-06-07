@@ -57,6 +57,7 @@ const UserDashboard = ({ user }) => {
       label: 'Kết quả xét nghiệm',
       icon: 'bi-file-earmark-check',
       path: '/user/results',
+      badge: currentUser.pendingResults,
       color: 'warning'
     },
     {
@@ -64,6 +65,7 @@ const UserDashboard = ({ user }) => {
       label: 'Hồ sơ cá nhân',
       icon: 'bi-person',
       path: '/user/profile',
+      badge: currentUser.pendingResults,
       color: 'info'
     },
     {

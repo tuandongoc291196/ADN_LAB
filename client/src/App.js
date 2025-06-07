@@ -37,6 +37,10 @@ import LoadingSpinner from './components/common/LoadingSpinner';
 import TestResults from './components/user/TestResults';
 import PrintableResult from './components/user/PrintableResult';
 
+// User Information Components
+import UserProfile from './components/user/UserProfile';
+import MyAppointments from './components/user/MyAppointments';
+
 // Protected Route Component
 const ProtectedRoute = ({ children, user, requiredRole }) => {
   if (!user) {
@@ -120,8 +124,8 @@ function App() {
             
             {/* Customer Dashboard Routes */}
             <Route path="/user/*" element={<UserDashboard user={user} />} />
-            <Route path="/user/appointments" element={<UserDashboard user={user} />} />
-            <Route path="/user/profile" element={<UserDashboard user={user} />} />
+            <Route path="/appointments" element={<MyAppointments user={user} />} />
+            <Route path="/profile" element={<UserProfile user={user} />} />
             <Route path="/results" element={<TestResults user={user} />} />
             <Route path="/results/:resultId" element={<TestResults user={user} />} />
             <Route path="/print-result/:resultId" element={
