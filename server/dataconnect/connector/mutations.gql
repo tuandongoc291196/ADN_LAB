@@ -1,0 +1,70 @@
+# Mutations for ADN Lab Firebase Data Connect - Users Only
+# Chat functionality remains in Firestore
+
+# Create or update user (upsert)
+mutation UpsertUser(
+  $fullname: String!
+  $email: String!
+  $authProvider: String!
+  $gender: String
+  $avatar: String
+  $phone: String
+  $addressShipping: String
+  $role: Boolean
+  $roleString: String
+) @auth(level: USER) {
+  user_upsert(data: {
+    id_expr: "auth.uid"
+    fullname: $fullname
+    email: $email
+    authProvider: $authProvider
+    gender: $gender
+    avatar: $avatar
+    phone: $phone
+    addressShipping: $addressShipping
+    role: $role
+    roleString: $roleString
+  })
+}
+
+# Update last login time
+mutation UpdateLastLogin @auth(level: USER) {
+  user_update(
+    key: { id_expr: "auth.uid" }
+    data: { lastLogin_expr: "request.time" }
+  )
+}
+
+# Update user profile
+mutation UpdateUserProfile(
+  $fullname: String
+  $gender: String
+  $phone: String
+  $addressShipping: String
+) @auth(level: USER) {
+  user_update(
+    key: { id_expr: "auth.uid" }
+    data: {
+      fullname: $fullname
+      gender: $gender
+      phone: $phone
+      addressShipping: $addressShipping
+    }
+  )
+}
+
+# Admin: Update user role
+mutation UpdateUserRole($userId: String!, $roleString: String!, $role: Boolean!) @auth(level: USER) {
+  user_update(
+    key: { id: $userId }
+    data: { roleString: $roleString, role: $role }
+  )
+}
+
+# Admin: Update user account status
+mutation UpdateAccountStatus($userId: String!, $accountStatus: String!) @auth(level: USER) {
+  user_update(
+    key: { id: $userId }
+    data: { accountStatus: $accountStatus }
+  )
+}

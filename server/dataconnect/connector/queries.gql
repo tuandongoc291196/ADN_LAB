@@ -1,0 +1,60 @@
+# Queries for ADN Lab Firebase Data Connect - Users Only
+# Chat functionality remains in Firestore
+
+# Get user by Firebase Auth UID
+query GetUser @auth(level: USER) {
+  user(key: { id_expr: "auth.uid" }) {
+    id
+    fullname
+    gender
+    avatar
+    email
+    accountStatus
+    authProvider
+    phone
+    addressShipping
+    role
+    roleString
+    createdAt
+    lastLogin
+  }
+}
+
+# Get user by email (for admin purposes)
+query GetUserByEmail($email: String!) @auth(level: USER) {
+  users(where: { email: { eq: $email } }) {
+    id
+    fullname
+    gender
+    avatar
+    email
+    accountStatus
+    authProvider
+    phone
+    addressShipping
+    role
+    roleString
+    createdAt
+    lastLogin
+  }
+}
+
+# List all users (admin only)
+query ListUsers @auth(level: USER) {
+  users {
+    id
+    fullname
+    email
+    accountStatus
+    roleString
+    createdAt
+    lastLogin
+  }
+}
+
+# Check if user exists
+query UserExists @auth(level: USER) {
+  user(key: { id_expr: "auth.uid" }) {
+    id
+  }
+}

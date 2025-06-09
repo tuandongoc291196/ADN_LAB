@@ -1,0 +1,20 @@
+# Schema for ADN Lab Firebase Data Connect - Users Table Only
+# Chat functionality remains in Firestore
+
+# User table - keyed by Firebase Auth UID
+type User @table {
+  # Firebase Auth UID as primary key
+  id: String! @default(expr: "auth.uid")
+  fullname: String!
+  gender: String
+  avatar: String
+  email: String! @unique
+  accountStatus: String! @default(value: "active")
+  authProvider: String!
+  phone: String
+  addressShipping: String
+  role: Boolean! @default(value: false)
+  roleString: String! @default(value: "customer")
+  createdAt: Timestamp! @default(expr: "request.time")
+  lastLogin: Timestamp
+}

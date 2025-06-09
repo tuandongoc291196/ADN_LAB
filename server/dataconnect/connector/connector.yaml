@@ -1,0 +1,7 @@
+connectorId: "default"
+# Generate JavaScript SDK for the client
+generate:
+  javascriptSdk:
+    outputDir: "../../../client/src/lib/dataconnect"
+    package: "@firebasegen/adnlab-connector"
+    packageJsonDir: "../../../client"
