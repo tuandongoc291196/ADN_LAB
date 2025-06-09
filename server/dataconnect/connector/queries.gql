@@ -1,7 +1,48 @@
-# Queries for ADN Lab Firebase Data Connect - Users Only
+# Queries for ADN Lab Firebase Data Connect - Users and Roles
 # Chat functionality remains in Firestore
 
-# Get user by Firebase Auth UID
+# ====== ROLE QUERIES ======
+
+# Get all roles
+query GetRoles @auth(level: USER) {
+  roles(where: { isActive: { eq: true } }) {
+    id
+    name
+    description
+    permissions
+    isActive
+    createdAt
+    updatedAt
+  }
+}
+
+# Get role by ID
+query GetRoleById($roleId: String!) @auth(level: USER) {
+  role(key: { id: $roleId }) {
+    id
+    name
+    description
+    permissions
+    isActive
+    createdAt
+    updatedAt
+  }
+}
+
+# Get role by name
+query GetRoleByName($roleName: String!) @auth(level: USER) {
+  roles(where: { name: { eq: $roleName } }) {
+    id
+    name
+    description
+    permissions
+    isActive
+  }
+}
+
+# ====== USER QUERIES ======
+
+# Get user by Firebase Auth UID with role information
 query GetUser @auth(level: USER) {
   user(key: { id_expr: "auth.uid" }) {
     id
@@ -13,7 +54,15 @@ query GetUser @auth(level: USER) {
     authProvider
     phone
     addressShipping
-    role
+    roleId
+    role {
+      id
+      name
+      description
+      permissions
+    }
+    # Legacy fields for backward compatibility
+    isAdmin
     roleString
     createdAt
     lastLogin
@@ -32,7 +81,12 @@ query GetUserByEmail($email: String!) @auth(level: USER) {
     authProvider
     phone
     addressShipping
-    role
+    roleId
+    role {
+      id
+      name
+      description
+    }
     roleString
     createdAt
     lastLogin
@@ -46,9 +100,85 @@ query ListUsers @auth(level: USER) {
     fullname
     email
     accountStatus
+    roleId
+    role {
+      name
+      description
+    }
     roleString
     createdAt
     lastLogin
+  }
+}
+
+# Get users by role
+query GetUsersByRole($roleId: String!) @auth(level: USER) {
+  users(where: { roleId: { eq: $roleId } }) {
+    id
+    fullname
+    email
+    accountStatus
+    role {
+      name
+      description
+    }
+    createdAt
+    lastLogin
+  }
+}
+
+# Get users by role name
+query GetUsersByRoleName($roleName: String!) @auth(level: USER) {
+  users(where: { role: { name: { eq: $roleName } } }) {
+    id
+    fullname
+    email
+    accountStatus
+    phone
+    role {
+      id
+      name
+      description
+    }
+    createdAt
+    lastLogin
+  }
+}
+
+# Get staff members (staff, manager, admin roles)
+query GetStaffMembers @auth(level: USER) {
+  users(
+    where: { 
+      role: { 
+        name: { in: ["staff", "manager", "admin"] }
+      },
+      accountStatus: { eq: "active" }
+    }
+  ) {
+    id
+    fullname
+    email
+    phone
+    role {
+      name
+      description
+    }
+  }
+}
+
+# Count users by role (for admin dashboard)
+query CountUsersByRole @auth(level: USER) {
+  customers: users(where: { role: { name: { eq: "customer" } } }) {
+    id
+  }
+  staff: users(where: { role: { name: { eq: "staff" } } }) {
+    id
+  }
+  managers: users(where: { role: { name: { eq: "manager" } } }) {
+    id
+  }
+  admins: users(where: { role: { name: { eq: "admin" } } }) {
+    id
   }
 }
 

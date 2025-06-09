@@ -1,5 +1,16 @@
-# Schema for ADN Lab Firebase Data Connect - Users Table Only
+# Schema for ADN Lab Firebase Data Connect - Users and Roles
 # Chat functionality remains in Firestore
+
+# Role table - predefined system roles
+type Role @table {
+  id: String! @col(name: "role_id")
+  name: String! @unique
+  description: String
+  permissions: String # JSON string of permissions array
+  isActive: Boolean! @default(value: true)
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
+}
 
 # User table - keyed by Firebase Auth UID
 type User @table {
@@ -13,8 +24,15 @@ type User @table {
   authProvider: String!
   phone: String
   addressShipping: String
-  role: Boolean! @default(value: false)
-  roleString: String! @default(value: "customer")
+  
+  # Role relationship
+  roleId: String! @default(value: "customer")
+  role: Role! @ref(fields: "roleId")
+  
+  # Legacy fields for backward compatibility
+  isAdmin: Boolean! @default(value: false) # Deprecated: use role instead
+  roleString: String! @default(value: "customer") # Deprecated: use role.name instead
+  
   createdAt: Timestamp! @default(expr: "request.time")
   lastLogin: Timestamp
 }

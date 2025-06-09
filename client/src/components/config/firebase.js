@@ -54,7 +54,7 @@ const db = getFirestore(app); // Keep Firestore for chat
 // Initialize Data Connect for production (deployed service)
 const dataConnect = getDataConnect(app, {
   connector: "default",
-  service: "su25-swp391-g8-service",
+  service: "server",
   location: "asia-east2"
 });
 

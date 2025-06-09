@@ -3,16 +3,28 @@
 - [**Accessing the connector**](#accessing-the-connector)
   - [*Connecting to the local Emulator*](#connecting-to-the-local-emulator)
 - [**Queries**](#queries)
+  - [*GetRoles*](#getroles)
+  - [*GetRoleById*](#getrolebyid)
+  - [*GetRoleByName*](#getrolebyname)
   - [*GetUser*](#getuser)
   - [*GetUserByEmail*](#getuserbyemail)
   - [*ListUsers*](#listusers)
+  - [*GetUsersByRole*](#getusersbyrole)
+  - [*GetUsersByRoleName*](#getusersbyrolename)
+  - [*GetStaffMembers*](#getstaffmembers)
+  - [*CountUsersByRole*](#countusersbyrole)
   - [*UserExists*](#userexists)
 - [**Mutations**](#mutations)
+  - [*CreateRole*](#createrole)
+  - [*UpdateRole*](#updaterole)
+  - [*DeactivateRole*](#deactivaterole)
   - [*UpsertUser*](#upsertuser)
   - [*UpdateLastLogin*](#updatelastlogin)
   - [*UpdateUserProfile*](#updateuserprofile)
   - [*UpdateUserRole*](#updateuserrole)
+  - [*UpdateUserRoleLegacy*](#updateuserrolelegacy)
   - [*UpdateAccountStatus*](#updateaccountstatus)
+  - [*BulkAssignRole*](#bulkassignrole)
 
 # Generated TypeScript README
 This README will guide you through the process of using the generated JavaScript SDK package for the connector `default`. It will also provide examples on how to use your generated SDK to call your Data Connect queries and mutations.
@@ -66,6 +78,337 @@ The following is true for both the action shortcut function and the `QueryRef` f
 
 Below are examples of how to use the `default` connector's generated functions to execute each query. You can also follow the examples from the [Data Connect documentation](https://firebase.google.com/docs/data-connect/web-sdk#using-queries).
 
+## GetRoles
+You can execute the `GetRoles` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getRoles(): QueryPromise<GetRolesData, undefined>;
+
+interface GetRolesRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetRolesData, undefined>;
+}
+export const getRolesRef: GetRolesRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getRoles(dc: DataConnect): QueryPromise<GetRolesData, undefined>;
+
+interface GetRolesRef {
+  ...
+  (dc: DataConnect): QueryRef<GetRolesData, undefined>;
+}
+export const getRolesRef: GetRolesRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getRolesRef:
+```typescript
+const name = getRolesRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetRoles` query has no variables.
+### Return Type
+Recall that executing the `GetRoles` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetRolesData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetRolesData {
+  roles: ({
+    id: string;
+    name: string;
+    description?: string | null;
+    permissions?: string | null;
+    isActive: boolean;
+    createdAt: TimestampString;
+    updatedAt?: TimestampString | null;
+  } & Role_Key)[];
+}
+```
+### Using `GetRoles`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getRoles } from '@firebasegen/adnlab-connector';
+
+
+// Call the `getRoles()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getRoles();
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getRoles(dataConnect);
+
+console.log(data.roles);
+
+// Or, you can use the `Promise` API.
+getRoles().then((response) => {
+  const data = response.data;
+  console.log(data.roles);
+});
+```
+
+### Using `GetRoles`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getRolesRef } from '@firebasegen/adnlab-connector';
+
+
+// Call the `getRolesRef()` function to get a reference to the query.
+const ref = getRolesRef();
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getRolesRef(dataConnect);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.roles);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.roles);
+});
+```
+
+## GetRoleById
+You can execute the `GetRoleById` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getRoleById(vars: GetRoleByIdVariables): QueryPromise<GetRoleByIdData, GetRoleByIdVariables>;
+
+interface GetRoleByIdRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetRoleByIdVariables): QueryRef<GetRoleByIdData, GetRoleByIdVariables>;
+}
+export const getRoleByIdRef: GetRoleByIdRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getRoleById(dc: DataConnect, vars: GetRoleByIdVariables): QueryPromise<GetRoleByIdData, GetRoleByIdVariables>;
+
+interface GetRoleByIdRef {
+  ...
+  (dc: DataConnect, vars: GetRoleByIdVariables): QueryRef<GetRoleByIdData, GetRoleByIdVariables>;
+}
+export const getRoleByIdRef: GetRoleByIdRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getRoleByIdRef:
+```typescript
+const name = getRoleByIdRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetRoleById` query requires an argument of type `GetRoleByIdVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface GetRoleByIdVariables {
+  roleId: string;
+}
+```
+### Return Type
+Recall that executing the `GetRoleById` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetRoleByIdData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetRoleByIdData {
+  role?: {
+    id: string;
+    name: string;
+    description?: string | null;
+    permissions?: string | null;
+    isActive: boolean;
+    createdAt: TimestampString;
+    updatedAt?: TimestampString | null;
+  } & Role_Key;
+}
+```
+### Using `GetRoleById`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getRoleById, GetRoleByIdVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetRoleById` query requires an argument of type `GetRoleByIdVariables`:
+const getRoleByIdVars: GetRoleByIdVariables = {
+  roleId: ..., 
+};
+
+// Call the `getRoleById()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getRoleById(getRoleByIdVars);
+// Variables can be defined inline as well.
+const { data } = await getRoleById({ roleId: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getRoleById(dataConnect, getRoleByIdVars);
+
+console.log(data.role);
+
+// Or, you can use the `Promise` API.
+getRoleById(getRoleByIdVars).then((response) => {
+  const data = response.data;
+  console.log(data.role);
+});
+```
+
+### Using `GetRoleById`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getRoleByIdRef, GetRoleByIdVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetRoleById` query requires an argument of type `GetRoleByIdVariables`:
+const getRoleByIdVars: GetRoleByIdVariables = {
+  roleId: ..., 
+};
+
+// Call the `getRoleByIdRef()` function to get a reference to the query.
+const ref = getRoleByIdRef(getRoleByIdVars);
+// Variables can be defined inline as well.
+const ref = getRoleByIdRef({ roleId: ..., });
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getRoleByIdRef(dataConnect, getRoleByIdVars);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.role);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.role);
+});
+```
+
+## GetRoleByName
+You can execute the `GetRoleByName` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getRoleByName(vars: GetRoleByNameVariables): QueryPromise<GetRoleByNameData, GetRoleByNameVariables>;
+
+interface GetRoleByNameRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetRoleByNameVariables): QueryRef<GetRoleByNameData, GetRoleByNameVariables>;
+}
+export const getRoleByNameRef: GetRoleByNameRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getRoleByName(dc: DataConnect, vars: GetRoleByNameVariables): QueryPromise<GetRoleByNameData, GetRoleByNameVariables>;
+
+interface GetRoleByNameRef {
+  ...
+  (dc: DataConnect, vars: GetRoleByNameVariables): QueryRef<GetRoleByNameData, GetRoleByNameVariables>;
+}
+export const getRoleByNameRef: GetRoleByNameRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getRoleByNameRef:
+```typescript
+const name = getRoleByNameRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetRoleByName` query requires an argument of type `GetRoleByNameVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface GetRoleByNameVariables {
+  roleName: string;
+}
+```
+### Return Type
+Recall that executing the `GetRoleByName` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetRoleByNameData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetRoleByNameData {
+  roles: ({
+    id: string;
+    name: string;
+    description?: string | null;
+    permissions?: string | null;
+    isActive: boolean;
+  } & Role_Key)[];
+}
+```
+### Using `GetRoleByName`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getRoleByName, GetRoleByNameVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetRoleByName` query requires an argument of type `GetRoleByNameVariables`:
+const getRoleByNameVars: GetRoleByNameVariables = {
+  roleName: ..., 
+};
+
+// Call the `getRoleByName()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getRoleByName(getRoleByNameVars);
+// Variables can be defined inline as well.
+const { data } = await getRoleByName({ roleName: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getRoleByName(dataConnect, getRoleByNameVars);
+
+console.log(data.roles);
+
+// Or, you can use the `Promise` API.
+getRoleByName(getRoleByNameVars).then((response) => {
+  const data = response.data;
+  console.log(data.roles);
+});
+```
+
+### Using `GetRoleByName`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getRoleByNameRef, GetRoleByNameVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetRoleByName` query requires an argument of type `GetRoleByNameVariables`:
+const getRoleByNameVars: GetRoleByNameVariables = {
+  roleName: ..., 
+};
+
+// Call the `getRoleByNameRef()` function to get a reference to the query.
+const ref = getRoleByNameRef(getRoleByNameVars);
+// Variables can be defined inline as well.
+const ref = getRoleByNameRef({ roleName: ..., });
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getRoleByNameRef(dataConnect, getRoleByNameVars);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.roles);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.roles);
+});
+```
+
 ## GetUser
 You can execute the `GetUser` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
 ```typescript
@@ -113,10 +456,17 @@ export interface GetUserData {
     authProvider: string;
     phone?: string | null;
     addressShipping?: string | null;
-    role: boolean;
-    roleString: string;
-    createdAt: TimestampString;
-    lastLogin?: TimestampString | null;
+    roleId: string;
+    role: {
+      id: string;
+      name: string;
+      description?: string | null;
+      permissions?: string | null;
+    } & Role_Key;
+      isAdmin: boolean;
+      roleString: string;
+      createdAt: TimestampString;
+      lastLogin?: TimestampString | null;
   } & User_Key;
 }
 ```
@@ -224,10 +574,15 @@ export interface GetUserByEmailData {
     authProvider: string;
     phone?: string | null;
     addressShipping?: string | null;
-    role: boolean;
-    roleString: string;
-    createdAt: TimestampString;
-    lastLogin?: TimestampString | null;
+    roleId: string;
+    role: {
+      id: string;
+      name: string;
+      description?: string | null;
+    } & Role_Key;
+      roleString: string;
+      createdAt: TimestampString;
+      lastLogin?: TimestampString | null;
   } & User_Key)[];
 }
 ```
@@ -336,9 +691,14 @@ export interface ListUsersData {
     fullname: string;
     email: string;
     accountStatus: string;
-    roleString: string;
-    createdAt: TimestampString;
-    lastLogin?: TimestampString | null;
+    roleId: string;
+    role: {
+      name: string;
+      description?: string | null;
+    };
+      roleString: string;
+      createdAt: TimestampString;
+      lastLogin?: TimestampString | null;
   } & User_Key)[];
 }
 ```
@@ -390,6 +750,462 @@ console.log(data.users);
 executeQuery(ref).then((response) => {
   const data = response.data;
   console.log(data.users);
+});
+```
+
+## GetUsersByRole
+You can execute the `GetUsersByRole` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getUsersByRole(vars: GetUsersByRoleVariables): QueryPromise<GetUsersByRoleData, GetUsersByRoleVariables>;
+
+interface GetUsersByRoleRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetUsersByRoleVariables): QueryRef<GetUsersByRoleData, GetUsersByRoleVariables>;
+}
+export const getUsersByRoleRef: GetUsersByRoleRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getUsersByRole(dc: DataConnect, vars: GetUsersByRoleVariables): QueryPromise<GetUsersByRoleData, GetUsersByRoleVariables>;
+
+interface GetUsersByRoleRef {
+  ...
+  (dc: DataConnect, vars: GetUsersByRoleVariables): QueryRef<GetUsersByRoleData, GetUsersByRoleVariables>;
+}
+export const getUsersByRoleRef: GetUsersByRoleRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getUsersByRoleRef:
+```typescript
+const name = getUsersByRoleRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetUsersByRole` query requires an argument of type `GetUsersByRoleVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface GetUsersByRoleVariables {
+  roleId: string;
+}
+```
+### Return Type
+Recall that executing the `GetUsersByRole` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetUsersByRoleData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetUsersByRoleData {
+  users: ({
+    id: string;
+    fullname: string;
+    email: string;
+    accountStatus: string;
+    role: {
+      name: string;
+      description?: string | null;
+    };
+      createdAt: TimestampString;
+      lastLogin?: TimestampString | null;
+  } & User_Key)[];
+}
+```
+### Using `GetUsersByRole`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getUsersByRole, GetUsersByRoleVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetUsersByRole` query requires an argument of type `GetUsersByRoleVariables`:
+const getUsersByRoleVars: GetUsersByRoleVariables = {
+  roleId: ..., 
+};
+
+// Call the `getUsersByRole()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getUsersByRole(getUsersByRoleVars);
+// Variables can be defined inline as well.
+const { data } = await getUsersByRole({ roleId: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getUsersByRole(dataConnect, getUsersByRoleVars);
+
+console.log(data.users);
+
+// Or, you can use the `Promise` API.
+getUsersByRole(getUsersByRoleVars).then((response) => {
+  const data = response.data;
+  console.log(data.users);
+});
+```
+
+### Using `GetUsersByRole`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getUsersByRoleRef, GetUsersByRoleVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetUsersByRole` query requires an argument of type `GetUsersByRoleVariables`:
+const getUsersByRoleVars: GetUsersByRoleVariables = {
+  roleId: ..., 
+};
+
+// Call the `getUsersByRoleRef()` function to get a reference to the query.
+const ref = getUsersByRoleRef(getUsersByRoleVars);
+// Variables can be defined inline as well.
+const ref = getUsersByRoleRef({ roleId: ..., });
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getUsersByRoleRef(dataConnect, getUsersByRoleVars);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.users);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.users);
+});
+```
+
+## GetUsersByRoleName
+You can execute the `GetUsersByRoleName` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getUsersByRoleName(vars: GetUsersByRoleNameVariables): QueryPromise<GetUsersByRoleNameData, GetUsersByRoleNameVariables>;
+
+interface GetUsersByRoleNameRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetUsersByRoleNameVariables): QueryRef<GetUsersByRoleNameData, GetUsersByRoleNameVariables>;
+}
+export const getUsersByRoleNameRef: GetUsersByRoleNameRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getUsersByRoleName(dc: DataConnect, vars: GetUsersByRoleNameVariables): QueryPromise<GetUsersByRoleNameData, GetUsersByRoleNameVariables>;
+
+interface GetUsersByRoleNameRef {
+  ...
+  (dc: DataConnect, vars: GetUsersByRoleNameVariables): QueryRef<GetUsersByRoleNameData, GetUsersByRoleNameVariables>;
+}
+export const getUsersByRoleNameRef: GetUsersByRoleNameRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getUsersByRoleNameRef:
+```typescript
+const name = getUsersByRoleNameRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetUsersByRoleName` query requires an argument of type `GetUsersByRoleNameVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface GetUsersByRoleNameVariables {
+  roleName: string;
+}
+```
+### Return Type
+Recall that executing the `GetUsersByRoleName` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetUsersByRoleNameData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetUsersByRoleNameData {
+  users: ({
+    id: string;
+    fullname: string;
+    email: string;
+    accountStatus: string;
+    phone?: string | null;
+    role: {
+      id: string;
+      name: string;
+      description?: string | null;
+    } & Role_Key;
+      createdAt: TimestampString;
+      lastLogin?: TimestampString | null;
+  } & User_Key)[];
+}
+```
+### Using `GetUsersByRoleName`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getUsersByRoleName, GetUsersByRoleNameVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetUsersByRoleName` query requires an argument of type `GetUsersByRoleNameVariables`:
+const getUsersByRoleNameVars: GetUsersByRoleNameVariables = {
+  roleName: ..., 
+};
+
+// Call the `getUsersByRoleName()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getUsersByRoleName(getUsersByRoleNameVars);
+// Variables can be defined inline as well.
+const { data } = await getUsersByRoleName({ roleName: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getUsersByRoleName(dataConnect, getUsersByRoleNameVars);
+
+console.log(data.users);
+
+// Or, you can use the `Promise` API.
+getUsersByRoleName(getUsersByRoleNameVars).then((response) => {
+  const data = response.data;
+  console.log(data.users);
+});
+```
+
+### Using `GetUsersByRoleName`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getUsersByRoleNameRef, GetUsersByRoleNameVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetUsersByRoleName` query requires an argument of type `GetUsersByRoleNameVariables`:
+const getUsersByRoleNameVars: GetUsersByRoleNameVariables = {
+  roleName: ..., 
+};
+
+// Call the `getUsersByRoleNameRef()` function to get a reference to the query.
+const ref = getUsersByRoleNameRef(getUsersByRoleNameVars);
+// Variables can be defined inline as well.
+const ref = getUsersByRoleNameRef({ roleName: ..., });
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getUsersByRoleNameRef(dataConnect, getUsersByRoleNameVars);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.users);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.users);
+});
+```
+
+## GetStaffMembers
+You can execute the `GetStaffMembers` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getStaffMembers(): QueryPromise<GetStaffMembersData, undefined>;
+
+interface GetStaffMembersRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetStaffMembersData, undefined>;
+}
+export const getStaffMembersRef: GetStaffMembersRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getStaffMembers(dc: DataConnect): QueryPromise<GetStaffMembersData, undefined>;
+
+interface GetStaffMembersRef {
+  ...
+  (dc: DataConnect): QueryRef<GetStaffMembersData, undefined>;
+}
+export const getStaffMembersRef: GetStaffMembersRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getStaffMembersRef:
+```typescript
+const name = getStaffMembersRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetStaffMembers` query has no variables.
+### Return Type
+Recall that executing the `GetStaffMembers` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetStaffMembersData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetStaffMembersData {
+  users: ({
+    id: string;
+    fullname: string;
+    email: string;
+    phone?: string | null;
+    role: {
+      name: string;
+      description?: string | null;
+    };
+  } & User_Key)[];
+}
+```
+### Using `GetStaffMembers`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getStaffMembers } from '@firebasegen/adnlab-connector';
+
+
+// Call the `getStaffMembers()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getStaffMembers();
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getStaffMembers(dataConnect);
+
+console.log(data.users);
+
+// Or, you can use the `Promise` API.
+getStaffMembers().then((response) => {
+  const data = response.data;
+  console.log(data.users);
+});
+```
+
+### Using `GetStaffMembers`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getStaffMembersRef } from '@firebasegen/adnlab-connector';
+
+
+// Call the `getStaffMembersRef()` function to get a reference to the query.
+const ref = getStaffMembersRef();
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getStaffMembersRef(dataConnect);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.users);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.users);
+});
+```
+
+## CountUsersByRole
+You can execute the `CountUsersByRole` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+countUsersByRole(): QueryPromise<CountUsersByRoleData, undefined>;
+
+interface CountUsersByRoleRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<CountUsersByRoleData, undefined>;
+}
+export const countUsersByRoleRef: CountUsersByRoleRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+countUsersByRole(dc: DataConnect): QueryPromise<CountUsersByRoleData, undefined>;
+
+interface CountUsersByRoleRef {
+  ...
+  (dc: DataConnect): QueryRef<CountUsersByRoleData, undefined>;
+}
+export const countUsersByRoleRef: CountUsersByRoleRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the countUsersByRoleRef:
+```typescript
+const name = countUsersByRoleRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `CountUsersByRole` query has no variables.
+### Return Type
+Recall that executing the `CountUsersByRole` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `CountUsersByRoleData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface CountUsersByRoleData {
+  customers: ({
+    id: string;
+  } & User_Key)[];
+    staff: ({
+      id: string;
+    } & User_Key)[];
+      managers: ({
+        id: string;
+      } & User_Key)[];
+        admins: ({
+          id: string;
+        } & User_Key)[];
+}
+```
+### Using `CountUsersByRole`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, countUsersByRole } from '@firebasegen/adnlab-connector';
+
+
+// Call the `countUsersByRole()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await countUsersByRole();
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await countUsersByRole(dataConnect);
+
+console.log(data.customers);
+console.log(data.staff);
+console.log(data.managers);
+console.log(data.admins);
+
+// Or, you can use the `Promise` API.
+countUsersByRole().then((response) => {
+  const data = response.data;
+  console.log(data.customers);
+  console.log(data.staff);
+  console.log(data.managers);
+  console.log(data.admins);
+});
+```
+
+### Using `CountUsersByRole`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, countUsersByRoleRef } from '@firebasegen/adnlab-connector';
+
+
+// Call the `countUsersByRoleRef()` function to get a reference to the query.
+const ref = countUsersByRoleRef();
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = countUsersByRoleRef(dataConnect);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.customers);
+console.log(data.staff);
+console.log(data.managers);
+console.log(data.admins);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.customers);
+  console.log(data.staff);
+  console.log(data.managers);
+  console.log(data.admins);
 });
 ```
 
@@ -501,6 +1317,354 @@ The following is true for both the action shortcut function and the `MutationRef
 
 Below are examples of how to use the `default` connector's generated functions to execute each mutation. You can also follow the examples from the [Data Connect documentation](https://firebase.google.com/docs/data-connect/web-sdk#using-mutations).
 
+## CreateRole
+You can execute the `CreateRole` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+createRole(vars: CreateRoleVariables): MutationPromise<CreateRoleData, CreateRoleVariables>;
+
+interface CreateRoleRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: CreateRoleVariables): MutationRef<CreateRoleData, CreateRoleVariables>;
+}
+export const createRoleRef: CreateRoleRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
+```typescript
+createRole(dc: DataConnect, vars: CreateRoleVariables): MutationPromise<CreateRoleData, CreateRoleVariables>;
+
+interface CreateRoleRef {
+  ...
+  (dc: DataConnect, vars: CreateRoleVariables): MutationRef<CreateRoleData, CreateRoleVariables>;
+}
+export const createRoleRef: CreateRoleRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the createRoleRef:
+```typescript
+const name = createRoleRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `CreateRole` mutation requires an argument of type `CreateRoleVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface CreateRoleVariables {
+  id: string;
+  name: string;
+  description?: string | null;
+  permissions?: string | null;
+}
+```
+### Return Type
+Recall that executing the `CreateRole` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `CreateRoleData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface CreateRoleData {
+  role_insert: Role_Key;
+}
+```
+### Using `CreateRole`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, createRole, CreateRoleVariables } from '@firebasegen/adnlab-connector';
+
+// The `CreateRole` mutation requires an argument of type `CreateRoleVariables`:
+const createRoleVars: CreateRoleVariables = {
+  id: ..., 
+  name: ..., 
+  description: ..., // optional
+  permissions: ..., // optional
+};
+
+// Call the `createRole()` function to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await createRole(createRoleVars);
+// Variables can be defined inline as well.
+const { data } = await createRole({ id: ..., name: ..., description: ..., permissions: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await createRole(dataConnect, createRoleVars);
+
+console.log(data.role_insert);
+
+// Or, you can use the `Promise` API.
+createRole(createRoleVars).then((response) => {
+  const data = response.data;
+  console.log(data.role_insert);
+});
+```
+
+### Using `CreateRole`'s `MutationRef` function
+
+```typescript
+import { getDataConnect, executeMutation } from 'firebase/data-connect';
+import { connectorConfig, createRoleRef, CreateRoleVariables } from '@firebasegen/adnlab-connector';
+
+// The `CreateRole` mutation requires an argument of type `CreateRoleVariables`:
+const createRoleVars: CreateRoleVariables = {
+  id: ..., 
+  name: ..., 
+  description: ..., // optional
+  permissions: ..., // optional
+};
+
+// Call the `createRoleRef()` function to get a reference to the mutation.
+const ref = createRoleRef(createRoleVars);
+// Variables can be defined inline as well.
+const ref = createRoleRef({ id: ..., name: ..., description: ..., permissions: ..., });
+
+// You can also pass in a `DataConnect` instance to the `MutationRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = createRoleRef(dataConnect, createRoleVars);
+
+// Call `executeMutation()` on the reference to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeMutation(ref);
+
+console.log(data.role_insert);
+
+// Or, you can use the `Promise` API.
+executeMutation(ref).then((response) => {
+  const data = response.data;
+  console.log(data.role_insert);
+});
+```
+
+## UpdateRole
+You can execute the `UpdateRole` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+updateRole(vars: UpdateRoleVariables): MutationPromise<UpdateRoleData, UpdateRoleVariables>;
+
+interface UpdateRoleRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: UpdateRoleVariables): MutationRef<UpdateRoleData, UpdateRoleVariables>;
+}
+export const updateRoleRef: UpdateRoleRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
+```typescript
+updateRole(dc: DataConnect, vars: UpdateRoleVariables): MutationPromise<UpdateRoleData, UpdateRoleVariables>;
+
+interface UpdateRoleRef {
+  ...
+  (dc: DataConnect, vars: UpdateRoleVariables): MutationRef<UpdateRoleData, UpdateRoleVariables>;
+}
+export const updateRoleRef: UpdateRoleRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the updateRoleRef:
+```typescript
+const name = updateRoleRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `UpdateRole` mutation requires an argument of type `UpdateRoleVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface UpdateRoleVariables {
+  roleId: string;
+  name?: string | null;
+  description?: string | null;
+  permissions?: string | null;
+  isActive?: boolean | null;
+}
+```
+### Return Type
+Recall that executing the `UpdateRole` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `UpdateRoleData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface UpdateRoleData {
+  role_update?: Role_Key | null;
+}
+```
+### Using `UpdateRole`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, updateRole, UpdateRoleVariables } from '@firebasegen/adnlab-connector';
+
+// The `UpdateRole` mutation requires an argument of type `UpdateRoleVariables`:
+const updateRoleVars: UpdateRoleVariables = {
+  roleId: ..., 
+  name: ..., // optional
+  description: ..., // optional
+  permissions: ..., // optional
+  isActive: ..., // optional
+};
+
+// Call the `updateRole()` function to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await updateRole(updateRoleVars);
+// Variables can be defined inline as well.
+const { data } = await updateRole({ roleId: ..., name: ..., description: ..., permissions: ..., isActive: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await updateRole(dataConnect, updateRoleVars);
+
+console.log(data.role_update);
+
+// Or, you can use the `Promise` API.
+updateRole(updateRoleVars).then((response) => {
+  const data = response.data;
+  console.log(data.role_update);
+});
+```
+
+### Using `UpdateRole`'s `MutationRef` function
+
+```typescript
+import { getDataConnect, executeMutation } from 'firebase/data-connect';
+import { connectorConfig, updateRoleRef, UpdateRoleVariables } from '@firebasegen/adnlab-connector';
+
+// The `UpdateRole` mutation requires an argument of type `UpdateRoleVariables`:
+const updateRoleVars: UpdateRoleVariables = {
+  roleId: ..., 
+  name: ..., // optional
+  description: ..., // optional
+  permissions: ..., // optional
+  isActive: ..., // optional
+};
+
+// Call the `updateRoleRef()` function to get a reference to the mutation.
+const ref = updateRoleRef(updateRoleVars);
+// Variables can be defined inline as well.
+const ref = updateRoleRef({ roleId: ..., name: ..., description: ..., permissions: ..., isActive: ..., });
+
+// You can also pass in a `DataConnect` instance to the `MutationRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = updateRoleRef(dataConnect, updateRoleVars);
+
+// Call `executeMutation()` on the reference to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeMutation(ref);
+
+console.log(data.role_update);
+
+// Or, you can use the `Promise` API.
+executeMutation(ref).then((response) => {
+  const data = response.data;
+  console.log(data.role_update);
+});
+```
+
+## DeactivateRole
+You can execute the `DeactivateRole` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+deactivateRole(vars: DeactivateRoleVariables): MutationPromise<DeactivateRoleData, DeactivateRoleVariables>;
+
+interface DeactivateRoleRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: DeactivateRoleVariables): MutationRef<DeactivateRoleData, DeactivateRoleVariables>;
+}
+export const deactivateRoleRef: DeactivateRoleRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
+```typescript
+deactivateRole(dc: DataConnect, vars: DeactivateRoleVariables): MutationPromise<DeactivateRoleData, DeactivateRoleVariables>;
+
+interface DeactivateRoleRef {
+  ...
+  (dc: DataConnect, vars: DeactivateRoleVariables): MutationRef<DeactivateRoleData, DeactivateRoleVariables>;
+}
+export const deactivateRoleRef: DeactivateRoleRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the deactivateRoleRef:
+```typescript
+const name = deactivateRoleRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `DeactivateRole` mutation requires an argument of type `DeactivateRoleVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface DeactivateRoleVariables {
+  roleId: string;
+}
+```
+### Return Type
+Recall that executing the `DeactivateRole` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `DeactivateRoleData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface DeactivateRoleData {
+  role_update?: Role_Key | null;
+}
+```
+### Using `DeactivateRole`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, deactivateRole, DeactivateRoleVariables } from '@firebasegen/adnlab-connector';
+
+// The `DeactivateRole` mutation requires an argument of type `DeactivateRoleVariables`:
+const deactivateRoleVars: DeactivateRoleVariables = {
+  roleId: ..., 
+};
+
+// Call the `deactivateRole()` function to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await deactivateRole(deactivateRoleVars);
+// Variables can be defined inline as well.
+const { data } = await deactivateRole({ roleId: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await deactivateRole(dataConnect, deactivateRoleVars);
+
+console.log(data.role_update);
+
+// Or, you can use the `Promise` API.
+deactivateRole(deactivateRoleVars).then((response) => {
+  const data = response.data;
+  console.log(data.role_update);
+});
+```
+
+### Using `DeactivateRole`'s `MutationRef` function
+
+```typescript
+import { getDataConnect, executeMutation } from 'firebase/data-connect';
+import { connectorConfig, deactivateRoleRef, DeactivateRoleVariables } from '@firebasegen/adnlab-connector';
+
+// The `DeactivateRole` mutation requires an argument of type `DeactivateRoleVariables`:
+const deactivateRoleVars: DeactivateRoleVariables = {
+  roleId: ..., 
+};
+
+// Call the `deactivateRoleRef()` function to get a reference to the mutation.
+const ref = deactivateRoleRef(deactivateRoleVars);
+// Variables can be defined inline as well.
+const ref = deactivateRoleRef({ roleId: ..., });
+
+// You can also pass in a `DataConnect` instance to the `MutationRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = deactivateRoleRef(dataConnect, deactivateRoleVars);
+
+// Call `executeMutation()` on the reference to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeMutation(ref);
+
+console.log(data.role_update);
+
+// Or, you can use the `Promise` API.
+executeMutation(ref).then((response) => {
+  const data = response.data;
+  console.log(data.role_update);
+});
+```
+
 ## UpsertUser
 You can execute the `UpsertUser` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
 ```typescript
@@ -542,7 +1706,8 @@ export interface UpsertUserVariables {
   avatar?: string | null;
   phone?: string | null;
   addressShipping?: string | null;
-  role?: boolean | null;
+  roleId?: string | null;
+  isAdmin?: boolean | null;
   roleString?: string | null;
 }
 ```
@@ -570,7 +1735,8 @@ const upsertUserVars: UpsertUserVariables = {
   avatar: ..., // optional
   phone: ..., // optional
   addressShipping: ..., // optional
-  role: ..., // optional
+  roleId: ..., // optional
+  isAdmin: ..., // optional
   roleString: ..., // optional
 };
 
@@ -578,7 +1744,7 @@ const upsertUserVars: UpsertUserVariables = {
 // You can use the `await` keyword to wait for the promise to resolve.
 const { data } = await upsertUser(upsertUserVars);
 // Variables can be defined inline as well.
-const { data } = await upsertUser({ fullname: ..., email: ..., authProvider: ..., gender: ..., avatar: ..., phone: ..., addressShipping: ..., role: ..., roleString: ..., });
+const { data } = await upsertUser({ fullname: ..., email: ..., authProvider: ..., gender: ..., avatar: ..., phone: ..., addressShipping: ..., roleId: ..., isAdmin: ..., roleString: ..., });
 
 // You can also pass in a `DataConnect` instance to the action shortcut function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -608,14 +1774,15 @@ const upsertUserVars: UpsertUserVariables = {
   avatar: ..., // optional
   phone: ..., // optional
   addressShipping: ..., // optional
-  role: ..., // optional
+  roleId: ..., // optional
+  isAdmin: ..., // optional
   roleString: ..., // optional
 };
 
 // Call the `upsertUserRef()` function to get a reference to the mutation.
 const ref = upsertUserRef(upsertUserVars);
 // Variables can be defined inline as well.
-const ref = upsertUserRef({ fullname: ..., email: ..., authProvider: ..., gender: ..., avatar: ..., phone: ..., addressShipping: ..., role: ..., roleString: ..., });
+const ref = upsertUserRef({ fullname: ..., email: ..., authProvider: ..., gender: ..., avatar: ..., phone: ..., addressShipping: ..., roleId: ..., isAdmin: ..., roleString: ..., });
 
 // You can also pass in a `DataConnect` instance to the `MutationRef` function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -882,8 +2049,7 @@ The `UpdateUserRole` mutation requires an argument of type `UpdateUserRoleVariab
 ```typescript
 export interface UpdateUserRoleVariables {
   userId: string;
-  roleString: string;
-  role: boolean;
+  roleId: string;
 }
 ```
 ### Return Type
@@ -904,15 +2070,14 @@ import { connectorConfig, updateUserRole, UpdateUserRoleVariables } from '@fireb
 // The `UpdateUserRole` mutation requires an argument of type `UpdateUserRoleVariables`:
 const updateUserRoleVars: UpdateUserRoleVariables = {
   userId: ..., 
-  roleString: ..., 
-  role: ..., 
+  roleId: ..., 
 };
 
 // Call the `updateUserRole()` function to execute the mutation.
 // You can use the `await` keyword to wait for the promise to resolve.
 const { data } = await updateUserRole(updateUserRoleVars);
 // Variables can be defined inline as well.
-const { data } = await updateUserRole({ userId: ..., roleString: ..., role: ..., });
+const { data } = await updateUserRole({ userId: ..., roleId: ..., });
 
 // You can also pass in a `DataConnect` instance to the action shortcut function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -936,18 +2101,132 @@ import { connectorConfig, updateUserRoleRef, UpdateUserRoleVariables } from '@fi
 // The `UpdateUserRole` mutation requires an argument of type `UpdateUserRoleVariables`:
 const updateUserRoleVars: UpdateUserRoleVariables = {
   userId: ..., 
-  roleString: ..., 
-  role: ..., 
+  roleId: ..., 
 };
 
 // Call the `updateUserRoleRef()` function to get a reference to the mutation.
 const ref = updateUserRoleRef(updateUserRoleVars);
 // Variables can be defined inline as well.
-const ref = updateUserRoleRef({ userId: ..., roleString: ..., role: ..., });
+const ref = updateUserRoleRef({ userId: ..., roleId: ..., });
 
 // You can also pass in a `DataConnect` instance to the `MutationRef` function.
 const dataConnect = getDataConnect(connectorConfig);
 const ref = updateUserRoleRef(dataConnect, updateUserRoleVars);
+
+// Call `executeMutation()` on the reference to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeMutation(ref);
+
+console.log(data.user_update);
+
+// Or, you can use the `Promise` API.
+executeMutation(ref).then((response) => {
+  const data = response.data;
+  console.log(data.user_update);
+});
+```
+
+## UpdateUserRoleLegacy
+You can execute the `UpdateUserRoleLegacy` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+updateUserRoleLegacy(vars: UpdateUserRoleLegacyVariables): MutationPromise<UpdateUserRoleLegacyData, UpdateUserRoleLegacyVariables>;
+
+interface UpdateUserRoleLegacyRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: UpdateUserRoleLegacyVariables): MutationRef<UpdateUserRoleLegacyData, UpdateUserRoleLegacyVariables>;
+}
+export const updateUserRoleLegacyRef: UpdateUserRoleLegacyRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
+```typescript
+updateUserRoleLegacy(dc: DataConnect, vars: UpdateUserRoleLegacyVariables): MutationPromise<UpdateUserRoleLegacyData, UpdateUserRoleLegacyVariables>;
+
+interface UpdateUserRoleLegacyRef {
+  ...
+  (dc: DataConnect, vars: UpdateUserRoleLegacyVariables): MutationRef<UpdateUserRoleLegacyData, UpdateUserRoleLegacyVariables>;
+}
+export const updateUserRoleLegacyRef: UpdateUserRoleLegacyRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the updateUserRoleLegacyRef:
+```typescript
+const name = updateUserRoleLegacyRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `UpdateUserRoleLegacy` mutation requires an argument of type `UpdateUserRoleLegacyVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface UpdateUserRoleLegacyVariables {
+  userId: string;
+  roleString: string;
+  isAdmin: boolean;
+}
+```
+### Return Type
+Recall that executing the `UpdateUserRoleLegacy` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `UpdateUserRoleLegacyData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface UpdateUserRoleLegacyData {
+  user_update?: User_Key | null;
+}
+```
+### Using `UpdateUserRoleLegacy`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, updateUserRoleLegacy, UpdateUserRoleLegacyVariables } from '@firebasegen/adnlab-connector';
+
+// The `UpdateUserRoleLegacy` mutation requires an argument of type `UpdateUserRoleLegacyVariables`:
+const updateUserRoleLegacyVars: UpdateUserRoleLegacyVariables = {
+  userId: ..., 
+  roleString: ..., 
+  isAdmin: ..., 
+};
+
+// Call the `updateUserRoleLegacy()` function to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await updateUserRoleLegacy(updateUserRoleLegacyVars);
+// Variables can be defined inline as well.
+const { data } = await updateUserRoleLegacy({ userId: ..., roleString: ..., isAdmin: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await updateUserRoleLegacy(dataConnect, updateUserRoleLegacyVars);
+
+console.log(data.user_update);
+
+// Or, you can use the `Promise` API.
+updateUserRoleLegacy(updateUserRoleLegacyVars).then((response) => {
+  const data = response.data;
+  console.log(data.user_update);
+});
+```
+
+### Using `UpdateUserRoleLegacy`'s `MutationRef` function
+
+```typescript
+import { getDataConnect, executeMutation } from 'firebase/data-connect';
+import { connectorConfig, updateUserRoleLegacyRef, UpdateUserRoleLegacyVariables } from '@firebasegen/adnlab-connector';
+
+// The `UpdateUserRoleLegacy` mutation requires an argument of type `UpdateUserRoleLegacyVariables`:
+const updateUserRoleLegacyVars: UpdateUserRoleLegacyVariables = {
+  userId: ..., 
+  roleString: ..., 
+  isAdmin: ..., 
+};
+
+// Call the `updateUserRoleLegacyRef()` function to get a reference to the mutation.
+const ref = updateUserRoleLegacyRef(updateUserRoleLegacyVars);
+// Variables can be defined inline as well.
+const ref = updateUserRoleLegacyRef({ userId: ..., roleString: ..., isAdmin: ..., });
+
+// You can also pass in a `DataConnect` instance to the `MutationRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = updateUserRoleLegacyRef(dataConnect, updateUserRoleLegacyVars);
 
 // Call `executeMutation()` on the reference to execute the mutation.
 // You can use the `await` keyword to wait for the promise to resolve.
@@ -1071,6 +2350,118 @@ console.log(data.user_update);
 executeMutation(ref).then((response) => {
   const data = response.data;
   console.log(data.user_update);
+});
+```
+
+## BulkAssignRole
+You can execute the `BulkAssignRole` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+bulkAssignRole(vars: BulkAssignRoleVariables): MutationPromise<BulkAssignRoleData, BulkAssignRoleVariables>;
+
+interface BulkAssignRoleRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: BulkAssignRoleVariables): MutationRef<BulkAssignRoleData, BulkAssignRoleVariables>;
+}
+export const bulkAssignRoleRef: BulkAssignRoleRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
+```typescript
+bulkAssignRole(dc: DataConnect, vars: BulkAssignRoleVariables): MutationPromise<BulkAssignRoleData, BulkAssignRoleVariables>;
+
+interface BulkAssignRoleRef {
+  ...
+  (dc: DataConnect, vars: BulkAssignRoleVariables): MutationRef<BulkAssignRoleData, BulkAssignRoleVariables>;
+}
+export const bulkAssignRoleRef: BulkAssignRoleRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the bulkAssignRoleRef:
+```typescript
+const name = bulkAssignRoleRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `BulkAssignRole` mutation requires an argument of type `BulkAssignRoleVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface BulkAssignRoleVariables {
+  userIds: string[];
+  roleId: string;
+}
+```
+### Return Type
+Recall that executing the `BulkAssignRole` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `BulkAssignRoleData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface BulkAssignRoleData {
+  user_updateMany: number;
+}
+```
+### Using `BulkAssignRole`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, bulkAssignRole, BulkAssignRoleVariables } from '@firebasegen/adnlab-connector';
+
+// The `BulkAssignRole` mutation requires an argument of type `BulkAssignRoleVariables`:
+const bulkAssignRoleVars: BulkAssignRoleVariables = {
+  userIds: ..., 
+  roleId: ..., 
+};
+
+// Call the `bulkAssignRole()` function to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await bulkAssignRole(bulkAssignRoleVars);
+// Variables can be defined inline as well.
+const { data } = await bulkAssignRole({ userIds: ..., roleId: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await bulkAssignRole(dataConnect, bulkAssignRoleVars);
+
+console.log(data.user_updateMany);
+
+// Or, you can use the `Promise` API.
+bulkAssignRole(bulkAssignRoleVars).then((response) => {
+  const data = response.data;
+  console.log(data.user_updateMany);
+});
+```
+
+### Using `BulkAssignRole`'s `MutationRef` function
+
+```typescript
+import { getDataConnect, executeMutation } from 'firebase/data-connect';
+import { connectorConfig, bulkAssignRoleRef, BulkAssignRoleVariables } from '@firebasegen/adnlab-connector';
+
+// The `BulkAssignRole` mutation requires an argument of type `BulkAssignRoleVariables`:
+const bulkAssignRoleVars: BulkAssignRoleVariables = {
+  userIds: ..., 
+  roleId: ..., 
+};
+
+// Call the `bulkAssignRoleRef()` function to get a reference to the mutation.
+const ref = bulkAssignRoleRef(bulkAssignRoleVars);
+// Variables can be defined inline as well.
+const ref = bulkAssignRoleRef({ userIds: ..., roleId: ..., });
+
+// You can also pass in a `DataConnect` instance to the `MutationRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = bulkAssignRoleRef(dataConnect, bulkAssignRoleVars);
+
+// Call `executeMutation()` on the reference to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeMutation(ref);
+
+console.log(data.user_updateMany);
+
+// Or, you can use the `Promise` API.
+executeMutation(ref).then((response) => {
+  const data = response.data;
+  console.log(data.user_updateMany);
 });
 ```
 

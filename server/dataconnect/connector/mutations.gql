@@ -1,7 +1,58 @@
-# Mutations for ADN Lab Firebase Data Connect - Users Only
+# Mutations for ADN Lab Firebase Data Connect - Users and Roles
 # Chat functionality remains in Firestore
 
-# Create or update user (upsert)
+# ====== ROLE MUTATIONS ======
+
+# Create a new role (admin only)
+mutation CreateRole(
+  $id: String!
+  $name: String!
+  $description: String
+  $permissions: String
+) @auth(level: USER) {
+  role_insert(data: {
+    id: $id
+    name: $name
+    description: $description
+    permissions: $permissions
+    isActive: true
+  })
+}
+
+# Update role (admin only)
+mutation UpdateRole(
+  $roleId: String!
+  $name: String
+  $description: String
+  $permissions: String
+  $isActive: Boolean
+) @auth(level: USER) {
+  role_update(
+    key: { id: $roleId }
+    data: {
+      name: $name
+      description: $description
+      permissions: $permissions
+      isActive: $isActive
+      updatedAt_expr: "request.time"
+    }
+  )
+}
+
+# Deactivate role (admin only)
+mutation DeactivateRole($roleId: String!) @auth(level: USER) {
+  role_update(
+    key: { id: $roleId }
+    data: { 
+      isActive: false
+      updatedAt_expr: "request.time"
+    }
+  )
+}
+
+# ====== USER MUTATIONS ======
+
+# Create or update user (upsert) - with new role system
 mutation UpsertUser(
   $fullname: String!
   $email: String!
@@ -10,7 +61,9 @@ mutation UpsertUser(
   $avatar: String
   $phone: String
   $addressShipping: String
-  $role: Boolean
+  $roleId: String
+  # Legacy fields for backward compatibility
+  $isAdmin: Boolean
   $roleString: String
 ) @auth(level: USER) {
   user_upsert(data: {
@@ -22,7 +75,8 @@ mutation UpsertUser(
     avatar: $avatar
     phone: $phone
     addressShipping: $addressShipping
-    role: $role
+    roleId: $roleId
+    isAdmin: $isAdmin
     roleString: $roleString
   })
 }
@@ -53,11 +107,27 @@ mutation UpdateUserProfile(
   )
 }
 
-# Admin: Update user role
-mutation UpdateUserRole($userId: String!, $roleString: String!, $role: Boolean!) @auth(level: USER) {
+# Admin: Update user role (new role system)
+mutation UpdateUserRole($userId: String!, $roleId: String!) @auth(level: USER) {
   user_update(
     key: { id: $userId }
-    data: { roleString: $roleString, role: $role }
+    data: { 
+      roleId: $roleId
+      # Update legacy fields for backward compatibility
+      isAdmin: false # Will be updated based on role
+      roleString: "" # Will be updated based on role name
+    }
+  )
+}
+
+# Admin: Legacy role update (for backward compatibility)
+mutation UpdateUserRoleLegacy($userId: String!, $roleString: String!, $isAdmin: Boolean!) @auth(level: USER) {
+  user_update(
+    key: { id: $userId }
+    data: { 
+      roleString: $roleString, 
+      isAdmin: $isAdmin 
+    }
   )
 }
 
@@ -66,5 +136,13 @@ mutation UpdateAccountStatus($userId: String!, $accountStatus: String!) @auth(le
   user_update(
     key: { id: $userId }
     data: { accountStatus: $accountStatus }
+  )
+}
+
+# Admin: Assign role to multiple users
+mutation BulkAssignRole($userIds: [String!]!, $roleId: String!) @auth(level: USER) {
+  user_updateMany(
+    where: { id: { in: $userIds } }
+    data: { roleId: $roleId }
   )
 }
