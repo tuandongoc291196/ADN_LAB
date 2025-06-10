@@ -1,4 +1,4 @@
-# Schema for ADN Lab Firebase Data Connect - Users and Roles
+# Schema for ADN Lab Firebase Data Connect - Complete DNA Testing Platform
 # Chat functionality remains in Firestore
 
 # Role table - predefined system roles
@@ -23,11 +23,15 @@ type User @table {
   accountStatus: String! @default(value: "active")
   authProvider: String!
   phone: String
-  addressShipping: String
+  shippingAddress: String
   
   # Role relationship
   roleId: String! @default(value: "customer")
   role: Role! @ref(fields: "roleId")
+  
+  # Booking management fields
+  dailySlotCount: Int! @default(value: 0)
+  maxDailySlots: Int! @default(value: 3)
   
   # Legacy fields for backward compatibility
   isAdmin: Boolean! @default(value: false) # Deprecated: use role instead
@@ -35,4 +39,191 @@ type User @table {
   
   createdAt: Timestamp! @default(expr: "request.time")
   lastLogin: Timestamp
+}
+
+# DNA Services table
+type DnaService @table {
+  id: String! @col(name: "service_id")
+  name: String!
+  description: String
+  price: Float!
+  durationDays: Int!
+  sampleType: String!
+  atHomeAvailable: Boolean! @default(value: false)
+  active: Boolean! @default(value: true)
+  kitCost: Float! @default(value: 0)
+  createdAt: Timestamp! @default(expr: "request.time")
+}
+
+# Kits table
+type Kit @table {
+  id: String! @col(name: "kit_id")
+  status: String! @default(value: "available")
+  amount: Int! @default(value: 1)
+  createdAt: Timestamp! @default(expr: "request.time")
+}
+
+# Time Slots table
+type TimeSlot @table {
+  id: String! @col(name: "time_slot_id")
+  slotDate: Date!
+  startTime: String! # Format: "HH:MM"
+  endTime: String! # Format: "HH:MM"
+  maxCapacity: Int!
+  currentBookings: Int! @default(value: 0)
+  available: Boolean! @default(value: true)
+  
+  # Staff assignment
+  staffId: String
+  staff: User @ref(fields: "staffId")
+  
+  notes: String
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
+}
+
+# Bookings table
+type Booking @table {
+  id: String! @col(name: "booking_id")
+  
+  # User relationship
+  userId: String!
+  user: User! @ref(fields: "userId")
+  
+  # Staff assignment
+  staffId: String
+  staff: User @ref(fields: "staffId")
+  
+  # Kit assignment
+  kitId: String
+  kit: Kit @ref(fields: "kitId")
+  
+  # Time slot assignment
+  timeSlotId: String
+  timeSlot: TimeSlot @ref(fields: "timeSlotId")
+  
+  status: String! @default(value: "pending")
+  bookingCreatedAt: Timestamp! @default(expr: "request.time")
+  collectionMethod: String!
+  notes: String
+  totalAmount: Float!
+  
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
+}
+
+# Booking Items table - junction table for booking and services
+type BookingItem @table {
+  id: String! @col(name: "item_id")
+  
+  # Booking relationship
+  bookingId: String!
+  booking: Booking! @ref(fields: "bookingId")
+  
+  # Service relationship
+  serviceId: String!
+  service: DnaService! @ref(fields: "serviceId")
+  
+  price: Float!
+  quantity: Int! @default(value: 1)
+  notes: String
+}
+
+# Samples table
+type Sample @table {
+  id: String! @col(name: "sample_id")
+  
+  # Booking relationship
+  bookingId: String!
+  booking: Booking! @ref(fields: "bookingId")
+  
+  # Staff relationship
+  staffId: String
+  staff: User @ref(fields: "staffId")
+  
+  # Service relationship
+  serviceId: String!
+  service: DnaService! @ref(fields: "serviceId")
+  
+  collectionDate: Date
+  status: String! @default(value: "pending")
+  notes: String
+}
+
+# Test Results table
+type TestResult @table {
+  id: String! @col(name: "result_id")
+  
+  # Booking relationship
+  bookingId: String!
+  booking: Booking! @ref(fields: "bookingId")
+  
+  # Sample relationship
+  sampleId: String!
+  sample: Sample! @ref(fields: "sampleId")
+  
+  # Service relationship
+  serviceId: String!
+  service: DnaService! @ref(fields: "serviceId")
+  
+  # Staff relationships
+  staffId: String
+  staff: User @ref(fields: "staffId")
+  verifiedBy: String
+  verifier: User @ref(fields: "verifiedBy")
+  
+  testDate: Date
+  reportDate: Date
+  resultData: String # JSON string for complex test results
+  status: String! @default(value: "pending")
+  reportUrl: String
+  notes: String
+}
+
+# Payments table
+type Payment @table {
+  id: String! @col(name: "payment_id")
+  
+  # Booking relationship
+  bookingId: String!
+  booking: Booking! @ref(fields: "bookingId")
+  
+  amount: Float!
+  paymentMethod: String!
+  transactionId: String
+  status: String! @default(value: "pending")
+  paymentDate: Date
+  refundDetail: String
+}
+
+# Feedback table
+type Feedback @table {
+  id: String! @col(name: "feedback_id")
+  
+  # Booking relationship
+  bookingId: String!
+  booking: Booking! @ref(fields: "bookingId")
+  
+  rating: Int!
+  comment: String
+  createdAt: Timestamp! @default(expr: "request.time")
+}
+
+# Notifications table
+type Notification @table {
+  id: String! @col(name: "notification_id")
+  
+  # User relationship (recipient)
+  userId: String
+  user: User @ref(fields: "userId")
+  
+  # Staff relationship (sender, optional)
+  staffId: String
+  staff: User @ref(fields: "staffId")
+  
+  title: String!
+  message: String!
+  isRead: Boolean! @default(value: false)
+  type: String! @default(value: "general")
+  createdAt: Timestamp! @default(expr: "request.time")
 }

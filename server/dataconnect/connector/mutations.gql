@@ -1,4 +1,4 @@
-# Mutations for ADN Lab Firebase Data Connect - Users and Roles
+# Mutations for ADN Lab Firebase Data Connect - Complete DNA Testing Platform
 # Chat functionality remains in Firestore
 
 # ====== ROLE MUTATIONS ======
@@ -52,40 +52,30 @@ mutation DeactivateRole($roleId: String!) @auth(level: USER) {
 
 # ====== USER MUTATIONS ======
 
-# Create or update user (upsert) - with new role system
-mutation UpsertUser(
+# Create or update user profile
+mutation CreateOrUpdateUser(
   $fullname: String!
-  $email: String!
-  $authProvider: String!
   $gender: String
   $avatar: String
+  $email: String!
   $phone: String
-  $addressShipping: String
+  $shippingAddress: String
   $roleId: String
-  # Legacy fields for backward compatibility
-  $isAdmin: Boolean
-  $roleString: String
+  $authProvider: String!
 ) @auth(level: USER) {
-  user_upsert(data: {
-    id_expr: "auth.uid"
-    fullname: $fullname
-    email: $email
-    authProvider: $authProvider
-    gender: $gender
-    avatar: $avatar
-    phone: $phone
-    addressShipping: $addressShipping
-    roleId: $roleId
-    isAdmin: $isAdmin
-    roleString: $roleString
-  })
-}
-
-# Update last login time
-mutation UpdateLastLogin @auth(level: USER) {
-  user_update(
-    key: { id_expr: "auth.uid" }
-    data: { lastLogin_expr: "request.time" }
+  user_upsert(
+    data: {
+      id_expr: "auth.uid"
+      fullname: $fullname
+      gender: $gender
+      avatar: $avatar
+      email: $email
+      phone: $phone
+      shippingAddress: $shippingAddress
+      roleId: $roleId
+      authProvider: $authProvider
+      lastLogin_expr: "request.time"
+    }
   )
 }
 
@@ -93,56 +83,512 @@ mutation UpdateLastLogin @auth(level: USER) {
 mutation UpdateUserProfile(
   $fullname: String
   $gender: String
+  $avatar: String
   $phone: String
-  $addressShipping: String
+  $shippingAddress: String
 ) @auth(level: USER) {
   user_update(
     key: { id_expr: "auth.uid" }
     data: {
       fullname: $fullname
       gender: $gender
+      avatar: $avatar
       phone: $phone
-      addressShipping: $addressShipping
+      shippingAddress: $shippingAddress
     }
   )
 }
 
-# Admin: Update user role (new role system)
-mutation UpdateUserRole($userId: String!, $roleId: String!) @auth(level: USER) {
+# Update user role (admin only)
+mutation UpdateUserRole(
+  $userId: String!
+  $roleId: String!
+) @auth(level: USER) {
   user_update(
     key: { id: $userId }
-    data: { 
+    data: {
       roleId: $roleId
-      # Update legacy fields for backward compatibility
-      isAdmin: false # Will be updated based on role
-      roleString: "" # Will be updated based on role name
+      roleString: $roleId
     }
   )
 }
 
-# Admin: Legacy role update (for backward compatibility)
-mutation UpdateUserRoleLegacy($userId: String!, $roleString: String!, $isAdmin: Boolean!) @auth(level: USER) {
+# Update user account status (admin only)
+mutation UpdateUserAccountStatus(
+  $userId: String!
+  $accountStatus: String!
+) @auth(level: USER) {
   user_update(
     key: { id: $userId }
-    data: { 
-      roleString: $roleString, 
-      isAdmin: $isAdmin 
+    data: {
+      accountStatus: $accountStatus
     }
   )
 }
 
-# Admin: Update user account status
-mutation UpdateAccountStatus($userId: String!, $accountStatus: String!) @auth(level: USER) {
-  user_update(
-    key: { id: $userId }
-    data: { accountStatus: $accountStatus }
+# ====== DNA SERVICE MUTATIONS ======
+
+# Create DNA service
+mutation CreateDnaService(
+  $id: String!
+  $name: String!
+  $description: String
+  $price: Float!
+  $durationDays: Int!
+  $sampleType: String!
+  $atHomeAvailable: Boolean!
+  $kitCost: Float!
+) @auth(level: USER) {
+  dnaService_insert(data: {
+    id: $id
+    name: $name
+    description: $description
+    price: $price
+    durationDays: $durationDays
+    sampleType: $sampleType
+    atHomeAvailable: $atHomeAvailable
+    kitCost: $kitCost
+    active: true
+  })
+}
+
+# Update DNA service
+mutation UpdateDnaService(
+  $serviceId: String!
+  $name: String
+  $description: String
+  $price: Float
+  $durationDays: Int
+  $sampleType: String
+  $atHomeAvailable: Boolean
+  $kitCost: Float
+  $active: Boolean
+) @auth(level: USER) {
+  dnaService_update(
+    key: { id: $serviceId }
+    data: {
+      name: $name
+      description: $description
+      price: $price
+      durationDays: $durationDays
+      sampleType: $sampleType
+      atHomeAvailable: $atHomeAvailable
+      kitCost: $kitCost
+      active: $active
+    }
   )
 }
 
-# Admin: Assign role to multiple users
-mutation BulkAssignRole($userIds: [String!]!, $roleId: String!) @auth(level: USER) {
-  user_updateMany(
-    where: { id: { in: $userIds } }
-    data: { roleId: $roleId }
+# ====== KIT MUTATIONS ======
+
+# Create kit
+mutation CreateKit(
+  $id: String!
+  $amount: Int!
+) @auth(level: USER) {
+  kit_insert(data: {
+    id: $id
+    amount: $amount
+    status: "available"
+  })
+}
+
+# Update kit status
+mutation UpdateKitStatus(
+  $kitId: String!
+  $status: String!
+) @auth(level: USER) {
+  kit_update(
+    key: { id: $kitId }
+    data: {
+      status: $status
+    }
   )
+}
+
+# ====== TIME SLOT MUTATIONS ======
+
+# Create time slot
+mutation CreateTimeSlot(
+  $id: String!
+  $slotDate: Date!
+  $startTime: String!
+  $endTime: String!
+  $maxCapacity: Int!
+  $staffId: String
+  $notes: String
+) @auth(level: USER) {
+  timeSlot_insert(data: {
+    id: $id
+    slotDate: $slotDate
+    startTime: $startTime
+    endTime: $endTime
+    maxCapacity: $maxCapacity
+    staffId: $staffId
+    notes: $notes
+    currentBookings: 0
+    available: true
+  })
+}
+
+# Update time slot
+mutation UpdateTimeSlot(
+  $timeSlotId: String!
+  $slotDate: Date
+  $startTime: String
+  $endTime: String
+  $maxCapacity: Int
+  $staffId: String
+  $notes: String
+  $available: Boolean
+) @auth(level: USER) {
+  timeSlot_update(
+    key: { id: $timeSlotId }
+    data: {
+      slotDate: $slotDate
+      startTime: $startTime
+      endTime: $endTime
+      maxCapacity: $maxCapacity
+      staffId: $staffId
+      notes: $notes
+      available: $available
+      updatedAt_expr: "request.time"
+    }
+  )
+}
+
+# Update time slot booking count
+mutation UpdateTimeSlotBookings(
+  $timeSlotId: String!
+  $currentBookings: Int!
+) @auth(level: USER) {
+  timeSlot_update(
+    key: { id: $timeSlotId }
+    data: {
+      currentBookings: $currentBookings
+      updatedAt_expr: "request.time"
+    }
+  )
+}
+
+# ====== BOOKING MUTATIONS ======
+
+# Create booking
+mutation CreateBooking(
+  $id: String!
+  $userId: String!
+  $staffId: String
+  $kitId: String
+  $timeSlotId: String
+  $collectionMethod: String!
+  $notes: String
+  $totalAmount: Float!
+) @auth(level: USER) {
+  booking_insert(data: {
+    id: $id
+    userId: $userId
+    staffId: $staffId
+    kitId: $kitId
+    timeSlotId: $timeSlotId
+    collectionMethod: $collectionMethod
+    notes: $notes
+    totalAmount: $totalAmount
+    status: "pending"
+  })
+}
+
+# Update booking status
+mutation UpdateBookingStatus(
+  $bookingId: String!
+  $status: String!
+  $staffId: String
+) @auth(level: USER) {
+  booking_update(
+    key: { id: $bookingId }
+    data: {
+      status: $status
+      staffId: $staffId
+      updatedAt_expr: "request.time"
+    }
+  )
+}
+
+# Assign staff to booking
+mutation AssignBookingStaff(
+  $bookingId: String!
+  $staffId: String!
+) @auth(level: USER) {
+  booking_update(
+    key: { id: $bookingId }
+    data: {
+      staffId: $staffId
+      updatedAt_expr: "request.time"
+    }
+  )
+}
+
+# ====== BOOKING ITEM MUTATIONS ======
+
+# Add booking item
+mutation AddBookingItem(
+  $id: String!
+  $bookingId: String!
+  $serviceId: String!
+  $price: Float!
+  $quantity: Int!
+  $notes: String
+) @auth(level: USER) {
+  bookingItem_insert(data: {
+    id: $id
+    bookingId: $bookingId
+    serviceId: $serviceId
+    price: $price
+    quantity: $quantity
+    notes: $notes
+  })
+}
+
+# Update booking item
+mutation UpdateBookingItem(
+  $itemId: String!
+  $price: Float
+  $quantity: Int
+  $notes: String
+) @auth(level: USER) {
+  bookingItem_update(
+    key: { id: $itemId }
+    data: {
+      price: $price
+      quantity: $quantity
+      notes: $notes
+    }
+  )
+}
+
+# Remove booking item
+mutation RemoveBookingItem($itemId: String!) @auth(level: USER) {
+  bookingItem_delete(key: { id: $itemId })
+}
+
+# ====== SAMPLE MUTATIONS ======
+
+# Create sample
+mutation CreateSample(
+  $id: String!
+  $bookingId: String!
+  $serviceId: String!
+  $staffId: String
+  $collectionDate: Date
+  $notes: String
+) @auth(level: USER) {
+  sample_insert(data: {
+    id: $id
+    bookingId: $bookingId
+    serviceId: $serviceId
+    staffId: $staffId
+    collectionDate: $collectionDate
+    notes: $notes
+    status: "pending"
+  })
+}
+
+# Update sample status
+mutation UpdateSampleStatus(
+  $sampleId: String!
+  $status: String!
+  $staffId: String
+  $collectionDate: Date
+  $notes: String
+) @auth(level: USER) {
+  sample_update(
+    key: { id: $sampleId }
+    data: {
+      status: $status
+      staffId: $staffId
+      collectionDate: $collectionDate
+      notes: $notes
+    }
+  )
+}
+
+# ====== TEST RESULT MUTATIONS ======
+
+# Create test result
+mutation CreateTestResult(
+  $id: String!
+  $bookingId: String!
+  $sampleId: String!
+  $serviceId: String!
+  $staffId: String
+  $testDate: Date
+  $resultData: String
+  $notes: String
+) @auth(level: USER) {
+  testResult_insert(data: {
+    id: $id
+    bookingId: $bookingId
+    sampleId: $sampleId
+    serviceId: $serviceId
+    staffId: $staffId
+    testDate: $testDate
+    resultData: $resultData
+    notes: $notes
+    status: "pending"
+  })
+}
+
+# Update test result
+mutation UpdateTestResult(
+  $resultId: String!
+  $resultData: String
+  $status: String
+  $reportDate: Date
+  $reportUrl: String
+  $notes: String
+) @auth(level: USER) {
+  testResult_update(
+    key: { id: $resultId }
+    data: {
+      resultData: $resultData
+      status: $status
+      reportDate: $reportDate
+      reportUrl: $reportUrl
+      notes: $notes
+    }
+  )
+}
+
+# Verify test result
+mutation VerifyTestResult(
+  $resultId: String!
+  $verifiedBy: String!
+) @auth(level: USER) {
+  testResult_update(
+    key: { id: $resultId }
+    data: {
+      verifiedBy: $verifiedBy
+      status: "verified"
+    }
+  )
+}
+
+# ====== PAYMENT MUTATIONS ======
+
+# Create payment
+mutation CreatePayment(
+  $id: String!
+  $bookingId: String!
+  $amount: Float!
+  $paymentMethod: String!
+  $transactionId: String
+  $paymentDate: Date!
+) @auth(level: USER) {
+  payment_insert(data: {
+    id: $id
+    bookingId: $bookingId
+    amount: $amount
+    paymentMethod: $paymentMethod
+    transactionId: $transactionId
+    paymentDate: $paymentDate
+    status: "pending"
+  })
+}
+
+# Update payment status
+mutation UpdatePaymentStatus(
+  $paymentId: String!
+  $status: String!
+  $transactionId: String
+  $refundDetail: String
+) @auth(level: USER) {
+  payment_update(
+    key: { id: $paymentId }
+    data: {
+      status: $status
+      transactionId: $transactionId
+      refundDetail: $refundDetail
+    }
+  )
+}
+
+# ====== FEEDBACK MUTATIONS ======
+
+# Create feedback
+mutation CreateFeedback(
+  $id: String!
+  $bookingId: String!
+  $rating: Int!
+  $comment: String
+) @auth(level: USER) {
+  feedback_insert(data: {
+    id: $id
+    bookingId: $bookingId
+    rating: $rating
+    comment: $comment
+  })
+}
+
+# Update feedback
+mutation UpdateFeedback(
+  $feedbackId: String!
+  $rating: Int
+  $comment: String
+) @auth(level: USER) {
+  feedback_update(
+    key: { id: $feedbackId }
+    data: {
+      rating: $rating
+      comment: $comment
+    }
+  )
+}
+
+# ====== NOTIFICATION MUTATIONS ======
+
+# Create notification
+mutation CreateNotification(
+  $id: String!
+  $userId: String
+  $staffId: String
+  $title: String!
+  $message: String!
+  $type: String!
+) @auth(level: USER) {
+  notification_insert(data: {
+    id: $id
+    userId: $userId
+    staffId: $staffId
+    title: $title
+    message: $message
+    type: $type
+    isRead: false
+  })
+}
+
+# Mark notification as read
+mutation MarkNotificationRead($notificationId: String!) @auth(level: USER) {
+  notification_update(
+    key: { id: $notificationId }
+    data: {
+      isRead: true
+    }
+  )
+}
+
+# Mark all user notifications as read
+mutation MarkAllNotificationsRead($userId: String!) @auth(level: USER) {
+  notification_updateMany(
+    where: { 
+      userId: { eq: $userId }
+      isRead: { eq: false }
+    }
+    data: {
+      isRead: true
+    }
+  )
+}
+
+# Delete notification
+mutation DeleteNotification($notificationId: String!) @auth(level: USER) {
+  notification_delete(key: { id: $notificationId })
 }

@@ -1,4 +1,4 @@
-# Queries for ADN Lab Firebase Data Connect - Users and Roles
+# Queries for ADN Lab Firebase Data Connect - Complete DNA Testing Platform
 # Chat functionality remains in Firestore
 
 # ====== ROLE QUERIES ======
@@ -53,7 +53,7 @@ query GetUser @auth(level: USER) {
     accountStatus
     authProvider
     phone
-    addressShipping
+    shippingAddress
     roleId
     role {
       id
@@ -61,7 +61,8 @@ query GetUser @auth(level: USER) {
       description
       permissions
     }
-    # Legacy fields for backward compatibility
+    dailySlotCount
+    maxDailySlots
     isAdmin
     roleString
     createdAt
@@ -69,9 +70,9 @@ query GetUser @auth(level: USER) {
   }
 }
 
-# Get user by email (for admin purposes)
-query GetUserByEmail($email: String!) @auth(level: USER) {
-  users(where: { email: { eq: $email } }) {
+# Get user by ID (admin/staff use)
+query GetUserById($userId: String!) @auth(level: USER) {
+  user(key: { id: $userId }) {
     id
     fullname
     gender
@@ -80,32 +81,31 @@ query GetUserByEmail($email: String!) @auth(level: USER) {
     accountStatus
     authProvider
     phone
-    addressShipping
+    shippingAddress
     roleId
     role {
       id
       name
       description
     }
-    roleString
+    dailySlotCount
+    maxDailySlots
     createdAt
     lastLogin
   }
 }
 
-# List all users (admin only)
-query ListUsers @auth(level: USER) {
-  users {
+# Get all users with pagination
+query GetUsers($limit: Int, $offset: Int) @auth(level: USER) {
+  users(limit: $limit, offset: $offset, orderBy: { createdAt: DESC }) {
     id
     fullname
     email
     accountStatus
-    roleId
     role {
+      id
       name
-      description
     }
-    roleString
     createdAt
     lastLogin
   }
@@ -120,71 +120,753 @@ query GetUsersByRole($roleId: String!) @auth(level: USER) {
     accountStatus
     role {
       name
-      description
     }
     createdAt
-    lastLogin
   }
 }
 
-# Get users by role name
-query GetUsersByRoleName($roleName: String!) @auth(level: USER) {
-  users(where: { role: { name: { eq: $roleName } } }) {
+# Get staff members
+query GetStaffMembers @auth(level: USER) {
+  users(where: { 
+    role: { 
+      name: { in: ["admin", "manager", "staff", "technician"] }
+    }
+  }) {
     id
     fullname
     email
-    accountStatus
-    phone
     role {
+      name
+    }
+    accountStatus
+  }
+}
+
+# ====== DNA SERVICE QUERIES ======
+
+# Get all active DNA services
+query GetDnaServices @auth(level: USER) {
+  dnaServices(where: { active: { eq: true } }, orderBy: { name: ASC }) {
+    id
+    name
+    description
+    price
+    durationDays
+    sampleType
+    atHomeAvailable
+    kitCost
+    createdAt
+  }
+}
+
+# Get DNA service by ID
+query GetDnaServiceById($serviceId: String!) @auth(level: USER) {
+  dnaService(key: { id: $serviceId }) {
+    id
+    name
+    description
+    price
+    durationDays
+    sampleType
+    atHomeAvailable
+    active
+    kitCost
+    createdAt
+  }
+}
+
+# Get DNA services by sample type
+query GetDnaServicesBySampleType($sampleType: String!) @auth(level: USER) {
+  dnaServices(where: { 
+    sampleType: { eq: $sampleType }
+    active: { eq: true }
+  }) {
+    id
+    name
+    description
+    price
+    durationDays
+    atHomeAvailable
+    kitCost
+  }
+}
+
+# Get at-home available services
+query GetAtHomeServices @auth(level: USER) {
+  dnaServices(where: { 
+    atHomeAvailable: { eq: true }
+    active: { eq: true }
+  }) {
+    id
+    name
+    description
+    price
+    durationDays
+    sampleType
+    kitCost
+  }
+}
+
+# ====== KIT QUERIES ======
+
+# Get all kits
+query GetKits @auth(level: USER) {
+  kits(orderBy: { createdAt: DESC }) {
+    id
+    status
+    amount
+    createdAt
+  }
+}
+
+# Get available kits
+query GetAvailableKits @auth(level: USER) {
+  kits(where: { status: { eq: "available" } }) {
+    id
+    amount
+    createdAt
+  }
+}
+
+# Get kit by ID
+query GetKitById($kitId: String!) @auth(level: USER) {
+  kit(key: { id: $kitId }) {
+    id
+    status
+    amount
+    createdAt
+  }
+}
+
+# ====== TIME SLOT QUERIES ======
+
+# Get available time slots for a specific date
+query GetAvailableTimeSlots($slotDate: Date!) @auth(level: USER) {
+  timeSlots(where: { 
+    slotDate: { eq: $slotDate }
+    available: { eq: true }
+  }, orderBy: { startTime: ASC }) {
+    id
+    slotDate
+    startTime
+    endTime
+    maxCapacity
+    currentBookings
+    staff {
+      id
+      fullname
+    }
+    notes
+  }
+}
+
+# Get time slots by staff
+query GetTimeSlotsByStaff($staffId: String!) @auth(level: USER) {
+  timeSlots(where: { staffId: { eq: $staffId } }, orderBy: [{ slotDate: ASC }, { startTime: ASC }]) {
+    id
+    slotDate
+    startTime
+    endTime
+    maxCapacity
+    currentBookings
+    available
+    notes
+  }
+}
+
+# Get time slot by ID
+query GetTimeSlotById($timeSlotId: String!) @auth(level: USER) {
+  timeSlot(key: { id: $timeSlotId }) {
+    id
+    slotDate
+    startTime
+    endTime
+    maxCapacity
+    currentBookings
+    available
+    staff {
+      id
+      fullname
+    }
+    notes
+    createdAt
+    updatedAt
+  }
+}
+
+# Get time slots for date range
+query GetTimeSlotsInRange($startDate: Date!, $endDate: Date!) @auth(level: USER) {
+  timeSlots(where: { 
+    slotDate: { ge: $startDate, le: $endDate }
+  }, orderBy: [{ slotDate: ASC }, { startTime: ASC }]) {
+    id
+    slotDate
+    startTime
+    endTime
+    maxCapacity
+    currentBookings
+    available
+    staff {
+      fullname
+    }
+  }
+}
+
+# ====== BOOKING QUERIES ======
+
+# Get user's bookings
+query GetUserBookings($userId: String!) @auth(level: USER) {
+  bookings(where: { userId: { eq: $userId } }, orderBy: { createdAt: DESC }) {
+    id
+    status
+    collectionMethod
+    totalAmount
+    timeSlot {
+      slotDate
+      startTime
+      endTime
+    }
+    staff {
+      fullname
+    }
+    kit {
+      id
+      status
+    }
+    createdAt
+    updatedAt
+  }
+}
+
+# Get current user's bookings
+query GetMyBookings @auth(level: USER) {
+  bookings(where: { userId: { eq_expr: "auth.uid" } }, orderBy: { createdAt: DESC }) {
+    id
+    status
+    collectionMethod
+    totalAmount
+    notes
+    timeSlot {
+      slotDate
+      startTime
+      endTime
+    }
+    staff {
+      fullname
+    }
+    kit {
+      id
+      status
+    }
+    createdAt
+    updatedAt
+  }
+}
+
+# Get booking by ID with full details
+query GetBookingById($bookingId: String!) @auth(level: USER) {
+  booking(key: { id: $bookingId }) {
+    id
+    user {
+      id
+      fullname
+      email
+      phone
+      shippingAddress
+    }
+    staff {
+      id
+      fullname
+    }
+    kit {
+      id
+      status
+      amount
+    }
+    timeSlot {
+      slotDate
+      startTime
+      endTime
+      staff {
+        fullname
+      }
+    }
+    status
+    collectionMethod
+    notes
+    totalAmount
+    createdAt
+    updatedAt
+  }
+}
+
+# Get bookings by status
+query GetBookingsByStatus($status: String!) @auth(level: USER) {
+  bookings(where: { status: { eq: $status } }, orderBy: { createdAt: DESC }) {
+    id
+    user {
+      fullname
+      email
+    }
+    status
+    collectionMethod
+    totalAmount
+    timeSlot {
+      slotDate
+      startTime
+    }
+    staff {
+      fullname
+    }
+    createdAt
+  }
+}
+
+# Get staff's assigned bookings
+query GetStaffBookings($staffId: String!) @auth(level: USER) {
+  bookings(where: { staffId: { eq: $staffId } }, orderBy: { createdAt: DESC }) {
+    id
+    user {
+      fullname
+      email
+      phone
+    }
+    status
+    collectionMethod
+    totalAmount
+    timeSlot {
+      slotDate
+      startTime
+      endTime
+    }
+    notes
+    createdAt
+  }
+}
+
+# ====== BOOKING ITEM QUERIES ======
+
+# Get booking items for a booking
+query GetBookingItems($bookingId: String!) @auth(level: USER) {
+  bookingItems(where: { bookingId: { eq: $bookingId } }) {
+    id
+    service {
       id
       name
       description
+      price
+      durationDays
+      sampleType
     }
-    createdAt
-    lastLogin
+    price
+    quantity
+    notes
   }
 }
 
-# Get staff members (staff, manager, admin roles)
-query GetStaffMembers @auth(level: USER) {
-  users(
-    where: { 
-      role: { 
-        name: { in: ["staff", "manager", "admin"] }
-      },
-      accountStatus: { eq: "active" }
-    }
-  ) {
+# Get booking item by ID
+query GetBookingItemById($itemId: String!) @auth(level: USER) {
+  bookingItem(key: { id: $itemId }) {
     id
-    fullname
-    email
-    phone
-    role {
+    booking {
+      id
+      user {
+        fullname
+      }
+    }
+    service {
+      id
+      name
+      price
+    }
+    price
+    quantity
+    notes
+  }
+}
+
+# ====== SAMPLE QUERIES ======
+
+# Get samples for a booking
+query GetBookingSamples($bookingId: String!) @auth(level: USER) {
+  samples(where: { bookingId: { eq: $bookingId } }) {
+    id
+    service {
+      name
+      sampleType
+    }
+    staff {
+      fullname
+    }
+    collectionDate
+    status
+    notes
+  }
+}
+
+# Get samples by status
+query GetSamplesByStatus($status: String!) @auth(level: USER) {
+  samples(where: { status: { eq: $status } }) {
+    id
+    booking {
+      id
+      user {
+        fullname
+      }
+    }
+    service {
+      name
+      sampleType
+    }
+    staff {
+      fullname
+    }
+    collectionDate
+    status
+    notes
+  }
+}
+
+# Get sample by ID
+query GetSampleById($sampleId: String!) @auth(level: USER) {
+  sample(key: { id: $sampleId }) {
+    id
+    booking {
+      id
+      user {
+        fullname
+        email
+      }
+    }
+    service {
+      name
+      sampleType
+      description
+    }
+    staff {
+      fullname
+    }
+    collectionDate
+    status
+    notes
+  }
+}
+
+# Get staff's samples
+query GetStaffSamples($staffId: String!) @auth(level: USER) {
+  samples(where: { staffId: { eq: $staffId } }) {
+    id
+    booking {
+      user {
+        fullname
+      }
+    }
+    service {
+      name
+      sampleType
+    }
+    collectionDate
+    status
+    notes
+  }
+}
+
+# ====== TEST RESULT QUERIES ======
+
+# Get test results for a booking
+query GetBookingTestResults($bookingId: String!) @auth(level: USER) {
+  testResults(where: { bookingId: { eq: $bookingId } }) {
+    id
+    sample {
+      id
+    }
+    service {
+      name
+    }
+    staff {
+      fullname
+    }
+    verifier {
+      fullname
+    }
+    testDate
+    reportDate
+    status
+    reportUrl
+    notes
+  }
+}
+
+# Get test result by ID
+query GetTestResultById($resultId: String!) @auth(level: USER) {
+  testResult(key: { id: $resultId }) {
+    id
+    booking {
+      id
+      user {
+        fullname
+        email
+      }
+    }
+    sample {
+      id
+      collectionDate
+    }
+    service {
       name
       description
     }
+    staff {
+      fullname
+    }
+    verifier {
+      fullname
+    }
+    testDate
+    reportDate
+    resultData
+    status
+    reportUrl
+    notes
   }
 }
 
-# Count users by role (for admin dashboard)
-query CountUsersByRole @auth(level: USER) {
-  customers: users(where: { role: { name: { eq: "customer" } } }) {
+# Get test results by status
+query GetTestResultsByStatus($status: String!) @auth(level: USER) {
+  testResults(where: { status: { eq: $status } }) {
     id
+    booking {
+      user {
+        fullname
+      }
+    }
+    service {
+      name
+    }
+    staff {
+      fullname
+    }
+    testDate
+    status
   }
-  staff: users(where: { role: { name: { eq: "staff" } } }) {
+}
+
+# Get user's test results
+query GetUserTestResults($userId: String!) @auth(level: USER) {
+  testResults(where: { 
+    booking: { userId: { eq: $userId } }
+  }, orderBy: { testDate: DESC }) {
     id
+    service {
+      name
+    }
+    testDate
+    reportDate
+    status
+    reportUrl
   }
-  managers: users(where: { role: { name: { eq: "manager" } } }) {
+}
+
+# ====== PAYMENT QUERIES ======
+
+# Get payment for booking
+query GetBookingPayment($bookingId: String!) @auth(level: USER) {
+  payments(where: { bookingId: { eq: $bookingId } }) {
     id
+    amount
+    paymentMethod
+    transactionId
+    status
+    paymentDate
+    refundDetail
   }
-  admins: users(where: { role: { name: { eq: "admin" } } }) {
+}
+
+# Get payment by ID
+query GetPaymentById($paymentId: String!) @auth(level: USER) {
+  payment(key: { id: $paymentId }) {
+    id
+    booking {
+      id
+      user {
+        fullname
+        email
+      }
+      totalAmount
+    }
+    amount
+    paymentMethod
+    transactionId
+    status
+    paymentDate
+    refundDetail
+  }
+}
+
+# Get payments by status
+query GetPaymentsByStatus($status: String!) @auth(level: USER) {
+  payments(where: { status: { eq: $status } }, orderBy: { paymentDate: DESC }) {
+    id
+    booking {
+      user {
+        fullname
+      }
+    }
+    amount
+    paymentMethod
+    transactionId
+    paymentDate
+  }
+}
+
+# Get user's payments
+query GetUserPayments($userId: String!) @auth(level: USER) {
+  payments(where: { 
+    booking: { userId: { eq: $userId } }
+  }, orderBy: { paymentDate: DESC }) {
+    id
+    amount
+    paymentMethod
+    status
+    paymentDate
+  }
+}
+
+# ====== FEEDBACK QUERIES ======
+
+# Get feedback for booking
+query GetBookingFeedback($bookingId: String!) @auth(level: USER) {
+  feedbacks(where: { bookingId: { eq: $bookingId } }) {
+    id
+    rating
+    comment
+    createdAt
+  }
+}
+
+# Get all feedback with pagination
+query GetAllFeedback($limit: Int, $offset: Int) @auth(level: USER) {
+  feedbacks(limit: $limit, offset: $offset, orderBy: { createdAt: DESC }) {
+    id
+    booking {
+      user {
+        fullname
+      }
+    }
+    rating
+    comment
+    createdAt
+  }
+}
+
+# Get feedback by rating
+query GetFeedbackByRating($rating: Int!) @auth(level: USER) {
+  feedbacks(where: { rating: { eq: $rating } }, orderBy: { createdAt: DESC }) {
+    id
+    booking {
+      user {
+        fullname
+      }
+    }
+    rating
+    comment
+    createdAt
+  }
+}
+
+# ====== NOTIFICATION QUERIES ======
+
+# Get user's notifications
+query GetUserNotifications($userId: String!) @auth(level: USER) {
+  notifications(where: { userId: { eq: $userId } }, orderBy: { createdAt: DESC }) {
+    id
+    staff {
+      fullname
+    }
+    title
+    message
+    isRead
+    type
+    createdAt
+  }
+}
+
+# Get current user's notifications
+query GetMyNotifications @auth(level: USER) {
+  notifications(where: { userId: { eq_expr: "auth.uid" } }, orderBy: { createdAt: DESC }) {
+    id
+    staff {
+      fullname
+    }
+    title
+    message
+    isRead
+    type
+    createdAt
+  }
+}
+
+# Get unread notifications count
+query GetUnreadNotificationsCount($userId: String!) @auth(level: USER) {
+  notifications(where: { 
+    userId: { eq: $userId }
+    isRead: { eq: false }
+  }) {
     id
   }
 }
 
-# Check if user exists
-query UserExists @auth(level: USER) {
-  user(key: { id_expr: "auth.uid" }) {
+# Get notification by ID
+query GetNotificationById($notificationId: String!) @auth(level: USER) {
+  notification(key: { id: $notificationId }) {
     id
+    user {
+      fullname
+    }
+    staff {
+      fullname
+    }
+    title
+    message
+    isRead
+    type
+    createdAt
+  }
+}
+
+# ====== ANALYTICS & REPORTING QUERIES ======
+
+# Get booking statistics
+query GetBookingStats @auth(level: USER) {
+  bookings {
+    id
+    status
+    totalAmount
+    createdAt
+  }
+}
+
+# Get service popularity
+query GetServicePopularity @auth(level: USER) {
+  bookingItems {
+    service {
+      id
+      name
+    }
+    quantity
+  }
+}
+
+# Get monthly revenue
+query GetMonthlyRevenue($year: Int!, $month: Int!, $startDate: Date!, $endDate: Date!) @auth(level: USER) {
+  payments(where: { 
+    status: { eq: "completed" }
+    paymentDate: { 
+      ge: $startDate
+      lt: $endDate
+    }
+  }) {
+    amount
+    paymentDate
   }
 }
