@@ -5,12 +5,10 @@
 
 # Get all roles
 query GetRoles @auth(level: USER) {
-  roles(where: { isActive: { eq: true } }) {
+  roles {
     id
     name
     description
-    permissions
-    isActive
     createdAt
     updatedAt
   }
@@ -22,8 +20,6 @@ query GetRoleById($roleId: String!) @auth(level: USER) {
     id
     name
     description
-    permissions
-    isActive
     createdAt
     updatedAt
   }
@@ -35,8 +31,6 @@ query GetRoleByName($roleName: String!) @auth(level: USER) {
     id
     name
     description
-    permissions
-    isActive
   }
 }
 
@@ -59,12 +53,9 @@ query GetUser @auth(level: USER) {
       id
       name
       description
-      permissions
     }
     dailySlotCount
     maxDailySlots
-    isAdmin
-    roleString
     createdAt
     lastLogin
   }
@@ -770,6 +761,61 @@ query GetFeedbackByRating($rating: Int!) @auth(level: USER) {
     }
     rating
     comment
+    createdAt
+  }
+}
+
+# ====== BLOG QUERIES ======
+
+# Get all blog posts
+query GetBlogs($limit: Int, $offset: Int) @auth(level: USER) {
+  blogs(limit: $limit, offset: $offset, orderBy: { createdAt: DESC }) {
+    id
+    user {
+      id
+      fullname
+      avatar
+    }
+    content
+    imageUrl
+    createdAt
+  }
+}
+
+# Get blog post by ID
+query GetBlogById($blogId: String!) @auth(level: USER) {
+  blog(key: { id: $blogId }) {
+    id
+    user {
+      id
+      fullname
+      avatar
+      role {
+        name
+      }
+    }
+    content
+    imageUrl
+    createdAt
+  }
+}
+
+# Get blog posts by user
+query GetBlogsByUser($userId: String!) @auth(level: USER) {
+  blogs(where: { userId: { eq: $userId } }, orderBy: { createdAt: DESC }) {
+    id
+    content
+    imageUrl
+    createdAt
+  }
+}
+
+# Get current user's blog posts
+query GetMyBlogs @auth(level: USER) {
+  blogs(where: { userId: { eq_expr: "auth.uid" } }, orderBy: { createdAt: DESC }) {
+    id
+    content
+    imageUrl
     createdAt
   }
 }

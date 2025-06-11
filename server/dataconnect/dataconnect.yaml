@@ -1,5 +1,5 @@
 specVersion: "v1"
-serviceId: "be-sql-service"
+serviceId: "su25-swp391-g8-instance"
 location: "asia-east2"
 schema:
   source: "./schema"
@@ -7,6 +7,6 @@ schema:
     postgresql:
       database: "sql-database"
       cloudSql:
-        instanceId: "be-sql"
+        instanceId: "su25-swp391-g8-instance"
       # schemaValidation: "COMPATIBLE"
 connectorDirs: ["./connector"]

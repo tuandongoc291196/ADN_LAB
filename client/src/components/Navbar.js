@@ -107,10 +107,6 @@ const MainNavbar = ({ setUser }) => {
         
         setUserData(enhancedUserData);
         setUser(enhancedUserData);
-        
-        // Save to localStorage
-        localStorage.setItem('userData', JSON.stringify(enhancedUserData));
-        localStorage.setItem('user', JSON.stringify(enhancedUserData));
         localStorage.setItem('isAuthenticated', 'true');
       }
     } else {

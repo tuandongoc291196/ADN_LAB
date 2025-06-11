@@ -8,14 +8,11 @@ mutation CreateRole(
   $id: String!
   $name: String!
   $description: String
-  $permissions: String
 ) @auth(level: USER) {
   role_insert(data: {
     id: $id
     name: $name
     description: $description
-    permissions: $permissions
-    isActive: true
   })
 }
 
@@ -24,30 +21,20 @@ mutation UpdateRole(
   $roleId: String!
   $name: String
   $description: String
-  $permissions: String
-  $isActive: Boolean
 ) @auth(level: USER) {
   role_update(
     key: { id: $roleId }
     data: {
       name: $name
       description: $description
-      permissions: $permissions
-      isActive: $isActive
       updatedAt_expr: "request.time"
     }
   )
 }
 
-# Deactivate role (admin only)
-mutation DeactivateRole($roleId: String!) @auth(level: USER) {
-  role_update(
-    key: { id: $roleId }
-    data: { 
-      isActive: false
-      updatedAt_expr: "request.time"
-    }
-  )
+# Delete role (admin only)
+mutation DeleteRole($roleId: String!) @auth(level: USER) {
+  role_delete(key: { id: $roleId })
 }
 
 # ====== USER MUTATIONS ======
@@ -108,7 +95,6 @@ mutation UpdateUserRole(
     key: { id: $userId }
     data: {
       roleId: $roleId
-      roleString: $roleId
     }
   )
 }
@@ -541,6 +527,43 @@ mutation UpdateFeedback(
       comment: $comment
     }
   )
+}
+
+# ====== BLOG MUTATIONS ======
+
+# Create blog post
+mutation CreateBlog(
+  $id: String!
+  $userId: String!
+  $content: String!
+  $imageUrl: String
+) @auth(level: USER) {
+  blog_insert(data: {
+    id: $id
+    userId: $userId
+    content: $content
+    imageUrl: $imageUrl
+  })
+}
+
+# Update blog post
+mutation UpdateBlog(
+  $blogId: String!
+  $content: String
+  $imageUrl: String
+) @auth(level: USER) {
+  blog_update(
+    key: { id: $blogId }
+    data: {
+      content: $content
+      imageUrl: $imageUrl
+    }
+  )
+}
+
+# Delete blog post
+mutation DeleteBlog($blogId: String!) @auth(level: USER) {
+  blog_delete(key: { id: $blogId })
 }
 
 # ====== NOTIFICATION MUTATIONS ======

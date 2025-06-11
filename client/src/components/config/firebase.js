@@ -25,14 +25,12 @@ import { getDataConnect, connectDataConnectEmulator } from "firebase/data-connec
 // Import generated Data Connect operations for users only
 // Note: These will be available after running: firebase dataconnect:sdk:generate
 import {
-  upsertUser,
-  updateLastLogin,
+  createOrUpdateUser,
   updateUserProfile,
   getUser,
-  userExists,
-  listUsers,
+  getUsers,
   updateUserRole as updateUserRoleAPI,
-  updateAccountStatus as updateAccountStatusAPI
+  updateUserAccountStatus as updateAccountStatusAPI
 } from "../../lib/dataconnect";
 
 // Firebase configuration
@@ -54,7 +52,7 @@ const db = getFirestore(app); // Keep Firestore for chat
 // Initialize Data Connect for production (deployed service)
 const dataConnect = getDataConnect(app, {
   connector: "default",
-  service: "server",
+  service: "su25-swp391-g8-instance",
   location: "asia-east2"
 });
 
@@ -86,67 +84,35 @@ const managerEmails = [
 // Helper function to determine role based on email
 const getRoleFromEmail = (email) => {
   if (adminEmails.includes(email)) {
-    return { role: true, roleString: "admin" };
+    return "3";
   } else if (staffEmails.includes(email)) {
-    return { role: true, roleString: "staff" };
+    return "1";
   } else if (managerEmails.includes(email)) {
-    return { role: true, roleString: "manager" };
+    return "2";
   } else {
-    return { role: false, roleString: "customer" };
+    return "0";
   }
 };
 
 const signInWithGoogle = async () => {
   try {
     const res = await signInWithPopup(auth, googleProvider);
-    const user = res.user;
+    const user = res.user;  
+    await createOrUpdateUser(dataConnect, {
+      fullname: user.displayName || "",
+      email: user.email,
+      authProvider: "google",
+      gender: "",
+      avatar: user.photoURL || "",
+      phone: "",
+      shippingAddress: "",
+      roleId: getRoleFromEmail(user.email) 
+    });
     
-    // Check if user exists in Data Connect
-    try {
-      const { data: existingUser } = await userExists(dataConnect);
-      
-      if (!existingUser?.user) {
-        // Create new user with role based on email
-        const roleInfo = getRoleFromEmail(user.email);
-        
-        await upsertUser(dataConnect, {
-          fullname: user.displayName || "",
-          email: user.email,
-          authProvider: "google",
-          gender: "",
-          avatar: user.photoURL || "",
-          phone: "",
-          addressShipping: "",
-          role: roleInfo.role,
-          roleString: roleInfo.roleString
-        });
-      } else {
-        // Update last login
-        await updateLastLogin(dataConnect);
-      }
-    } catch (error) {
-      console.error("Error handling user data:", error);
-      // If user doesn't exist, create them
-      const roleInfo = getRoleFromEmail(user.email);
-      
-      await upsertUser(dataConnect, {
-        fullname: user.displayName || "",
-        email: user.email,
-        authProvider: "google",
-        gender: "",
-        avatar: user.photoURL || "",
-        phone: "",
-        addressShipping: "",
-        role: roleInfo.role,
-        roleString: roleInfo.roleString
-      });
-    }
-    
-    // Get user data and store in localStorage
     const { data: userData } = await getUser(dataConnect);
     
     localStorage.setItem("user_id", user.uid);
-    localStorage.setItem("userData", JSON.stringify(userData.user));
+    localStorage.setItem("userData", JSON.stringify(userData));
     
     return { uid: user.uid, displayName: user.displayName };
   } catch (err) {
@@ -160,11 +126,7 @@ const logInWithEmailAndPassword = async (email, password) => {
   try {
     const res = await signInWithEmailAndPassword(auth, email, password);
     const user = res.user;
-    
-    // Update last login time
-    await updateLastLogin(dataConnect);
-    
-    // Get updated user data
+
     const { data: userData } = await getUser(dataConnect);
     
     localStorage.setItem("user_id", user.uid);
@@ -186,16 +148,15 @@ const registerWithEmailAndPassword = async (name, phone, email, password) => {
     // Create user in Data Connect with role based on email
     const roleInfo = getRoleFromEmail(email);
     
-    await upsertUser(dataConnect, {
+    await createOrUpdateUser(dataConnect, {
       fullname: name,
       email: email,
       authProvider: "email",
       gender: "",
       avatar: "",
       phone: phone,
-      addressShipping: "",
-      role: roleInfo.role,
-      roleString: roleInfo.roleString
+      shippingAddress: "",
+      roleId: getRoleFromEmail(user.email) 
     });
     
     // Get user data and store in localStorage
@@ -229,7 +190,6 @@ const logout = () => {
   signOut(auth);
 };
 
-// Chat functions using Firestore (not Data Connect)
 async function sendMessage(roomId, user, text) {
   try {
     await addDoc(collection(db, "chat-rooms", roomId, "messages"), {
@@ -279,7 +239,7 @@ async function updateProfile(profileData) {
 // Admin functions for user management
 async function getAllUsers() {
   try {
-    const { data } = await listUsers(dataConnect);
+    const { data } = await getUsers(dataConnect);
     return data.users;
   } catch (error) {
     console.error("Error fetching users:", error);
@@ -287,12 +247,11 @@ async function getAllUsers() {
   }
 }
 
-async function updateUserRole(userId, roleString, role) {
+async function updateUserRole(userId, roleId) {
   try {
     await updateUserRoleAPI(dataConnect, {
       userId,
-      roleString: roleString,
-      role
+      roleId
     });
   } catch (error) {
     console.error("Error updating user role:", error);
@@ -304,7 +263,7 @@ async function updateAccountStatus(userId, accountStatus) {
   try {
     await updateAccountStatusAPI(dataConnect, {
       userId,
-      accountStatus: accountStatus
+      accountStatus
     });
   } catch (error) {
     console.error("Error updating account status:", error);
@@ -314,12 +273,12 @@ async function updateAccountStatus(userId, accountStatus) {
 
 // Check if user is admin (based on userData from localStorage or DB)
 const isAdmin = (userData) => {
-  return userData?.role_string === 'admin';
+  return userData?.roleString === 'admin';
 };
 
 // Check if user is staff or higher
 const isStaff = (userData) => {
-  return ['admin', 'staff', 'manager'].includes(userData?.role_string);
+  return ['admin', 'staff', 'manager'].includes(userData?.roleString);
 };
 
 export {

@@ -10,9 +10,11 @@ import {
   adminEmails,
   staffEmails,
   managerEmails,
-  db
+  dataConnect
 } from '../config/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import {
+  getUser
+} from '../../lib/dataconnect';
 import { useAuthState } from 'react-firebase-hooks/auth';
 
 const Login = ({ setUser }) => {
@@ -43,34 +45,29 @@ const Login = ({ setUser }) => {
       
       if (user) {
         try {
-          const userDocRef = doc(db, "users", user.uid);
-          const userDocSnap = await getDoc(userDocRef);
+          const { data: userData } = await getUser(dataConnect);
           
-          if (userDocSnap.exists()) {
-            const userData = userDocSnap.data();
-            
-            localStorage.setItem('userData', JSON.stringify(userData));
-            
+          if (userData && userData.user) {
+            const userInfo = userData.user;           
             const appUser = {
-              ...userData,
-              id: userData.user_id,
-              name: userData.fullname,
-              email: userData.email,
-              role: userData.role_string,
-              avatar: userData.avatar,
+              ...userInfo,
+              id: userInfo.id,
+              name: userInfo.fullname,
+              email: userInfo.email,
+              role: userInfo.role?.name || 'customer',
+              avatar: userInfo.avatar,
               verified: user.emailVerified,
-              phone: userData.phone,
-              department: userData.role_string === 'admin' ? 'Administration' : 
-                         userData.role_string === 'staff' ? 'Laboratory' :
-                         userData.role_string === 'manager' ? 'Management' : null,
-              permissions: userData.role_string === 'admin' ? ['all'] : 
-                          userData.role_string === 'staff' ? ['tests', 'reports'] :
-                          userData.role_string === 'manager' ? ['users', 'reports', 'guides'] :
+              phone: userInfo.phone,
+              department: userInfo.role?.name === 'admin' ? 'Administration' : 
+                         userInfo.role?.name === 'staff' ? 'Laboratory' :
+                         userInfo.role?.name === 'manager' ? 'Management' : null,
+              permissions: userInfo.role?.name === 'admin' ? ['all'] : 
+                          userInfo.role?.name === 'staff' ? ['tests', 'reports'] :
+                          userInfo.role?.name === 'manager' ? ['users', 'reports', 'guides'] :
                           ['profile', 'tests']
             };
 
             setUser(appUser);
-            localStorage.setItem('user', JSON.stringify(appUser));
             localStorage.setItem('isAuthenticated', 'true');
             
             navigate(getRedirectPath(appUser.role));
@@ -160,8 +157,6 @@ const Login = ({ setUser }) => {
 
       const mockUser = mockUsers[role];
       if (mockUser) {
-        localStorage.setItem('user', JSON.stringify(mockUser));
-        localStorage.setItem('userData', JSON.stringify(mockUser));
         localStorage.setItem('isAuthenticated', 'true');
         
         navigate(getRedirectPath(mockUser.role));

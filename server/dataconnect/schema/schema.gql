@@ -6,15 +6,12 @@ type Role @table {
   id: String! @col(name: "role_id")
   name: String! @unique
   description: String
-  permissions: String # JSON string of permissions array
-  isActive: Boolean! @default(value: true)
   createdAt: Timestamp! @default(expr: "request.time")
   updatedAt: Timestamp
 }
 
 # User table - keyed by Firebase Auth UID
 type User @table {
-  # Firebase Auth UID as primary key
   id: String! @default(expr: "auth.uid")
   fullname: String!
   gender: String
@@ -24,19 +21,10 @@ type User @table {
   authProvider: String!
   phone: String
   shippingAddress: String
-  
-  # Role relationship
   roleId: String! @default(value: "customer")
   role: Role! @ref(fields: "roleId")
-  
-  # Booking management fields
   dailySlotCount: Int! @default(value: 0)
-  maxDailySlots: Int! @default(value: 3)
-  
-  # Legacy fields for backward compatibility
-  isAdmin: Boolean! @default(value: false) # Deprecated: use role instead
-  roleString: String! @default(value: "customer") # Deprecated: use role.name instead
-  
+  maxDailySlots: Int! @default(value: 3)  
   createdAt: Timestamp! @default(expr: "request.time")
   lastLogin: Timestamp
 }
@@ -206,6 +194,16 @@ type Feedback @table {
   
   rating: Int!
   comment: String
+  createdAt: Timestamp! @default(expr: "request.time")
+}
+
+# Blog table
+type Blog @table {
+  id: String! @col(name: "blog_id")
+  userId: String!
+  user: User! @ref(fields: "userId")  
+  content: String!
+  imageUrl: String
   createdAt: Timestamp! @default(expr: "request.time")
 }
 
