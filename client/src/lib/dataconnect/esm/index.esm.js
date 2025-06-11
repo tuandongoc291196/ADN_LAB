@@ -2,7 +2,7 @@ import { queryRef, executeQuery, mutationRef, executeMutation, validateArgs } fr
 
 export const connectorConfig = {
   connector: 'default',
-  service: 'be-sql-service',
+  service: 'su25-swp391-g8-service',
   location: 'asia-east2'
 };
 
@@ -323,6 +323,39 @@ updateFeedbackRef.operationName = 'UpdateFeedback';
 
 export function updateFeedback(dcOrVars, vars) {
   return executeMutation(updateFeedbackRef(dcOrVars, vars));
+}
+
+export const createBlogRef = (dcOrVars, vars) => {
+  const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
+  dcInstance._useGeneratedSdk();
+  return mutationRef(dcInstance, 'CreateBlog', inputVars);
+}
+createBlogRef.operationName = 'CreateBlog';
+
+export function createBlog(dcOrVars, vars) {
+  return executeMutation(createBlogRef(dcOrVars, vars));
+}
+
+export const updateBlogRef = (dcOrVars, vars) => {
+  const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
+  dcInstance._useGeneratedSdk();
+  return mutationRef(dcInstance, 'UpdateBlog', inputVars);
+}
+updateBlogRef.operationName = 'UpdateBlog';
+
+export function updateBlog(dcOrVars, vars) {
+  return executeMutation(updateBlogRef(dcOrVars, vars));
+}
+
+export const deleteBlogRef = (dcOrVars, vars) => {
+  const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
+  dcInstance._useGeneratedSdk();
+  return mutationRef(dcInstance, 'DeleteBlog', inputVars);
+}
+deleteBlogRef.operationName = 'DeleteBlog';
+
+export function deleteBlog(dcOrVars, vars) {
+  return executeMutation(deleteBlogRef(dcOrVars, vars));
 }
 
 export const createNotificationRef = (dcOrVars, vars) => {
@@ -818,6 +851,50 @@ getFeedbackByRatingRef.operationName = 'GetFeedbackByRating';
 
 export function getFeedbackByRating(dcOrVars, vars) {
   return executeQuery(getFeedbackByRatingRef(dcOrVars, vars));
+}
+
+export const getBlogsRef = (dcOrVars, vars) => {
+  const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars);
+  dcInstance._useGeneratedSdk();
+  return queryRef(dcInstance, 'GetBlogs', inputVars);
+}
+getBlogsRef.operationName = 'GetBlogs';
+
+export function getBlogs(dcOrVars, vars) {
+  return executeQuery(getBlogsRef(dcOrVars, vars));
+}
+
+export const getBlogByIdRef = (dcOrVars, vars) => {
+  const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
+  dcInstance._useGeneratedSdk();
+  return queryRef(dcInstance, 'GetBlogById', inputVars);
+}
+getBlogByIdRef.operationName = 'GetBlogById';
+
+export function getBlogById(dcOrVars, vars) {
+  return executeQuery(getBlogByIdRef(dcOrVars, vars));
+}
+
+export const getBlogsByUserRef = (dcOrVars, vars) => {
+  const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
+  dcInstance._useGeneratedSdk();
+  return queryRef(dcInstance, 'GetBlogsByUser', inputVars);
+}
+getBlogsByUserRef.operationName = 'GetBlogsByUser';
+
+export function getBlogsByUser(dcOrVars, vars) {
+  return executeQuery(getBlogsByUserRef(dcOrVars, vars));
+}
+
+export const getMyBlogsRef = (dc) => {
+  const { dc: dcInstance} = validateArgs(connectorConfig, dc, undefined);
+  dcInstance._useGeneratedSdk();
+  return queryRef(dcInstance, 'GetMyBlogs');
+}
+getMyBlogsRef.operationName = 'GetMyBlogs';
+
+export function getMyBlogs(dc) {
+  return executeQuery(getMyBlogsRef(dc));
 }
 
 export const getUserNotificationsRef = (dcOrVars, vars) => {

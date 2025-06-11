@@ -30,6 +30,11 @@ export interface AssignBookingStaffVariables {
   staffId: string;
 }
 
+export interface Blog_Key {
+  id: string;
+  __typename?: 'Blog_Key';
+}
+
 export interface BookingItem_Key {
   id: string;
   __typename?: 'BookingItem_Key';
@@ -38,6 +43,17 @@ export interface BookingItem_Key {
 export interface Booking_Key {
   id: string;
   __typename?: 'Booking_Key';
+}
+
+export interface CreateBlogData {
+  blog_insert: Blog_Key;
+}
+
+export interface CreateBlogVariables {
+  id: string;
+  userId: string;
+  content: string;
+  imageUrl?: string | null;
 }
 
 export interface CreateBookingData {
@@ -183,6 +199,14 @@ export interface CreateTimeSlotVariables {
   notes?: string | null;
 }
 
+export interface DeleteBlogData {
+  blog_delete?: Blog_Key | null;
+}
+
+export interface DeleteBlogVariables {
+  blogId: string;
+}
+
 export interface DeleteNotificationData {
   notification_delete?: Notification_Key | null;
 }
@@ -266,6 +290,59 @@ export interface GetAvailableTimeSlotsData {
 
 export interface GetAvailableTimeSlotsVariables {
   slotDate: DateString;
+}
+
+export interface GetBlogByIdData {
+  blog?: {
+    id: string;
+    user: {
+      id: string;
+      fullname: string;
+      avatar?: string | null;
+      role: {
+        name: string;
+      };
+    } & User_Key;
+      content: string;
+      imageUrl?: string | null;
+      createdAt: TimestampString;
+  } & Blog_Key;
+}
+
+export interface GetBlogByIdVariables {
+  blogId: string;
+}
+
+export interface GetBlogsByUserData {
+  blogs: ({
+    id: string;
+    content: string;
+    imageUrl?: string | null;
+    createdAt: TimestampString;
+  } & Blog_Key)[];
+}
+
+export interface GetBlogsByUserVariables {
+  userId: string;
+}
+
+export interface GetBlogsData {
+  blogs: ({
+    id: string;
+    user: {
+      id: string;
+      fullname: string;
+      avatar?: string | null;
+    } & User_Key;
+      content: string;
+      imageUrl?: string | null;
+      createdAt: TimestampString;
+  } & Blog_Key)[];
+}
+
+export interface GetBlogsVariables {
+  limit?: number | null;
+  offset?: number | null;
 }
 
 export interface GetBookingByIdData {
@@ -564,6 +641,15 @@ export interface GetMonthlyRevenueVariables {
   month: number;
   startDate: DateString;
   endDate: DateString;
+}
+
+export interface GetMyBlogsData {
+  blogs: ({
+    id: string;
+    content: string;
+    imageUrl?: string | null;
+    createdAt: TimestampString;
+  } & Blog_Key)[];
 }
 
 export interface GetMyBookingsData {
@@ -1181,6 +1267,16 @@ export interface TimeSlot_Key {
   __typename?: 'TimeSlot_Key';
 }
 
+export interface UpdateBlogData {
+  blog_update?: Blog_Key | null;
+}
+
+export interface UpdateBlogVariables {
+  blogId: string;
+  content?: string | null;
+  imageUrl?: string | null;
+}
+
 export interface UpdateBookingItemData {
   bookingItem_update?: BookingItem_Key | null;
 }
@@ -1698,6 +1794,42 @@ export const updateFeedbackRef: UpdateFeedbackRef;
 
 export function updateFeedback(vars: UpdateFeedbackVariables): MutationPromise<UpdateFeedbackData, UpdateFeedbackVariables>;
 export function updateFeedback(dc: DataConnect, vars: UpdateFeedbackVariables): MutationPromise<UpdateFeedbackData, UpdateFeedbackVariables>;
+
+interface CreateBlogRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: CreateBlogVariables): MutationRef<CreateBlogData, CreateBlogVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: CreateBlogVariables): MutationRef<CreateBlogData, CreateBlogVariables>;
+  operationName: string;
+}
+export const createBlogRef: CreateBlogRef;
+
+export function createBlog(vars: CreateBlogVariables): MutationPromise<CreateBlogData, CreateBlogVariables>;
+export function createBlog(dc: DataConnect, vars: CreateBlogVariables): MutationPromise<CreateBlogData, CreateBlogVariables>;
+
+interface UpdateBlogRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: UpdateBlogVariables): MutationRef<UpdateBlogData, UpdateBlogVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: UpdateBlogVariables): MutationRef<UpdateBlogData, UpdateBlogVariables>;
+  operationName: string;
+}
+export const updateBlogRef: UpdateBlogRef;
+
+export function updateBlog(vars: UpdateBlogVariables): MutationPromise<UpdateBlogData, UpdateBlogVariables>;
+export function updateBlog(dc: DataConnect, vars: UpdateBlogVariables): MutationPromise<UpdateBlogData, UpdateBlogVariables>;
+
+interface DeleteBlogRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: DeleteBlogVariables): MutationRef<DeleteBlogData, DeleteBlogVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: DeleteBlogVariables): MutationRef<DeleteBlogData, DeleteBlogVariables>;
+  operationName: string;
+}
+export const deleteBlogRef: DeleteBlogRef;
+
+export function deleteBlog(vars: DeleteBlogVariables): MutationPromise<DeleteBlogData, DeleteBlogVariables>;
+export function deleteBlog(dc: DataConnect, vars: DeleteBlogVariables): MutationPromise<DeleteBlogData, DeleteBlogVariables>;
 
 interface CreateNotificationRef {
   /* Allow users to create refs without passing in DataConnect */
@@ -2238,6 +2370,54 @@ export const getFeedbackByRatingRef: GetFeedbackByRatingRef;
 
 export function getFeedbackByRating(vars: GetFeedbackByRatingVariables): QueryPromise<GetFeedbackByRatingData, GetFeedbackByRatingVariables>;
 export function getFeedbackByRating(dc: DataConnect, vars: GetFeedbackByRatingVariables): QueryPromise<GetFeedbackByRatingData, GetFeedbackByRatingVariables>;
+
+interface GetBlogsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars?: GetBlogsVariables): QueryRef<GetBlogsData, GetBlogsVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars?: GetBlogsVariables): QueryRef<GetBlogsData, GetBlogsVariables>;
+  operationName: string;
+}
+export const getBlogsRef: GetBlogsRef;
+
+export function getBlogs(vars?: GetBlogsVariables): QueryPromise<GetBlogsData, GetBlogsVariables>;
+export function getBlogs(dc: DataConnect, vars?: GetBlogsVariables): QueryPromise<GetBlogsData, GetBlogsVariables>;
+
+interface GetBlogByIdRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetBlogByIdVariables): QueryRef<GetBlogByIdData, GetBlogByIdVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetBlogByIdVariables): QueryRef<GetBlogByIdData, GetBlogByIdVariables>;
+  operationName: string;
+}
+export const getBlogByIdRef: GetBlogByIdRef;
+
+export function getBlogById(vars: GetBlogByIdVariables): QueryPromise<GetBlogByIdData, GetBlogByIdVariables>;
+export function getBlogById(dc: DataConnect, vars: GetBlogByIdVariables): QueryPromise<GetBlogByIdData, GetBlogByIdVariables>;
+
+interface GetBlogsByUserRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetBlogsByUserVariables): QueryRef<GetBlogsByUserData, GetBlogsByUserVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetBlogsByUserVariables): QueryRef<GetBlogsByUserData, GetBlogsByUserVariables>;
+  operationName: string;
+}
+export const getBlogsByUserRef: GetBlogsByUserRef;
+
+export function getBlogsByUser(vars: GetBlogsByUserVariables): QueryPromise<GetBlogsByUserData, GetBlogsByUserVariables>;
+export function getBlogsByUser(dc: DataConnect, vars: GetBlogsByUserVariables): QueryPromise<GetBlogsByUserData, GetBlogsByUserVariables>;
+
+interface GetMyBlogsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetMyBlogsData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetMyBlogsData, undefined>;
+  operationName: string;
+}
+export const getMyBlogsRef: GetMyBlogsRef;
+
+export function getMyBlogs(): QueryPromise<GetMyBlogsData, undefined>;
+export function getMyBlogs(dc: DataConnect): QueryPromise<GetMyBlogsData, undefined>;
 
 interface GetUserNotificationsRef {
   /* Allow users to create refs without passing in DataConnect */

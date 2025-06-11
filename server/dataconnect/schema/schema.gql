@@ -21,7 +21,7 @@ type User @table {
   authProvider: String!
   phone: String
   shippingAddress: String
-  roleId: String! @default(value: "customer")
+  roleId: String! @default(value: "0")
   role: Role! @ref(fields: "roleId")
   dailySlotCount: Int! @default(value: 0)
   maxDailySlots: Int! @default(value: 3)  

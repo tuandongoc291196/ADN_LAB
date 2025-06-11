@@ -44,6 +44,10 @@
   - [*GetBookingFeedback*](#getbookingfeedback)
   - [*GetAllFeedback*](#getallfeedback)
   - [*GetFeedbackByRating*](#getfeedbackbyrating)
+  - [*GetBlogs*](#getblogs)
+  - [*GetBlogById*](#getblogbyid)
+  - [*GetBlogsByUser*](#getblogsbyuser)
+  - [*GetMyBlogs*](#getmyblogs)
   - [*GetUserNotifications*](#getusernotifications)
   - [*GetMyNotifications*](#getmynotifications)
   - [*GetUnreadNotificationsCount*](#getunreadnotificationscount)
@@ -81,6 +85,9 @@
   - [*UpdatePaymentStatus*](#updatepaymentstatus)
   - [*CreateFeedback*](#createfeedback)
   - [*UpdateFeedback*](#updatefeedback)
+  - [*CreateBlog*](#createblog)
+  - [*UpdateBlog*](#updateblog)
+  - [*DeleteBlog*](#deleteblog)
   - [*CreateNotification*](#createnotification)
   - [*MarkNotificationRead*](#marknotificationread)
   - [*MarkAllNotificationsRead*](#markallnotificationsread)
@@ -4998,6 +5005,464 @@ executeQuery(ref).then((response) => {
 });
 ```
 
+## GetBlogs
+You can execute the `GetBlogs` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getBlogs(vars?: GetBlogsVariables): QueryPromise<GetBlogsData, GetBlogsVariables>;
+
+interface GetBlogsRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars?: GetBlogsVariables): QueryRef<GetBlogsData, GetBlogsVariables>;
+}
+export const getBlogsRef: GetBlogsRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getBlogs(dc: DataConnect, vars?: GetBlogsVariables): QueryPromise<GetBlogsData, GetBlogsVariables>;
+
+interface GetBlogsRef {
+  ...
+  (dc: DataConnect, vars?: GetBlogsVariables): QueryRef<GetBlogsData, GetBlogsVariables>;
+}
+export const getBlogsRef: GetBlogsRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getBlogsRef:
+```typescript
+const name = getBlogsRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetBlogs` query has an optional argument of type `GetBlogsVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface GetBlogsVariables {
+  limit?: number | null;
+  offset?: number | null;
+}
+```
+### Return Type
+Recall that executing the `GetBlogs` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetBlogsData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetBlogsData {
+  blogs: ({
+    id: string;
+    user: {
+      id: string;
+      fullname: string;
+      avatar?: string | null;
+    } & User_Key;
+      content: string;
+      imageUrl?: string | null;
+      createdAt: TimestampString;
+  } & Blog_Key)[];
+}
+```
+### Using `GetBlogs`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getBlogs, GetBlogsVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetBlogs` query has an optional argument of type `GetBlogsVariables`:
+const getBlogsVars: GetBlogsVariables = {
+  limit: ..., // optional
+  offset: ..., // optional
+};
+
+// Call the `getBlogs()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getBlogs(getBlogsVars);
+// Variables can be defined inline as well.
+const { data } = await getBlogs({ limit: ..., offset: ..., });
+// Since all variables are optional for this query, you can omit the `GetBlogsVariables` argument.
+const { data } = await getBlogs();
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getBlogs(dataConnect, getBlogsVars);
+
+console.log(data.blogs);
+
+// Or, you can use the `Promise` API.
+getBlogs(getBlogsVars).then((response) => {
+  const data = response.data;
+  console.log(data.blogs);
+});
+```
+
+### Using `GetBlogs`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getBlogsRef, GetBlogsVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetBlogs` query has an optional argument of type `GetBlogsVariables`:
+const getBlogsVars: GetBlogsVariables = {
+  limit: ..., // optional
+  offset: ..., // optional
+};
+
+// Call the `getBlogsRef()` function to get a reference to the query.
+const ref = getBlogsRef(getBlogsVars);
+// Variables can be defined inline as well.
+const ref = getBlogsRef({ limit: ..., offset: ..., });
+// Since all variables are optional for this query, you can omit the `GetBlogsVariables` argument.
+const ref = getBlogsRef();
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getBlogsRef(dataConnect, getBlogsVars);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.blogs);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.blogs);
+});
+```
+
+## GetBlogById
+You can execute the `GetBlogById` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getBlogById(vars: GetBlogByIdVariables): QueryPromise<GetBlogByIdData, GetBlogByIdVariables>;
+
+interface GetBlogByIdRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetBlogByIdVariables): QueryRef<GetBlogByIdData, GetBlogByIdVariables>;
+}
+export const getBlogByIdRef: GetBlogByIdRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getBlogById(dc: DataConnect, vars: GetBlogByIdVariables): QueryPromise<GetBlogByIdData, GetBlogByIdVariables>;
+
+interface GetBlogByIdRef {
+  ...
+  (dc: DataConnect, vars: GetBlogByIdVariables): QueryRef<GetBlogByIdData, GetBlogByIdVariables>;
+}
+export const getBlogByIdRef: GetBlogByIdRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getBlogByIdRef:
+```typescript
+const name = getBlogByIdRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetBlogById` query requires an argument of type `GetBlogByIdVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface GetBlogByIdVariables {
+  blogId: string;
+}
+```
+### Return Type
+Recall that executing the `GetBlogById` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetBlogByIdData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetBlogByIdData {
+  blog?: {
+    id: string;
+    user: {
+      id: string;
+      fullname: string;
+      avatar?: string | null;
+      role: {
+        name: string;
+      };
+    } & User_Key;
+      content: string;
+      imageUrl?: string | null;
+      createdAt: TimestampString;
+  } & Blog_Key;
+}
+```
+### Using `GetBlogById`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getBlogById, GetBlogByIdVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetBlogById` query requires an argument of type `GetBlogByIdVariables`:
+const getBlogByIdVars: GetBlogByIdVariables = {
+  blogId: ..., 
+};
+
+// Call the `getBlogById()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getBlogById(getBlogByIdVars);
+// Variables can be defined inline as well.
+const { data } = await getBlogById({ blogId: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getBlogById(dataConnect, getBlogByIdVars);
+
+console.log(data.blog);
+
+// Or, you can use the `Promise` API.
+getBlogById(getBlogByIdVars).then((response) => {
+  const data = response.data;
+  console.log(data.blog);
+});
+```
+
+### Using `GetBlogById`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getBlogByIdRef, GetBlogByIdVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetBlogById` query requires an argument of type `GetBlogByIdVariables`:
+const getBlogByIdVars: GetBlogByIdVariables = {
+  blogId: ..., 
+};
+
+// Call the `getBlogByIdRef()` function to get a reference to the query.
+const ref = getBlogByIdRef(getBlogByIdVars);
+// Variables can be defined inline as well.
+const ref = getBlogByIdRef({ blogId: ..., });
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getBlogByIdRef(dataConnect, getBlogByIdVars);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.blog);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.blog);
+});
+```
+
+## GetBlogsByUser
+You can execute the `GetBlogsByUser` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getBlogsByUser(vars: GetBlogsByUserVariables): QueryPromise<GetBlogsByUserData, GetBlogsByUserVariables>;
+
+interface GetBlogsByUserRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetBlogsByUserVariables): QueryRef<GetBlogsByUserData, GetBlogsByUserVariables>;
+}
+export const getBlogsByUserRef: GetBlogsByUserRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getBlogsByUser(dc: DataConnect, vars: GetBlogsByUserVariables): QueryPromise<GetBlogsByUserData, GetBlogsByUserVariables>;
+
+interface GetBlogsByUserRef {
+  ...
+  (dc: DataConnect, vars: GetBlogsByUserVariables): QueryRef<GetBlogsByUserData, GetBlogsByUserVariables>;
+}
+export const getBlogsByUserRef: GetBlogsByUserRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getBlogsByUserRef:
+```typescript
+const name = getBlogsByUserRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetBlogsByUser` query requires an argument of type `GetBlogsByUserVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface GetBlogsByUserVariables {
+  userId: string;
+}
+```
+### Return Type
+Recall that executing the `GetBlogsByUser` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetBlogsByUserData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetBlogsByUserData {
+  blogs: ({
+    id: string;
+    content: string;
+    imageUrl?: string | null;
+    createdAt: TimestampString;
+  } & Blog_Key)[];
+}
+```
+### Using `GetBlogsByUser`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getBlogsByUser, GetBlogsByUserVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetBlogsByUser` query requires an argument of type `GetBlogsByUserVariables`:
+const getBlogsByUserVars: GetBlogsByUserVariables = {
+  userId: ..., 
+};
+
+// Call the `getBlogsByUser()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getBlogsByUser(getBlogsByUserVars);
+// Variables can be defined inline as well.
+const { data } = await getBlogsByUser({ userId: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getBlogsByUser(dataConnect, getBlogsByUserVars);
+
+console.log(data.blogs);
+
+// Or, you can use the `Promise` API.
+getBlogsByUser(getBlogsByUserVars).then((response) => {
+  const data = response.data;
+  console.log(data.blogs);
+});
+```
+
+### Using `GetBlogsByUser`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getBlogsByUserRef, GetBlogsByUserVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetBlogsByUser` query requires an argument of type `GetBlogsByUserVariables`:
+const getBlogsByUserVars: GetBlogsByUserVariables = {
+  userId: ..., 
+};
+
+// Call the `getBlogsByUserRef()` function to get a reference to the query.
+const ref = getBlogsByUserRef(getBlogsByUserVars);
+// Variables can be defined inline as well.
+const ref = getBlogsByUserRef({ userId: ..., });
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getBlogsByUserRef(dataConnect, getBlogsByUserVars);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.blogs);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.blogs);
+});
+```
+
+## GetMyBlogs
+You can execute the `GetMyBlogs` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getMyBlogs(): QueryPromise<GetMyBlogsData, undefined>;
+
+interface GetMyBlogsRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetMyBlogsData, undefined>;
+}
+export const getMyBlogsRef: GetMyBlogsRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getMyBlogs(dc: DataConnect): QueryPromise<GetMyBlogsData, undefined>;
+
+interface GetMyBlogsRef {
+  ...
+  (dc: DataConnect): QueryRef<GetMyBlogsData, undefined>;
+}
+export const getMyBlogsRef: GetMyBlogsRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getMyBlogsRef:
+```typescript
+const name = getMyBlogsRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetMyBlogs` query has no variables.
+### Return Type
+Recall that executing the `GetMyBlogs` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetMyBlogsData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetMyBlogsData {
+  blogs: ({
+    id: string;
+    content: string;
+    imageUrl?: string | null;
+    createdAt: TimestampString;
+  } & Blog_Key)[];
+}
+```
+### Using `GetMyBlogs`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getMyBlogs } from '@firebasegen/adnlab-connector';
+
+
+// Call the `getMyBlogs()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getMyBlogs();
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getMyBlogs(dataConnect);
+
+console.log(data.blogs);
+
+// Or, you can use the `Promise` API.
+getMyBlogs().then((response) => {
+  const data = response.data;
+  console.log(data.blogs);
+});
+```
+
+### Using `GetMyBlogs`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getMyBlogsRef } from '@firebasegen/adnlab-connector';
+
+
+// Call the `getMyBlogsRef()` function to get a reference to the query.
+const ref = getMyBlogsRef();
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getMyBlogsRef(dataConnect);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.blogs);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.blogs);
+});
+```
+
 ## GetUserNotifications
 You can execute the `GetUserNotifications` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
 ```typescript
@@ -9245,6 +9710,348 @@ console.log(data.feedback_update);
 executeMutation(ref).then((response) => {
   const data = response.data;
   console.log(data.feedback_update);
+});
+```
+
+## CreateBlog
+You can execute the `CreateBlog` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+createBlog(vars: CreateBlogVariables): MutationPromise<CreateBlogData, CreateBlogVariables>;
+
+interface CreateBlogRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: CreateBlogVariables): MutationRef<CreateBlogData, CreateBlogVariables>;
+}
+export const createBlogRef: CreateBlogRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
+```typescript
+createBlog(dc: DataConnect, vars: CreateBlogVariables): MutationPromise<CreateBlogData, CreateBlogVariables>;
+
+interface CreateBlogRef {
+  ...
+  (dc: DataConnect, vars: CreateBlogVariables): MutationRef<CreateBlogData, CreateBlogVariables>;
+}
+export const createBlogRef: CreateBlogRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the createBlogRef:
+```typescript
+const name = createBlogRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `CreateBlog` mutation requires an argument of type `CreateBlogVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface CreateBlogVariables {
+  id: string;
+  userId: string;
+  content: string;
+  imageUrl?: string | null;
+}
+```
+### Return Type
+Recall that executing the `CreateBlog` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `CreateBlogData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface CreateBlogData {
+  blog_insert: Blog_Key;
+}
+```
+### Using `CreateBlog`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, createBlog, CreateBlogVariables } from '@firebasegen/adnlab-connector';
+
+// The `CreateBlog` mutation requires an argument of type `CreateBlogVariables`:
+const createBlogVars: CreateBlogVariables = {
+  id: ..., 
+  userId: ..., 
+  content: ..., 
+  imageUrl: ..., // optional
+};
+
+// Call the `createBlog()` function to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await createBlog(createBlogVars);
+// Variables can be defined inline as well.
+const { data } = await createBlog({ id: ..., userId: ..., content: ..., imageUrl: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await createBlog(dataConnect, createBlogVars);
+
+console.log(data.blog_insert);
+
+// Or, you can use the `Promise` API.
+createBlog(createBlogVars).then((response) => {
+  const data = response.data;
+  console.log(data.blog_insert);
+});
+```
+
+### Using `CreateBlog`'s `MutationRef` function
+
+```typescript
+import { getDataConnect, executeMutation } from 'firebase/data-connect';
+import { connectorConfig, createBlogRef, CreateBlogVariables } from '@firebasegen/adnlab-connector';
+
+// The `CreateBlog` mutation requires an argument of type `CreateBlogVariables`:
+const createBlogVars: CreateBlogVariables = {
+  id: ..., 
+  userId: ..., 
+  content: ..., 
+  imageUrl: ..., // optional
+};
+
+// Call the `createBlogRef()` function to get a reference to the mutation.
+const ref = createBlogRef(createBlogVars);
+// Variables can be defined inline as well.
+const ref = createBlogRef({ id: ..., userId: ..., content: ..., imageUrl: ..., });
+
+// You can also pass in a `DataConnect` instance to the `MutationRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = createBlogRef(dataConnect, createBlogVars);
+
+// Call `executeMutation()` on the reference to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeMutation(ref);
+
+console.log(data.blog_insert);
+
+// Or, you can use the `Promise` API.
+executeMutation(ref).then((response) => {
+  const data = response.data;
+  console.log(data.blog_insert);
+});
+```
+
+## UpdateBlog
+You can execute the `UpdateBlog` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+updateBlog(vars: UpdateBlogVariables): MutationPromise<UpdateBlogData, UpdateBlogVariables>;
+
+interface UpdateBlogRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: UpdateBlogVariables): MutationRef<UpdateBlogData, UpdateBlogVariables>;
+}
+export const updateBlogRef: UpdateBlogRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
+```typescript
+updateBlog(dc: DataConnect, vars: UpdateBlogVariables): MutationPromise<UpdateBlogData, UpdateBlogVariables>;
+
+interface UpdateBlogRef {
+  ...
+  (dc: DataConnect, vars: UpdateBlogVariables): MutationRef<UpdateBlogData, UpdateBlogVariables>;
+}
+export const updateBlogRef: UpdateBlogRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the updateBlogRef:
+```typescript
+const name = updateBlogRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `UpdateBlog` mutation requires an argument of type `UpdateBlogVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface UpdateBlogVariables {
+  blogId: string;
+  content?: string | null;
+  imageUrl?: string | null;
+}
+```
+### Return Type
+Recall that executing the `UpdateBlog` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `UpdateBlogData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface UpdateBlogData {
+  blog_update?: Blog_Key | null;
+}
+```
+### Using `UpdateBlog`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, updateBlog, UpdateBlogVariables } from '@firebasegen/adnlab-connector';
+
+// The `UpdateBlog` mutation requires an argument of type `UpdateBlogVariables`:
+const updateBlogVars: UpdateBlogVariables = {
+  blogId: ..., 
+  content: ..., // optional
+  imageUrl: ..., // optional
+};
+
+// Call the `updateBlog()` function to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await updateBlog(updateBlogVars);
+// Variables can be defined inline as well.
+const { data } = await updateBlog({ blogId: ..., content: ..., imageUrl: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await updateBlog(dataConnect, updateBlogVars);
+
+console.log(data.blog_update);
+
+// Or, you can use the `Promise` API.
+updateBlog(updateBlogVars).then((response) => {
+  const data = response.data;
+  console.log(data.blog_update);
+});
+```
+
+### Using `UpdateBlog`'s `MutationRef` function
+
+```typescript
+import { getDataConnect, executeMutation } from 'firebase/data-connect';
+import { connectorConfig, updateBlogRef, UpdateBlogVariables } from '@firebasegen/adnlab-connector';
+
+// The `UpdateBlog` mutation requires an argument of type `UpdateBlogVariables`:
+const updateBlogVars: UpdateBlogVariables = {
+  blogId: ..., 
+  content: ..., // optional
+  imageUrl: ..., // optional
+};
+
+// Call the `updateBlogRef()` function to get a reference to the mutation.
+const ref = updateBlogRef(updateBlogVars);
+// Variables can be defined inline as well.
+const ref = updateBlogRef({ blogId: ..., content: ..., imageUrl: ..., });
+
+// You can also pass in a `DataConnect` instance to the `MutationRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = updateBlogRef(dataConnect, updateBlogVars);
+
+// Call `executeMutation()` on the reference to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeMutation(ref);
+
+console.log(data.blog_update);
+
+// Or, you can use the `Promise` API.
+executeMutation(ref).then((response) => {
+  const data = response.data;
+  console.log(data.blog_update);
+});
+```
+
+## DeleteBlog
+You can execute the `DeleteBlog` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+deleteBlog(vars: DeleteBlogVariables): MutationPromise<DeleteBlogData, DeleteBlogVariables>;
+
+interface DeleteBlogRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: DeleteBlogVariables): MutationRef<DeleteBlogData, DeleteBlogVariables>;
+}
+export const deleteBlogRef: DeleteBlogRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
+```typescript
+deleteBlog(dc: DataConnect, vars: DeleteBlogVariables): MutationPromise<DeleteBlogData, DeleteBlogVariables>;
+
+interface DeleteBlogRef {
+  ...
+  (dc: DataConnect, vars: DeleteBlogVariables): MutationRef<DeleteBlogData, DeleteBlogVariables>;
+}
+export const deleteBlogRef: DeleteBlogRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the deleteBlogRef:
+```typescript
+const name = deleteBlogRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `DeleteBlog` mutation requires an argument of type `DeleteBlogVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface DeleteBlogVariables {
+  blogId: string;
+}
+```
+### Return Type
+Recall that executing the `DeleteBlog` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `DeleteBlogData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface DeleteBlogData {
+  blog_delete?: Blog_Key | null;
+}
+```
+### Using `DeleteBlog`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, deleteBlog, DeleteBlogVariables } from '@firebasegen/adnlab-connector';
+
+// The `DeleteBlog` mutation requires an argument of type `DeleteBlogVariables`:
+const deleteBlogVars: DeleteBlogVariables = {
+  blogId: ..., 
+};
+
+// Call the `deleteBlog()` function to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await deleteBlog(deleteBlogVars);
+// Variables can be defined inline as well.
+const { data } = await deleteBlog({ blogId: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await deleteBlog(dataConnect, deleteBlogVars);
+
+console.log(data.blog_delete);
+
+// Or, you can use the `Promise` API.
+deleteBlog(deleteBlogVars).then((response) => {
+  const data = response.data;
+  console.log(data.blog_delete);
+});
+```
+
+### Using `DeleteBlog`'s `MutationRef` function
+
+```typescript
+import { getDataConnect, executeMutation } from 'firebase/data-connect';
+import { connectorConfig, deleteBlogRef, DeleteBlogVariables } from '@firebasegen/adnlab-connector';
+
+// The `DeleteBlog` mutation requires an argument of type `DeleteBlogVariables`:
+const deleteBlogVars: DeleteBlogVariables = {
+  blogId: ..., 
+};
+
+// Call the `deleteBlogRef()` function to get a reference to the mutation.
+const ref = deleteBlogRef(deleteBlogVars);
+// Variables can be defined inline as well.
+const ref = deleteBlogRef({ blogId: ..., });
+
+// You can also pass in a `DataConnect` instance to the `MutationRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = deleteBlogRef(dataConnect, deleteBlogVars);
+
+// Call `executeMutation()` on the reference to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeMutation(ref);
+
+console.log(data.blog_delete);
+
+// Or, you can use the `Promise` API.
+executeMutation(ref).then((response) => {
+  const data = response.data;
+  console.log(data.blog_delete);
 });
 ```
 
