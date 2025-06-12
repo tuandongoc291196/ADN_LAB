@@ -41,6 +41,12 @@ import PrintableResult from './components/user/PrintableResult';
 import UserProfile from './components/user/UserProfile';
 import MyAppointments from './components/user/MyAppointments';
 
+import LinkChatbox from "./components/chat/chatButton/linkChatbox.js";
+import ChatBoxButton from "./components/chat/chatButton/chatboxButton.js";
+import {Landing} from "./components/chat/landing/index.js";
+import {ChatRoom} from "./components/chat/chatRoom/index.js";
+import {AuthProvider} from "./components/context/auth.js";
+
 // Protected Route Component
 const ProtectedRoute = ({ children, user, requiredRole }) => {
   if (!user) {
@@ -92,11 +98,12 @@ function App() {
   }
 
   return (
-    <Router>
-      <div className="App d-flex flex-column min-vh-100">
-        <MainNavbar user={user} setUser={setUser} />
-        <div className="flex-grow-1">
-          <Routes>
+    <AuthProvider>
+      <Router>
+        <div className="App d-flex flex-column min-vh-100">
+          <MainNavbar user={user} setUser={setUser} />
+          <div className="flex-grow-1">
+            <Routes>
             {/* ======================== PUBLIC ROUTES ======================== */}
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
@@ -238,6 +245,11 @@ function App() {
               </div>
             } />
 
+            {/* ======================== CHAT ROUTES ======================== */}
+            <Route path="/chatbox" element={<LinkChatbox />} />
+            <Route path="/chat" element={<Landing />} />
+            <Route path="/room/:id" element={<ChatRoom />} />
+            
             {/* ======================== CONSULTATION & SUPPORT ROUTES ======================== */}
             <Route path="/consultation" element={
               <div className="container py-5">
@@ -430,8 +442,10 @@ function App() {
           </Routes>
         </div>
         <Footer />
+        <ChatBoxButton />
       </div>
     </Router>
+    </AuthProvider>
   );
 }
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Navbar, Nav, NavDropdown, Container, Button, Badge, Image } from 'react-bootstrap';
-import { auth, logout } from './config/firebase';
+import { auth, logout, adminEmails, staffEmails, managerEmails } from './config/firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
 
 const MainNavbar = ({ setUser }) => {
@@ -11,25 +11,6 @@ const MainNavbar = ({ setUser }) => {
   const [userAuth, loadingAuth] = useAuthState(auth);
   const [userData, setUserData] = useState(null);
   const [logoUrl] = useState('https://firebasestorage.googleapis.com/v0/b/su25-swp391-g8.firebasestorage.app/o/assets%2Flogo.png?alt=media&token=1c903ba1-852a-4f5b-b498-97c31ffbb742');
-
-  // Role detection logic
-  const adminEmails = [
-    'admin@adnlab.vn',
-    'admin@gmail.com',
-    'test.admin@adnlab.vn',
-    'adnlab.admin@gmail.com'
-  ];
-
-  const staffEmails = [
-    'staff@adnlab.vn',
-    'staff@gmail.com',
-    'lab@adnlab.vn'
-  ];
-
-  const managerEmails = [
-    'manager@adnlab.vn',
-    'manager@gmail.com'
-  ];
 
   const getUserRole = (email) => {
     if (adminEmails.includes(email)) return 'admin';
