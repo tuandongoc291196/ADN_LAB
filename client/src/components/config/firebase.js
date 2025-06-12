@@ -112,7 +112,7 @@ const signInWithGoogle = async () => {
     const { data: userData } = await getUser(dataConnect);
     
     localStorage.setItem("user_id", user.uid);
-    localStorage.setItem("userData", JSON.stringify(userData));
+    localStorage.setItem("userData", JSON.stringify(userData.user));
     
     return { uid: user.uid, displayName: user.displayName };
   } catch (err) {

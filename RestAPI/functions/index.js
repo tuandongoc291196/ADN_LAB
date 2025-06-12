@@ -7,7 +7,7 @@ const {addPayment} = require('./controllers/payments/addPayment');
 const {getAllPayments, getPayment} = require('./controllers/payments/getPayment');
 const {refundPayment} = require('./controllers/payments/refundPayment');
 const {getHomePage} = require('./controllers/home/homeController');
-const { onUserChange } = require('./triggers/userTrigger');
+const {getAllUsers} = require('./controllers/users/getUsers');
 
 const app = express();
 
@@ -26,10 +26,11 @@ app.use(cors({
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 app.get('/', getHomePage);
+
+app.get('/users', getAllUsers);
 app.post('/payments', addPayment);
 app.get('/payments', getAllPayments);
 app.get('/payments/:entryId', getPayment);
 app.post('/refund/:entryId', refundPayment);
  
 exports.app = functions.https.onRequest(app);
-exports.onUserChange = onUserChange;
