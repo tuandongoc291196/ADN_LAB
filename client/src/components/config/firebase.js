@@ -1,5 +1,3 @@
-// Firebase Data Connect Configuration for ADN Lab - Users Only
-// Chat functionality remains in Firestore
 import { initializeApp } from "firebase/app";
 import {
   GoogleAuthProvider,
@@ -17,13 +15,20 @@ import {
   onSnapshot,
   orderBy,
   query,
-  serverTimestamp
+  serverTimestamp,
+  doc,
+  setDoc,
+  getDoc,
+  getDocs,
+  where,
+  updateDoc,
+  increment,
+  arrayUnion,
+  deleteDoc
 } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getDataConnect, connectDataConnectEmulator } from "firebase/data-connect";
 
-// Import generated Data Connect operations for users only
-// Note: These will be available after running: firebase dataconnect:sdk:generate
 import {
   createOrUpdateUser,
   updateUserProfile,
@@ -33,7 +38,6 @@ import {
   updateUserAccountStatus as updateAccountStatusAPI
 } from "../../lib/dataconnect";
 
-// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyCW-imcNnBVVVs50ORbBIbUxKSGYxHfF2w",
   authDomain: "su25-swp391-g8.firebaseapp.com",
@@ -47,19 +51,21 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const storage = getStorage(app);
-const db = getFirestore(app); // Keep Firestore for chat
+const db = getFirestore(app);
 
-// Initialize Data Connect for production (deployed service)
 const dataConnect = getDataConnect(app, {
   connector: "default",
   service: "su25-swp391-g8-service",
   location: "asia-east2"
 });
 
-// Ensure we're not using emulator for Data Connect in production
-// This prevents connection to localhost:9399
-
 const googleProvider = new GoogleAuthProvider();
+
+// User cache to optimize getUserById calls
+const userCache = new Map();
+const CACHE_EXPIRY_TIME = 5 * 60 * 1000; // 5 minutes
+let lastUsersFetch = 0;
+let allUsersCache = null;
 
 // Admin email lists (for reference)
 const adminEmails = [
@@ -97,7 +103,19 @@ const getRoleFromEmail = (email) => {
 const signInWithGoogle = async () => {
   try {
     const res = await signInWithPopup(auth, googleProvider);
-    const user = res.user;  
+    const user = res.user;
+    try {
+      const { data: userData } = await getUser(dataConnect);
+      console.log("Checking if user exists in database:", userData);
+      if (userData?.user) {
+        console.log("User found in database, updating localStorage");
+        localStorage.setItem("user_id", user.uid);
+        localStorage.setItem("userData", JSON.stringify(userData.user));
+        return { uid: user.uid, displayName: user.displayName };
+      }
+    } catch (getUserError) {
+      console.log("User not found in database, creating new record");
+    }
     await createOrUpdateUser(dataConnect, {
       fullname: user.displayName || "",
       email: user.email,
@@ -156,7 +174,7 @@ const registerWithEmailAndPassword = async (name, phone, email, password) => {
       avatar: "",
       phone: phone,
       shippingAddress: "",
-      roleId: getRoleFromEmail(user.email) 
+      roleId: "0"
     });
     
     // Get user data and store in localStorage
@@ -187,19 +205,70 @@ const logout = () => {
   localStorage.removeItem("user_id");
   localStorage.removeItem("userData");
   localStorage.removeItem("isAuthenticated");
+  
+  // Clear user cache on logout
+  clearUserCache();
+  
   signOut(auth);
 };
 
-async function sendMessage(roomId, user, text) {
+// One-on-one chat functions
+async function createOrGetChatRoom(userId1, userId2) {
   try {
+    if (!userId1 || !userId2 || userId1 === userId2) {
+      throw new Error(`Invalid user IDs: userId1=${userId1}, userId2=${userId2}`);
+    }
+
+    const roomId = [userId1, userId2].sort().join('_');
+    const chatRoomRef = doc(db, "chat-rooms", roomId);
+    const chatRoomDoc = await getDoc(chatRoomRef);
+    console.log(chatRoomDoc);
+    
+    if (!chatRoomDoc.exists()) {
+      const chatRoomData = {
+        participants: [userId1, userId2],
+        createdAt: serverTimestamp(),
+        lastMessage: "",
+        lastMessageTime: null,
+        unreadCount: {
+          [userId1]: 0,
+          [userId2]: 0
+        }
+      };
+      
+      console.log('Creating chat room with data:', chatRoomData);
+      await setDoc(chatRoomRef, chatRoomData);
+    }
+    
+    return roomId;
+  } catch (error) {
+    console.error("Error creating/getting chat room:", error);
+    throw error;
+  }
+}
+
+async function sendMessage(roomId, user, text, recipientId) {
+  try {
+    // Add message to messages subcollection
     await addDoc(collection(db, "chat-rooms", roomId, "messages"), {
-      uid: user.uid,
-      displayName: user.displayName,
+      senderId: user.uid,
+      senderName: user.displayName || user.fullname,
+      senderAvatar: user.photoURL || user.avatar,
       text: text.trim(),
       timestamp: serverTimestamp(),
+      readBy: [user.uid] // Mark as read by sender
+    });
+
+    // Update chat room metadata
+    const chatRoomRef = doc(db, "chat-rooms", roomId);
+    await updateDoc(chatRoomRef, {
+      lastMessage: text.trim(),
+      lastMessageTime: serverTimestamp(),
+      [`unreadCount.${recipientId}`]: increment(1)
     });
   } catch (error) {
-    console.error(error);
+    console.error("Error sending message:", error);
+    throw error;
   }
 }
 
@@ -210,14 +279,242 @@ function getMessages(roomId, callback) {
       orderBy("timestamp", "asc")
     ),
     (querySnapshot) => {
-      const messages = querySnapshot.docs.map((x) => ({
-        id: x.id,
-        ...x.data(),
+      const messages = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
       }));
-
       callback(messages);
     }
   );
+}
+
+async function getUserById(userId) {
+  try {
+    // Check if user is in cache and still valid
+    const cachedUser = userCache.get(userId);
+    if (cachedUser && (Date.now() - cachedUser.timestamp) < CACHE_EXPIRY_TIME) {
+      return cachedUser.data;
+    }
+
+    // Check if we have recent all users cache
+    const now = Date.now();
+    if (!allUsersCache || (now - lastUsersFetch) > CACHE_EXPIRY_TIME) {
+      const { data } = await getUsers(dataConnect);
+      allUsersCache = data.users || [];
+      lastUsersFetch = now;
+      
+      // Update individual user cache
+      allUsersCache.forEach(user => {
+        userCache.set(user.id, {
+          data: {
+            ...user,
+            user_id: user.id
+          },
+          timestamp: now
+        });
+      });
+    }
+    
+    const user = allUsersCache.find(u => u.id === userId);
+    if (user) {
+      const userData = {
+        ...user,
+        user_id: user.id // Add user_id field for compatibility
+      };
+      
+      // Cache the user data
+      userCache.set(userId, {
+        data: userData,
+        timestamp: now
+      });
+      
+      return userData;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error("Error fetching user by ID:", error);
+    return null;
+  }
+}
+
+function getUserChatRooms(userId, callback) {
+  return onSnapshot(
+    query(
+      collection(db, "chat-rooms"),
+      where("participants", "array-contains", userId)
+    ),
+    async (querySnapshot) => {
+      const chatRooms = [];
+      const docsToDelete = [];
+      const validChatRoomDocs = [];
+      const now = new Date();
+      const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+      
+      for (const doc of querySnapshot.docs) {
+        const data = doc.data();
+
+        if (!data.lastMessage || data.lastMessage === "") {
+          const createdAt = data.createdAt?.toDate();
+          
+          if (createdAt && createdAt < fiveMinutesAgo) {
+            docsToDelete.push(doc.ref);
+            continue;
+          } else {
+          }
+        }
+        
+        validChatRoomDocs.push({ doc, data });
+      }
+      
+      // Batch delete old empty chat rooms (async, don't block the main flow)
+      if (docsToDelete.length > 0) {
+        Promise.all(
+          docsToDelete.map(async (docRef) => {
+            try {
+              await deleteDoc(docRef);
+              console.log("Successfully deleted old empty chat room:", docRef.id);
+            } catch (error) {
+              console.error("Error deleting chat room:", docRef.id, error);
+            }
+          })
+        ).catch(error => {
+          console.error("Error in batch delete:", error);
+        });
+      }
+      
+      // Collect all unique other user IDs needed
+      const otherUserIds = validChatRoomDocs.map(({ data }) => 
+        data.participants.find(id => id !== userId)
+      ).filter(Boolean);
+      const uniqueOtherUserIds = [...new Set(otherUserIds)];
+      const usersMap = new Map();
+      const uncachedUserIds = [];
+      const cacheValidTime = Date.now() - CACHE_EXPIRY_TIME;
+      
+      for (const otherUserId of uniqueOtherUserIds) {
+        const cachedUser = userCache.get(otherUserId);
+        if (cachedUser && cachedUser.timestamp > cacheValidTime) {
+          usersMap.set(otherUserId, cachedUser.data);
+        } else {
+          uncachedUserIds.push(otherUserId);
+        }
+      }
+      
+      // If we have uncached users, refresh the entire cache
+      if (uncachedUserIds.length > 0 || !allUsersCache || (Date.now() - lastUsersFetch) > CACHE_EXPIRY_TIME) {
+        try {
+          const { data } = await getUsers(dataConnect);
+          allUsersCache = data.users || [];
+          lastUsersFetch = Date.now();
+          
+          // Update cache and usersMap for all users
+          allUsersCache.forEach(user => {
+            const userData = {
+              ...user,
+              user_id: user.id
+            };
+            
+            userCache.set(user.id, {
+              data: userData,
+              timestamp: lastUsersFetch
+            });
+            
+            // Add to current usersMap if needed
+            if (uniqueOtherUserIds.includes(user.id)) {
+              usersMap.set(user.id, userData);
+            }
+          });
+        } catch (error) {
+          console.error("Error fetching users for chat rooms:", error);
+        }
+      }
+      
+      // Build chat rooms with cached user data
+      for (const { doc, data } of validChatRoomDocs) {
+        const otherUserId = data.participants.find(id => id !== userId);
+        const otherUser = usersMap.get(otherUserId) || {
+          id: otherUserId,
+          user_id: otherUserId,
+          fullname: "Unknown User",
+          email: "",
+          avatar: ""
+        };
+        
+        chatRooms.push({
+          id: doc.id,
+          ...data,
+          otherUser
+        });
+      }
+      
+      callback(chatRooms);
+    }
+  );
+}
+
+async function markMessagesAsRead(roomId, userId) {
+  try {
+    const chatRoomRef = doc(db, "chat-rooms", roomId);
+    await updateDoc(chatRoomRef, {
+      [`unreadCount.${userId}`]: 0
+    });
+  } catch (error) {
+    console.error("Error marking messages as read:", error);
+  }
+}
+
+// Search users for starting new chats
+async function searchUsersForChat(searchTerm) {
+  try {
+    // Use cached data if available and recent
+    const now = Date.now();
+    if (!allUsersCache || (now - lastUsersFetch) > CACHE_EXPIRY_TIME) {
+      const { data } = await getUsers(dataConnect);
+      allUsersCache = data.users || [];
+      lastUsersFetch = now;
+      
+      // Update individual user cache
+      allUsersCache.forEach(user => {
+        userCache.set(user.id, {
+          data: {
+            ...user,
+            user_id: user.id
+          },
+          timestamp: now
+        });
+      });
+    }
+
+    return allUsersCache
+      .filter(user => 
+        user.fullname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      .map(user => ({
+        ...user,
+        user_id: user.id
+      }));
+  } catch (error) {
+    console.error("Error searching users:", error);
+    return [];
+  }
+}
+
+// Cache management functions
+function clearUserCache() {
+  userCache.clear();
+  allUsersCache = null;
+  lastUsersFetch = 0;
+}
+
+function invalidateUserCache(userId) {
+  if (userId) {
+    userCache.delete(userId);
+  }
+  // Also invalidate the all users cache since it might contain outdated data
+  allUsersCache = null;
+  lastUsersFetch = 0;
 }
 
 // User profile management with Data Connect
@@ -229,6 +526,12 @@ async function updateProfile(profileData) {
     const { data: userData } = await getUser(dataConnect);
     localStorage.setItem("userData", JSON.stringify(userData.user));
     
+    // Invalidate cache for the updated user
+    const currentUserId = localStorage.getItem("user_id");
+    if (currentUserId) {
+      invalidateUserCache(currentUserId);
+    }
+    
     return userData.user;
   } catch (error) {
     console.error("Error updating profile:", error);
@@ -239,8 +542,26 @@ async function updateProfile(profileData) {
 // Admin functions for user management
 async function getAllUsers() {
   try {
-    const { data } = await getUsers(dataConnect);
-    return data.users;
+    // Use cached data if available and recent
+    const now = Date.now();
+    if (!allUsersCache || (now - lastUsersFetch) > CACHE_EXPIRY_TIME) {
+      const { data } = await getUsers(dataConnect);
+      allUsersCache = data.users || [];
+      lastUsersFetch = now;
+      
+      // Update individual user cache
+      allUsersCache.forEach(user => {
+        userCache.set(user.id, {
+          data: {
+            ...user,
+            user_id: user.id
+          },
+          timestamp: now
+        });
+      });
+    }
+    
+    return allUsersCache;
   } catch (error) {
     console.error("Error fetching users:", error);
     throw error;
@@ -253,6 +574,9 @@ async function updateUserRole(userId, roleId) {
       userId,
       roleId
     });
+    
+    // Invalidate cache for the updated user
+    invalidateUserCache(userId);
   } catch (error) {
     console.error("Error updating user role:", error);
     throw error;
@@ -265,6 +589,9 @@ async function updateAccountStatus(userId, accountStatus) {
       userId,
       accountStatus
     });
+    
+    // Invalidate cache for the updated user
+    invalidateUserCache(userId);
   } catch (error) {
     console.error("Error updating account status:", error);
     throw error;
@@ -293,6 +620,10 @@ export {
   logout,
   getMessages,
   sendMessage,
+  createOrGetChatRoom,
+  getUserChatRooms,
+  markMessagesAsRead,
+  searchUsersForChat,
   updateProfile,
   getAllUsers,
   updateUserRole,
@@ -301,5 +632,7 @@ export {
   isStaff,
   adminEmails,
   staffEmails,
-  managerEmails
+  managerEmails,
+  clearUserCache,
+  invalidateUserCache
 };

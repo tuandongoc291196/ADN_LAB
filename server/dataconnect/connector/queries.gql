@@ -91,6 +91,8 @@ query GetUsers($limit: Int, $offset: Int) @auth(level: USER) {
   users(limit: $limit, offset: $offset, orderBy: { createdAt: DESC }) {
     id
     fullname
+    gender
+    avatar
     email
     accountStatus
     role {
@@ -107,6 +109,8 @@ query GetUsersByRole($roleId: String!) @auth(level: USER) {
   users(where: { roleId: { eq: $roleId } }) {
     id
     fullname
+    gender
+    avatar
     email
     accountStatus
     role {
@@ -125,6 +129,8 @@ query GetStaffMembers @auth(level: USER) {
   }) {
     id
     fullname
+    gender
+    avatar
     email
     role {
       name

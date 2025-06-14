@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { chatRooms } from "../data/chatRooms";
+import { chatUtils } from "../data/chatRooms";
 import "./styles.css";
 import { Box, Typography, List, ListItem, ListItemText, Paper, Container } from "@mui/material";
 
@@ -12,7 +12,7 @@ function Landing() {
             Choose a Chat Room
           </Typography>
           <List className="chat-room-list">
-            {chatRooms.map((room) => (
+            {chatUtils.map((room) => (
               <ListItem
                 key={room.id}
                 component={Link}
@@ -30,3 +30,4 @@ function Landing() {
 }
 
 export { Landing };
+export default Landing;

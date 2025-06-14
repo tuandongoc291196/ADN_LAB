@@ -69,8 +69,6 @@ const MainNavbar = ({ setUser }) => {
         setUser(enhancedUserData);
         
         // Update localStorage with enhanced data
-        localStorage.setItem('userData', JSON.stringify(enhancedUserData));
-        localStorage.setItem('user', JSON.stringify(enhancedUserData));
         localStorage.setItem('isAuthenticated', 'true');
       } else {
         // Create user data if not exists
@@ -490,27 +488,6 @@ const MainNavbar = ({ setUser }) => {
       </Navbar>
 
       {/* Quick Contact Bar - Only on desktop */}
-      <div className="d-none d-lg-block position-fixed bottom-0 end-0 p-3" style={{ zIndex: 1000 }}>
-        <div className="d-flex flex-column gap-2">
-          <Button 
-            variant="success" 
-            className="rounded-circle shadow-lg"
-            style={{ width: '50px', height: '50px' }}
-            title="Chat với chuyên gia"
-          >
-            <i className="bi bi-chat-dots fs-5"></i>
-          </Button>
-          <Button 
-            variant="primary" 
-            className="rounded-circle shadow-lg"
-            style={{ width: '50px', height: '50px' }}
-            title="Gọi hotline"
-            href="tel:19001234"
-          >
-            <i className="bi bi-telephone fs-5"></i>
-          </Button>
-        </div>
-      </div>
     </>
   );
 };

@@ -1,43 +1,55 @@
 import React, { useEffect, useState } from "react";
 import { getAuth } from "firebase/auth";
-import { signInWithGoogle, auth as firebaseAuth } from "../config/firebase";
+import { signInWithGoogle, auth as firebaseAuth, dataConnect } from "../config/firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { getUser } from "../../lib/dataconnect";
 
 const AuthContext = React.createContext();
 
 const auth = getAuth();
-const db = getFirestore(); // Initialize Firestore
 
 const AuthProvider = (props) => {
   const [user] = useAuthState(auth);
   const [authUser, setAuthUser] = useState(null);
 
-  useEffect(() => {
-    const fetchUserData = async (uid) => {
-      const userDoc = doc(db, "users", uid);
-      const docSnap = await getDoc(userDoc);
-      if (docSnap.exists()) {
-        return docSnap.data();
+  const fetchUserData = async (uid) => {
+    try {
+      // Set the user ID in localStorage for Data Connect queries
+      localStorage.setItem("user_id", uid);
+      
+      const { data: userData } = await getUser(dataConnect);
+      
+      if (userData?.user) {
+        return userData.user;
       } else {
-        console.log("No such document!");
+        console.log("No user data found in Data Connect!");
         return null;
       }
-    };
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      return null;
+    }
+  };
 
+  useEffect(() => {
     if (user) {
       console.log(user.uid); // user ID
       console.log(user.email); // user email
       console.log(user.displayName); // user display name
       console.log(user.photoURL); // user photo URL
+      
       fetchUserData(user.uid).then((userData) => {
         if (userData) {
           const userWithRole = {
             user_id: user.uid,
             email: user.email,
-            fullname: user.displayName,
-            avatar: user.photoURL,
-            role: userData.role, // Lấy role từ cơ sở dữ liệu
+            fullname: user.displayName || userData.fullname,
+            avatar: user.photoURL || userData.avatar,
+            phone: userData.phone,
+            roleId: userData.roleId,
+            roleString: userData.roleString,
+            accountStatus: userData.accountStatus,
+            shippingAddress: userData.shippingAddress,
           };
           localStorage.setItem("userData", JSON.stringify(userWithRole));
           setAuthUser(userWithRole);
@@ -45,24 +57,31 @@ const AuthProvider = (props) => {
       });
     } else {
       localStorage.removeItem("userData");
+      localStorage.removeItem("user_id");
       setAuthUser(null);
     }
   }, [user]);
 
-  const login = async () => {
+    const login = async () => {
     try {
       const result = await signInWithGoogle();
-      localStorage.setItem("userChat", result);
-      const user = result.user;
-      if (user) { 
-        const userData = await fetchUserData(user.uid);
+      localStorage.setItem("userChat", JSON.stringify(result));
+      
+      // The signInWithGoogle function from firebase.js already handles user creation and localStorage
+      // We just need to fetch the updated user data
+      if (result.uid) {
+        const userData = await fetchUserData(result.uid);
         if (userData) {
           const userWithRole = {
-            user_id: user.uid,
-            email: user.email,
-            fullname: user.displayName,
-            avatar: user.photoURL,
-            role: userData.role,
+            user_id: result.uid,
+            email: userData.email,
+            fullname: result.displayName || userData.fullname,
+            avatar: userData.avatar,
+            phone: userData.phone,
+            roleId: userData.roleId,
+            roleString: userData.roleString,
+            accountStatus: userData.accountStatus,
+            shippingAddress: userData.shippingAddress,
           };
           localStorage.setItem("userData", JSON.stringify(userWithRole));
           setAuthUser(userWithRole);
@@ -76,6 +95,8 @@ const AuthProvider = (props) => {
   const logout = () => {
     auth.signOut();
     localStorage.removeItem("userData");
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("userChat");
     setAuthUser(null);
   };
 
@@ -84,4 +105,13 @@ const AuthProvider = (props) => {
   return <AuthContext.Provider value={value} {...props} />;
 };
 
-export { AuthContext, AuthProvider };
+// Custom hook to use the auth context
+const useAuth = () => {
+  const context = React.useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};
+
+export { AuthContext, AuthProvider, useAuth };
