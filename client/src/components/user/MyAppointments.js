@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Row, Col, Card, Button, Badge, Form, Alert, Modal, Tab, Tabs } from 'react-bootstrap';
+import { Row, Col, Card, Button, Badge, Form, Alert, Modal, Tab, Tabs, ProgressBar } from 'react-bootstrap';
 
 const MyAppointments = ({ user }) => {
   const [selectedTab, setSelectedTab] = useState('all');
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -14,23 +15,24 @@ const MyAppointments = ({ user }) => {
       id: 'ADN123456',
       service: 'Xét nghiệm ADN huyết thống cha-con',
       serviceType: 'civil',
-      date: '2024-01-25',
+      date: '2024-02-05',
       time: '09:00',
       status: 'confirmed',
       method: 'self-sample',
       progress: 40,
       price: '3,500,000 VNĐ',
       participants: ['Nguyễn Văn A', 'Nguyễn Văn B'],
-      nextAction: 'Chờ nhận kit xét nghiệm',
+      nextAction: 'Kit sẽ được gửi trong 1-2 ngày',
       canCancel: true,
       canReschedule: true,
-      notes: 'Lịch hẹn đã được xác nhận. Kit sẽ được gửi đến địa chỉ của bạn trong 1-2 ngày.'
+      notes: 'Lịch hẹn đã được xác nhận. Kit sẽ được gửi đến địa chỉ của bạn.',
+      estimatedCompletion: '2024-02-12'
     },
     {
       id: 'ADN123457',
       service: 'Xét nghiệm ADN thai nhi',
       serviceType: 'civil',
-      date: '2024-01-22',
+      date: '2024-02-03',
       time: '14:30',
       status: 'in-progress',
       method: 'at-facility',
@@ -40,7 +42,8 @@ const MyAppointments = ({ user }) => {
       nextAction: 'Đang phân tích mẫu tại phòng lab',
       canCancel: false,
       canReschedule: false,
-      notes: 'Mẫu đã được thu thập thành công. Kết quả dự kiến trong 2-3 ngày.'
+      notes: 'Mẫu đã được thu thập thành công. Kết quả dự kiến trong 2-3 ngày.',
+      estimatedCompletion: '2024-02-06'
     },
     {
       id: 'ADN123458',
@@ -53,10 +56,11 @@ const MyAppointments = ({ user }) => {
       progress: 100,
       price: '4,200,000 VNĐ',
       participants: ['Nguyễn Văn E', 'Nguyễn Thị F'],
-      nextAction: 'Kết quả đã sẵn sàng',
+      nextAction: 'Kết quả đã sẵn sàng để tải về',
       canCancel: false,
       canReschedule: false,
-      notes: 'Xét nghiệm hoàn tất. Kết quả có giá trị pháp lý đầy đủ.'
+      notes: 'Xét nghiệm hoàn tất. Kết quả có giá trị pháp lý đầy đủ.',
+      estimatedCompletion: '2024-01-23'
     },
     {
       id: 'ADN123459',
@@ -72,23 +76,25 @@ const MyAppointments = ({ user }) => {
       nextAction: 'Đã hủy theo yêu cầu',
       canCancel: false,
       canReschedule: false,
-      notes: 'Lịch hẹn đã được hủy theo yêu cầu của khách hàng.'
+      notes: 'Lịch hẹn đã được hủy theo yêu cầu của khách hàng.',
+      estimatedCompletion: null
     },
     {
       id: 'ADN123460',
       service: 'Xét nghiệm ADN di trú',
       serviceType: 'administrative',
-      date: '2024-02-01',
+      date: '2024-02-08',
       time: '08:30',
       status: 'confirmed',
       method: 'at-facility',
       progress: 0,
       price: '5,800,000 VNĐ',
       participants: ['Nguyễn Văn I', 'Nguyễn Thị J'],
-      nextAction: 'Chuẩn bị cho lịch hẹn',
+      nextAction: 'Chuẩn bị cho lịch hẹn - Mang theo CCCD gốc',
       canCancel: true,
       canReschedule: true,
-      notes: 'Vui lòng mang theo CCCD gốc của tất cả người tham gia.'
+      notes: 'Vui lòng mang theo CCCD gốc của tất cả người tham gia.',
+      estimatedCompletion: '2024-02-13'
     }
   ];
 
@@ -145,12 +151,23 @@ const MyAppointments = ({ user }) => {
     setShowCancelModal(true);
   };
 
+  const handleRescheduleAppointment = (appointment) => {
+    setSelectedAppointment(appointment);
+    setShowRescheduleModal(true);
+  };
+
   const confirmCancel = () => {
     // TODO: API call to cancel appointment
     console.log('Cancelling appointment:', selectedAppointment.id);
     setShowCancelModal(false);
     setSelectedAppointment(null);
-    // Show success message or update state
+  };
+
+  const confirmReschedule = () => {
+    // TODO: API call to reschedule appointment
+    console.log('Rescheduling appointment:', selectedAppointment.id);
+    setShowRescheduleModal(false);
+    setSelectedAppointment(null);
   };
 
   const formatDate = (dateString) => {
@@ -336,12 +353,11 @@ const MyAppointments = ({ user }) => {
                               <span className="small text-muted">Tiến độ thực hiện</span>
                               <span className="small fw-bold">{appointment.progress}%</span>
                             </div>
-                            <div className="progress" style={{ height: '6px' }}>
-                              <div 
-                                className={`progress-bar bg-${appointment.progress === 100 ? 'success' : 'primary'}`}
-                                style={{ width: `${appointment.progress}%` }}
-                              ></div>
-                            </div>
+                            <ProgressBar 
+                              now={appointment.progress}
+                              variant={appointment.progress === 100 ? 'success' : 'primary'}
+                              style={{ height: '6px' }}
+                            />
                           </div>
                         )}
 
@@ -380,7 +396,10 @@ const MyAppointments = ({ user }) => {
                           )}
 
                           {appointment.canReschedule && (
-                            <Button variant="outline-warning">
+                            <Button 
+                              variant="outline-warning"
+                              onClick={() => handleRescheduleAppointment(appointment)}
+                            >
                               <i className="bi bi-calendar-event me-2"></i>
                               Đổi lịch hẹn
                             </Button>
@@ -466,6 +485,76 @@ const MyAppointments = ({ user }) => {
           </Button>
           <Button variant="danger" onClick={confirmCancel}>
             Xác nhận hủy
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Reschedule Modal */}
+      <Modal show={showRescheduleModal} onHide={() => setShowRescheduleModal(false)} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Đổi lịch hẹn</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedAppointment && (
+            <>
+              <Alert variant="info">
+                <strong>Lịch hẹn hiện tại:</strong> {selectedAppointment.service}
+                <br />
+                {formatDate(selectedAppointment.date)} lúc {selectedAppointment.time}
+              </Alert>
+              
+              <Form>
+                <Row>
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Ngày mới</Form.Label>
+                      <Form.Control type="date" />
+                    </Form.Group>
+                  </Col>
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Giờ mới</Form.Label>
+                      <Form.Select>
+                        <option>Chọn giờ...</option>
+                        <option value="08:00">08:00</option>
+                        <option value="08:30">08:30</option>
+                        <option value="09:00">09:00</option>
+                        <option value="09:30">09:30</option>
+                        <option value="10:00">10:00</option>
+                        <option value="10:30">10:30</option>
+                        <option value="11:00">11:00</option>
+                        <option value="11:30">11:30</option>
+                        <option value="13:30">13:30</option>
+                        <option value="14:00">14:00</option>
+                        <option value="14:30">14:30</option>
+                        <option value="15:00">15:00</option>
+                        <option value="15:30">15:30</option>
+                        <option value="16:00">16:00</option>
+                        <option value="16:30">16:30</option>
+                        <option value="17:00">17:00</option>
+                      </Form.Select>
+                    </Form.Group>
+                  </Col>
+                </Row>
+                
+                <Form.Group className="mb-3">
+                  <Form.Label>Lý do đổi lịch</Form.Label>
+                  <Form.Control 
+                    as="textarea" 
+                    rows={3} 
+                    placeholder="Vui lòng cho biết lý do đổi lịch hẹn..."
+                  />
+                </Form.Group>
+              </Form>
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowRescheduleModal(false)}>
+            Hủy
+          </Button>
+          <Button variant="warning" onClick={confirmReschedule}>
+            Xác nhận đổi lịch
           </Button>
         </Modal.Footer>
       </Modal>

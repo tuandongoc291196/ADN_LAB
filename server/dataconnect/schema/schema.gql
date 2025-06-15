@@ -1,0 +1,238 @@
+# Predefined system roles
+type Role @table {
+  id: String! @col(name: "role_id")
+  name: String! @unique
+  description: String
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
+}
+
+# User accounts keyed by Firebase Auth UID
+type User @table {
+  id: String! @default(expr: "auth.uid")
+  fullname: String!
+  gender: String
+  avatar: String
+  email: String! @unique
+  accountStatus: String! @default(value: "inactive")
+  authProvider: String!
+  phone: String
+  shippingAddress: String
+  roleId: String! @default(value: "0")
+  role: Role! @ref(fields: "roleId")
+  dailySlotCount: Int! @default(value: 0)
+  maxDailySlots: Int! @default(value: 3)  
+  createdAt: Timestamp! @default(expr: "request.time")
+  lastLogin: Timestamp
+}
+
+# DNA testing services
+type DnaService @table {
+  id: String! @col(name: "service_id")
+  title: String!
+  description: String!
+  fullDescription: String
+  price: String!
+  duration: String!
+  category: String! # 'administrative' or 'civil'
+  serviceType: String! # 'administrative' or 'civil'
+  hasLegalValue: Boolean! @default(value: false)
+  icon: String
+  participants: String # JSON array of participant types
+  requiredDocuments: String # JSON array of required documents
+  procedures: String # JSON array of procedure steps
+  featured: Boolean! @default(value: false)
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
+}
+
+# Junction table for services and their allowed collection methods
+type ServiceCollectionMethod @table {
+  id: String! @col(name: "scm_id")
+  serviceId: String!
+  service: DnaService! @ref(fields: "serviceId")
+  methodId: String! # 'self-sample', 'home-visit', 'at-facility'
+  methodTitle: String!
+  methodDescription: String
+  methodIcon: String
+  methodColor: String
+  methodNote: String
+  methodProcess: String # JSON array of process steps
+  allowedFor: String # JSON array of service types this method is allowed for
+  createdAt: Timestamp! @default(expr: "request.time")
+}
+
+# Testing kits
+type Kit @table {
+  id: String! @col(name: "kit_id")
+  status: String! @default(value: "available")
+  amount: Int! @default(value: 1)
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
+}
+
+# Appointment time slots
+type TimeSlot @table {
+  id: String! @col(name: "time_slot_id")
+  slotDate: Date!
+  startTime: String!
+  endTime: String!
+  maxCapacity: Int!
+  currentBookings: Int! @default(value: 0)
+  available: Boolean! @default(value: true)
+  
+  staffId: String
+  staff: User @ref(fields: "staffId")
+  
+  notes: String
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
+}
+
+# Service bookings
+type Booking @table {
+  id: String! @col(name: "booking_id")
+  
+  userId: String!
+  user: User! @ref(fields: "userId")
+  
+  staffId: String
+  staff: User @ref(fields: "staffId")
+  
+  kitId: String
+  kit: Kit @ref(fields: "kitId")
+  
+  timeSlotId: String
+  timeSlot: TimeSlot @ref(fields: "timeSlotId")
+  
+  status: String! @default(value: "pending")
+  bookingCreatedAt: Timestamp! @default(expr: "request.time")
+  collectionMethod: String!
+  notes: String
+  totalAmount: Float!
+  
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
+}
+
+# Junction table for booking and services
+type BookingItem @table {
+  id: String! @col(name: "item_id")
+  
+  bookingId: String!
+  booking: Booking! @ref(fields: "bookingId")
+  
+  serviceId: String!
+  service: DnaService! @ref(fields: "serviceId")
+  
+  price: Float!
+  quantity: Int! @default(value: 1)
+  notes: String
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
+}
+
+# DNA samples collected from bookings
+type Sample @table {
+  id: String! @col(name: "sample_id")
+  
+  bookingId: String!
+  booking: Booking! @ref(fields: "bookingId")
+  
+  staffId: String
+  staff: User @ref(fields: "staffId")
+  
+  serviceId: String!
+  service: DnaService! @ref(fields: "serviceId")
+  
+  collectionDate: Date
+  status: String! @default(value: "pending")
+  notes: String
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
+}
+
+# DNA test results
+type TestResult @table {
+  id: String! @col(name: "result_id")
+  
+  bookingId: String!
+  booking: Booking! @ref(fields: "bookingId")
+  
+  sampleId: String!
+  sample: Sample! @ref(fields: "sampleId")
+  
+  serviceId: String!
+  service: DnaService! @ref(fields: "serviceId")
+  
+  staffId: String
+  staff: User @ref(fields: "staffId")
+  verifiedBy: String
+  verifier: User @ref(fields: "verifiedBy")
+  
+  testDate: Date
+  reportDate: Date
+  resultData: String
+  status: String! @default(value: "pending")
+  reportUrl: String
+  notes: String
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
+}
+
+# Payment transactions
+type Payment @table {
+  id: String! @col(name: "payment_id")
+  
+  bookingId: String!
+  booking: Booking! @ref(fields: "bookingId")
+  
+  amount: Float!
+  paymentMethod: String!
+  transactionId: String
+  status: String! @default(value: "pending")
+  paymentDate: Date
+  refundDetail: String
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
+}
+
+# User feedback and ratings
+type Feedback @table {
+  id: String! @col(name: "feedback_id")
+  
+  bookingId: String!
+  booking: Booking! @ref(fields: "bookingId")
+  
+  rating: Int!
+  comment: String
+  createdAt: Timestamp! @default(expr: "request.time")
+}
+
+# Blog posts and articles
+type Blog @table {
+  id: String! @col(name: "blog_id")
+  userId: String!
+  user: User! @ref(fields: "userId")  
+  content: String!
+  imageUrl: String
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
+}
+
+# System notifications
+type Notification @table {
+  id: String! @col(name: "notification_id")
+  
+  userId: String
+  user: User @ref(fields: "userId")
+  
+  staffId: String
+  staff: User @ref(fields: "staffId")
+  
+  title: String!
+  message: String!
+  isRead: Boolean! @default(value: false)
+  type: String! @default(value: "general")
+  createdAt: Timestamp! @default(expr: "request.time")
+}

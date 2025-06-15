@@ -1,0 +1,70 @@
+/* Chat Room Styles - Integrated with Bootstrap */
+
+/* Smooth transitions for chat elements */
+.chat-room-container {
+    transition: all 0.3s ease;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* Message container with better scrolling */
+.messages-container {
+    height: 100%;
+    position: relative;
+    background: #f8f9fa;
+}
+
+/* Chat header animations */
+.chat-header {
+    animation: slideDown 0.3s ease-out;
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Status indicator animation */
+.status-indicator {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Chat input area */
+.chat-input-area {
+    background: white;
+    border-top: 1px solid #dee2e6;
+    padding: 1rem;
+}
+
+/* Responsive chat adjustments */
+@media (max-width: 768px) {
+    .chat-room-container {
+        margin: 0;
+        border-radius: 0;
+        height: calc(100vh - 120px);
+    }
+    
+    .messages-container {
+        height: calc(100vh - 200px);
+    }
+}
+  

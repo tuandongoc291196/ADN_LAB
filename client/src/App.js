@@ -37,7 +37,21 @@ import LoadingSpinner from './components/common/LoadingSpinner';
 import TestResults from './components/user/TestResults';
 import PrintableResult from './components/user/PrintableResult';
 
-// Protected Route Component
+// User Information Components
+import UserProfile from './components/user/UserProfile';
+import MyAppointments from './components/user/MyAppointments';
+
+import LinkChatbox from "./components/chat/chatButton/linkChatbox.js";
+import ChatBoxButton from "./components/chat/chatButton/chatboxButton.js";
+import EnhancedChatButton from "./components/chat/chatButton/EnhancedChatButton.js";
+import { Landing as ChatLanding } from "./components/chat/landing/index.js";
+import {ChatRoom} from "./components/chat/chatRoom/index.js";
+import MessengerChat from "./components/chat/messenger/MessengerChat.js";
+import {AuthProvider} from "./components/context/auth.js";
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from './components/config/firebase';
+
+// Protected Route Component for general authentication
 const ProtectedRoute = ({ children, user, requiredRole }) => {
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -54,6 +68,30 @@ const ProtectedRoute = ({ children, user, requiredRole }) => {
         </div>
       </div>
     );
+  }
+  
+  return children;
+};
+
+// Protected Route Component specifically for chat features using Firebase auth
+const ChatProtectedRoute = ({ children }) => {
+  const [user, loading] = useAuthState(auth);
+  
+  if (loading) {
+    return (
+      <div className="container py-5">
+        <div className="text-center">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <p className="mt-3 text-muted">Đang kiểm tra đăng nhập...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
   }
   
   return children;
@@ -88,11 +126,12 @@ function App() {
   }
 
   return (
-    <Router>
-      <div className="App d-flex flex-column min-vh-100">
-        <MainNavbar user={user} setUser={setUser} />
-        <div className="flex-grow-1">
-          <Routes>
+    <AuthProvider>
+      <Router>
+        <div className="App d-flex flex-column min-vh-100">
+          <MainNavbar user={user} setUser={setUser} />
+          <div className="flex-grow-1">
+            <Routes>
             {/* ======================== PUBLIC ROUTES ======================== */}
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
@@ -120,8 +159,8 @@ function App() {
             
             {/* Customer Dashboard Routes */}
             <Route path="/user/*" element={<UserDashboard user={user} />} />
-            <Route path="/user/appointments" element={<UserDashboard user={user} />} />
-            <Route path="/user/profile" element={<UserDashboard user={user} />} />
+            <Route path="/appointments" element={<MyAppointments user={user} />} />
+            <Route path="/profile" element={<UserProfile user={user} />} />
             <Route path="/results" element={<TestResults user={user} />} />
             <Route path="/results/:resultId" element={<TestResults user={user} />} />
             <Route path="/print-result/:resultId" element={
@@ -234,6 +273,13 @@ function App() {
               </div>
             } />
 
+            {/* ======================== CHAT ROUTES ======================== */}
+            <Route path="/chatbox" element={<LinkChatbox />} />
+            <Route path="/chat" element={<ChatProtectedRoute><ChatLanding /></ChatProtectedRoute>} />
+            <Route path="/chat/:roomId" element={<ChatProtectedRoute><ChatRoom /></ChatProtectedRoute>} />
+            <Route path="/messenger" element={<ChatProtectedRoute><MessengerChat /></ChatProtectedRoute>} />
+            <Route path="/messenger/:roomId" element={<ChatProtectedRoute><MessengerChat /></ChatProtectedRoute>} />
+            
             {/* ======================== CONSULTATION & SUPPORT ROUTES ======================== */}
             <Route path="/consultation" element={
               <div className="container py-5">
@@ -426,8 +472,10 @@ function App() {
           </Routes>
         </div>
         <Footer />
+        <EnhancedChatButton />
       </div>
     </Router>
+    </AuthProvider>
   );
 }
 

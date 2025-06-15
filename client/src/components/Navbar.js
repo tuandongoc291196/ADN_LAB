@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Navbar, Nav, NavDropdown, Container, Button, Badge, Image } from 'react-bootstrap';
-import { auth, logout } from './config/firebase';
+import { auth, logout, adminEmails, staffEmails, managerEmails } from './config/firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
 
 const MainNavbar = ({ setUser }) => {
@@ -11,25 +11,6 @@ const MainNavbar = ({ setUser }) => {
   const [userAuth, loadingAuth] = useAuthState(auth);
   const [userData, setUserData] = useState(null);
   const [logoUrl] = useState('https://firebasestorage.googleapis.com/v0/b/su25-swp391-g8.firebasestorage.app/o/assets%2Flogo.png?alt=media&token=1c903ba1-852a-4f5b-b498-97c31ffbb742');
-
-  // Role detection logic
-  const adminEmails = [
-    'admin@adnlab.vn',
-    'admin@gmail.com',
-    'test.admin@adnlab.vn',
-    'adnlab.admin@gmail.com'
-  ];
-
-  const staffEmails = [
-    'staff@adnlab.vn',
-    'staff@gmail.com',
-    'lab@adnlab.vn'
-  ];
-
-  const managerEmails = [
-    'manager@adnlab.vn',
-    'manager@gmail.com'
-  ];
 
   const getUserRole = (email) => {
     if (adminEmails.includes(email)) return 'admin';
@@ -88,8 +69,6 @@ const MainNavbar = ({ setUser }) => {
         setUser(enhancedUserData);
         
         // Update localStorage with enhanced data
-        localStorage.setItem('userData', JSON.stringify(enhancedUserData));
-        localStorage.setItem('user', JSON.stringify(enhancedUserData));
         localStorage.setItem('isAuthenticated', 'true');
       } else {
         // Create user data if not exists
@@ -107,10 +86,6 @@ const MainNavbar = ({ setUser }) => {
         
         setUserData(enhancedUserData);
         setUser(enhancedUserData);
-        
-        // Save to localStorage
-        localStorage.setItem('userData', JSON.stringify(enhancedUserData));
-        localStorage.setItem('user', JSON.stringify(enhancedUserData));
         localStorage.setItem('isAuthenticated', 'true');
       }
     } else {
@@ -513,27 +488,6 @@ const MainNavbar = ({ setUser }) => {
       </Navbar>
 
       {/* Quick Contact Bar - Only on desktop */}
-      <div className="d-none d-lg-block position-fixed bottom-0 end-0 p-3" style={{ zIndex: 1000 }}>
-        <div className="d-flex flex-column gap-2">
-          <Button 
-            variant="success" 
-            className="rounded-circle shadow-lg"
-            style={{ width: '50px', height: '50px' }}
-            title="Chat với chuyên gia"
-          >
-            <i className="bi bi-chat-dots fs-5"></i>
-          </Button>
-          <Button 
-            variant="primary" 
-            className="rounded-circle shadow-lg"
-            style={{ width: '50px', height: '50px' }}
-            title="Gọi hotline"
-            href="tel:19001234"
-          >
-            <i className="bi bi-telephone fs-5"></i>
-          </Button>
-        </div>
-      </div>
     </>
   );
 };
