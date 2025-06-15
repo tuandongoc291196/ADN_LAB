@@ -13,8 +13,13 @@
   - [*GetStaffMembers*](#getstaffmembers)
   - [*GetDnaServices*](#getdnaservices)
   - [*GetDnaServiceById*](#getdnaservicebyid)
-  - [*GetDnaServicesBySampleType*](#getdnaservicesbysampletype)
-  - [*GetAtHomeServices*](#getathomeservices)
+  - [*GetDnaServicesByCategory*](#getdnaservicesbycategory)
+  - [*GetFeaturedDnaServices*](#getfeatureddnaservices)
+  - [*GetServiceCollectionMethods*](#getservicecollectionmethods)
+  - [*GetServicesByCollectionMethod*](#getservicesbycollectionmethod)
+  - [*GetDnaServiceWithMethods*](#getdnaservicewithmethods)
+  - [*GetServicesWithCollectionMethods*](#getserviceswithcollectionmethods)
+  - [*GetFeaturedServicesWithMethods*](#getfeaturedserviceswithmethods)
   - [*GetKits*](#getkits)
   - [*GetAvailableKits*](#getavailablekits)
   - [*GetKitById*](#getkitbyid)
@@ -55,6 +60,8 @@
   - [*GetBookingStats*](#getbookingstats)
   - [*GetServicePopularity*](#getservicepopularity)
   - [*GetMonthlyRevenue*](#getmonthlyrevenue)
+  - [*GetDnaServicesBySampleType*](#getdnaservicesbysampletype)
+  - [*GetAtHomeServices*](#getathomeservices)
 - [**Mutations**](#mutations)
   - [*CreateRole*](#createrole)
   - [*UpdateRole*](#updaterole)
@@ -65,6 +72,7 @@
   - [*UpdateUserAccountStatus*](#updateuseraccountstatus)
   - [*CreateDnaService*](#creatednaservice)
   - [*UpdateDnaService*](#updatednaservice)
+  - [*CreateServiceCollectionMethod*](#createservicecollectionmethod)
   - [*CreateKit*](#createkit)
   - [*UpdateKitStatus*](#updatekitstatus)
   - [*CreateTimeSlot*](#createtimeslot)
@@ -757,6 +765,8 @@ export interface GetUsersData {
   users: ({
     id: string;
     fullname: string;
+    gender?: string | null;
+    avatar?: string | null;
     email: string;
     accountStatus: string;
     role: {
@@ -883,6 +893,8 @@ export interface GetUsersByRoleData {
   users: ({
     id: string;
     fullname: string;
+    gender?: string | null;
+    avatar?: string | null;
     email: string;
     accountStatus: string;
     role: {
@@ -995,6 +1007,8 @@ export interface GetStaffMembersData {
   users: ({
     id: string;
     fullname: string;
+    gender?: string | null;
+    avatar?: string | null;
     email: string;
     role: {
       name: string;
@@ -1093,14 +1107,21 @@ The `data` property is an object of type `GetDnaServicesData`, which is defined 
 export interface GetDnaServicesData {
   dnaServices: ({
     id: string;
-    name: string;
-    description?: string | null;
-    price: number;
-    durationDays: number;
-    sampleType: string;
-    atHomeAvailable: boolean;
-    kitCost: number;
+    title: string;
+    description: string;
+    fullDescription?: string | null;
+    price: string;
+    duration: string;
+    category: string;
+    serviceType: string;
+    hasLegalValue: boolean;
+    icon?: string | null;
+    participants?: string | null;
+    requiredDocuments?: string | null;
+    procedures?: string | null;
+    featured: boolean;
     createdAt: TimestampString;
+    updatedAt?: TimestampString | null;
   } & DnaService_Key)[];
 }
 ```
@@ -1200,15 +1221,21 @@ The `data` property is an object of type `GetDnaServiceByIdData`, which is defin
 export interface GetDnaServiceByIdData {
   dnaService?: {
     id: string;
-    name: string;
-    description?: string | null;
-    price: number;
-    durationDays: number;
-    sampleType: string;
-    atHomeAvailable: boolean;
-    active: boolean;
-    kitCost: number;
+    title: string;
+    description: string;
+    fullDescription?: string | null;
+    price: string;
+    duration: string;
+    category: string;
+    serviceType: string;
+    hasLegalValue: boolean;
+    icon?: string | null;
+    participants?: string | null;
+    requiredDocuments?: string | null;
+    procedures?: string | null;
+    featured: boolean;
     createdAt: TimestampString;
+    updatedAt?: TimestampString | null;
   } & DnaService_Key;
 }
 ```
@@ -1275,109 +1302,118 @@ executeQuery(ref).then((response) => {
 });
 ```
 
-## GetDnaServicesBySampleType
-You can execute the `GetDnaServicesBySampleType` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+## GetDnaServicesByCategory
+You can execute the `GetDnaServicesByCategory` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
 ```typescript
-getDnaServicesBySampleType(vars: GetDnaServicesBySampleTypeVariables): QueryPromise<GetDnaServicesBySampleTypeData, GetDnaServicesBySampleTypeVariables>;
+getDnaServicesByCategory(vars: GetDnaServicesByCategoryVariables): QueryPromise<GetDnaServicesByCategoryData, GetDnaServicesByCategoryVariables>;
 
-interface GetDnaServicesBySampleTypeRef {
+interface GetDnaServicesByCategoryRef {
   ...
   /* Allow users to create refs without passing in DataConnect */
-  (vars: GetDnaServicesBySampleTypeVariables): QueryRef<GetDnaServicesBySampleTypeData, GetDnaServicesBySampleTypeVariables>;
+  (vars: GetDnaServicesByCategoryVariables): QueryRef<GetDnaServicesByCategoryData, GetDnaServicesByCategoryVariables>;
 }
-export const getDnaServicesBySampleTypeRef: GetDnaServicesBySampleTypeRef;
+export const getDnaServicesByCategoryRef: GetDnaServicesByCategoryRef;
 ```
 You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
 ```typescript
-getDnaServicesBySampleType(dc: DataConnect, vars: GetDnaServicesBySampleTypeVariables): QueryPromise<GetDnaServicesBySampleTypeData, GetDnaServicesBySampleTypeVariables>;
+getDnaServicesByCategory(dc: DataConnect, vars: GetDnaServicesByCategoryVariables): QueryPromise<GetDnaServicesByCategoryData, GetDnaServicesByCategoryVariables>;
 
-interface GetDnaServicesBySampleTypeRef {
+interface GetDnaServicesByCategoryRef {
   ...
-  (dc: DataConnect, vars: GetDnaServicesBySampleTypeVariables): QueryRef<GetDnaServicesBySampleTypeData, GetDnaServicesBySampleTypeVariables>;
+  (dc: DataConnect, vars: GetDnaServicesByCategoryVariables): QueryRef<GetDnaServicesByCategoryData, GetDnaServicesByCategoryVariables>;
 }
-export const getDnaServicesBySampleTypeRef: GetDnaServicesBySampleTypeRef;
+export const getDnaServicesByCategoryRef: GetDnaServicesByCategoryRef;
 ```
 
-If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getDnaServicesBySampleTypeRef:
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getDnaServicesByCategoryRef:
 ```typescript
-const name = getDnaServicesBySampleTypeRef.operationName;
+const name = getDnaServicesByCategoryRef.operationName;
 console.log(name);
 ```
 
 ### Variables
-The `GetDnaServicesBySampleType` query requires an argument of type `GetDnaServicesBySampleTypeVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+The `GetDnaServicesByCategory` query requires an argument of type `GetDnaServicesByCategoryVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
 
 ```typescript
-export interface GetDnaServicesBySampleTypeVariables {
-  sampleType: string;
+export interface GetDnaServicesByCategoryVariables {
+  category: string;
 }
 ```
 ### Return Type
-Recall that executing the `GetDnaServicesBySampleType` query returns a `QueryPromise` that resolves to an object with a `data` property.
+Recall that executing the `GetDnaServicesByCategory` query returns a `QueryPromise` that resolves to an object with a `data` property.
 
-The `data` property is an object of type `GetDnaServicesBySampleTypeData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+The `data` property is an object of type `GetDnaServicesByCategoryData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
 ```typescript
-export interface GetDnaServicesBySampleTypeData {
+export interface GetDnaServicesByCategoryData {
   dnaServices: ({
     id: string;
-    name: string;
-    description?: string | null;
-    price: number;
-    durationDays: number;
-    atHomeAvailable: boolean;
-    kitCost: number;
+    title: string;
+    description: string;
+    fullDescription?: string | null;
+    price: string;
+    duration: string;
+    category: string;
+    serviceType: string;
+    hasLegalValue: boolean;
+    icon?: string | null;
+    participants?: string | null;
+    requiredDocuments?: string | null;
+    procedures?: string | null;
+    featured: boolean;
+    createdAt: TimestampString;
+    updatedAt?: TimestampString | null;
   } & DnaService_Key)[];
 }
 ```
-### Using `GetDnaServicesBySampleType`'s action shortcut function
+### Using `GetDnaServicesByCategory`'s action shortcut function
 
 ```typescript
 import { getDataConnect } from 'firebase/data-connect';
-import { connectorConfig, getDnaServicesBySampleType, GetDnaServicesBySampleTypeVariables } from '@firebasegen/adnlab-connector';
+import { connectorConfig, getDnaServicesByCategory, GetDnaServicesByCategoryVariables } from '@firebasegen/adnlab-connector';
 
-// The `GetDnaServicesBySampleType` query requires an argument of type `GetDnaServicesBySampleTypeVariables`:
-const getDnaServicesBySampleTypeVars: GetDnaServicesBySampleTypeVariables = {
-  sampleType: ..., 
+// The `GetDnaServicesByCategory` query requires an argument of type `GetDnaServicesByCategoryVariables`:
+const getDnaServicesByCategoryVars: GetDnaServicesByCategoryVariables = {
+  category: ..., 
 };
 
-// Call the `getDnaServicesBySampleType()` function to execute the query.
+// Call the `getDnaServicesByCategory()` function to execute the query.
 // You can use the `await` keyword to wait for the promise to resolve.
-const { data } = await getDnaServicesBySampleType(getDnaServicesBySampleTypeVars);
+const { data } = await getDnaServicesByCategory(getDnaServicesByCategoryVars);
 // Variables can be defined inline as well.
-const { data } = await getDnaServicesBySampleType({ sampleType: ..., });
+const { data } = await getDnaServicesByCategory({ category: ..., });
 
 // You can also pass in a `DataConnect` instance to the action shortcut function.
 const dataConnect = getDataConnect(connectorConfig);
-const { data } = await getDnaServicesBySampleType(dataConnect, getDnaServicesBySampleTypeVars);
+const { data } = await getDnaServicesByCategory(dataConnect, getDnaServicesByCategoryVars);
 
 console.log(data.dnaServices);
 
 // Or, you can use the `Promise` API.
-getDnaServicesBySampleType(getDnaServicesBySampleTypeVars).then((response) => {
+getDnaServicesByCategory(getDnaServicesByCategoryVars).then((response) => {
   const data = response.data;
   console.log(data.dnaServices);
 });
 ```
 
-### Using `GetDnaServicesBySampleType`'s `QueryRef` function
+### Using `GetDnaServicesByCategory`'s `QueryRef` function
 
 ```typescript
 import { getDataConnect, executeQuery } from 'firebase/data-connect';
-import { connectorConfig, getDnaServicesBySampleTypeRef, GetDnaServicesBySampleTypeVariables } from '@firebasegen/adnlab-connector';
+import { connectorConfig, getDnaServicesByCategoryRef, GetDnaServicesByCategoryVariables } from '@firebasegen/adnlab-connector';
 
-// The `GetDnaServicesBySampleType` query requires an argument of type `GetDnaServicesBySampleTypeVariables`:
-const getDnaServicesBySampleTypeVars: GetDnaServicesBySampleTypeVariables = {
-  sampleType: ..., 
+// The `GetDnaServicesByCategory` query requires an argument of type `GetDnaServicesByCategoryVariables`:
+const getDnaServicesByCategoryVars: GetDnaServicesByCategoryVariables = {
+  category: ..., 
 };
 
-// Call the `getDnaServicesBySampleTypeRef()` function to get a reference to the query.
-const ref = getDnaServicesBySampleTypeRef(getDnaServicesBySampleTypeVars);
+// Call the `getDnaServicesByCategoryRef()` function to get a reference to the query.
+const ref = getDnaServicesByCategoryRef(getDnaServicesByCategoryVars);
 // Variables can be defined inline as well.
-const ref = getDnaServicesBySampleTypeRef({ sampleType: ..., });
+const ref = getDnaServicesByCategoryRef({ category: ..., });
 
 // You can also pass in a `DataConnect` instance to the `QueryRef` function.
 const dataConnect = getDataConnect(connectorConfig);
-const ref = getDnaServicesBySampleTypeRef(dataConnect, getDnaServicesBySampleTypeVars);
+const ref = getDnaServicesByCategoryRef(dataConnect, getDnaServicesByCategoryVars);
 
 // Call `executeQuery()` on the reference to execute the query.
 // You can use the `await` keyword to wait for the promise to resolve.
@@ -1392,91 +1428,702 @@ executeQuery(ref).then((response) => {
 });
 ```
 
-## GetAtHomeServices
-You can execute the `GetAtHomeServices` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+## GetFeaturedDnaServices
+You can execute the `GetFeaturedDnaServices` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
 ```typescript
-getAtHomeServices(): QueryPromise<GetAtHomeServicesData, undefined>;
+getFeaturedDnaServices(): QueryPromise<GetFeaturedDnaServicesData, undefined>;
 
-interface GetAtHomeServicesRef {
+interface GetFeaturedDnaServicesRef {
   ...
   /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetAtHomeServicesData, undefined>;
+  (): QueryRef<GetFeaturedDnaServicesData, undefined>;
 }
-export const getAtHomeServicesRef: GetAtHomeServicesRef;
+export const getFeaturedDnaServicesRef: GetFeaturedDnaServicesRef;
 ```
 You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
 ```typescript
-getAtHomeServices(dc: DataConnect): QueryPromise<GetAtHomeServicesData, undefined>;
+getFeaturedDnaServices(dc: DataConnect): QueryPromise<GetFeaturedDnaServicesData, undefined>;
 
-interface GetAtHomeServicesRef {
+interface GetFeaturedDnaServicesRef {
   ...
-  (dc: DataConnect): QueryRef<GetAtHomeServicesData, undefined>;
+  (dc: DataConnect): QueryRef<GetFeaturedDnaServicesData, undefined>;
 }
-export const getAtHomeServicesRef: GetAtHomeServicesRef;
+export const getFeaturedDnaServicesRef: GetFeaturedDnaServicesRef;
 ```
 
-If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getAtHomeServicesRef:
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getFeaturedDnaServicesRef:
 ```typescript
-const name = getAtHomeServicesRef.operationName;
+const name = getFeaturedDnaServicesRef.operationName;
 console.log(name);
 ```
 
 ### Variables
-The `GetAtHomeServices` query has no variables.
+The `GetFeaturedDnaServices` query has no variables.
 ### Return Type
-Recall that executing the `GetAtHomeServices` query returns a `QueryPromise` that resolves to an object with a `data` property.
+Recall that executing the `GetFeaturedDnaServices` query returns a `QueryPromise` that resolves to an object with a `data` property.
 
-The `data` property is an object of type `GetAtHomeServicesData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+The `data` property is an object of type `GetFeaturedDnaServicesData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
 ```typescript
-export interface GetAtHomeServicesData {
+export interface GetFeaturedDnaServicesData {
   dnaServices: ({
     id: string;
-    name: string;
-    description?: string | null;
-    price: number;
-    durationDays: number;
-    sampleType: string;
-    kitCost: number;
+    title: string;
+    description: string;
+    fullDescription?: string | null;
+    price: string;
+    duration: string;
+    category: string;
+    serviceType: string;
+    hasLegalValue: boolean;
+    icon?: string | null;
+    participants?: string | null;
+    requiredDocuments?: string | null;
+    procedures?: string | null;
+    featured: boolean;
+    createdAt: TimestampString;
+    updatedAt?: TimestampString | null;
   } & DnaService_Key)[];
 }
 ```
-### Using `GetAtHomeServices`'s action shortcut function
+### Using `GetFeaturedDnaServices`'s action shortcut function
 
 ```typescript
 import { getDataConnect } from 'firebase/data-connect';
-import { connectorConfig, getAtHomeServices } from '@firebasegen/adnlab-connector';
+import { connectorConfig, getFeaturedDnaServices } from '@firebasegen/adnlab-connector';
 
 
-// Call the `getAtHomeServices()` function to execute the query.
+// Call the `getFeaturedDnaServices()` function to execute the query.
 // You can use the `await` keyword to wait for the promise to resolve.
-const { data } = await getAtHomeServices();
+const { data } = await getFeaturedDnaServices();
 
 // You can also pass in a `DataConnect` instance to the action shortcut function.
 const dataConnect = getDataConnect(connectorConfig);
-const { data } = await getAtHomeServices(dataConnect);
+const { data } = await getFeaturedDnaServices(dataConnect);
 
 console.log(data.dnaServices);
 
 // Or, you can use the `Promise` API.
-getAtHomeServices().then((response) => {
+getFeaturedDnaServices().then((response) => {
   const data = response.data;
   console.log(data.dnaServices);
 });
 ```
 
-### Using `GetAtHomeServices`'s `QueryRef` function
+### Using `GetFeaturedDnaServices`'s `QueryRef` function
 
 ```typescript
 import { getDataConnect, executeQuery } from 'firebase/data-connect';
-import { connectorConfig, getAtHomeServicesRef } from '@firebasegen/adnlab-connector';
+import { connectorConfig, getFeaturedDnaServicesRef } from '@firebasegen/adnlab-connector';
 
 
-// Call the `getAtHomeServicesRef()` function to get a reference to the query.
-const ref = getAtHomeServicesRef();
+// Call the `getFeaturedDnaServicesRef()` function to get a reference to the query.
+const ref = getFeaturedDnaServicesRef();
 
 // You can also pass in a `DataConnect` instance to the `QueryRef` function.
 const dataConnect = getDataConnect(connectorConfig);
-const ref = getAtHomeServicesRef(dataConnect);
+const ref = getFeaturedDnaServicesRef(dataConnect);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.dnaServices);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.dnaServices);
+});
+```
+
+## GetServiceCollectionMethods
+You can execute the `GetServiceCollectionMethods` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getServiceCollectionMethods(vars: GetServiceCollectionMethodsVariables): QueryPromise<GetServiceCollectionMethodsData, GetServiceCollectionMethodsVariables>;
+
+interface GetServiceCollectionMethodsRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetServiceCollectionMethodsVariables): QueryRef<GetServiceCollectionMethodsData, GetServiceCollectionMethodsVariables>;
+}
+export const getServiceCollectionMethodsRef: GetServiceCollectionMethodsRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getServiceCollectionMethods(dc: DataConnect, vars: GetServiceCollectionMethodsVariables): QueryPromise<GetServiceCollectionMethodsData, GetServiceCollectionMethodsVariables>;
+
+interface GetServiceCollectionMethodsRef {
+  ...
+  (dc: DataConnect, vars: GetServiceCollectionMethodsVariables): QueryRef<GetServiceCollectionMethodsData, GetServiceCollectionMethodsVariables>;
+}
+export const getServiceCollectionMethodsRef: GetServiceCollectionMethodsRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getServiceCollectionMethodsRef:
+```typescript
+const name = getServiceCollectionMethodsRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetServiceCollectionMethods` query requires an argument of type `GetServiceCollectionMethodsVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface GetServiceCollectionMethodsVariables {
+  serviceId: string;
+}
+```
+### Return Type
+Recall that executing the `GetServiceCollectionMethods` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetServiceCollectionMethodsData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetServiceCollectionMethodsData {
+  serviceCollectionMethods: ({
+    id: string;
+    serviceId: string;
+    methodId: string;
+    methodTitle: string;
+    methodDescription?: string | null;
+    methodIcon?: string | null;
+    methodColor?: string | null;
+    methodNote?: string | null;
+    methodProcess?: string | null;
+    allowedFor?: string | null;
+    createdAt: TimestampString;
+    service: {
+      id: string;
+      title: string;
+    } & DnaService_Key;
+  } & ServiceCollectionMethod_Key)[];
+}
+```
+### Using `GetServiceCollectionMethods`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getServiceCollectionMethods, GetServiceCollectionMethodsVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetServiceCollectionMethods` query requires an argument of type `GetServiceCollectionMethodsVariables`:
+const getServiceCollectionMethodsVars: GetServiceCollectionMethodsVariables = {
+  serviceId: ..., 
+};
+
+// Call the `getServiceCollectionMethods()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getServiceCollectionMethods(getServiceCollectionMethodsVars);
+// Variables can be defined inline as well.
+const { data } = await getServiceCollectionMethods({ serviceId: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getServiceCollectionMethods(dataConnect, getServiceCollectionMethodsVars);
+
+console.log(data.serviceCollectionMethods);
+
+// Or, you can use the `Promise` API.
+getServiceCollectionMethods(getServiceCollectionMethodsVars).then((response) => {
+  const data = response.data;
+  console.log(data.serviceCollectionMethods);
+});
+```
+
+### Using `GetServiceCollectionMethods`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getServiceCollectionMethodsRef, GetServiceCollectionMethodsVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetServiceCollectionMethods` query requires an argument of type `GetServiceCollectionMethodsVariables`:
+const getServiceCollectionMethodsVars: GetServiceCollectionMethodsVariables = {
+  serviceId: ..., 
+};
+
+// Call the `getServiceCollectionMethodsRef()` function to get a reference to the query.
+const ref = getServiceCollectionMethodsRef(getServiceCollectionMethodsVars);
+// Variables can be defined inline as well.
+const ref = getServiceCollectionMethodsRef({ serviceId: ..., });
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getServiceCollectionMethodsRef(dataConnect, getServiceCollectionMethodsVars);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.serviceCollectionMethods);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.serviceCollectionMethods);
+});
+```
+
+## GetServicesByCollectionMethod
+You can execute the `GetServicesByCollectionMethod` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getServicesByCollectionMethod(vars: GetServicesByCollectionMethodVariables): QueryPromise<GetServicesByCollectionMethodData, GetServicesByCollectionMethodVariables>;
+
+interface GetServicesByCollectionMethodRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetServicesByCollectionMethodVariables): QueryRef<GetServicesByCollectionMethodData, GetServicesByCollectionMethodVariables>;
+}
+export const getServicesByCollectionMethodRef: GetServicesByCollectionMethodRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getServicesByCollectionMethod(dc: DataConnect, vars: GetServicesByCollectionMethodVariables): QueryPromise<GetServicesByCollectionMethodData, GetServicesByCollectionMethodVariables>;
+
+interface GetServicesByCollectionMethodRef {
+  ...
+  (dc: DataConnect, vars: GetServicesByCollectionMethodVariables): QueryRef<GetServicesByCollectionMethodData, GetServicesByCollectionMethodVariables>;
+}
+export const getServicesByCollectionMethodRef: GetServicesByCollectionMethodRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getServicesByCollectionMethodRef:
+```typescript
+const name = getServicesByCollectionMethodRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetServicesByCollectionMethod` query requires an argument of type `GetServicesByCollectionMethodVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface GetServicesByCollectionMethodVariables {
+  methodId: string;
+}
+```
+### Return Type
+Recall that executing the `GetServicesByCollectionMethod` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetServicesByCollectionMethodData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetServicesByCollectionMethodData {
+  serviceCollectionMethods: ({
+    id: string;
+    methodId: string;
+    methodTitle: string;
+    service: {
+      id: string;
+      title: string;
+      description: string;
+      price: string;
+      duration: string;
+      category: string;
+      serviceType: string;
+      hasLegalValue: boolean;
+      icon?: string | null;
+      featured: boolean;
+    } & DnaService_Key;
+  } & ServiceCollectionMethod_Key)[];
+}
+```
+### Using `GetServicesByCollectionMethod`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getServicesByCollectionMethod, GetServicesByCollectionMethodVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetServicesByCollectionMethod` query requires an argument of type `GetServicesByCollectionMethodVariables`:
+const getServicesByCollectionMethodVars: GetServicesByCollectionMethodVariables = {
+  methodId: ..., 
+};
+
+// Call the `getServicesByCollectionMethod()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getServicesByCollectionMethod(getServicesByCollectionMethodVars);
+// Variables can be defined inline as well.
+const { data } = await getServicesByCollectionMethod({ methodId: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getServicesByCollectionMethod(dataConnect, getServicesByCollectionMethodVars);
+
+console.log(data.serviceCollectionMethods);
+
+// Or, you can use the `Promise` API.
+getServicesByCollectionMethod(getServicesByCollectionMethodVars).then((response) => {
+  const data = response.data;
+  console.log(data.serviceCollectionMethods);
+});
+```
+
+### Using `GetServicesByCollectionMethod`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getServicesByCollectionMethodRef, GetServicesByCollectionMethodVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetServicesByCollectionMethod` query requires an argument of type `GetServicesByCollectionMethodVariables`:
+const getServicesByCollectionMethodVars: GetServicesByCollectionMethodVariables = {
+  methodId: ..., 
+};
+
+// Call the `getServicesByCollectionMethodRef()` function to get a reference to the query.
+const ref = getServicesByCollectionMethodRef(getServicesByCollectionMethodVars);
+// Variables can be defined inline as well.
+const ref = getServicesByCollectionMethodRef({ methodId: ..., });
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getServicesByCollectionMethodRef(dataConnect, getServicesByCollectionMethodVars);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.serviceCollectionMethods);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.serviceCollectionMethods);
+});
+```
+
+## GetDnaServiceWithMethods
+You can execute the `GetDnaServiceWithMethods` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getDnaServiceWithMethods(vars: GetDnaServiceWithMethodsVariables): QueryPromise<GetDnaServiceWithMethodsData, GetDnaServiceWithMethodsVariables>;
+
+interface GetDnaServiceWithMethodsRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetDnaServiceWithMethodsVariables): QueryRef<GetDnaServiceWithMethodsData, GetDnaServiceWithMethodsVariables>;
+}
+export const getDnaServiceWithMethodsRef: GetDnaServiceWithMethodsRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getDnaServiceWithMethods(dc: DataConnect, vars: GetDnaServiceWithMethodsVariables): QueryPromise<GetDnaServiceWithMethodsData, GetDnaServiceWithMethodsVariables>;
+
+interface GetDnaServiceWithMethodsRef {
+  ...
+  (dc: DataConnect, vars: GetDnaServiceWithMethodsVariables): QueryRef<GetDnaServiceWithMethodsData, GetDnaServiceWithMethodsVariables>;
+}
+export const getDnaServiceWithMethodsRef: GetDnaServiceWithMethodsRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getDnaServiceWithMethodsRef:
+```typescript
+const name = getDnaServiceWithMethodsRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetDnaServiceWithMethods` query requires an argument of type `GetDnaServiceWithMethodsVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface GetDnaServiceWithMethodsVariables {
+  serviceId: string;
+}
+```
+### Return Type
+Recall that executing the `GetDnaServiceWithMethods` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetDnaServiceWithMethodsData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetDnaServiceWithMethodsData {
+  dnaService?: {
+    id: string;
+    title: string;
+    description: string;
+    fullDescription?: string | null;
+    price: string;
+    duration: string;
+    category: string;
+    serviceType: string;
+    hasLegalValue: boolean;
+    icon?: string | null;
+    participants?: string | null;
+    requiredDocuments?: string | null;
+    procedures?: string | null;
+    featured: boolean;
+    createdAt: TimestampString;
+    updatedAt?: TimestampString | null;
+  } & DnaService_Key;
+    serviceCollectionMethods: ({
+      id: string;
+      methodId: string;
+      methodTitle: string;
+      methodDescription?: string | null;
+      methodIcon?: string | null;
+      methodColor?: string | null;
+      methodNote?: string | null;
+      methodProcess?: string | null;
+      allowedFor?: string | null;
+      createdAt: TimestampString;
+    } & ServiceCollectionMethod_Key)[];
+}
+```
+### Using `GetDnaServiceWithMethods`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getDnaServiceWithMethods, GetDnaServiceWithMethodsVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetDnaServiceWithMethods` query requires an argument of type `GetDnaServiceWithMethodsVariables`:
+const getDnaServiceWithMethodsVars: GetDnaServiceWithMethodsVariables = {
+  serviceId: ..., 
+};
+
+// Call the `getDnaServiceWithMethods()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getDnaServiceWithMethods(getDnaServiceWithMethodsVars);
+// Variables can be defined inline as well.
+const { data } = await getDnaServiceWithMethods({ serviceId: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getDnaServiceWithMethods(dataConnect, getDnaServiceWithMethodsVars);
+
+console.log(data.dnaService);
+console.log(data.serviceCollectionMethods);
+
+// Or, you can use the `Promise` API.
+getDnaServiceWithMethods(getDnaServiceWithMethodsVars).then((response) => {
+  const data = response.data;
+  console.log(data.dnaService);
+  console.log(data.serviceCollectionMethods);
+});
+```
+
+### Using `GetDnaServiceWithMethods`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getDnaServiceWithMethodsRef, GetDnaServiceWithMethodsVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetDnaServiceWithMethods` query requires an argument of type `GetDnaServiceWithMethodsVariables`:
+const getDnaServiceWithMethodsVars: GetDnaServiceWithMethodsVariables = {
+  serviceId: ..., 
+};
+
+// Call the `getDnaServiceWithMethodsRef()` function to get a reference to the query.
+const ref = getDnaServiceWithMethodsRef(getDnaServiceWithMethodsVars);
+// Variables can be defined inline as well.
+const ref = getDnaServiceWithMethodsRef({ serviceId: ..., });
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getDnaServiceWithMethodsRef(dataConnect, getDnaServiceWithMethodsVars);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.dnaService);
+console.log(data.serviceCollectionMethods);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.dnaService);
+  console.log(data.serviceCollectionMethods);
+});
+```
+
+## GetServicesWithCollectionMethods
+You can execute the `GetServicesWithCollectionMethods` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getServicesWithCollectionMethods(): QueryPromise<GetServicesWithCollectionMethodsData, undefined>;
+
+interface GetServicesWithCollectionMethodsRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetServicesWithCollectionMethodsData, undefined>;
+}
+export const getServicesWithCollectionMethodsRef: GetServicesWithCollectionMethodsRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getServicesWithCollectionMethods(dc: DataConnect): QueryPromise<GetServicesWithCollectionMethodsData, undefined>;
+
+interface GetServicesWithCollectionMethodsRef {
+  ...
+  (dc: DataConnect): QueryRef<GetServicesWithCollectionMethodsData, undefined>;
+}
+export const getServicesWithCollectionMethodsRef: GetServicesWithCollectionMethodsRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getServicesWithCollectionMethodsRef:
+```typescript
+const name = getServicesWithCollectionMethodsRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetServicesWithCollectionMethods` query has no variables.
+### Return Type
+Recall that executing the `GetServicesWithCollectionMethods` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetServicesWithCollectionMethodsData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetServicesWithCollectionMethodsData {
+  dnaServices: ({
+    id: string;
+    title: string;
+    description: string;
+    fullDescription?: string | null;
+    price: string;
+    duration: string;
+    category: string;
+    serviceType: string;
+    hasLegalValue: boolean;
+    icon?: string | null;
+    participants?: string | null;
+    requiredDocuments?: string | null;
+    procedures?: string | null;
+    featured: boolean;
+    createdAt: TimestampString;
+    updatedAt?: TimestampString | null;
+  } & DnaService_Key)[];
+}
+```
+### Using `GetServicesWithCollectionMethods`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getServicesWithCollectionMethods } from '@firebasegen/adnlab-connector';
+
+
+// Call the `getServicesWithCollectionMethods()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getServicesWithCollectionMethods();
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getServicesWithCollectionMethods(dataConnect);
+
+console.log(data.dnaServices);
+
+// Or, you can use the `Promise` API.
+getServicesWithCollectionMethods().then((response) => {
+  const data = response.data;
+  console.log(data.dnaServices);
+});
+```
+
+### Using `GetServicesWithCollectionMethods`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getServicesWithCollectionMethodsRef } from '@firebasegen/adnlab-connector';
+
+
+// Call the `getServicesWithCollectionMethodsRef()` function to get a reference to the query.
+const ref = getServicesWithCollectionMethodsRef();
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getServicesWithCollectionMethodsRef(dataConnect);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.dnaServices);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.dnaServices);
+});
+```
+
+## GetFeaturedServicesWithMethods
+You can execute the `GetFeaturedServicesWithMethods` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getFeaturedServicesWithMethods(): QueryPromise<GetFeaturedServicesWithMethodsData, undefined>;
+
+interface GetFeaturedServicesWithMethodsRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetFeaturedServicesWithMethodsData, undefined>;
+}
+export const getFeaturedServicesWithMethodsRef: GetFeaturedServicesWithMethodsRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getFeaturedServicesWithMethods(dc: DataConnect): QueryPromise<GetFeaturedServicesWithMethodsData, undefined>;
+
+interface GetFeaturedServicesWithMethodsRef {
+  ...
+  (dc: DataConnect): QueryRef<GetFeaturedServicesWithMethodsData, undefined>;
+}
+export const getFeaturedServicesWithMethodsRef: GetFeaturedServicesWithMethodsRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getFeaturedServicesWithMethodsRef:
+```typescript
+const name = getFeaturedServicesWithMethodsRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetFeaturedServicesWithMethods` query has no variables.
+### Return Type
+Recall that executing the `GetFeaturedServicesWithMethods` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetFeaturedServicesWithMethodsData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetFeaturedServicesWithMethodsData {
+  dnaServices: ({
+    id: string;
+    title: string;
+    description: string;
+    price: string;
+    duration: string;
+    category: string;
+    serviceType: string;
+    hasLegalValue: boolean;
+    icon?: string | null;
+    featured: boolean;
+  } & DnaService_Key)[];
+}
+```
+### Using `GetFeaturedServicesWithMethods`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getFeaturedServicesWithMethods } from '@firebasegen/adnlab-connector';
+
+
+// Call the `getFeaturedServicesWithMethods()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getFeaturedServicesWithMethods();
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getFeaturedServicesWithMethods(dataConnect);
+
+console.log(data.dnaServices);
+
+// Or, you can use the `Promise` API.
+getFeaturedServicesWithMethods().then((response) => {
+  const data = response.data;
+  console.log(data.dnaServices);
+});
+```
+
+### Using `GetFeaturedServicesWithMethods`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getFeaturedServicesWithMethodsRef } from '@firebasegen/adnlab-connector';
+
+
+// Call the `getFeaturedServicesWithMethodsRef()` function to get a reference to the query.
+const ref = getFeaturedServicesWithMethodsRef();
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getFeaturedServicesWithMethodsRef(dataConnect);
 
 // Call `executeQuery()` on the reference to execute the query.
 // You can use the `await` keyword to wait for the promise to resolve.
@@ -2961,11 +3608,11 @@ export interface GetBookingItemsData {
     id: string;
     service: {
       id: string;
-      name: string;
-      description?: string | null;
-      price: number;
-      durationDays: number;
-      sampleType: string;
+      title: string;
+      description: string;
+      price: string;
+      duration: string;
+      category: string;
     } & DnaService_Key;
       price: number;
       quantity: number;
@@ -3089,8 +3736,8 @@ export interface GetBookingItemByIdData {
     } & Booking_Key;
       service: {
         id: string;
-        name: string;
-        price: number;
+        title: string;
+        price: string;
       } & DnaService_Key;
         price: number;
         quantity: number;
@@ -3207,8 +3854,8 @@ export interface GetBookingSamplesData {
   samples: ({
     id: string;
     service: {
-      name: string;
-      sampleType: string;
+      title: string;
+      category: string;
     };
       staff?: {
         fullname: string;
@@ -3334,8 +3981,8 @@ export interface GetSamplesByStatusData {
       };
     } & Booking_Key;
       service: {
-        name: string;
-        sampleType: string;
+        title: string;
+        category: string;
       };
         staff?: {
           fullname: string;
@@ -3462,9 +4109,9 @@ export interface GetSampleByIdData {
       };
     } & Booking_Key;
       service: {
-        name: string;
-        sampleType: string;
-        description?: string | null;
+        title: string;
+        category: string;
+        description: string;
       };
         staff?: {
           fullname: string;
@@ -3589,8 +4236,8 @@ export interface GetStaffSamplesData {
       };
     };
       service: {
-        name: string;
-        sampleType: string;
+        title: string;
+        category: string;
       };
         collectionDate?: DateString | null;
         status: string;
@@ -3710,7 +4357,7 @@ export interface GetBookingTestResultsData {
       id: string;
     } & Sample_Key;
       service: {
-        name: string;
+        title: string;
       };
         staff?: {
           fullname: string;
@@ -3846,8 +4493,8 @@ export interface GetTestResultByIdData {
         collectionDate?: DateString | null;
       } & Sample_Key;
         service: {
-          name: string;
-          description?: string | null;
+          title: string;
+          description: string;
         };
           staff?: {
             fullname: string;
@@ -3978,7 +4625,7 @@ export interface GetTestResultsByStatusData {
       };
     };
       service: {
-        name: string;
+        title: string;
       };
         staff?: {
           fullname: string;
@@ -4097,7 +4744,7 @@ export interface GetUserTestResultsData {
   testResults: ({
     id: string;
     service: {
-      name: string;
+      title: string;
     };
       testDate?: DateString | null;
       reportDate?: DateString | null;
@@ -6052,7 +6699,7 @@ export interface GetServicePopularityData {
   bookingItems: ({
     service: {
       id: string;
-      name: string;
+      title: string;
     } & DnaService_Key;
       quantity: number;
   })[];
@@ -6227,6 +6874,230 @@ console.log(data.payments);
 executeQuery(ref).then((response) => {
   const data = response.data;
   console.log(data.payments);
+});
+```
+
+## GetDnaServicesBySampleType
+You can execute the `GetDnaServicesBySampleType` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getDnaServicesBySampleType(vars: GetDnaServicesBySampleTypeVariables): QueryPromise<GetDnaServicesBySampleTypeData, GetDnaServicesBySampleTypeVariables>;
+
+interface GetDnaServicesBySampleTypeRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetDnaServicesBySampleTypeVariables): QueryRef<GetDnaServicesBySampleTypeData, GetDnaServicesBySampleTypeVariables>;
+}
+export const getDnaServicesBySampleTypeRef: GetDnaServicesBySampleTypeRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getDnaServicesBySampleType(dc: DataConnect, vars: GetDnaServicesBySampleTypeVariables): QueryPromise<GetDnaServicesBySampleTypeData, GetDnaServicesBySampleTypeVariables>;
+
+interface GetDnaServicesBySampleTypeRef {
+  ...
+  (dc: DataConnect, vars: GetDnaServicesBySampleTypeVariables): QueryRef<GetDnaServicesBySampleTypeData, GetDnaServicesBySampleTypeVariables>;
+}
+export const getDnaServicesBySampleTypeRef: GetDnaServicesBySampleTypeRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getDnaServicesBySampleTypeRef:
+```typescript
+const name = getDnaServicesBySampleTypeRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetDnaServicesBySampleType` query requires an argument of type `GetDnaServicesBySampleTypeVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface GetDnaServicesBySampleTypeVariables {
+  sampleType: string;
+}
+```
+### Return Type
+Recall that executing the `GetDnaServicesBySampleType` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetDnaServicesBySampleTypeData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetDnaServicesBySampleTypeData {
+  dnaServices: ({
+    id: string;
+    title: string;
+    description: string;
+    price: string;
+    duration: string;
+    category: string;
+    serviceType: string;
+    hasLegalValue: boolean;
+    featured: boolean;
+  } & DnaService_Key)[];
+}
+```
+### Using `GetDnaServicesBySampleType`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getDnaServicesBySampleType, GetDnaServicesBySampleTypeVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetDnaServicesBySampleType` query requires an argument of type `GetDnaServicesBySampleTypeVariables`:
+const getDnaServicesBySampleTypeVars: GetDnaServicesBySampleTypeVariables = {
+  sampleType: ..., 
+};
+
+// Call the `getDnaServicesBySampleType()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getDnaServicesBySampleType(getDnaServicesBySampleTypeVars);
+// Variables can be defined inline as well.
+const { data } = await getDnaServicesBySampleType({ sampleType: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getDnaServicesBySampleType(dataConnect, getDnaServicesBySampleTypeVars);
+
+console.log(data.dnaServices);
+
+// Or, you can use the `Promise` API.
+getDnaServicesBySampleType(getDnaServicesBySampleTypeVars).then((response) => {
+  const data = response.data;
+  console.log(data.dnaServices);
+});
+```
+
+### Using `GetDnaServicesBySampleType`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getDnaServicesBySampleTypeRef, GetDnaServicesBySampleTypeVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetDnaServicesBySampleType` query requires an argument of type `GetDnaServicesBySampleTypeVariables`:
+const getDnaServicesBySampleTypeVars: GetDnaServicesBySampleTypeVariables = {
+  sampleType: ..., 
+};
+
+// Call the `getDnaServicesBySampleTypeRef()` function to get a reference to the query.
+const ref = getDnaServicesBySampleTypeRef(getDnaServicesBySampleTypeVars);
+// Variables can be defined inline as well.
+const ref = getDnaServicesBySampleTypeRef({ sampleType: ..., });
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getDnaServicesBySampleTypeRef(dataConnect, getDnaServicesBySampleTypeVars);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.dnaServices);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.dnaServices);
+});
+```
+
+## GetAtHomeServices
+You can execute the `GetAtHomeServices` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getAtHomeServices(): QueryPromise<GetAtHomeServicesData, undefined>;
+
+interface GetAtHomeServicesRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetAtHomeServicesData, undefined>;
+}
+export const getAtHomeServicesRef: GetAtHomeServicesRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getAtHomeServices(dc: DataConnect): QueryPromise<GetAtHomeServicesData, undefined>;
+
+interface GetAtHomeServicesRef {
+  ...
+  (dc: DataConnect): QueryRef<GetAtHomeServicesData, undefined>;
+}
+export const getAtHomeServicesRef: GetAtHomeServicesRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getAtHomeServicesRef:
+```typescript
+const name = getAtHomeServicesRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetAtHomeServices` query has no variables.
+### Return Type
+Recall that executing the `GetAtHomeServices` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetAtHomeServicesData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetAtHomeServicesData {
+  serviceCollectionMethods: ({
+    id: string;
+    service: {
+      id: string;
+      title: string;
+      description: string;
+      price: string;
+      duration: string;
+      category: string;
+      featured: boolean;
+    } & DnaService_Key;
+      methodTitle: string;
+      methodDescription?: string | null;
+      methodIcon?: string | null;
+  } & ServiceCollectionMethod_Key)[];
+}
+```
+### Using `GetAtHomeServices`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getAtHomeServices } from '@firebasegen/adnlab-connector';
+
+
+// Call the `getAtHomeServices()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getAtHomeServices();
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getAtHomeServices(dataConnect);
+
+console.log(data.serviceCollectionMethods);
+
+// Or, you can use the `Promise` API.
+getAtHomeServices().then((response) => {
+  const data = response.data;
+  console.log(data.serviceCollectionMethods);
+});
+```
+
+### Using `GetAtHomeServices`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getAtHomeServicesRef } from '@firebasegen/adnlab-connector';
+
+
+// Call the `getAtHomeServicesRef()` function to get a reference to the query.
+const ref = getAtHomeServicesRef();
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getAtHomeServicesRef(dataConnect);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.serviceCollectionMethods);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.serviceCollectionMethods);
 });
 ```
 
@@ -7098,13 +7969,19 @@ The `CreateDnaService` mutation requires an argument of type `CreateDnaServiceVa
 ```typescript
 export interface CreateDnaServiceVariables {
   id: string;
-  name: string;
-  description?: string | null;
-  price: number;
-  durationDays: number;
-  sampleType: string;
-  atHomeAvailable: boolean;
-  kitCost: number;
+  title: string;
+  description: string;
+  fullDescription?: string | null;
+  price: string;
+  duration: string;
+  category: string;
+  serviceType: string;
+  hasLegalValue: boolean;
+  icon?: string | null;
+  participants?: string | null;
+  requiredDocuments?: string | null;
+  procedures?: string | null;
+  featured: boolean;
 }
 ```
 ### Return Type
@@ -7125,20 +8002,26 @@ import { connectorConfig, createDnaService, CreateDnaServiceVariables } from '@f
 // The `CreateDnaService` mutation requires an argument of type `CreateDnaServiceVariables`:
 const createDnaServiceVars: CreateDnaServiceVariables = {
   id: ..., 
-  name: ..., 
-  description: ..., // optional
+  title: ..., 
+  description: ..., 
+  fullDescription: ..., // optional
   price: ..., 
-  durationDays: ..., 
-  sampleType: ..., 
-  atHomeAvailable: ..., 
-  kitCost: ..., 
+  duration: ..., 
+  category: ..., 
+  serviceType: ..., 
+  hasLegalValue: ..., 
+  icon: ..., // optional
+  participants: ..., // optional
+  requiredDocuments: ..., // optional
+  procedures: ..., // optional
+  featured: ..., 
 };
 
 // Call the `createDnaService()` function to execute the mutation.
 // You can use the `await` keyword to wait for the promise to resolve.
 const { data } = await createDnaService(createDnaServiceVars);
 // Variables can be defined inline as well.
-const { data } = await createDnaService({ id: ..., name: ..., description: ..., price: ..., durationDays: ..., sampleType: ..., atHomeAvailable: ..., kitCost: ..., });
+const { data } = await createDnaService({ id: ..., title: ..., description: ..., fullDescription: ..., price: ..., duration: ..., category: ..., serviceType: ..., hasLegalValue: ..., icon: ..., participants: ..., requiredDocuments: ..., procedures: ..., featured: ..., });
 
 // You can also pass in a `DataConnect` instance to the action shortcut function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -7162,19 +8045,25 @@ import { connectorConfig, createDnaServiceRef, CreateDnaServiceVariables } from 
 // The `CreateDnaService` mutation requires an argument of type `CreateDnaServiceVariables`:
 const createDnaServiceVars: CreateDnaServiceVariables = {
   id: ..., 
-  name: ..., 
-  description: ..., // optional
+  title: ..., 
+  description: ..., 
+  fullDescription: ..., // optional
   price: ..., 
-  durationDays: ..., 
-  sampleType: ..., 
-  atHomeAvailable: ..., 
-  kitCost: ..., 
+  duration: ..., 
+  category: ..., 
+  serviceType: ..., 
+  hasLegalValue: ..., 
+  icon: ..., // optional
+  participants: ..., // optional
+  requiredDocuments: ..., // optional
+  procedures: ..., // optional
+  featured: ..., 
 };
 
 // Call the `createDnaServiceRef()` function to get a reference to the mutation.
 const ref = createDnaServiceRef(createDnaServiceVars);
 // Variables can be defined inline as well.
-const ref = createDnaServiceRef({ id: ..., name: ..., description: ..., price: ..., durationDays: ..., sampleType: ..., atHomeAvailable: ..., kitCost: ..., });
+const ref = createDnaServiceRef({ id: ..., title: ..., description: ..., fullDescription: ..., price: ..., duration: ..., category: ..., serviceType: ..., hasLegalValue: ..., icon: ..., participants: ..., requiredDocuments: ..., procedures: ..., featured: ..., });
 
 // You can also pass in a `DataConnect` instance to the `MutationRef` function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -7228,14 +8117,19 @@ The `UpdateDnaService` mutation requires an argument of type `UpdateDnaServiceVa
 ```typescript
 export interface UpdateDnaServiceVariables {
   serviceId: string;
-  name?: string | null;
+  title?: string | null;
   description?: string | null;
-  price?: number | null;
-  durationDays?: number | null;
-  sampleType?: string | null;
-  atHomeAvailable?: boolean | null;
-  kitCost?: number | null;
-  active?: boolean | null;
+  fullDescription?: string | null;
+  price?: string | null;
+  duration?: string | null;
+  category?: string | null;
+  serviceType?: string | null;
+  hasLegalValue?: boolean | null;
+  icon?: string | null;
+  participants?: string | null;
+  requiredDocuments?: string | null;
+  procedures?: string | null;
+  featured?: boolean | null;
 }
 ```
 ### Return Type
@@ -7256,21 +8150,26 @@ import { connectorConfig, updateDnaService, UpdateDnaServiceVariables } from '@f
 // The `UpdateDnaService` mutation requires an argument of type `UpdateDnaServiceVariables`:
 const updateDnaServiceVars: UpdateDnaServiceVariables = {
   serviceId: ..., 
-  name: ..., // optional
+  title: ..., // optional
   description: ..., // optional
+  fullDescription: ..., // optional
   price: ..., // optional
-  durationDays: ..., // optional
-  sampleType: ..., // optional
-  atHomeAvailable: ..., // optional
-  kitCost: ..., // optional
-  active: ..., // optional
+  duration: ..., // optional
+  category: ..., // optional
+  serviceType: ..., // optional
+  hasLegalValue: ..., // optional
+  icon: ..., // optional
+  participants: ..., // optional
+  requiredDocuments: ..., // optional
+  procedures: ..., // optional
+  featured: ..., // optional
 };
 
 // Call the `updateDnaService()` function to execute the mutation.
 // You can use the `await` keyword to wait for the promise to resolve.
 const { data } = await updateDnaService(updateDnaServiceVars);
 // Variables can be defined inline as well.
-const { data } = await updateDnaService({ serviceId: ..., name: ..., description: ..., price: ..., durationDays: ..., sampleType: ..., atHomeAvailable: ..., kitCost: ..., active: ..., });
+const { data } = await updateDnaService({ serviceId: ..., title: ..., description: ..., fullDescription: ..., price: ..., duration: ..., category: ..., serviceType: ..., hasLegalValue: ..., icon: ..., participants: ..., requiredDocuments: ..., procedures: ..., featured: ..., });
 
 // You can also pass in a `DataConnect` instance to the action shortcut function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -7294,20 +8193,25 @@ import { connectorConfig, updateDnaServiceRef, UpdateDnaServiceVariables } from 
 // The `UpdateDnaService` mutation requires an argument of type `UpdateDnaServiceVariables`:
 const updateDnaServiceVars: UpdateDnaServiceVariables = {
   serviceId: ..., 
-  name: ..., // optional
+  title: ..., // optional
   description: ..., // optional
+  fullDescription: ..., // optional
   price: ..., // optional
-  durationDays: ..., // optional
-  sampleType: ..., // optional
-  atHomeAvailable: ..., // optional
-  kitCost: ..., // optional
-  active: ..., // optional
+  duration: ..., // optional
+  category: ..., // optional
+  serviceType: ..., // optional
+  hasLegalValue: ..., // optional
+  icon: ..., // optional
+  participants: ..., // optional
+  requiredDocuments: ..., // optional
+  procedures: ..., // optional
+  featured: ..., // optional
 };
 
 // Call the `updateDnaServiceRef()` function to get a reference to the mutation.
 const ref = updateDnaServiceRef(updateDnaServiceVars);
 // Variables can be defined inline as well.
-const ref = updateDnaServiceRef({ serviceId: ..., name: ..., description: ..., price: ..., durationDays: ..., sampleType: ..., atHomeAvailable: ..., kitCost: ..., active: ..., });
+const ref = updateDnaServiceRef({ serviceId: ..., title: ..., description: ..., fullDescription: ..., price: ..., duration: ..., category: ..., serviceType: ..., hasLegalValue: ..., icon: ..., participants: ..., requiredDocuments: ..., procedures: ..., featured: ..., });
 
 // You can also pass in a `DataConnect` instance to the `MutationRef` function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -7323,6 +8227,142 @@ console.log(data.dnaService_update);
 executeMutation(ref).then((response) => {
   const data = response.data;
   console.log(data.dnaService_update);
+});
+```
+
+## CreateServiceCollectionMethod
+You can execute the `CreateServiceCollectionMethod` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+createServiceCollectionMethod(vars: CreateServiceCollectionMethodVariables): MutationPromise<CreateServiceCollectionMethodData, CreateServiceCollectionMethodVariables>;
+
+interface CreateServiceCollectionMethodRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: CreateServiceCollectionMethodVariables): MutationRef<CreateServiceCollectionMethodData, CreateServiceCollectionMethodVariables>;
+}
+export const createServiceCollectionMethodRef: CreateServiceCollectionMethodRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
+```typescript
+createServiceCollectionMethod(dc: DataConnect, vars: CreateServiceCollectionMethodVariables): MutationPromise<CreateServiceCollectionMethodData, CreateServiceCollectionMethodVariables>;
+
+interface CreateServiceCollectionMethodRef {
+  ...
+  (dc: DataConnect, vars: CreateServiceCollectionMethodVariables): MutationRef<CreateServiceCollectionMethodData, CreateServiceCollectionMethodVariables>;
+}
+export const createServiceCollectionMethodRef: CreateServiceCollectionMethodRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the createServiceCollectionMethodRef:
+```typescript
+const name = createServiceCollectionMethodRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `CreateServiceCollectionMethod` mutation requires an argument of type `CreateServiceCollectionMethodVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface CreateServiceCollectionMethodVariables {
+  id: string;
+  serviceId: string;
+  methodId: string;
+  methodTitle: string;
+  methodDescription?: string | null;
+  methodIcon?: string | null;
+  methodColor?: string | null;
+  methodNote?: string | null;
+  methodProcess?: string | null;
+  allowedFor?: string | null;
+}
+```
+### Return Type
+Recall that executing the `CreateServiceCollectionMethod` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `CreateServiceCollectionMethodData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface CreateServiceCollectionMethodData {
+  serviceCollectionMethod_insert: ServiceCollectionMethod_Key;
+}
+```
+### Using `CreateServiceCollectionMethod`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, createServiceCollectionMethod, CreateServiceCollectionMethodVariables } from '@firebasegen/adnlab-connector';
+
+// The `CreateServiceCollectionMethod` mutation requires an argument of type `CreateServiceCollectionMethodVariables`:
+const createServiceCollectionMethodVars: CreateServiceCollectionMethodVariables = {
+  id: ..., 
+  serviceId: ..., 
+  methodId: ..., 
+  methodTitle: ..., 
+  methodDescription: ..., // optional
+  methodIcon: ..., // optional
+  methodColor: ..., // optional
+  methodNote: ..., // optional
+  methodProcess: ..., // optional
+  allowedFor: ..., // optional
+};
+
+// Call the `createServiceCollectionMethod()` function to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await createServiceCollectionMethod(createServiceCollectionMethodVars);
+// Variables can be defined inline as well.
+const { data } = await createServiceCollectionMethod({ id: ..., serviceId: ..., methodId: ..., methodTitle: ..., methodDescription: ..., methodIcon: ..., methodColor: ..., methodNote: ..., methodProcess: ..., allowedFor: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await createServiceCollectionMethod(dataConnect, createServiceCollectionMethodVars);
+
+console.log(data.serviceCollectionMethod_insert);
+
+// Or, you can use the `Promise` API.
+createServiceCollectionMethod(createServiceCollectionMethodVars).then((response) => {
+  const data = response.data;
+  console.log(data.serviceCollectionMethod_insert);
+});
+```
+
+### Using `CreateServiceCollectionMethod`'s `MutationRef` function
+
+```typescript
+import { getDataConnect, executeMutation } from 'firebase/data-connect';
+import { connectorConfig, createServiceCollectionMethodRef, CreateServiceCollectionMethodVariables } from '@firebasegen/adnlab-connector';
+
+// The `CreateServiceCollectionMethod` mutation requires an argument of type `CreateServiceCollectionMethodVariables`:
+const createServiceCollectionMethodVars: CreateServiceCollectionMethodVariables = {
+  id: ..., 
+  serviceId: ..., 
+  methodId: ..., 
+  methodTitle: ..., 
+  methodDescription: ..., // optional
+  methodIcon: ..., // optional
+  methodColor: ..., // optional
+  methodNote: ..., // optional
+  methodProcess: ..., // optional
+  allowedFor: ..., // optional
+};
+
+// Call the `createServiceCollectionMethodRef()` function to get a reference to the mutation.
+const ref = createServiceCollectionMethodRef(createServiceCollectionMethodVars);
+// Variables can be defined inline as well.
+const ref = createServiceCollectionMethodRef({ id: ..., serviceId: ..., methodId: ..., methodTitle: ..., methodDescription: ..., methodIcon: ..., methodColor: ..., methodNote: ..., methodProcess: ..., allowedFor: ..., });
+
+// You can also pass in a `DataConnect` instance to the `MutationRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = createServiceCollectionMethodRef(dataConnect, createServiceCollectionMethodVars);
+
+// Call `executeMutation()` on the reference to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeMutation(ref);
+
+console.log(data.serviceCollectionMethod_insert);
+
+// Or, you can use the `Promise` API.
+executeMutation(ref).then((response) => {
+  const data = response.data;
+  console.log(data.serviceCollectionMethod_insert);
 });
 ```
 

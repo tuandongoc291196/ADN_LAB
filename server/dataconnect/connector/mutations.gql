@@ -114,55 +114,103 @@ mutation UpdateUserAccountStatus(
 
 # ====== DNA SERVICE MUTATIONS ======
 
-# Create DNA service
+# Create service
 mutation CreateDnaService(
   $id: String!
-  $name: String!
-  $description: String
-  $price: Float!
-  $durationDays: Int!
-  $sampleType: String!
-  $atHomeAvailable: Boolean!
-  $kitCost: Float!
+  $title: String!
+  $description: String!
+  $fullDescription: String
+  $price: String!
+  $duration: String!
+  $category: String!
+  $serviceType: String!
+  $hasLegalValue: Boolean!
+  $icon: String
+  $participants: String
+  $requiredDocuments: String
+  $procedures: String
+  $featured: Boolean!
 ) @auth(level: USER) {
   dnaService_insert(data: {
     id: $id
-    name: $name
+    title: $title
     description: $description
+    fullDescription: $fullDescription
     price: $price
-    durationDays: $durationDays
-    sampleType: $sampleType
-    atHomeAvailable: $atHomeAvailable
-    kitCost: $kitCost
-    active: true
+    duration: $duration
+    category: $category
+    serviceType: $serviceType
+    hasLegalValue: $hasLegalValue
+    icon: $icon
+    participants: $participants
+    requiredDocuments: $requiredDocuments
+    procedures: $procedures
+    featured: $featured
   })
 }
 
-# Update DNA service
+# Update service
 mutation UpdateDnaService(
   $serviceId: String!
-  $name: String
+  $title: String
   $description: String
-  $price: Float
-  $durationDays: Int
-  $sampleType: String
-  $atHomeAvailable: Boolean
-  $kitCost: Float
-  $active: Boolean
+  $fullDescription: String
+  $price: String
+  $duration: String
+  $category: String
+  $serviceType: String
+  $hasLegalValue: Boolean
+  $icon: String
+  $participants: String
+  $requiredDocuments: String
+  $procedures: String
+  $featured: Boolean
 ) @auth(level: USER) {
   dnaService_update(
     key: { id: $serviceId }
     data: {
-      name: $name
+      title: $title
       description: $description
+      fullDescription: $fullDescription
       price: $price
-      durationDays: $durationDays
-      sampleType: $sampleType
-      atHomeAvailable: $atHomeAvailable
-      kitCost: $kitCost
-      active: $active
+      duration: $duration
+      category: $category
+      serviceType: $serviceType
+      hasLegalValue: $hasLegalValue
+      icon: $icon
+      participants: $participants
+      requiredDocuments: $requiredDocuments
+      procedures: $procedures
+      featured: $featured
     }
   )
+}
+
+# Create service collection method
+mutation CreateServiceCollectionMethod(
+  $id: String!
+  $serviceId: String!
+  $methodId: String!
+  $methodTitle: String!
+  $methodDescription: String
+  $methodIcon: String
+  $methodColor: String
+  $methodNote: String
+  $methodProcess: String
+  $allowedFor: String
+) @auth(level: USER) {
+  serviceCollectionMethod_insert(data: {
+    id: $id
+    serviceId: $serviceId
+    methodId: $methodId
+    methodTitle: $methodTitle
+    methodDescription: $methodDescription
+    methodIcon: $methodIcon
+    methodColor: $methodColor
+    methodNote: $methodNote
+    methodProcess: $methodProcess
+    allowedFor: $allowedFor
+  })
 }
 
 # ====== KIT MUTATIONS ======

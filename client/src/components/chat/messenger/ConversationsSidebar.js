@@ -1,6 +1,7 @@
 import React from 'react';
 import { chatUtils } from '../data/chatRooms';
 import UserAvatar from '../components/UserAvatar';
+import { useMessenger } from '../context/MessengerContext';
 
 const ConversationsSidebar = ({
   user,
@@ -15,6 +16,40 @@ const ConversationsSidebar = ({
   onStartChat,
   loading
 }) => {
+  const { subscribeToUserStatusUpdates } = useMessenger();
+
+  // Subscribe to status updates for all users in chat rooms
+  React.useEffect(() => {
+    const unsubscribeCallbacks = [];
+    
+    // Subscribe to status for all users in chat rooms
+    chatRooms.forEach(room => {
+      const otherUserId = room.otherUser?.id || room.otherUser?.user_id || room.otherUser?.uid;
+      if (otherUserId) {
+        const unsubscribe = subscribeToUserStatusUpdates(otherUserId);
+        unsubscribeCallbacks.push(unsubscribe);
+      }
+    });
+
+    // Subscribe to status for search results
+    if (searchResults) {
+      searchResults.forEach(result => {
+        const userId = result.id || result.user_id || result.uid;
+        if (userId) {
+          const unsubscribe = subscribeToUserStatusUpdates(userId);
+          unsubscribeCallbacks.push(unsubscribe);
+        }
+      });
+    }
+
+    return () => {
+      unsubscribeCallbacks.forEach(unsubscribe => {
+        if (typeof unsubscribe === 'function') {
+          unsubscribe();
+        }
+      });
+    };
+  }, [chatRooms, searchResults, subscribeToUserStatusUpdates]);
   const formatTime = (timestamp) => {
     if (!timestamp) return '';
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);

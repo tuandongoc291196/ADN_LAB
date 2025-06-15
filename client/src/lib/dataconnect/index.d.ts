@@ -77,13 +77,19 @@ export interface CreateDnaServiceData {
 
 export interface CreateDnaServiceVariables {
   id: string;
-  name: string;
-  description?: string | null;
-  price: number;
-  durationDays: number;
-  sampleType: string;
-  atHomeAvailable: boolean;
-  kitCost: number;
+  title: string;
+  description: string;
+  fullDescription?: string | null;
+  price: string;
+  duration: string;
+  category: string;
+  serviceType: string;
+  hasLegalValue: boolean;
+  icon?: string | null;
+  participants?: string | null;
+  requiredDocuments?: string | null;
+  procedures?: string | null;
+  featured: boolean;
 }
 
 export interface CreateFeedbackData {
@@ -170,6 +176,23 @@ export interface CreateSampleVariables {
   notes?: string | null;
 }
 
+export interface CreateServiceCollectionMethodData {
+  serviceCollectionMethod_insert: ServiceCollectionMethod_Key;
+}
+
+export interface CreateServiceCollectionMethodVariables {
+  id: string;
+  serviceId: string;
+  methodId: string;
+  methodTitle: string;
+  methodDescription?: string | null;
+  methodIcon?: string | null;
+  methodColor?: string | null;
+  methodNote?: string | null;
+  methodProcess?: string | null;
+  allowedFor?: string | null;
+}
+
 export interface CreateTestResultData {
   testResult_insert: TestResult_Key;
 }
@@ -253,15 +276,21 @@ export interface GetAllFeedbackVariables {
 }
 
 export interface GetAtHomeServicesData {
-  dnaServices: ({
+  serviceCollectionMethods: ({
     id: string;
-    name: string;
-    description?: string | null;
-    price: number;
-    durationDays: number;
-    sampleType: string;
-    kitCost: number;
-  } & DnaService_Key)[];
+    service: {
+      id: string;
+      title: string;
+      description: string;
+      price: string;
+      duration: string;
+      category: string;
+      featured: boolean;
+    } & DnaService_Key;
+      methodTitle: string;
+      methodDescription?: string | null;
+      methodIcon?: string | null;
+  } & ServiceCollectionMethod_Key)[];
 }
 
 export interface GetAvailableKitsData {
@@ -409,8 +438,8 @@ export interface GetBookingItemByIdData {
     } & Booking_Key;
       service: {
         id: string;
-        name: string;
-        price: number;
+        title: string;
+        price: string;
       } & DnaService_Key;
         price: number;
         quantity: number;
@@ -427,11 +456,11 @@ export interface GetBookingItemsData {
     id: string;
     service: {
       id: string;
-      name: string;
-      description?: string | null;
-      price: number;
-      durationDays: number;
-      sampleType: string;
+      title: string;
+      description: string;
+      price: string;
+      duration: string;
+      category: string;
     } & DnaService_Key;
       price: number;
       quantity: number;
@@ -463,8 +492,8 @@ export interface GetBookingSamplesData {
   samples: ({
     id: string;
     service: {
-      name: string;
-      sampleType: string;
+      title: string;
+      category: string;
     };
       staff?: {
         fullname: string;
@@ -495,7 +524,7 @@ export interface GetBookingTestResultsData {
       id: string;
     } & Sample_Key;
       service: {
-        name: string;
+        title: string;
       };
         staff?: {
           fullname: string;
@@ -543,15 +572,21 @@ export interface GetBookingsByStatusVariables {
 export interface GetDnaServiceByIdData {
   dnaService?: {
     id: string;
-    name: string;
-    description?: string | null;
-    price: number;
-    durationDays: number;
-    sampleType: string;
-    atHomeAvailable: boolean;
-    active: boolean;
-    kitCost: number;
+    title: string;
+    description: string;
+    fullDescription?: string | null;
+    price: string;
+    duration: string;
+    category: string;
+    serviceType: string;
+    hasLegalValue: boolean;
+    icon?: string | null;
+    participants?: string | null;
+    requiredDocuments?: string | null;
+    procedures?: string | null;
+    featured: boolean;
     createdAt: TimestampString;
+    updatedAt?: TimestampString | null;
   } & DnaService_Key;
 }
 
@@ -559,15 +594,79 @@ export interface GetDnaServiceByIdVariables {
   serviceId: string;
 }
 
+export interface GetDnaServiceWithMethodsData {
+  dnaService?: {
+    id: string;
+    title: string;
+    description: string;
+    fullDescription?: string | null;
+    price: string;
+    duration: string;
+    category: string;
+    serviceType: string;
+    hasLegalValue: boolean;
+    icon?: string | null;
+    participants?: string | null;
+    requiredDocuments?: string | null;
+    procedures?: string | null;
+    featured: boolean;
+    createdAt: TimestampString;
+    updatedAt?: TimestampString | null;
+  } & DnaService_Key;
+    serviceCollectionMethods: ({
+      id: string;
+      methodId: string;
+      methodTitle: string;
+      methodDescription?: string | null;
+      methodIcon?: string | null;
+      methodColor?: string | null;
+      methodNote?: string | null;
+      methodProcess?: string | null;
+      allowedFor?: string | null;
+      createdAt: TimestampString;
+    } & ServiceCollectionMethod_Key)[];
+}
+
+export interface GetDnaServiceWithMethodsVariables {
+  serviceId: string;
+}
+
+export interface GetDnaServicesByCategoryData {
+  dnaServices: ({
+    id: string;
+    title: string;
+    description: string;
+    fullDescription?: string | null;
+    price: string;
+    duration: string;
+    category: string;
+    serviceType: string;
+    hasLegalValue: boolean;
+    icon?: string | null;
+    participants?: string | null;
+    requiredDocuments?: string | null;
+    procedures?: string | null;
+    featured: boolean;
+    createdAt: TimestampString;
+    updatedAt?: TimestampString | null;
+  } & DnaService_Key)[];
+}
+
+export interface GetDnaServicesByCategoryVariables {
+  category: string;
+}
+
 export interface GetDnaServicesBySampleTypeData {
   dnaServices: ({
     id: string;
-    name: string;
-    description?: string | null;
-    price: number;
-    durationDays: number;
-    atHomeAvailable: boolean;
-    kitCost: number;
+    title: string;
+    description: string;
+    price: string;
+    duration: string;
+    category: string;
+    serviceType: string;
+    hasLegalValue: boolean;
+    featured: boolean;
   } & DnaService_Key)[];
 }
 
@@ -578,14 +677,57 @@ export interface GetDnaServicesBySampleTypeVariables {
 export interface GetDnaServicesData {
   dnaServices: ({
     id: string;
-    name: string;
-    description?: string | null;
-    price: number;
-    durationDays: number;
-    sampleType: string;
-    atHomeAvailable: boolean;
-    kitCost: number;
+    title: string;
+    description: string;
+    fullDescription?: string | null;
+    price: string;
+    duration: string;
+    category: string;
+    serviceType: string;
+    hasLegalValue: boolean;
+    icon?: string | null;
+    participants?: string | null;
+    requiredDocuments?: string | null;
+    procedures?: string | null;
+    featured: boolean;
     createdAt: TimestampString;
+    updatedAt?: TimestampString | null;
+  } & DnaService_Key)[];
+}
+
+export interface GetFeaturedDnaServicesData {
+  dnaServices: ({
+    id: string;
+    title: string;
+    description: string;
+    fullDescription?: string | null;
+    price: string;
+    duration: string;
+    category: string;
+    serviceType: string;
+    hasLegalValue: boolean;
+    icon?: string | null;
+    participants?: string | null;
+    requiredDocuments?: string | null;
+    procedures?: string | null;
+    featured: boolean;
+    createdAt: TimestampString;
+    updatedAt?: TimestampString | null;
+  } & DnaService_Key)[];
+}
+
+export interface GetFeaturedServicesWithMethodsData {
+  dnaServices: ({
+    id: string;
+    title: string;
+    description: string;
+    price: string;
+    duration: string;
+    category: string;
+    serviceType: string;
+    hasLegalValue: boolean;
+    icon?: string | null;
+    featured: boolean;
   } & DnaService_Key)[];
 }
 
@@ -801,9 +943,9 @@ export interface GetSampleByIdData {
       };
     } & Booking_Key;
       service: {
-        name: string;
-        sampleType: string;
-        description?: string | null;
+        title: string;
+        category: string;
+        description: string;
       };
         staff?: {
           fullname: string;
@@ -828,8 +970,8 @@ export interface GetSamplesByStatusData {
       };
     } & Booking_Key;
       service: {
-        name: string;
-        sampleType: string;
+        title: string;
+        category: string;
       };
         staff?: {
           fullname: string;
@@ -844,14 +986,83 @@ export interface GetSamplesByStatusVariables {
   status: string;
 }
 
+export interface GetServiceCollectionMethodsData {
+  serviceCollectionMethods: ({
+    id: string;
+    serviceId: string;
+    methodId: string;
+    methodTitle: string;
+    methodDescription?: string | null;
+    methodIcon?: string | null;
+    methodColor?: string | null;
+    methodNote?: string | null;
+    methodProcess?: string | null;
+    allowedFor?: string | null;
+    createdAt: TimestampString;
+    service: {
+      id: string;
+      title: string;
+    } & DnaService_Key;
+  } & ServiceCollectionMethod_Key)[];
+}
+
+export interface GetServiceCollectionMethodsVariables {
+  serviceId: string;
+}
+
 export interface GetServicePopularityData {
   bookingItems: ({
     service: {
       id: string;
-      name: string;
+      title: string;
     } & DnaService_Key;
       quantity: number;
   })[];
+}
+
+export interface GetServicesByCollectionMethodData {
+  serviceCollectionMethods: ({
+    id: string;
+    methodId: string;
+    methodTitle: string;
+    service: {
+      id: string;
+      title: string;
+      description: string;
+      price: string;
+      duration: string;
+      category: string;
+      serviceType: string;
+      hasLegalValue: boolean;
+      icon?: string | null;
+      featured: boolean;
+    } & DnaService_Key;
+  } & ServiceCollectionMethod_Key)[];
+}
+
+export interface GetServicesByCollectionMethodVariables {
+  methodId: string;
+}
+
+export interface GetServicesWithCollectionMethodsData {
+  dnaServices: ({
+    id: string;
+    title: string;
+    description: string;
+    fullDescription?: string | null;
+    price: string;
+    duration: string;
+    category: string;
+    serviceType: string;
+    hasLegalValue: boolean;
+    icon?: string | null;
+    participants?: string | null;
+    requiredDocuments?: string | null;
+    procedures?: string | null;
+    featured: boolean;
+    createdAt: TimestampString;
+    updatedAt?: TimestampString | null;
+  } & DnaService_Key)[];
 }
 
 export interface GetStaffBookingsData {
@@ -883,6 +1094,8 @@ export interface GetStaffMembersData {
   users: ({
     id: string;
     fullname: string;
+    gender?: string | null;
+    avatar?: string | null;
     email: string;
     role: {
       name: string;
@@ -900,8 +1113,8 @@ export interface GetStaffSamplesData {
       };
     };
       service: {
-        name: string;
-        sampleType: string;
+        title: string;
+        category: string;
       };
         collectionDate?: DateString | null;
         status: string;
@@ -928,8 +1141,8 @@ export interface GetTestResultByIdData {
         collectionDate?: DateString | null;
       } & Sample_Key;
         service: {
-          name: string;
-          description?: string | null;
+          title: string;
+          description: string;
         };
           staff?: {
             fullname: string;
@@ -959,7 +1172,7 @@ export interface GetTestResultsByStatusData {
       };
     };
       service: {
-        name: string;
+        title: string;
       };
         staff?: {
           fullname: string;
@@ -1158,7 +1371,7 @@ export interface GetUserTestResultsData {
   testResults: ({
     id: string;
     service: {
-      name: string;
+      title: string;
     };
       testDate?: DateString | null;
       reportDate?: DateString | null;
@@ -1175,6 +1388,8 @@ export interface GetUsersByRoleData {
   users: ({
     id: string;
     fullname: string;
+    gender?: string | null;
+    avatar?: string | null;
     email: string;
     accountStatus: string;
     role: {
@@ -1192,6 +1407,8 @@ export interface GetUsersData {
   users: ({
     id: string;
     fullname: string;
+    gender?: string | null;
+    avatar?: string | null;
     email: string;
     accountStatus: string;
     role: {
@@ -1257,6 +1474,11 @@ export interface Sample_Key {
   __typename?: 'Sample_Key';
 }
 
+export interface ServiceCollectionMethod_Key {
+  id: string;
+  __typename?: 'ServiceCollectionMethod_Key';
+}
+
 export interface TestResult_Key {
   id: string;
   __typename?: 'TestResult_Key';
@@ -1304,14 +1526,19 @@ export interface UpdateDnaServiceData {
 
 export interface UpdateDnaServiceVariables {
   serviceId: string;
-  name?: string | null;
+  title?: string | null;
   description?: string | null;
-  price?: number | null;
-  durationDays?: number | null;
-  sampleType?: string | null;
-  atHomeAvailable?: boolean | null;
-  kitCost?: number | null;
-  active?: boolean | null;
+  fullDescription?: string | null;
+  price?: string | null;
+  duration?: string | null;
+  category?: string | null;
+  serviceType?: string | null;
+  hasLegalValue?: boolean | null;
+  icon?: string | null;
+  participants?: string | null;
+  requiredDocuments?: string | null;
+  procedures?: string | null;
+  featured?: boolean | null;
 }
 
 export interface UpdateFeedbackData {
@@ -1554,6 +1781,18 @@ export const updateDnaServiceRef: UpdateDnaServiceRef;
 
 export function updateDnaService(vars: UpdateDnaServiceVariables): MutationPromise<UpdateDnaServiceData, UpdateDnaServiceVariables>;
 export function updateDnaService(dc: DataConnect, vars: UpdateDnaServiceVariables): MutationPromise<UpdateDnaServiceData, UpdateDnaServiceVariables>;
+
+interface CreateServiceCollectionMethodRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: CreateServiceCollectionMethodVariables): MutationRef<CreateServiceCollectionMethodData, CreateServiceCollectionMethodVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: CreateServiceCollectionMethodVariables): MutationRef<CreateServiceCollectionMethodData, CreateServiceCollectionMethodVariables>;
+  operationName: string;
+}
+export const createServiceCollectionMethodRef: CreateServiceCollectionMethodRef;
+
+export function createServiceCollectionMethod(vars: CreateServiceCollectionMethodVariables): MutationPromise<CreateServiceCollectionMethodData, CreateServiceCollectionMethodVariables>;
+export function createServiceCollectionMethod(dc: DataConnect, vars: CreateServiceCollectionMethodVariables): MutationPromise<CreateServiceCollectionMethodData, CreateServiceCollectionMethodVariables>;
 
 interface CreateKitRef {
   /* Allow users to create refs without passing in DataConnect */
@@ -1999,29 +2238,89 @@ export const getDnaServiceByIdRef: GetDnaServiceByIdRef;
 export function getDnaServiceById(vars: GetDnaServiceByIdVariables): QueryPromise<GetDnaServiceByIdData, GetDnaServiceByIdVariables>;
 export function getDnaServiceById(dc: DataConnect, vars: GetDnaServiceByIdVariables): QueryPromise<GetDnaServiceByIdData, GetDnaServiceByIdVariables>;
 
-interface GetDnaServicesBySampleTypeRef {
+interface GetDnaServicesByCategoryRef {
   /* Allow users to create refs without passing in DataConnect */
-  (vars: GetDnaServicesBySampleTypeVariables): QueryRef<GetDnaServicesBySampleTypeData, GetDnaServicesBySampleTypeVariables>;
+  (vars: GetDnaServicesByCategoryVariables): QueryRef<GetDnaServicesByCategoryData, GetDnaServicesByCategoryVariables>;
   /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetDnaServicesBySampleTypeVariables): QueryRef<GetDnaServicesBySampleTypeData, GetDnaServicesBySampleTypeVariables>;
+  (dc: DataConnect, vars: GetDnaServicesByCategoryVariables): QueryRef<GetDnaServicesByCategoryData, GetDnaServicesByCategoryVariables>;
   operationName: string;
 }
-export const getDnaServicesBySampleTypeRef: GetDnaServicesBySampleTypeRef;
+export const getDnaServicesByCategoryRef: GetDnaServicesByCategoryRef;
 
-export function getDnaServicesBySampleType(vars: GetDnaServicesBySampleTypeVariables): QueryPromise<GetDnaServicesBySampleTypeData, GetDnaServicesBySampleTypeVariables>;
-export function getDnaServicesBySampleType(dc: DataConnect, vars: GetDnaServicesBySampleTypeVariables): QueryPromise<GetDnaServicesBySampleTypeData, GetDnaServicesBySampleTypeVariables>;
+export function getDnaServicesByCategory(vars: GetDnaServicesByCategoryVariables): QueryPromise<GetDnaServicesByCategoryData, GetDnaServicesByCategoryVariables>;
+export function getDnaServicesByCategory(dc: DataConnect, vars: GetDnaServicesByCategoryVariables): QueryPromise<GetDnaServicesByCategoryData, GetDnaServicesByCategoryVariables>;
 
-interface GetAtHomeServicesRef {
+interface GetFeaturedDnaServicesRef {
   /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetAtHomeServicesData, undefined>;
+  (): QueryRef<GetFeaturedDnaServicesData, undefined>;
   /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetAtHomeServicesData, undefined>;
+  (dc: DataConnect): QueryRef<GetFeaturedDnaServicesData, undefined>;
   operationName: string;
 }
-export const getAtHomeServicesRef: GetAtHomeServicesRef;
+export const getFeaturedDnaServicesRef: GetFeaturedDnaServicesRef;
 
-export function getAtHomeServices(): QueryPromise<GetAtHomeServicesData, undefined>;
-export function getAtHomeServices(dc: DataConnect): QueryPromise<GetAtHomeServicesData, undefined>;
+export function getFeaturedDnaServices(): QueryPromise<GetFeaturedDnaServicesData, undefined>;
+export function getFeaturedDnaServices(dc: DataConnect): QueryPromise<GetFeaturedDnaServicesData, undefined>;
+
+interface GetServiceCollectionMethodsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetServiceCollectionMethodsVariables): QueryRef<GetServiceCollectionMethodsData, GetServiceCollectionMethodsVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetServiceCollectionMethodsVariables): QueryRef<GetServiceCollectionMethodsData, GetServiceCollectionMethodsVariables>;
+  operationName: string;
+}
+export const getServiceCollectionMethodsRef: GetServiceCollectionMethodsRef;
+
+export function getServiceCollectionMethods(vars: GetServiceCollectionMethodsVariables): QueryPromise<GetServiceCollectionMethodsData, GetServiceCollectionMethodsVariables>;
+export function getServiceCollectionMethods(dc: DataConnect, vars: GetServiceCollectionMethodsVariables): QueryPromise<GetServiceCollectionMethodsData, GetServiceCollectionMethodsVariables>;
+
+interface GetServicesByCollectionMethodRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetServicesByCollectionMethodVariables): QueryRef<GetServicesByCollectionMethodData, GetServicesByCollectionMethodVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetServicesByCollectionMethodVariables): QueryRef<GetServicesByCollectionMethodData, GetServicesByCollectionMethodVariables>;
+  operationName: string;
+}
+export const getServicesByCollectionMethodRef: GetServicesByCollectionMethodRef;
+
+export function getServicesByCollectionMethod(vars: GetServicesByCollectionMethodVariables): QueryPromise<GetServicesByCollectionMethodData, GetServicesByCollectionMethodVariables>;
+export function getServicesByCollectionMethod(dc: DataConnect, vars: GetServicesByCollectionMethodVariables): QueryPromise<GetServicesByCollectionMethodData, GetServicesByCollectionMethodVariables>;
+
+interface GetDnaServiceWithMethodsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetDnaServiceWithMethodsVariables): QueryRef<GetDnaServiceWithMethodsData, GetDnaServiceWithMethodsVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetDnaServiceWithMethodsVariables): QueryRef<GetDnaServiceWithMethodsData, GetDnaServiceWithMethodsVariables>;
+  operationName: string;
+}
+export const getDnaServiceWithMethodsRef: GetDnaServiceWithMethodsRef;
+
+export function getDnaServiceWithMethods(vars: GetDnaServiceWithMethodsVariables): QueryPromise<GetDnaServiceWithMethodsData, GetDnaServiceWithMethodsVariables>;
+export function getDnaServiceWithMethods(dc: DataConnect, vars: GetDnaServiceWithMethodsVariables): QueryPromise<GetDnaServiceWithMethodsData, GetDnaServiceWithMethodsVariables>;
+
+interface GetServicesWithCollectionMethodsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetServicesWithCollectionMethodsData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetServicesWithCollectionMethodsData, undefined>;
+  operationName: string;
+}
+export const getServicesWithCollectionMethodsRef: GetServicesWithCollectionMethodsRef;
+
+export function getServicesWithCollectionMethods(): QueryPromise<GetServicesWithCollectionMethodsData, undefined>;
+export function getServicesWithCollectionMethods(dc: DataConnect): QueryPromise<GetServicesWithCollectionMethodsData, undefined>;
+
+interface GetFeaturedServicesWithMethodsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetFeaturedServicesWithMethodsData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetFeaturedServicesWithMethodsData, undefined>;
+  operationName: string;
+}
+export const getFeaturedServicesWithMethodsRef: GetFeaturedServicesWithMethodsRef;
+
+export function getFeaturedServicesWithMethods(): QueryPromise<GetFeaturedServicesWithMethodsData, undefined>;
+export function getFeaturedServicesWithMethods(dc: DataConnect): QueryPromise<GetFeaturedServicesWithMethodsData, undefined>;
 
 interface GetKitsRef {
   /* Allow users to create refs without passing in DataConnect */
@@ -2502,4 +2801,28 @@ export const getMonthlyRevenueRef: GetMonthlyRevenueRef;
 
 export function getMonthlyRevenue(vars: GetMonthlyRevenueVariables): QueryPromise<GetMonthlyRevenueData, GetMonthlyRevenueVariables>;
 export function getMonthlyRevenue(dc: DataConnect, vars: GetMonthlyRevenueVariables): QueryPromise<GetMonthlyRevenueData, GetMonthlyRevenueVariables>;
+
+interface GetDnaServicesBySampleTypeRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetDnaServicesBySampleTypeVariables): QueryRef<GetDnaServicesBySampleTypeData, GetDnaServicesBySampleTypeVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetDnaServicesBySampleTypeVariables): QueryRef<GetDnaServicesBySampleTypeData, GetDnaServicesBySampleTypeVariables>;
+  operationName: string;
+}
+export const getDnaServicesBySampleTypeRef: GetDnaServicesBySampleTypeRef;
+
+export function getDnaServicesBySampleType(vars: GetDnaServicesBySampleTypeVariables): QueryPromise<GetDnaServicesBySampleTypeData, GetDnaServicesBySampleTypeVariables>;
+export function getDnaServicesBySampleType(dc: DataConnect, vars: GetDnaServicesBySampleTypeVariables): QueryPromise<GetDnaServicesBySampleTypeData, GetDnaServicesBySampleTypeVariables>;
+
+interface GetAtHomeServicesRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetAtHomeServicesData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetAtHomeServicesData, undefined>;
+  operationName: string;
+}
+export const getAtHomeServicesRef: GetAtHomeServicesRef;
+
+export function getAtHomeServices(): QueryPromise<GetAtHomeServicesData, undefined>;
+export function getAtHomeServices(dc: DataConnect): QueryPromise<GetAtHomeServicesData, undefined>;
 

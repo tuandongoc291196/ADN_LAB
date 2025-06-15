@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '../../config/firebase'; // Adjust the import path as necessary
+import { auth, setUserOnlineStatus, subscribeToUserStatus } from '../../config/firebase'; // Adjust the import path as necessary
 
 const MessengerContext = createContext();
 
@@ -18,6 +18,7 @@ export const MessengerProvider = ({ children }) => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
+  const [userStatuses, setUserStatuses] = useState(new Map()); // Store user online statuses
 
   // Convert Firebase user to our expected user format
   useEffect(() => {
@@ -56,10 +57,45 @@ export const MessengerProvider = ({ children }) => {
     }
   }, [firebaseUser]);
 
+  // Manage user online status in Firestore
+  useEffect(() => {
+    if (user?.uid && isOnline) {
+      // Set user as online when authenticated and connected
+      setUserOnlineStatus(user.uid, true);
+      
+      // Set user as offline when page is closed/refreshed
+      const handleBeforeUnload = () => {
+        setUserOnlineStatus(user.uid, false);
+      };
+      
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      
+      return () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        // Set offline when component unmounts
+        if (user?.uid) {
+          setUserOnlineStatus(user.uid, false);
+        }
+      };
+    }
+  }, [user?.uid, isOnline]);
+
   // Track online status
   useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
+    const handleOnline = () => {
+      setIsOnline(true);
+      // Update Firestore status when coming back online
+      if (user?.uid) {
+        setUserOnlineStatus(user.uid, true);
+      }
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      // Update Firestore status when going offline
+      if (user?.uid) {
+        setUserOnlineStatus(user.uid, false);
+      }
+    };
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
@@ -68,7 +104,7 @@ export const MessengerProvider = ({ children }) => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [user?.uid]);
 
   // Notification management
   const removeNotification = useCallback((id) => {
@@ -119,6 +155,30 @@ export const MessengerProvider = ({ children }) => {
     return () => clearInterval(interval);
   }, []);
 
+  // User status management functions
+  const subscribeToUserStatusUpdates = useCallback((userId) => {
+    if (!userId || userStatuses.has(userId)) {
+      return () => {};
+    }
+    
+    const unsubscribe = subscribeToUserStatus(userId, (status) => {
+      setUserStatuses(prev => new Map(prev.set(userId, status)));
+    });
+    
+    return unsubscribe;
+  }, []);
+
+  const getUserStatus = useCallback((userId) => {
+    const status = userStatuses.get(userId) || { id: userId, isOnline: false, lastSeen: null };
+    return status;
+  }, [userStatuses]);
+
+  const isUserOnline = useCallback((userId) => {
+    const status = getUserStatus(userId);
+    const isOnline = status.isOnline === true;
+    return isOnline;
+  }, [getUserStatus]);
+
   const value = {
     user,
     isOnline,
@@ -128,7 +188,11 @@ export const MessengerProvider = ({ children }) => {
     addNotification,
     removeNotification,
     typingUsers,
-    setUserTyping
+    setUserTyping,
+    userStatuses,
+    subscribeToUserStatusUpdates,
+    getUserStatus,
+    isUserOnline
   };
 
   return (

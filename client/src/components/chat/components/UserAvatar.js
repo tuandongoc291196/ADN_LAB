@@ -1,5 +1,6 @@
 import React from 'react';
 import { chatUtils } from '../data/chatRooms';
+import { useMessenger } from '../context/MessengerContext';
 
 const UserAvatar = ({ 
   user, 
@@ -7,13 +8,25 @@ const UserAvatar = ({
   className = '', 
   showOnlineIndicator = false 
 }) => {
+  const { userStatuses, subscribeToUserStatusUpdates, isUserOnline } = useMessenger();
   const avatarUrl = chatUtils.getUserAvatar(user);
   const userInitials = chatUtils.getUserInitials(user);
   const displayName = chatUtils.getUserDisplayName(user);
-  const isOnline = chatUtils.isUserOnline(user);
+  
+  // Get the correct user ID - standardized order
+  const userId = user?.id || user?.user_id || user?.uid;
+  const online = isUserOnline(userId);
 
   const [imageError, setImageError] = React.useState(false);
   const [imageLoaded, setImageLoaded] = React.useState(false);
+
+  // Subscribe to user status updates
+  React.useEffect(() => {
+    if (userId && showOnlineIndicator) {
+      const unsubscribe = subscribeToUserStatusUpdates(userId);
+      return unsubscribe;
+    }
+  }, [userId, showOnlineIndicator, subscribeToUserStatusUpdates]);
 
   const avatarStyle = {
     width: `${size}px`,
@@ -50,7 +63,7 @@ const UserAvatar = ({
   const showInitials = !avatarUrl || imageError;
 
   return (
-    <div className="position-relative d-inline-block">
+    <div className="position-relative d-inline-block" key={`avatar-${userId}-${online}`}>
       {/* Avatar Image - only render if we have URL and no error */}
       {showImage && (
         <img
@@ -74,10 +87,10 @@ const UserAvatar = ({
         </div>
       )}
 
-      {/* Online indicator */}
-      {showOnlineIndicator && isOnline && (
+      {/* Online indicator - only show when actually online */}
+      {showOnlineIndicator && online && (
         <div 
-          className="position-absolute bottom-0 end-0 bg-success rounded-circle border border-2 border-white"
+          className="position-absolute bottom-0 end-0 user-online-dot rounded-circle border border-2 border-white"
           style={{ 
             width: `${size * 0.3}px`, 
             height: `${size * 0.3}px`,

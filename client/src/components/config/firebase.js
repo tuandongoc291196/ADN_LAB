@@ -35,7 +35,7 @@ import {
   getUser,
   getUsers,
   updateUserRole as updateUserRoleAPI,
-  updateUserAccountStatus as updateAccountStatusAPI
+  updateUserAccountStatus
 } from "../../lib/dataconnect";
 
 const firebaseConfig = {
@@ -55,7 +55,7 @@ const db = getFirestore(app);
 
 const dataConnect = getDataConnect(app, {
   connector: "default",
-  service: "su25-swp391-g8-service",
+  service: "su25-swp391-g8-2-service",
   location: "asia-east2"
 });
 
@@ -72,8 +72,7 @@ const adminEmails = [
   'admin@adnlab.vn',
   'admin@gmail.com',
   'test.admin@adnlab.vn',
-  'adnlab.admin@gmail.com',
-  'hieuntse184626@fpt.edu.vn'
+  'adnlab.admin@gmail.com'
 ];
 
 const staffEmails = [
@@ -108,30 +107,31 @@ const signInWithGoogle = async () => {
       const { data: userData } = await getUser(dataConnect);
       console.log("Checking if user exists in database:", userData);
       if (userData?.user) {
-        console.log("User found in database, updating localStorage");
-        localStorage.setItem("user_id", user.uid);
-        localStorage.setItem("userData", JSON.stringify(userData.user));
-        return { uid: user.uid, displayName: user.displayName };
+        console.log("User found in database");
+      } else {
+        console.log("User not found in database, creating new record");
+        await createOrUpdateUser(dataConnect, {
+          fullname: user.displayName || "",
+          email: user.email,
+          authProvider: "google",
+          gender: "",
+          avatar: user.photoURL || "",
+          phone: "",
+          shippingAddress: "",
+          roleId: "0"
+        });
       }
     } catch (getUserError) {
-      console.log("User not found in database, creating new record");
-    }
-    await createOrUpdateUser(dataConnect, {
-      fullname: user.displayName || "",
-      email: user.email,
-      authProvider: "google",
-      gender: "",
-      avatar: user.photoURL || "",
-      phone: "",
-      shippingAddress: "",
-      roleId: getRoleFromEmail(user.email) 
+      console.log("User error");
+    }    
+    await updateUserAccountStatus(dataConnect, {
+      userId: user.uid,
+      accountStatus: "active"
     });
-    
     const { data: userData } = await getUser(dataConnect);
-    
     localStorage.setItem("user_id", user.uid);
     localStorage.setItem("userData", JSON.stringify(userData.user));
-    
+
     return { uid: user.uid, displayName: user.displayName };
   } catch (err) {
     console.error(err);
@@ -181,8 +181,7 @@ const registerWithEmailAndPassword = async (name, phone, email, password) => {
     const { data: userData } = await getUser(dataConnect);
     
     localStorage.setItem("user_id", user.uid);
-    localStorage.setItem("userData", JSON.stringify(userData.user));
-    
+    localStorage.setItem("userData", JSON.stringify(userData.user));    
     return res;
   } catch (err) {
     console.error(err);
@@ -201,14 +200,20 @@ const sendPasswordReset = async (email) => {
   }
 };
 
-const logout = () => {
+const logout = async () => {
+  const userId = localStorage.getItem("user_id");  
+  updateUserAccountStatus(dataConnect, {
+    userId: userId,
+    accountStatus: "inactive"
+  });
+  
+  // Cleanup user online status
+  await cleanupUserStatus(userId);
+  
   localStorage.removeItem("user_id");
   localStorage.removeItem("userData");
   localStorage.removeItem("isAuthenticated");
-  
-  // Clear user cache on logout
-  clearUserCache();
-  
+  clearUserCache();  
   signOut(auth);
 };
 
@@ -585,7 +590,7 @@ async function updateUserRole(userId, roleId) {
 
 async function updateAccountStatus(userId, accountStatus) {
   try {
-    await updateAccountStatusAPI(dataConnect, {
+    await updateUserAccountStatus(dataConnect, {
       userId,
       accountStatus
     });
@@ -595,6 +600,99 @@ async function updateAccountStatus(userId, accountStatus) {
   } catch (error) {
     console.error("Error updating account status:", error);
     throw error;
+  }
+}
+
+// User online status management
+const USER_STATUS_COLLECTION = "userStatus";
+
+// Set user online status
+async function setUserOnlineStatus(userId, isOnline) {
+  try {
+    if (!userId) return;
+    
+    const statusRef = doc(db, USER_STATUS_COLLECTION, userId);
+    const statusData = {
+      userId,
+      isOnline,
+      lastSeen: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+    await setDoc(statusRef, statusData, { merge: true });
+  } catch (error) {
+    console.error("Error updating user online status:", error);
+  }
+}
+
+// Get user online status (single user)
+async function getUserOnlineStatus(userId) {
+  try {
+    if (!userId) return { isOnline: false, lastSeen: null };
+    
+    const statusRef = doc(db, USER_STATUS_COLLECTION, userId);
+    const statusDoc = await getDoc(statusRef);
+    
+    if (statusDoc.exists()) {
+      return statusDoc.data();
+    }
+    
+    return { isOnline: false, lastSeen: null };
+  } catch (error) {
+    console.error("Error fetching user online status:", error);
+    return { isOnline: false, lastSeen: null };
+  }
+}
+
+// Subscribe to user online status changes (real-time)
+function subscribeToUserStatus(userId, callback) {
+  if (!userId) return () => {};
+  
+  const statusRef = doc(db, USER_STATUS_COLLECTION, userId);
+  return onSnapshot(statusRef, (doc) => {
+    if (doc.exists()) {
+      const data = doc.data();
+      callback(data);
+    } else {
+      callback({ isOnline: false, lastSeen: null });
+    }
+  }, (error) => {
+    console.error("Error listening to user status:", error);
+    callback({ isOnline: false, lastSeen: null });
+  });
+}
+
+// Subscribe to multiple users' online status (for chat rooms)
+function subscribeToMultipleUsersStatus(userIds, callback) {
+  if (!userIds || userIds.length === 0) return () => {};
+  
+  const unsubscribeCallbacks = [];
+  const statusMap = new Map();
+  
+  const updateCallback = () => {
+    callback(new Map(statusMap));
+  };
+  
+  userIds.forEach(userId => {
+    const unsubscribe = subscribeToUserStatus(userId, (status) => {
+      statusMap.set(userId, status);
+      updateCallback();
+    });
+    unsubscribeCallbacks.push(unsubscribe);
+  });
+  
+  return () => {
+    unsubscribeCallbacks.forEach(unsubscribe => unsubscribe());
+  };
+}
+
+// Cleanup user status on logout
+async function cleanupUserStatus(userId) {
+  try {
+    if (!userId) return;
+    
+    await setUserOnlineStatus(userId, false);
+  } catch (error) {
+    console.error("Error cleaning up user status:", error);
   }
 }
 
@@ -633,6 +731,9 @@ export {
   adminEmails,
   staffEmails,
   managerEmails,
-  clearUserCache,
-  invalidateUserCache
+  setUserOnlineStatus,
+  getUserOnlineStatus,
+  subscribeToUserStatus,
+  subscribeToMultipleUsersStatus,
+  cleanupUserStatus
 };

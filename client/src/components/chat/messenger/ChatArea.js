@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { sendMessage } from '../../config/firebase';
 import { chatUtils } from '../data/chatRooms';
 import UserAvatar from '../components/UserAvatar';
+import { useMessenger } from '../context/MessengerContext';
 import './MessengerChat.css';  
 
 const ChatArea = ({
@@ -14,6 +15,7 @@ const ChatArea = ({
   isMobileView,
   isTyping
 }) => {
+  const { isUserOnline, subscribeToUserStatusUpdates, getUserStatus } = useMessenger();
   const [messageText, setMessageText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isUserTyping, setIsUserTyping] = useState(false);
@@ -22,6 +24,15 @@ const ChatArea = ({
   const textareaRef = useRef(null);
   const lastMessageCountRef = useRef(0);
   const isUserScrollingRef = useRef(false);
+
+  // Subscribe to the other user's status
+  useEffect(() => {
+    const otherUserId = selectedRoom?.otherUser?.uid || selectedRoom?.otherUser?.user_id || selectedRoom?.otherUser?.id;
+    if (otherUserId) {
+      const unsubscribe = subscribeToUserStatusUpdates(otherUserId);
+      return unsubscribe;
+    }
+  }, [selectedRoom?.otherUser, subscribeToUserStatusUpdates]);
   const shouldAutoScrollRef = useRef(true);
   const scrollTimeoutRef = useRef(null);
 
@@ -207,7 +218,23 @@ const ChatArea = ({
               <h5 className="chat-header-name">
                 {chatUtils.getUserDisplayName(selectedRoom.otherUser)}
               </h5>
-              <p className="chat-header-status">Active now</p>
+              <p className={`chat-header-status ${(() => {
+                const otherUserId = selectedRoom.otherUser?.id || selectedRoom.otherUser?.user_id;
+                const status = getUserStatus(otherUserId);
+                const online = status.isOnline === true;
+                return online ? 'status-active' : 'status-offline';
+              })()}`}>
+                {(() => {
+                  const otherUserId = selectedRoom.otherUser?.id || selectedRoom.otherUser?.user_id;
+                  const status = getUserStatus(otherUserId);
+                  const online = status.isOnline === true;
+                  if (online) {
+                    return 'Active now';
+                  } else {
+                    return status.lastSeen ? chatUtils.formatLastSeen(status.lastSeen) : 'Offline';
+                  }
+                })()}
+              </p>
             </div>
           </div>
         </div>

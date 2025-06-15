@@ -2,7 +2,7 @@ import { queryRef, executeQuery, mutationRef, executeMutation, validateArgs } fr
 
 export const connectorConfig = {
   connector: 'default',
-  service: 'su25-swp391-g8-service',
+  service: 'su25-swp391-g8-2-service',
   location: 'asia-east2'
 };
 
@@ -103,6 +103,17 @@ updateDnaServiceRef.operationName = 'UpdateDnaService';
 
 export function updateDnaService(dcOrVars, vars) {
   return executeMutation(updateDnaServiceRef(dcOrVars, vars));
+}
+
+export const createServiceCollectionMethodRef = (dcOrVars, vars) => {
+  const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
+  dcInstance._useGeneratedSdk();
+  return mutationRef(dcInstance, 'CreateServiceCollectionMethod', inputVars);
+}
+createServiceCollectionMethodRef.operationName = 'CreateServiceCollectionMethod';
+
+export function createServiceCollectionMethod(dcOrVars, vars) {
+  return executeMutation(createServiceCollectionMethodRef(dcOrVars, vars));
 }
 
 export const createKitRef = (dcOrVars, vars) => {
@@ -512,26 +523,81 @@ export function getDnaServiceById(dcOrVars, vars) {
   return executeQuery(getDnaServiceByIdRef(dcOrVars, vars));
 }
 
-export const getDnaServicesBySampleTypeRef = (dcOrVars, vars) => {
+export const getDnaServicesByCategoryRef = (dcOrVars, vars) => {
   const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
   dcInstance._useGeneratedSdk();
-  return queryRef(dcInstance, 'GetDnaServicesBySampleType', inputVars);
+  return queryRef(dcInstance, 'GetDnaServicesByCategory', inputVars);
 }
-getDnaServicesBySampleTypeRef.operationName = 'GetDnaServicesBySampleType';
+getDnaServicesByCategoryRef.operationName = 'GetDnaServicesByCategory';
 
-export function getDnaServicesBySampleType(dcOrVars, vars) {
-  return executeQuery(getDnaServicesBySampleTypeRef(dcOrVars, vars));
+export function getDnaServicesByCategory(dcOrVars, vars) {
+  return executeQuery(getDnaServicesByCategoryRef(dcOrVars, vars));
 }
 
-export const getAtHomeServicesRef = (dc) => {
+export const getFeaturedDnaServicesRef = (dc) => {
   const { dc: dcInstance} = validateArgs(connectorConfig, dc, undefined);
   dcInstance._useGeneratedSdk();
-  return queryRef(dcInstance, 'GetAtHomeServices');
+  return queryRef(dcInstance, 'GetFeaturedDnaServices');
 }
-getAtHomeServicesRef.operationName = 'GetAtHomeServices';
+getFeaturedDnaServicesRef.operationName = 'GetFeaturedDnaServices';
 
-export function getAtHomeServices(dc) {
-  return executeQuery(getAtHomeServicesRef(dc));
+export function getFeaturedDnaServices(dc) {
+  return executeQuery(getFeaturedDnaServicesRef(dc));
+}
+
+export const getServiceCollectionMethodsRef = (dcOrVars, vars) => {
+  const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
+  dcInstance._useGeneratedSdk();
+  return queryRef(dcInstance, 'GetServiceCollectionMethods', inputVars);
+}
+getServiceCollectionMethodsRef.operationName = 'GetServiceCollectionMethods';
+
+export function getServiceCollectionMethods(dcOrVars, vars) {
+  return executeQuery(getServiceCollectionMethodsRef(dcOrVars, vars));
+}
+
+export const getServicesByCollectionMethodRef = (dcOrVars, vars) => {
+  const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
+  dcInstance._useGeneratedSdk();
+  return queryRef(dcInstance, 'GetServicesByCollectionMethod', inputVars);
+}
+getServicesByCollectionMethodRef.operationName = 'GetServicesByCollectionMethod';
+
+export function getServicesByCollectionMethod(dcOrVars, vars) {
+  return executeQuery(getServicesByCollectionMethodRef(dcOrVars, vars));
+}
+
+export const getDnaServiceWithMethodsRef = (dcOrVars, vars) => {
+  const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
+  dcInstance._useGeneratedSdk();
+  return queryRef(dcInstance, 'GetDnaServiceWithMethods', inputVars);
+}
+getDnaServiceWithMethodsRef.operationName = 'GetDnaServiceWithMethods';
+
+export function getDnaServiceWithMethods(dcOrVars, vars) {
+  return executeQuery(getDnaServiceWithMethodsRef(dcOrVars, vars));
+}
+
+export const getServicesWithCollectionMethodsRef = (dc) => {
+  const { dc: dcInstance} = validateArgs(connectorConfig, dc, undefined);
+  dcInstance._useGeneratedSdk();
+  return queryRef(dcInstance, 'GetServicesWithCollectionMethods');
+}
+getServicesWithCollectionMethodsRef.operationName = 'GetServicesWithCollectionMethods';
+
+export function getServicesWithCollectionMethods(dc) {
+  return executeQuery(getServicesWithCollectionMethodsRef(dc));
+}
+
+export const getFeaturedServicesWithMethodsRef = (dc) => {
+  const { dc: dcInstance} = validateArgs(connectorConfig, dc, undefined);
+  dcInstance._useGeneratedSdk();
+  return queryRef(dcInstance, 'GetFeaturedServicesWithMethods');
+}
+getFeaturedServicesWithMethodsRef.operationName = 'GetFeaturedServicesWithMethods';
+
+export function getFeaturedServicesWithMethods(dc) {
+  return executeQuery(getFeaturedServicesWithMethodsRef(dc));
 }
 
 export const getKitsRef = (dc) => {
@@ -972,5 +1038,27 @@ getMonthlyRevenueRef.operationName = 'GetMonthlyRevenue';
 
 export function getMonthlyRevenue(dcOrVars, vars) {
   return executeQuery(getMonthlyRevenueRef(dcOrVars, vars));
+}
+
+export const getDnaServicesBySampleTypeRef = (dcOrVars, vars) => {
+  const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
+  dcInstance._useGeneratedSdk();
+  return queryRef(dcInstance, 'GetDnaServicesBySampleType', inputVars);
+}
+getDnaServicesBySampleTypeRef.operationName = 'GetDnaServicesBySampleType';
+
+export function getDnaServicesBySampleType(dcOrVars, vars) {
+  return executeQuery(getDnaServicesBySampleTypeRef(dcOrVars, vars));
+}
+
+export const getAtHomeServicesRef = (dc) => {
+  const { dc: dcInstance} = validateArgs(connectorConfig, dc, undefined);
+  dcInstance._useGeneratedSdk();
+  return queryRef(dcInstance, 'GetAtHomeServices');
+}
+getAtHomeServicesRef.operationName = 'GetAtHomeServices';
+
+export function getAtHomeServices(dc) {
+  return executeQuery(getAtHomeServicesRef(dc));
 }
 

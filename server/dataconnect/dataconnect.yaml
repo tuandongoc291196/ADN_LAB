@@ -1,11 +1,11 @@
 specVersion: "v1"
-serviceId: "su25-swp391-g8-service"
+serviceId: "su25-swp391-g8-2-service"
 location: "asia-east2"
 schema:
   source: "./schema"
   datasource:
     postgresql:
-      database: "su25-swp391-g8-database"
+      database: "su25-swp391-g8-2-database"
       cloudSql:
         instanceId: "su25-swp391-g8-instance"
       # schemaValidation: "COMPATIBLE"

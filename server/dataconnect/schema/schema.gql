@@ -1,7 +1,4 @@
-# Schema for ADN Lab Firebase Data Connect - Complete DNA Testing Platform
-# Chat functionality remains in Firestore
-
-# Role table - predefined system roles
+# Predefined system roles
 type Role @table {
   id: String! @col(name: "role_id")
   name: String! @unique
@@ -10,14 +7,14 @@ type Role @table {
   updatedAt: Timestamp
 }
 
-# User table - keyed by Firebase Auth UID
+# User accounts keyed by Firebase Auth UID
 type User @table {
   id: String! @default(expr: "auth.uid")
   fullname: String!
   gender: String
   avatar: String
   email: String! @unique
-  accountStatus: String! @default(value: "active")
+  accountStatus: String! @default(value: "inactive")
   authProvider: String!
   phone: String
   shippingAddress: String
@@ -29,39 +26,61 @@ type User @table {
   lastLogin: Timestamp
 }
 
-# DNA Services table
+# DNA testing services
 type DnaService @table {
   id: String! @col(name: "service_id")
-  name: String!
-  description: String
-  price: Float!
-  durationDays: Int!
-  sampleType: String!
-  atHomeAvailable: Boolean! @default(value: false)
-  active: Boolean! @default(value: true)
-  kitCost: Float! @default(value: 0)
+  title: String!
+  description: String!
+  fullDescription: String
+  price: String!
+  duration: String!
+  category: String! # 'administrative' or 'civil'
+  serviceType: String! # 'administrative' or 'civil'
+  hasLegalValue: Boolean! @default(value: false)
+  icon: String
+  participants: String # JSON array of participant types
+  requiredDocuments: String # JSON array of required documents
+  procedures: String # JSON array of procedure steps
+  featured: Boolean! @default(value: false)
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
+}
+
+# Junction table for services and their allowed collection methods
+type ServiceCollectionMethod @table {
+  id: String! @col(name: "scm_id")
+  serviceId: String!
+  service: DnaService! @ref(fields: "serviceId")
+  methodId: String! # 'self-sample', 'home-visit', 'at-facility'
+  methodTitle: String!
+  methodDescription: String
+  methodIcon: String
+  methodColor: String
+  methodNote: String
+  methodProcess: String # JSON array of process steps
+  allowedFor: String # JSON array of service types this method is allowed for
   createdAt: Timestamp! @default(expr: "request.time")
 }
 
-# Kits table
+# Testing kits
 type Kit @table {
   id: String! @col(name: "kit_id")
   status: String! @default(value: "available")
   amount: Int! @default(value: 1)
   createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
 }
 
-# Time Slots table
+# Appointment time slots
 type TimeSlot @table {
   id: String! @col(name: "time_slot_id")
   slotDate: Date!
-  startTime: String! # Format: "HH:MM"
-  endTime: String! # Format: "HH:MM"
+  startTime: String!
+  endTime: String!
   maxCapacity: Int!
   currentBookings: Int! @default(value: 0)
   available: Boolean! @default(value: true)
   
-  # Staff assignment
   staffId: String
   staff: User @ref(fields: "staffId")
   
@@ -70,23 +89,19 @@ type TimeSlot @table {
   updatedAt: Timestamp
 }
 
-# Bookings table
+# Service bookings
 type Booking @table {
   id: String! @col(name: "booking_id")
   
-  # User relationship
   userId: String!
   user: User! @ref(fields: "userId")
   
-  # Staff assignment
   staffId: String
   staff: User @ref(fields: "staffId")
   
-  # Kit assignment
   kitId: String
   kit: Kit @ref(fields: "kitId")
   
-  # Time slot assignment
   timeSlotId: String
   timeSlot: TimeSlot @ref(fields: "timeSlotId")
   
@@ -100,61 +115,56 @@ type Booking @table {
   updatedAt: Timestamp
 }
 
-# Booking Items table - junction table for booking and services
+# Junction table for booking and services
 type BookingItem @table {
   id: String! @col(name: "item_id")
   
-  # Booking relationship
   bookingId: String!
   booking: Booking! @ref(fields: "bookingId")
   
-  # Service relationship
   serviceId: String!
   service: DnaService! @ref(fields: "serviceId")
   
   price: Float!
   quantity: Int! @default(value: 1)
   notes: String
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
 }
 
-# Samples table
+# DNA samples collected from bookings
 type Sample @table {
   id: String! @col(name: "sample_id")
   
-  # Booking relationship
   bookingId: String!
   booking: Booking! @ref(fields: "bookingId")
   
-  # Staff relationship
   staffId: String
   staff: User @ref(fields: "staffId")
   
-  # Service relationship
   serviceId: String!
   service: DnaService! @ref(fields: "serviceId")
   
   collectionDate: Date
   status: String! @default(value: "pending")
   notes: String
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
 }
 
-# Test Results table
+# DNA test results
 type TestResult @table {
   id: String! @col(name: "result_id")
   
-  # Booking relationship
   bookingId: String!
   booking: Booking! @ref(fields: "bookingId")
   
-  # Sample relationship
   sampleId: String!
   sample: Sample! @ref(fields: "sampleId")
   
-  # Service relationship
   serviceId: String!
   service: DnaService! @ref(fields: "serviceId")
   
-  # Staff relationships
   staffId: String
   staff: User @ref(fields: "staffId")
   verifiedBy: String
@@ -162,17 +172,18 @@ type TestResult @table {
   
   testDate: Date
   reportDate: Date
-  resultData: String # JSON string for complex test results
+  resultData: String
   status: String! @default(value: "pending")
   reportUrl: String
   notes: String
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
 }
 
-# Payments table
+# Payment transactions
 type Payment @table {
   id: String! @col(name: "payment_id")
   
-  # Booking relationship
   bookingId: String!
   booking: Booking! @ref(fields: "bookingId")
   
@@ -182,13 +193,14 @@ type Payment @table {
   status: String! @default(value: "pending")
   paymentDate: Date
   refundDetail: String
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
 }
 
-# Feedback table
+# User feedback and ratings
 type Feedback @table {
   id: String! @col(name: "feedback_id")
   
-  # Booking relationship
   bookingId: String!
   booking: Booking! @ref(fields: "bookingId")
   
@@ -197,7 +209,7 @@ type Feedback @table {
   createdAt: Timestamp! @default(expr: "request.time")
 }
 
-# Blog table
+# Blog posts and articles
 type Blog @table {
   id: String! @col(name: "blog_id")
   userId: String!
@@ -205,17 +217,16 @@ type Blog @table {
   content: String!
   imageUrl: String
   createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
 }
 
-# Notifications table
+# System notifications
 type Notification @table {
   id: String! @col(name: "notification_id")
   
-  # User relationship (recipient)
   userId: String
   user: User @ref(fields: "userId")
   
-  # Staff relationship (sender, optional)
   staffId: String
   staff: User @ref(fields: "staffId")
   

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { getAuth } from "firebase/auth";
-import { signInWithGoogle, auth as firebaseAuth, dataConnect } from "../config/firebase";
+import { signInWithGoogle, auth as firebaseAuth, dataConnect, setUserOnlineStatus } from "../config/firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { getUser } from "../../lib/dataconnect";
 
@@ -57,9 +57,16 @@ const AuthProvider = (props) => {
           };
           localStorage.setItem("userData", JSON.stringify(userWithRole));
           setAuthUser(userWithRole);
+          
+          // Set user as online when logged in
+          setUserOnlineStatus(user.uid, true);
         }
       });
     } else {
+      // Set user as offline when logged out
+      if (authUser?.user_id) {
+        setUserOnlineStatus(authUser.user_id, false);
+      }
       localStorage.removeItem("userData");
       localStorage.removeItem("user_id");
       setAuthUser(null);
@@ -98,6 +105,9 @@ const AuthProvider = (props) => {
           };
           localStorage.setItem("userData", JSON.stringify(userWithRole));
           setAuthUser(userWithRole);
+          
+          // Set user as online after successful login
+          setUserOnlineStatus(result.user.uid, true);
         }
       }
     } catch (error) {
@@ -106,6 +116,11 @@ const AuthProvider = (props) => {
   };
 
   const logout = () => {
+    // Set user as offline before logout
+    if (authUser?.user_id) {
+      setUserOnlineStatus(authUser.user_id, false);
+    }
+    
     auth.signOut();
     localStorage.removeItem("userData");
     localStorage.removeItem("user_id");

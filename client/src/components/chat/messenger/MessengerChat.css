@@ -421,14 +421,18 @@
 
 .chat-header-status {
   font-size: 0.8rem;
-  color: #28a745;
   margin: 0;
   display: flex;
   align-items: center;
   font-weight: 500;
 }
 
-.chat-header-status::before {
+/* Only show green dot and color for active status */
+.chat-header-status.status-active {
+  color: #28a745;
+}
+
+.chat-header-status.status-active::before {
   content: '';
   width: 6px;
   height: 6px;
@@ -437,6 +441,11 @@
   margin-right: 0.4rem;
   display: inline-block;
   animation: pulse 2s infinite;
+}
+
+/* Offline status styling */
+.chat-header-status.status-offline {
+  color: #6c757d;
 }
 
 .chat-header-info {
@@ -510,16 +519,20 @@
   animation: pulse 2s infinite;
 }
 
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
-  }
+.status-offline {
+  color: #6c757d;
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+.online-indicator {
+  background-color: #28a745 !important;
+  animation: pulse 2s infinite;
+}
+
+.user-online-dot {
+  background-color: #28a745 !important;
+  animation: pulse 2s infinite;
 }
 
 .chat-actions button {
@@ -1359,7 +1372,7 @@
 
 .send-button:focus-visible {
   outline: 2px solid #ffffff;
-  outline-offset: 2px;
+  outline-offset: -2px;
 }
 
 /* Medical data protection indicator */

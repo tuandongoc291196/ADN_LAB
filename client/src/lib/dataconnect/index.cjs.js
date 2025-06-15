@@ -2,7 +2,7 @@ const { queryRef, executeQuery, mutationRef, executeMutation, validateArgs } = r
 
 const connectorConfig = {
   connector: 'default',
-  service: 'su25-swp391-g8-service',
+  service: 'su25-swp391-g8-2-service',
   location: 'asia-east2'
 };
 exports.connectorConfig = connectorConfig;
@@ -113,6 +113,18 @@ exports.updateDnaServiceRef = updateDnaServiceRef;
 
 exports.updateDnaService = function updateDnaService(dcOrVars, vars) {
   return executeMutation(updateDnaServiceRef(dcOrVars, vars));
+};
+
+const createServiceCollectionMethodRef = (dcOrVars, vars) => {
+  const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
+  dcInstance._useGeneratedSdk();
+  return mutationRef(dcInstance, 'CreateServiceCollectionMethod', inputVars);
+}
+createServiceCollectionMethodRef.operationName = 'CreateServiceCollectionMethod';
+exports.createServiceCollectionMethodRef = createServiceCollectionMethodRef;
+
+exports.createServiceCollectionMethod = function createServiceCollectionMethod(dcOrVars, vars) {
+  return executeMutation(createServiceCollectionMethodRef(dcOrVars, vars));
 };
 
 const createKitRef = (dcOrVars, vars) => {
@@ -559,28 +571,88 @@ exports.getDnaServiceById = function getDnaServiceById(dcOrVars, vars) {
   return executeQuery(getDnaServiceByIdRef(dcOrVars, vars));
 };
 
-const getDnaServicesBySampleTypeRef = (dcOrVars, vars) => {
+const getDnaServicesByCategoryRef = (dcOrVars, vars) => {
   const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
   dcInstance._useGeneratedSdk();
-  return queryRef(dcInstance, 'GetDnaServicesBySampleType', inputVars);
+  return queryRef(dcInstance, 'GetDnaServicesByCategory', inputVars);
 }
-getDnaServicesBySampleTypeRef.operationName = 'GetDnaServicesBySampleType';
-exports.getDnaServicesBySampleTypeRef = getDnaServicesBySampleTypeRef;
+getDnaServicesByCategoryRef.operationName = 'GetDnaServicesByCategory';
+exports.getDnaServicesByCategoryRef = getDnaServicesByCategoryRef;
 
-exports.getDnaServicesBySampleType = function getDnaServicesBySampleType(dcOrVars, vars) {
-  return executeQuery(getDnaServicesBySampleTypeRef(dcOrVars, vars));
+exports.getDnaServicesByCategory = function getDnaServicesByCategory(dcOrVars, vars) {
+  return executeQuery(getDnaServicesByCategoryRef(dcOrVars, vars));
 };
 
-const getAtHomeServicesRef = (dc) => {
+const getFeaturedDnaServicesRef = (dc) => {
   const { dc: dcInstance} = validateArgs(connectorConfig, dc, undefined);
   dcInstance._useGeneratedSdk();
-  return queryRef(dcInstance, 'GetAtHomeServices');
+  return queryRef(dcInstance, 'GetFeaturedDnaServices');
 }
-getAtHomeServicesRef.operationName = 'GetAtHomeServices';
-exports.getAtHomeServicesRef = getAtHomeServicesRef;
+getFeaturedDnaServicesRef.operationName = 'GetFeaturedDnaServices';
+exports.getFeaturedDnaServicesRef = getFeaturedDnaServicesRef;
 
-exports.getAtHomeServices = function getAtHomeServices(dc) {
-  return executeQuery(getAtHomeServicesRef(dc));
+exports.getFeaturedDnaServices = function getFeaturedDnaServices(dc) {
+  return executeQuery(getFeaturedDnaServicesRef(dc));
+};
+
+const getServiceCollectionMethodsRef = (dcOrVars, vars) => {
+  const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
+  dcInstance._useGeneratedSdk();
+  return queryRef(dcInstance, 'GetServiceCollectionMethods', inputVars);
+}
+getServiceCollectionMethodsRef.operationName = 'GetServiceCollectionMethods';
+exports.getServiceCollectionMethodsRef = getServiceCollectionMethodsRef;
+
+exports.getServiceCollectionMethods = function getServiceCollectionMethods(dcOrVars, vars) {
+  return executeQuery(getServiceCollectionMethodsRef(dcOrVars, vars));
+};
+
+const getServicesByCollectionMethodRef = (dcOrVars, vars) => {
+  const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
+  dcInstance._useGeneratedSdk();
+  return queryRef(dcInstance, 'GetServicesByCollectionMethod', inputVars);
+}
+getServicesByCollectionMethodRef.operationName = 'GetServicesByCollectionMethod';
+exports.getServicesByCollectionMethodRef = getServicesByCollectionMethodRef;
+
+exports.getServicesByCollectionMethod = function getServicesByCollectionMethod(dcOrVars, vars) {
+  return executeQuery(getServicesByCollectionMethodRef(dcOrVars, vars));
+};
+
+const getDnaServiceWithMethodsRef = (dcOrVars, vars) => {
+  const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
+  dcInstance._useGeneratedSdk();
+  return queryRef(dcInstance, 'GetDnaServiceWithMethods', inputVars);
+}
+getDnaServiceWithMethodsRef.operationName = 'GetDnaServiceWithMethods';
+exports.getDnaServiceWithMethodsRef = getDnaServiceWithMethodsRef;
+
+exports.getDnaServiceWithMethods = function getDnaServiceWithMethods(dcOrVars, vars) {
+  return executeQuery(getDnaServiceWithMethodsRef(dcOrVars, vars));
+};
+
+const getServicesWithCollectionMethodsRef = (dc) => {
+  const { dc: dcInstance} = validateArgs(connectorConfig, dc, undefined);
+  dcInstance._useGeneratedSdk();
+  return queryRef(dcInstance, 'GetServicesWithCollectionMethods');
+}
+getServicesWithCollectionMethodsRef.operationName = 'GetServicesWithCollectionMethods';
+exports.getServicesWithCollectionMethodsRef = getServicesWithCollectionMethodsRef;
+
+exports.getServicesWithCollectionMethods = function getServicesWithCollectionMethods(dc) {
+  return executeQuery(getServicesWithCollectionMethodsRef(dc));
+};
+
+const getFeaturedServicesWithMethodsRef = (dc) => {
+  const { dc: dcInstance} = validateArgs(connectorConfig, dc, undefined);
+  dcInstance._useGeneratedSdk();
+  return queryRef(dcInstance, 'GetFeaturedServicesWithMethods');
+}
+getFeaturedServicesWithMethodsRef.operationName = 'GetFeaturedServicesWithMethods';
+exports.getFeaturedServicesWithMethodsRef = getFeaturedServicesWithMethodsRef;
+
+exports.getFeaturedServicesWithMethods = function getFeaturedServicesWithMethods(dc) {
+  return executeQuery(getFeaturedServicesWithMethodsRef(dc));
 };
 
 const getKitsRef = (dc) => {
@@ -1061,4 +1133,28 @@ exports.getMonthlyRevenueRef = getMonthlyRevenueRef;
 
 exports.getMonthlyRevenue = function getMonthlyRevenue(dcOrVars, vars) {
   return executeQuery(getMonthlyRevenueRef(dcOrVars, vars));
+};
+
+const getDnaServicesBySampleTypeRef = (dcOrVars, vars) => {
+  const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
+  dcInstance._useGeneratedSdk();
+  return queryRef(dcInstance, 'GetDnaServicesBySampleType', inputVars);
+}
+getDnaServicesBySampleTypeRef.operationName = 'GetDnaServicesBySampleType';
+exports.getDnaServicesBySampleTypeRef = getDnaServicesBySampleTypeRef;
+
+exports.getDnaServicesBySampleType = function getDnaServicesBySampleType(dcOrVars, vars) {
+  return executeQuery(getDnaServicesBySampleTypeRef(dcOrVars, vars));
+};
+
+const getAtHomeServicesRef = (dc) => {
+  const { dc: dcInstance} = validateArgs(connectorConfig, dc, undefined);
+  dcInstance._useGeneratedSdk();
+  return queryRef(dcInstance, 'GetAtHomeServices');
+}
+getAtHomeServicesRef.operationName = 'GetAtHomeServices';
+exports.getAtHomeServicesRef = getAtHomeServicesRef;
+
+exports.getAtHomeServices = function getAtHomeServices(dc) {
+  return executeQuery(getAtHomeServicesRef(dc));
 };

@@ -141,66 +141,205 @@ query GetStaffMembers @auth(level: USER) {
 
 # ====== DNA SERVICE QUERIES ======
 
-# Get all active DNA services
+# Get all services
 query GetDnaServices @auth(level: USER) {
-  dnaServices(where: { active: { eq: true } }, orderBy: { name: ASC }) {
+  dnaServices(orderBy: { title: ASC }) {
     id
-    name
+    title
     description
+    fullDescription
     price
-    durationDays
-    sampleType
-    atHomeAvailable
-    kitCost
+    duration
+    category
+    serviceType
+    hasLegalValue
+    icon
+    participants
+    requiredDocuments
+    procedures
+    featured
     createdAt
+    updatedAt
   }
 }
 
-# Get DNA service by ID
+# Get service by ID
 query GetDnaServiceById($serviceId: String!) @auth(level: USER) {
   dnaService(key: { id: $serviceId }) {
     id
-    name
+    title
     description
+    fullDescription
     price
-    durationDays
-    sampleType
-    atHomeAvailable
-    active
-    kitCost
+    duration
+    category
+    serviceType
+    hasLegalValue
+    icon
+    participants
+    requiredDocuments
+    procedures
+    featured
+    createdAt
+    updatedAt
+  }
+}
+
+# Get services by category
+query GetDnaServicesByCategory($category: String!) @auth(level: USER) {
+  dnaServices(where: { category: { eq: $category } }, orderBy: { title: ASC }) {
+    id
+    title
+    description
+    fullDescription
+    price
+    duration
+    category
+    serviceType
+    hasLegalValue
+    icon
+    participants
+    requiredDocuments
+    procedures
+    featured
+    createdAt
+    updatedAt
+  }
+}
+
+# Get featured services
+query GetFeaturedDnaServices @auth(level: USER) {
+  dnaServices(where: { featured: { eq: true } }, orderBy: { title: ASC }) {
+    id
+    title
+    description
+    fullDescription
+    price
+    duration
+    category
+    serviceType
+    hasLegalValue
+    icon
+    participants
+    requiredDocuments
+    procedures
+    featured
+    createdAt
+    updatedAt
+  }
+}
+
+# Get service collection methods for a service
+query GetServiceCollectionMethods($serviceId: String!) @auth(level: USER) {
+  serviceCollectionMethods(where: { serviceId: { eq: $serviceId } }) {
+    id
+    serviceId
+    methodId
+    methodTitle
+    methodDescription
+    methodIcon
+    methodColor
+    methodNote
+    methodProcess
+    allowedFor
+    createdAt
+    service {
+      id
+      title
+    }
+  }
+}
+
+# Get services by collection method
+query GetServicesByCollectionMethod($methodId: String!) @auth(level: USER) {
+  serviceCollectionMethods(where: { methodId: { eq: $methodId } }) {
+    id
+    methodId
+    methodTitle
+    service {
+      id
+      title
+      description
+      price
+      duration
+      category
+      serviceType
+      hasLegalValue
+      icon
+      featured
+    }
+  }
+}
+
+# Get complete service with collection methods (client-side join)
+query GetDnaServiceWithMethods($serviceId: String!) @auth(level: USER) {
+  dnaService(key: { id: $serviceId }) {
+    id
+    title
+    description
+    fullDescription
+    price
+    duration
+    category
+    serviceType
+    hasLegalValue
+    icon
+    participants
+    requiredDocuments
+    procedures
+    featured
+    createdAt
+    updatedAt
+  }
+  serviceCollectionMethods(where: { serviceId: { eq: $serviceId } }) {
+    id
+    methodId
+    methodTitle
+    methodDescription
+    methodIcon
+    methodColor
+    methodNote
+    methodProcess
+    allowedFor
     createdAt
   }
 }
 
-# Get DNA services by sample type
-query GetDnaServicesBySampleType($sampleType: String!) @auth(level: USER) {
-  dnaServices(where: { 
-    sampleType: { eq: $sampleType }
-    active: { eq: true }
-  }) {
+# Get all services with their collection methods (using GraphQL relationship)
+query GetServicesWithCollectionMethods @auth(level: USER) {
+  dnaServices(orderBy: { title: ASC }) {
     id
-    name
+    title
     description
+    fullDescription
     price
-    durationDays
-    atHomeAvailable
-    kitCost
+    duration
+    category
+    serviceType
+    hasLegalValue
+    icon
+    participants
+    requiredDocuments
+    procedures
+    featured
+    createdAt
+    updatedAt
   }
 }
 
-# Get at-home available services
-query GetAtHomeServices @auth(level: USER) {
-  dnaServices(where: { 
-    atHomeAvailable: { eq: true }
-    active: { eq: true }
-  }) {
+# Get featured services with their collection methods
+query GetFeaturedServicesWithMethods @auth(level: USER) {
+  dnaServices(where: { featured: { eq: true } }, orderBy: { title: ASC }) {
     id
-    name
+    title
     description
     price
-    durationDays
-    sampleType
-    kitCost
+    duration
+    category
+    serviceType
+    hasLegalValue
+    icon
+    featured
   }
 }
 
@@ -449,11 +588,11 @@ query GetBookingItems($bookingId: String!) @auth(level: USER) {
     id
     service {
       id
-      name
+      title
       description
       price
-      durationDays
-      sampleType
+      duration
+      category
     }
     price
     quantity
@@ -473,7 +612,7 @@ query GetBookingItemById($itemId: String!) @auth(level: USER) {
     }
     service {
       id
-      name
+      title
       price
     }
     price
@@ -489,8 +628,8 @@ query GetBookingSamples($bookingId: String!) @auth(level: USER) {
   samples(where: { bookingId: { eq: $bookingId } }) {
     id
     service {
-      name
-      sampleType
+      title
+      category
     }
     staff {
       fullname
@@ -512,8 +651,8 @@ query GetSamplesByStatus($status: String!) @auth(level: USER) {
       }
     }
     service {
-      name
-      sampleType
+      title
+      category
     }
     staff {
       fullname
@@ -536,8 +675,8 @@ query GetSampleById($sampleId: String!) @auth(level: USER) {
       }
     }
     service {
-      name
-      sampleType
+      title
+      category
       description
     }
     staff {
@@ -559,8 +698,8 @@ query GetStaffSamples($staffId: String!) @auth(level: USER) {
       }
     }
     service {
-      name
-      sampleType
+      title
+      category
     }
     collectionDate
     status
@@ -578,7 +717,7 @@ query GetBookingTestResults($bookingId: String!) @auth(level: USER) {
       id
     }
     service {
-      name
+      title
     }
     staff {
       fullname
@@ -610,7 +749,7 @@ query GetTestResultById($resultId: String!) @auth(level: USER) {
       collectionDate
     }
     service {
-      name
+      title
       description
     }
     staff {
@@ -638,7 +777,7 @@ query GetTestResultsByStatus($status: String!) @auth(level: USER) {
       }
     }
     service {
-      name
+      title
     }
     staff {
       fullname
@@ -655,7 +794,7 @@ query GetUserTestResults($userId: String!) @auth(level: USER) {
   }, orderBy: { testDate: DESC }) {
     id
     service {
-      name
+      title
     }
     testDate
     reportDate
@@ -903,7 +1042,7 @@ query GetServicePopularity @auth(level: USER) {
   bookingItems {
     service {
       id
-      name
+      title
     }
     quantity
   }
@@ -920,5 +1059,43 @@ query GetMonthlyRevenue($year: Int!, $month: Int!, $startDate: Date!, $endDate: 
   }) {
     amount
     paymentDate
+  }
+}
+
+# Get DNA services by sample type (convenience query)
+query GetDnaServicesBySampleType($sampleType: String!) @auth(level: USER) {
+  dnaServices(where: { 
+    serviceType: { eq: $sampleType }
+  }, orderBy: { title: ASC }) {
+    id
+    title
+    description
+    price
+    duration
+    category
+    serviceType
+    hasLegalValue
+    featured
+  }
+}
+
+# Get at-home collection services
+query GetAtHomeServices @auth(level: USER) {
+  serviceCollectionMethods(where: { 
+    methodTitle: { contains: "At Home" }
+  }) {
+    id
+    service {
+      id
+      title
+      description
+      price
+      duration
+      category
+      featured
+    }
+    methodTitle
+    methodDescription
+    methodIcon
   }
 }
