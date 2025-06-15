@@ -13,7 +13,7 @@ const bucket = admin.storage().bucket();
 const getauth = admin.auth();
 
 const dataConnect =  getDataConnect({
-  serviceId: "su25-swp391-g8-service",
+  serviceId: "su25-swp391-g8-2-service",
   location: "asia-east2"
 }, app);
 
