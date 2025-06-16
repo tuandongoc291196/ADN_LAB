@@ -325,6 +325,19 @@ query GetServicesWithCollectionMethods @auth(level: USER) {
     createdAt
     updatedAt
   }
+  serviceCollectionMethods {
+    id
+    serviceId
+    methodId
+    methodTitle
+    methodDescription
+    methodIcon
+    methodColor
+    methodNote
+    methodProcess
+    allowedFor
+    createdAt
+  }
 }
 
 # Get featured services with their collection methods
@@ -340,6 +353,19 @@ query GetFeaturedServicesWithMethods @auth(level: USER) {
     hasLegalValue
     icon
     featured
+  }
+  serviceCollectionMethods {
+    id
+    serviceId
+    methodId
+    methodTitle
+    methodDescription
+    methodIcon
+    methodColor
+    methodNote
+    methodProcess
+    allowedFor
+    createdAt
   }
 }
 

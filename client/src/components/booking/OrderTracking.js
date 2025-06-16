@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Container, Row, Col, Card, Button, Alert, Badge, Form, InputGroup, ProgressBar } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Alert, Badge, Form, InputGroup, ProgressBar, Modal } from 'react-bootstrap';
 
 const OrderTracking = () => {
   const { trackingId } = useParams();
@@ -8,6 +8,14 @@ const OrderTracking = () => {
   const [orderData, setOrderData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [returnInfo, setReturnInfo] = useState({
+    trackingNumber: '',
+    carrier: '',
+    returnDate: '',
+    note: ''
+  });
+  const [returnLoading, setReturnLoading] = useState(false);
 
   // Mock order statuses
   const orderStatuses = {
@@ -173,6 +181,47 @@ const OrderTracking = () => {
   const formatDate = (dateString) => {
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     return new Date(dateString).toLocaleDateString('vi-VN', options);
+  };
+
+  const handleReturnKit = async () => {
+    if (!returnInfo.trackingNumber || !returnInfo.carrier || !returnInfo.returnDate) {
+      setError('Vui lòng điền đầy đủ thông tin bắt buộc');
+      return;
+    }
+
+    setReturnLoading(true);
+    // Simulate API call
+    setTimeout(() => {
+      // Update order status
+      const updatedOrderData = {
+        ...orderData,
+        statusHistory: orderData.statusHistory.map(status => {
+          if (status.step === 4) { // Waiting for sample step
+            return { ...status, status: 'completed' };
+          }
+          if (status.step === 5) { // Analysis step
+            return { ...status, status: 'current' };
+          }
+          return status;
+        }),
+        currentStatus: 'Đang phân tích mẫu',
+        progress: 80,
+        returnInfo: {
+          ...returnInfo,
+          submittedAt: new Date().toISOString()
+        }
+      };
+
+      setOrderData(updatedOrderData);
+      setShowReturnModal(false);
+      setReturnInfo({
+        trackingNumber: '',
+        carrier: '',
+        returnDate: '',
+        note: ''
+      });
+      setReturnLoading(false);
+    }, 1500);
   };
 
   return (
@@ -385,6 +434,22 @@ const OrderTracking = () => {
                                   {status.status === 'pending' && 'Chờ xử lý'}
                                 </Badge>
                               </div>
+
+                              {/* Add Return Kit Button for self-sample orders in waiting for sample step */}
+                              {status.status === 'current' && 
+                               orderData.collectionMethod === 'self-sample' && 
+                               status.step === 4 && (
+                                <div className="mt-3">
+                                  <Button 
+                                    variant="primary" 
+                                    size="sm"
+                                    onClick={() => setShowReturnModal(true)}
+                                  >
+                                    <i className="bi bi-box-seam me-2"></i>
+                                    Xác nhận gửi lại kit
+                                  </Button>
+                                </div>
+                              )}
                             </Card.Body>
                           </Card>
                         </div>
@@ -506,6 +571,121 @@ const OrderTracking = () => {
                 Nhập mã đặt lịch để xem thông tin chi tiết và trạng thái hiện tại
               </p>
             </div>
+          </Col>
+        </Row>
+      )}
+
+      {/* Return Kit Modal */}
+      <Modal show={showReturnModal} onHide={() => setShowReturnModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <i className="bi bi-box-seam me-2"></i>
+            Thông tin gửi lại kit xét nghiệm
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>Mã vận chuyển <span className="text-danger">*</span></Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Nhập mã vận chuyển"
+                value={returnInfo.trackingNumber}
+                onChange={(e) => setReturnInfo({...returnInfo, trackingNumber: e.target.value})}
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Đơn vị vận chuyển <span className="text-danger">*</span></Form.Label>
+              <Form.Select
+                value={returnInfo.carrier}
+                onChange={(e) => setReturnInfo({...returnInfo, carrier: e.target.value})}
+              >
+                <option value="">Chọn đơn vị vận chuyển</option>
+                <option value="ViettelPost">ViettelPost</option>
+                <option value="GHTK">GHTK</option>
+                <option value="GrabExpress">GrabExpress</option>
+                <option value="J&T Express">J&T Express</option>
+                <option value="Ninja Van">Ninja Van</option>
+                <option value="Other">Khác</option>
+              </Form.Select>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Ngày gửi <span className="text-danger">*</span></Form.Label>
+              <Form.Control
+                type="date"
+                value={returnInfo.returnDate}
+                onChange={(e) => setReturnInfo({...returnInfo, returnDate: e.target.value})}
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Ghi chú</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                placeholder="Thêm ghi chú nếu cần..."
+                value={returnInfo.note}
+                onChange={(e) => setReturnInfo({...returnInfo, note: e.target.value})}
+              />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowReturnModal(false)}>
+            Hủy
+          </Button>
+          <Button 
+            variant="primary" 
+            onClick={handleReturnKit}
+            disabled={returnLoading}
+          >
+            {returnLoading ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                Đang xử lý...
+              </>
+            ) : (
+              <>
+                <i className="bi bi-box-seam me-2"></i>
+                Xác nhận gửi lại kit
+              </>
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Return Info Display */}
+      {orderData?.returnInfo && (
+        <Row className="mb-4">
+          <Col lg={10} className="mx-auto">
+            <Card className="shadow-sm">
+              <Card.Header className="bg-primary text-white">
+                <h5 className="mb-0">
+                  <i className="bi bi-box-seam me-2"></i>
+                  Thông tin gửi lại kit
+                </h5>
+              </Card.Header>
+              <Card.Body>
+                <Row>
+                  <Col md={6}>
+                    <p><strong>Mã vận chuyển:</strong> {orderData.returnInfo.trackingNumber}</p>
+                    <p><strong>Đơn vị vận chuyển:</strong> {orderData.returnInfo.carrier}</p>
+                  </Col>
+                  <Col md={6}>
+                    <p><strong>Ngày gửi:</strong> {new Date(orderData.returnInfo.returnDate).toLocaleDateString('vi-VN')}</p>
+                    <p><strong>Thời gian cập nhật:</strong> {new Date(orderData.returnInfo.submittedAt).toLocaleString('vi-VN')}</p>
+                  </Col>
+                </Row>
+                {orderData.returnInfo.note && (
+                  <div className="mt-3">
+                    <p className="mb-1"><strong>Ghi chú:</strong></p>
+                    <p className="text-muted mb-0">{orderData.returnInfo.note}</p>
+                  </div>
+                )}
+              </Card.Body>
+            </Card>
           </Col>
         </Row>
       )}

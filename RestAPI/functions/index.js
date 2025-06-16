@@ -1,14 +1,14 @@
 const functions = require('firebase-functions');
 const express = require('express');
 const cors = require('cors');
-const { swaggerUi, swaggerDocs } = require('./config/swagger');
+const {swaggerUi, swaggerDocs} = require('./config/swagger');
 
 const {addPayment} = require('./controllers/payments/addPayment');
 const {getAllPayments, getPayment} = require('./controllers/payments/getPayment');
-const {refundPayment} = require('./controllers/payments/refundPayment');
-const {getHomePage} = require('./controllers/home/homeController');
-const {getAllUsers} = require('./controllers/users/getUsers');
 
+const {getAllUsers, getOneUser} = require('./controllers/users/getUsers');
+
+const {getAllServiceAndMethods, getOneServiceAndMethods} = require('./controllers/services/getServicesAndMethods');
 const app = express();
 
 app.use(express.json());
@@ -25,12 +25,34 @@ app.use(cors({
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-app.get('/', getHomePage);
+/**
+ * @swagger
+ * /:
+ *   get:
+ *     tags:
+ *       - Health
+ *     summary: Health check endpoint
+ *     description: Returns a welcome message and API documentation link
+ *     responses:
+ *       200:
+ *         description: API is running successfully
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: "Hey there. We've been trying to reach you concerning your vehicle's extended warrant. For Swagger, visit /api-docs"
+ */
+app.get('/', (req, res) => {
+  res.send("Hey there. We've been trying to reach you concerning your vehicle's extended warrant. For Swagger, visit /api-docs");
+});
+
+app.get('/services&methods', getAllServiceAndMethods);
+app.post('/services&methods', getOneServiceAndMethods);
 
 app.get('/users', getAllUsers);
+app.post('/users', getOneUser);
+
 app.post('/payments', addPayment);
 app.get('/payments', getAllPayments);
-app.get('/payments/:entryId', getPayment);
-app.post('/refund/:entryId', refundPayment);
  
 exports.app = functions.https.onRequest(app);
