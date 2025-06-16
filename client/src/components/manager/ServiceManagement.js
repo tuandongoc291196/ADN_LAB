@@ -1,63 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Row, Col, Badge, Spinner, Alert, InputGroup, Card } from 'react-bootstrap';
 import { Plus, Pencil, Eye, EyeSlash, CheckCircle, XCircle, Star, StarFill, Search, SortDown, SortUp } from 'react-bootstrap-icons';
-
-const mockServices = [
-  {
-    id: 'admin-birth-cert',
-    title: 'Xét nghiệm ADN làm giấy khai sinh',
-    description: 'Xét nghiệm ADN có giá trị pháp lý cho thủ tục làm giấy khai sinh.',
-    fullDescription: 'Xét nghiệm ADN cha con hoặc mẹ con có giá trị pháp lý, được sử dụng trong thủ tục làm giấy khai sinh. Kết quả được công nhận bởi tòa án và các cơ quan nhà nước.',
-    price: '4200000',
-    duration: '3-5 ngày',
-    category: 'administrative',
-    serviceType: 'administrative',
-    hasLegalValue: true,
-    icon: 'bi-file-earmark-text',
-    participants: JSON.stringify(['Cha', 'Con']),
-    requiredDocuments: JSON.stringify(['CMND/CCCD', 'Giấy chứng sinh']),
-    procedures: JSON.stringify(['Đặt lịch', 'Thu mẫu', 'Xét nghiệm', 'Nhận kết quả']),
-    featured: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: null
-  },
-  {
-    id: 'civil-paternity',
-    title: 'Xét nghiệm ADN Cha Con',
-    description: 'Xét nghiệm ADN xác định quan hệ huyết thống cha con.',
-    fullDescription: 'Xét nghiệm ADN cha con sử dụng công nghệ hiện đại để xác định mối quan hệ huyết thống với độ chính xác cao. Kết quả chỉ mang tính tham khảo, không có giá trị pháp lý.',
-    price: '2500000',
-    duration: '3 ngày',
-    category: 'civil',
-    serviceType: 'civil',
-    hasLegalValue: false,
-    icon: 'bi-person-lines-fill',
-    participants: JSON.stringify(['Cha', 'Con']),
-    requiredDocuments: JSON.stringify(['CMND/CCCD']),
-    procedures: JSON.stringify(['Đặt lịch', 'Thu mẫu', 'Xét nghiệm', 'Nhận kết quả']),
-    featured: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: null
-  },
-  {
-    id: 'civil-relationship',
-    title: 'Xét nghiệm ADN Họ Hàng',
-    description: 'Xét nghiệm ADN xác định quan hệ huyết thống họ hàng.',
-    fullDescription: 'Xét nghiệm ADN họ hàng giúp xác định mối quan hệ huyết thống giữa các thành viên trong gia đình. Kết quả chỉ mang tính tham khảo, không có giá trị pháp lý.',
-    price: '3500000',
-    duration: '5 ngày',
-    category: 'civil',
-    serviceType: 'civil',
-    hasLegalValue: false,
-    icon: 'bi-people',
-    participants: JSON.stringify(['Người thân 1', 'Người thân 2']),
-    requiredDocuments: JSON.stringify(['CMND/CCCD']),
-    procedures: JSON.stringify(['Đặt lịch', 'Thu mẫu', 'Xét nghiệm', 'Nhận kết quả']),
-    featured: false,
-    createdAt: new Date().toISOString(),
-    updatedAt: null
-  }
-];
+import { getAllServicesAndMethods } from '../../services/api';
+import { COLLECTION_METHODS } from '../data/services-data';
 
 function ServiceManagement() {
   const [services, setServices] = useState([]);
@@ -84,7 +29,8 @@ function ServiceManagement() {
     requiredDocuments: [],
     procedures: [],
     featured: false,
-    isHidden: false
+    isHidden: false,
+    collectionMethods: []
   });
   const [participantInput, setParticipantInput] = useState('');
   const [documentInput, setDocumentInput] = useState('');
@@ -92,10 +38,29 @@ function ServiceManagement() {
   const [alert, setAlert] = useState({ show: false, variant: '', message: '' });
 
   useEffect(() => {
-    setTimeout(() => {
-      setServices(mockServices);
-      setLoading(false);
-    }, 600);
+    const fetchServices = async () => {
+      setLoading(true);
+      try {
+        const data = await getAllServicesAndMethods();
+        console.log(data);
+        const { dnaServices, serviceCollectionMethods } = data;
+        // Gắn collectionMethods vào từng service
+        const servicesWithMethods = dnaServices.map(service => ({
+          ...service,
+          participants: Array.isArray(service.participants) ? service.participants : JSON.parse(service.participants || '[]'),
+          requiredDocuments: Array.isArray(service.requiredDocuments) ? service.requiredDocuments : JSON.parse(service.requiredDocuments || '[]'),
+          procedures: Array.isArray(service.procedures) ? service.procedures : JSON.parse(service.procedures || '[]'),
+          collectionMethods: serviceCollectionMethods
+            .filter(method => method.serviceId === service.id)
+            .map(method => method.methodId)
+        }));
+        setServices(servicesWithMethods);
+        setLoading(false);
+      } catch (err) {
+        setLoading(false);
+      }
+    };
+    fetchServices();
   }, []);
 
   const handleShowModal = (type, service = null) => {
@@ -107,7 +72,8 @@ function ServiceManagement() {
         ...service,
         participants: JSON.parse(service.participants || '[]'),
         requiredDocuments: JSON.parse(service.requiredDocuments || '[]'),
-        procedures: JSON.parse(service.procedures || '[]')
+        procedures: JSON.parse(service.procedures || '[]'),
+        collectionMethods: service.collectionMethods || []
       });
     } else {
       setSelectedService(null);
@@ -125,7 +91,8 @@ function ServiceManagement() {
         requiredDocuments: [],
         procedures: [],
         featured: false,
-        isHidden: false
+        isHidden: false,
+        collectionMethods: []
       });
     }
   };
@@ -197,18 +164,34 @@ function ServiceManagement() {
     }));
   };
 
+  const handleCollectionMethodChange = (methodId) => {
+    setForm((prev) => {
+      const exists = prev.collectionMethods.includes(methodId);
+      return {
+        ...prev,
+        collectionMethods: exists
+          ? prev.collectionMethods.filter((id) => id !== methodId)
+          : [...prev.collectionMethods, methodId]
+      };
+    });
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!form.title || !form.price) {
       setAlert({ show: true, variant: 'danger', message: 'Vui lòng nhập đầy đủ tên và giá dịch vụ.' });
       return;
     }
-
+    if (!form.collectionMethods || form.collectionMethods.length === 0) {
+      setAlert({ show: true, variant: 'danger', message: 'Vui lòng chọn ít nhất một phương thức lấy mẫu.' });
+      return;
+    }
     const serviceData = {
       ...form,
       participants: JSON.stringify(form.participants),
       requiredDocuments: JSON.stringify(form.requiredDocuments),
-      procedures: JSON.stringify(form.procedures)
+      procedures: JSON.stringify(form.procedures),
+      collectionMethods: form.collectionMethods
     };
 
     if (modalType === 'add') {
@@ -625,6 +608,29 @@ function ServiceManagement() {
                         </Button>
                       </Badge>
                     ))}
+                  </div>
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Row className="mb-3">
+              <Col md={12}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Phương thức lấy mẫu *</Form.Label>
+                  <div className="d-flex flex-wrap gap-3">
+                    {Object.values(COLLECTION_METHODS)
+                      .filter(method => method.allowedFor.includes(form.category))
+                      .map(method => (
+                        <Form.Check
+                          key={method.id}
+                          type="checkbox"
+                          id={`collection-method-${method.id}`}
+                          label={method.title}
+                          checked={form.collectionMethods.includes(method.id)}
+                          onChange={() => handleCollectionMethodChange(method.id)}
+                          className="me-3"
+                        />
+                      ))}
                   </div>
                 </Form.Group>
               </Col>
