@@ -9,6 +9,8 @@ const {getAllPayments, getPayment} = require('./controllers/payments/getPayment'
 const {getAllUsers, getOneUser} = require('./controllers/users/getUsers');
 
 const {getAllServiceAndMethods, getOneServiceAndMethods} = require('./controllers/services/getServicesAndMethods');
+
+const {createBlog} = require('./controllers/blogs/addBlog');
 const app = express();
 
 app.use(express.json());
