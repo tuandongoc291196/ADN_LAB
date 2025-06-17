@@ -41,6 +41,13 @@ const {getAllPayments, getPayment} = require('./controllers/payments/getPayment'
 const {addPayment} = require('./controllers/payments/addPayment');
 const { refundPayment } = require('./controllers/payments/refundPayment');
 
+// Kit controllers
+const GetKit = require('./controllers/kit/getKit');
+const kitController = new GetKit();
+const { createKit } = require('./controllers/kit/addKit');
+const { updateKitStatus } = require('./controllers/kit/updateKitStatus');
+
+
 const app = express();
 
 app.use(express.json());
@@ -125,5 +132,11 @@ app.get('/payments', getAllPayments);
 app.post('/payments/refund', refundPayment);
 app.get('/payments/:id', getPayment);
 
+// Kit routes
+app.post('/kits', createKit);
+app.put('/kits/:id', updateKitStatus);
+app.get('/kits/:kitId', kitController.getKitById);
+app.get('/kits/available', kitController.getAvailableKits);
+app.get('/kits', kitController.getAllKits);
  
 exports.app = functions.https.onRequest(app);
