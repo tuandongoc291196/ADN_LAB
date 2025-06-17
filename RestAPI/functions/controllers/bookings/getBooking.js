@@ -1,7 +1,7 @@
 const { dataConnect } = require("../../config/firebase.js");
 
-class GetBooking {
-  async getStaffBookings(req, res) {
+
+  const getStaffBookings = async (req, res) => {
     try {
       const { staffId } = req.params;
 
@@ -61,7 +61,7 @@ class GetBooking {
     }
   }
 
-  async getBookingsByStatus(req, res) {
+  const getBookingsByStatus = async (req, res) => {
     try {
       const { status } = req.params;
 
@@ -121,7 +121,7 @@ class GetBooking {
     }
   }
 
-  async getBookingById(req, res) {
+  const getBookingById = async (req, res) => {
     try {
       const { bookingId } = req.params;
 
@@ -204,7 +204,7 @@ class GetBooking {
     }
   }
 
-  async getMyBookings(req, res) {
+  const getMyBookings = async (req, res) => {
     try {
       const GET_MY_BOOKINGS_QUERY = `
         query GetMyBookings @auth(level: USER) {
@@ -255,7 +255,7 @@ class GetBooking {
     }
   }
 
-  async getUserBookings(req, res) {
+  const getUserBookings = async (req, res) => {
     try {
       const { userId } = req.params;
 
@@ -316,6 +316,12 @@ class GetBooking {
       });
     }
   }
-}
 
-module.exports = GetBooking;
+
+module.exports = {
+  getStaffBookings,
+  getBookingsByStatus,
+  getBookingById,
+  getMyBookings,
+  getUserBookings
+};
