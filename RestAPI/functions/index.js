@@ -3,14 +3,44 @@ const express = require('express');
 const cors = require('cors');
 const {swaggerUi, swaggerDocs} = require('./config/swagger');
 
-const {addPayment} = require('./controllers/payments/addPayment');
-const {getAllPayments, getPayment} = require('./controllers/payments/getPayment');
 
+
+// User controllers
 const {getAllUsers, getOneUser} = require('./controllers/users/getUsers');
 
+// Service controllers
 const {getAllServiceAndMethods, getOneServiceAndMethods} = require('./controllers/services/getServicesAndMethods');
 
+// Blog controllers
+const { getAllBlogs, getBlogById } = require('./controllers/blogs/getBlog');
+const { getBlogById } = require('./controllers/blogs/getBlogById');
 const {createBlog} = require('./controllers/blogs/addBlog');
+const { updateBlog } = require('./controllers/blogs/updateBlog');
+const { deleteBlog } = require('./controllers/blogs/deleteBlog');
+
+// Sample controllers
+const GetSample = require('./controllers/sample/getSample');
+const sampleController = new GetSample();
+const { createSample } = require('./controllers/sample/addSample');
+const { updateSampleStatus } = require('./controllers/sample/updateSampleStatus');
+
+// Test Result controllers
+const GetTestResult = require('./controllers/testResult/getTestResult');
+const testResultController = new GetTestResult();
+const { createTestResult } = require('./controllers/testResult/addTestResult');
+const { updateTestResult } = require('./controllers/testResult/updateTestResult');
+
+// Role controllers
+const { getAllRoles } = require('./controllers/role/getRole');
+const { createRole } = require('./controllers/role/createRole');
+const { updateRole } = require('./controllers/role/updateRole');
+const { deleteRole } = require('./controllers/role/deleteRole');
+
+// Payment controller
+const {getAllPayments, getPayment} = require('./controllers/payments/getPayment');
+const {addPayment} = require('./controllers/payments/addPayment');
+const { refundPayment } = require('./controllers/payments/refundPayment');
+
 const app = express();
 
 app.use(express.json());
@@ -48,14 +78,52 @@ app.get('/', (req, res) => {
   res.send("Hey there. We've been trying to reach you concerning your vehicle's extended warrant. For Swagger, visit /api-docs");
 });
 
+// Service routes
 app.get('/services&methods', getAllServiceAndMethods);
 app.post('/services&methods', getOneServiceAndMethods);
 
+// User routes
 app.get('/users', getAllUsers);
 app.post('/users', getOneUser);
 
+
+
+// Blog routes
+app.get('/blogs', getAllBlogs);
+app.get('/blogs/category', getBlogByCategory);
+app.get('/blogs/:id', getBlogById);
+app.post('/blogs', createBlog);
+app.put('/blogs/:id', updateBlog);
+app.delete('/blogs/:id', deleteBlog);
+
+// Sample routes
+app.post('/samples', createSample);
+app.put('/samples/:id', updateSampleStatus);
+app.get('/samples/:sampleId', sampleController.getSampleById);
+app.get('/samples', sampleController.getSamplesByStatus);
+app.get('/samples/booking/:bookingId', sampleController.getBookingSamples);
+app.get('/samples/staff/:staffId', sampleController.getStaffSamples);
+
+// Test Result routes
+app.post('/testResults', createTestResult);
+app.put('/testResults/:id', updateTestResult);
+app.get('/testResults/:resultId', testResultController.getTestResultById);
+app.get('/testResults', testResultController.getTestResultsByStatus);
+app.get('/testResults/user/:userId', testResultController.getUserTestResults);
+app.get('/testResults/booking/:bookingId', testResultController.getBookingTestResults);
+
+
+// Role routes
+app.get('/roles', getRole);
+app.post('/roles', createRole);
+app.put('/roles/:id', updateRole);
+app.delete('/roles/:id', deleteRole);
+
+// Additional payment route
 app.post('/payments', addPayment);
 app.get('/payments', getAllPayments);
+app.post('/payments/refund', refundPayment);
+app.get('/payments/:id', getPayment);
 
  
 exports.app = functions.https.onRequest(app);
