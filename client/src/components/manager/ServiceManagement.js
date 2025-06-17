@@ -36,30 +36,58 @@ function ServiceManagement() {
   const [documentInput, setDocumentInput] = useState('');
   const [procedureInput, setProcedureInput] = useState('');
   const [alert, setAlert] = useState({ show: false, variant: '', message: '' });
+  const [error, setError] = useState(null);
+  const [selectedStatus, setSelectedStatus] = useState('all');
 
   useEffect(() => {
     const fetchServices = async () => {
       setLoading(true);
       try {
         const data = await getAllServicesAndMethods();
-        console.log(data);
         const { dnaServices, serviceCollectionMethods } = data;
-        // Gắn collectionMethods vào từng service
-        const servicesWithMethods = dnaServices.map(service => ({
-          ...service,
-          participants: Array.isArray(service.participants) ? service.participants : JSON.parse(service.participants || '[]'),
-          requiredDocuments: Array.isArray(service.requiredDocuments) ? service.requiredDocuments : JSON.parse(service.requiredDocuments || '[]'),
-          procedures: Array.isArray(service.procedures) ? service.procedures : JSON.parse(service.procedures || '[]'),
-          collectionMethods: serviceCollectionMethods
-            .filter(method => method.serviceId === service.id)
-            .map(method => method.methodId)
-        }));
+        
+        // Map services với methods
+        const servicesWithMethods = dnaServices.map(service => {
+          // Lấy các methods của service này
+          const serviceMethods = serviceCollectionMethods.filter(
+            method => method.serviceId === service.id
+          );
+
+          return {
+            ...service,
+            // Parse các trường JSON string thành array
+            participants: typeof service.participants === 'string' 
+              ? service.participants.split(',').map(p => p.trim())
+              : service.participants,
+            requiredDocuments: typeof service.requiredDocuments === 'string'
+              ? service.requiredDocuments.split(',').map(d => d.trim())
+              : service.requiredDocuments,
+            procedures: typeof service.procedures === 'string'
+              ? service.procedures.split('→').map(p => p.trim())
+              : service.procedures,
+            // Thêm thông tin methods
+            collectionMethods: serviceMethods.map(method => ({
+              id: method.methodId,
+              title: method.methodTitle,
+              description: method.methodDescription,
+              icon: method.methodIcon,
+              color: method.methodColor,
+              note: method.methodNote,
+              process: method.methodProcess
+            }))
+          };
+        });
+
+        console.log('Processed services:', servicesWithMethods);
         setServices(servicesWithMethods);
         setLoading(false);
       } catch (err) {
+        console.error('Error:', err);
+        setError(err.message);
         setLoading(false);
       }
     };
+
     fetchServices();
   }, []);
 
@@ -266,92 +294,94 @@ function ServiceManagement() {
   };
 
   const getFilteredServices = () => {
-    const sortedServices = getSortedServices();
-    if (!searchTerm) return sortedServices;
-
-    return sortedServices.filter(service => 
-      service.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      service.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      service.category.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    return services.filter(service => {
+      // Filter by search term
+      const searchMatch = service.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        service.description?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Filter by status
+      const statusMatch = 
+        selectedStatus === 'all' ? true :
+        selectedStatus === 'active' ? !service.isHidden :
+        selectedStatus === 'hidden' ? service.isHidden : true;
+      
+      return searchMatch && statusMatch;
+    });
   };
 
   const renderSortIcon = (key) => {
-    if (sortConfig.key !== key) return null;
-    return sortConfig.direction === 'ascending' ? <SortUp /> : <SortDown />;
+    if (sortConfig.key === key) {
+      return sortConfig.direction === 'ascending' ? <SortUp /> : <SortDown />;
+    }
+    return null;
   };
 
+  if (loading) {
+    return (
+      <div className="text-center p-5">
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Đang tải...</span>
+        </Spinner>
+        <p className="mt-2">Đang tải danh sách dịch vụ...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert variant="danger" className="m-4">
+        <Alert.Heading>Đã xảy ra lỗi!</Alert.Heading>
+        <p>{error}</p>
+      </Alert>
+    );
+  }
+
   return (
-    <>
-      <Card className="mb-3 border-0">
-        <Card.Body>
-          <Row className="align-items-center">
-            <Col md={3}>
-              <h2 className="mb-0">Quản lý dịch vụ</h2>
-            </Col>
-            <Col md={3}>
-                <input
-                type="text"
-                className="form-control"
-                placeholder="Tìm kiếm..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                />
-            </Col>
-            <Col md={3}>
-              <Form.Select
-                value={sortConfig.key}
-                onChange={(e) => handleSort(e.target.value)}
-              >
-                <option value="title">Sắp xếp theo tên</option>
-                <option value="price">Sắp xếp theo giá</option>
-                <option value="duration">Sắp xếp theo thời gian</option>
-                <option value="category">Sắp xếp theo loại</option>
-              </Form.Select>
-            </Col>
-            <Col md={3} className="text-end">
-              <Button variant="primary" onClick={() => handleShowModal('add')}>
-                <Plus className="me-1" /> Thêm dịch vụ
-              </Button>
-            </Col>
-          </Row>
-        </Card.Body>
-      </Card>
-
-      {alert.show && (
-        <Alert variant={alert.variant} onClose={() => setAlert({ ...alert, show: false })} dismissible>
-          {alert.message}
-        </Alert>
-      )}
-
-      {loading ? (
-        <div className="text-center py-5">
-          <Spinner animation="border" variant="primary" />
+    <div className="container py-5">
+      {/* Header with Title and Controls */}
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h2 style={{ fontSize: '2rem', margin: 0 }}>Quản lý dịch vụ</h2>
+        <div className="d-flex align-items-center gap-3">
+          <input
+            type="text"
+            className="form-control form-control-sm"
+            placeholder="Tìm kiếm dịch vụ..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ width: '200px' }}
+          />
+          <select
+            className="form-select form-select-sm"
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            style={{ width: '150px' }}
+          >
+            <option value="all">Tất cả trạng thái</option>
+            <option value="active">Đang hiển thị</option>
+            <option value="hidden">Đang ẩn</option>
+          </select>
+          <button 
+            className="btn btn-primary btn-sm"
+            onClick={() => handleShowModal('add')}
+          >
+            <i className="bi bi-plus-lg me-1"></i>
+            Thêm dịch vụ
+          </button>
         </div>
-      ) : (
-        <Card>
-          <Card.Body>
-            <Table responsive hover>
+      </div>
+
+      <div className="card">
+        <div className="card-body">
+          <div className="table-responsive">
+            <table className="table table-hover">
               <thead>
                 <tr>
-                  <th onClick={() => handleSort('title')} style={{ cursor: 'pointer' }}>
-                    Tên dịch vụ {renderSortIcon('title')}
-                  </th>
-                  <th onClick={() => handleSort('category')} style={{ cursor: 'pointer' }}>
-                    Loại {renderSortIcon('category')}
-                  </th>
-                  <th onClick={() => handleSort('price')} style={{ cursor: 'pointer' }}>
-                    Giá {renderSortIcon('price')}
-                  </th>
-                  <th onClick={() => handleSort('duration')} style={{ cursor: 'pointer' }}>
-                    Thời gian {renderSortIcon('duration')}
-                  </th>
-                  <th onClick={() => handleSort('isHidden')} style={{ cursor: 'pointer' }}>
-                    Trạng thái {renderSortIcon('isHidden')}
-                  </th>
-                  <th onClick={() => handleSort('featured')} style={{ cursor: 'pointer' }}>
-                    Nổi bật {renderSortIcon('featured')}
-                  </th>
+                  <th>Tên dịch vụ</th>
+                  <th>Loại</th>
+                  <th>Giá</th>
+                  <th>Thời gian</th>
+                  <th style={{ width: '25%' }}>Phương thức lấy mẫu</th>
+                  <th>Trạng thái</th>
                   <th>Thao tác</th>
                 </tr>
               </thead>
@@ -359,68 +389,83 @@ function ServiceManagement() {
                 {getFilteredServices().map((service) => (
                   <tr key={service.id}>
                     <td>
-                      <div className="fw-bold">{service.title}</div>
-                      <small className="text-muted">{service.description}</small>
+                      <div className="d-flex align-items-center">
+                        {service.featured && (
+                          <i className="bi bi-star-fill text-warning me-2"></i>
+                        )}
+                        {service.title}
+                      </div>
                     </td>
                     <td>
-                      <Badge bg={service.category === 'administrative' ? 'danger' : 'success'}>
-                        {service.category === 'administrative' ? 'Hành chính' : 'Dân sự'}
-                      </Badge>
-                      {service.hasLegalValue && (
-                        <Badge bg="warning" text="dark" className="ms-1">
-                          Có giá trị pháp lý
-                        </Badge>
-                      )}
+                      <span className={`badge bg-${service.serviceType === 'administrative' ? 'warning' : 'success'}`}>
+                        {service.serviceType === 'administrative' ? 'Hành chính' : 'Dân sự'}
+                      </span>
                     </td>
-                    <td>{parseInt(service.price).toLocaleString('vi-VN')} VNĐ</td>
+                    <td>{service.price}</td>
                     <td>{service.duration}</td>
                     <td>
-                      <Badge bg={service.isHidden ? 'secondary' : 'success'}>
-                        {service.isHidden ? 'Đã ẩn' : 'Đang hiển thị'}
-                      </Badge>
+                      <div className="d-flex flex-column gap-1">
+                        {service.collectionMethods.map(method => (
+                          <div 
+                            key={method.id}
+                            className={`badge bg-${method.color} text-wrap`}
+                            style={{ 
+                              width: 'fit-content',
+                              padding: '6px 10px',
+                              marginBottom: '2px'
+                            }}
+                            title={method.description}
+                          >
+                            <i className={`${method.icon} me-2`}></i>
+                            {method.title}
+                          </div>
+                        ))}
+                      </div>
                     </td>
                     <td>
-                      <Button
-                        variant="link"
-                        className="p-0 text-warning"
-                        onClick={() => handleToggleFeatured(service.id)}
-                      >
-                        {service.featured ? <StarFill /> : <Star />}
-                      </Button>
+                      <span className={`badge bg-${service.isHidden ? 'secondary' : 'success'}`}>
+                        {service.isHidden ? 'Đang ẩn' : 'Đang hiển thị'}
+                      </span>
                     </td>
                     <td>
-                      <div className="d-flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline-primary"
+                      <div className="btn-group">
+                        <button
+                          className="btn btn-sm btn-outline-primary"
                           onClick={() => handleShowModal('edit', service)}
+                          title="Chỉnh sửa"
                         >
-                          <Pencil className="me-1" /> Sửa
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={service.isHidden ? "outline-success" : "outline-secondary"}
+                          <i className="bi bi-pencil"></i>
+                        </button>
+                        <button
+                          className="btn btn-sm btn-outline-success"
+                          onClick={() => handleToggleFeatured(service.id)}
+                          title={service.featured ? "Bỏ nổi bật" : "Đánh dấu nổi bật"}
+                        >
+                          <i className={`bi bi-star${service.featured ? '-fill' : ''}`}></i>
+                        </button>
+                        <button
+                          className="btn btn-sm btn-outline-warning"
                           onClick={() => handleToggleHidden(service.id)}
+                          title={service.isHidden ? "Hiển thị" : "Ẩn"}
                         >
-                          {service.isHidden ? (
-                            <>
-                              <Eye className="me-1" /> Hiện
-                            </>
-                          ) : (
-                            <>
-                              <EyeSlash className="me-1" /> Ẩn
-                            </>
-                          )}
-                        </Button>
+                          <i className={`bi bi-eye${service.isHidden ? '-slash' : ''}`}></i>
+                        </button>
+                        <button
+                          className="btn btn-sm btn-outline-danger"
+                          onClick={() => handleDelete(service.id)}
+                          title="Xóa"
+                        >
+                          <i className="bi bi-trash"></i>
+                        </button>
                       </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
-            </Table>
-          </Card.Body>
-        </Card>
-      )}
+            </table>
+          </div>
+        </div>
+      </div>
 
       {/* Modal thêm/sửa dịch vụ */}
       <Modal show={showModal} onHide={handleCloseModal} size="lg" centered>
@@ -646,7 +691,7 @@ function ServiceManagement() {
           </Modal.Footer>
         </Form>
       </Modal>
-    </>
+    </div>
   );
 }
 
