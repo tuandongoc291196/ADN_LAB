@@ -47,6 +47,16 @@ const kitController = new GetKit();
 const { createKit } = require('./controllers/kit/addKit');
 const { updateKitStatus } = require('./controllers/kit/updateKitStatus');
 
+// TimeSlot controllers
+const GetTimeSlot = require('./controllers/timeslots/getTimeSlot');
+const timeSlotController = new GetTimeSlot();
+const UpdateTimeSlots = require('./controllers/timeslots/updateTimeSlot');
+const updateTimeSlotsController = new UpdateTimeSlots();
+const { createTimeSlot } = require('./controllers/timeslots/createTimeSlot');
+
+
+
+
 
 const app = express();
 
@@ -138,5 +148,16 @@ app.put('/kits/:id', updateKitStatus);
 app.get('/kits/:kitId', kitController.getKitById);
 app.get('/kits/available', kitController.getAvailableKits);
 app.get('/kits', kitController.getAllKits);
+
+// TimeSlot routes
+app.post('/timeslots', createTimeSlot);
+app.put('/timeslots/:id', updateTimeSlotsController.updateTimeSlot);
+app.put('/timeslots/bookings/:id', updateTimeSlotsController.updateTimeSlotBookings);
+app.get('/timeslots/available', timeSlotController.getAvailableTimeSlots);
+app.get('/timeslots/:id', timeSlotController.getTimeSlotById);
+app.get('/timeslots/staff/:staffId', timeSlotController.getTimeSlotsByStaff);
+app.get('/timeslots/booking/:bookingId', timeSlotController.getTimeSlotsInRange);
+
+
  
 exports.app = functions.https.onRequest(app);
