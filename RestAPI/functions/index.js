@@ -56,5 +56,6 @@ app.post('/users', getOneUser);
 
 app.post('/payments', addPayment);
 app.get('/payments', getAllPayments);
+
  
 exports.app = functions.https.onRequest(app);
