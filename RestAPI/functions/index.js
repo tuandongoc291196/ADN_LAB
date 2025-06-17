@@ -3,11 +3,12 @@ const express = require('express');
 const cors = require('cors');
 const {swaggerUi, swaggerDocs} = require('./config/swagger');
 
-const {addPayment} = require('./controllers/payments/addPayment');
-const {getAllPayments, getPayment} = require('./controllers/payments/getPayment');
 
+
+// User controllers
 const {getAllUsers, getOneUser} = require('./controllers/users/getUsers');
 
+// Service controllers
 const {getAllServiceAndMethods, getOneServiceAndMethods} = require('./controllers/services/getServicesAndMethods');
 
 const {getAllRoles, getOneRole} = require('./controllers/roles/getRoles');
