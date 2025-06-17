@@ -1,7 +1,6 @@
 const { dataConnect } = require("../../config/firebase.js");
 
-class GetKit {
-    async getKitById(req, res) {
+const getKitById = async (req, res) => {
       try {
         const { kitId } = req.params;
         
@@ -54,7 +53,7 @@ class GetKit {
       }
     }
     
-    async getAvailableKits(req, res) {
+    const getAvailableKits = async (req, res) => {
       try {
         const GET_AVAILABLE_KITS_QUERY = `
           query GetAvailableKits @auth(level: USER) {
@@ -87,7 +86,7 @@ class GetKit {
       }
     }
     
-    async getAllKits(req, res) {
+    const getAllKits = async (req, res) => {
       try {
         const GET_KITS_QUERY = `
           query GetKits @auth(level: USER) {
@@ -120,6 +119,10 @@ class GetKit {
         });
       }
     }
-  }
   
-  module.exports = GetKit;
+  
+  module.exports = {
+    getKitById,
+    getAvailableKits,
+    getAllKits
+  };

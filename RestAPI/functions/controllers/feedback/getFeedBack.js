@@ -1,7 +1,6 @@
 const { dataConnect } = require("../../config/firebase.js");
 
-class GetFeedBack {
-  async getFeedbackByRating(req, res) {
+const getFeedbackByRating = async (req, res) => {
     try {
       const { rating } = req.query;
 
@@ -54,7 +53,7 @@ class GetFeedBack {
     }
   }
 
-  async getAllFeedback(req, res) {
+  const getAllFeedback = async (req, res) => {
     try {
       const { limit, offset } = req.query;
 
@@ -102,7 +101,7 @@ class GetFeedBack {
     }
   }
 
-  async getBookingFeedback(req, res) {
+  const getBookingFeedback = async (req, res) => {
     try {
       const { bookingId } = req.params;
 
@@ -149,6 +148,9 @@ class GetFeedBack {
       });
     }
   }
-}
 
-module.exports = GetFeedBack;
+module.exports = {
+  getFeedbackByRating,
+  getAllFeedback,
+  getBookingFeedback
+};
