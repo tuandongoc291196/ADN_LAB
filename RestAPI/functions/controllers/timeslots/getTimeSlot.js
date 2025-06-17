@@ -178,11 +178,21 @@ class GetTimeSlot {
     try {
       const { startDate, endDate } = req.query;
 
-      if (!startDate || !endDate) {
+      if (!startDate) {
         return res.status(400).json({
           statusCode: 400,
           status: "error",
-          message: "Start date and end date are required",
+          message: "Start date is required",
+        });
+      }
+      
+
+      if (!endDate) {
+
+        return res.status(400).json({
+          statusCode: 400,
+          status: "error",
+          message: "End date is required",
         });
       }
 

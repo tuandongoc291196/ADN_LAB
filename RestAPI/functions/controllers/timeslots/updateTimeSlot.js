@@ -76,11 +76,20 @@ class UpdateTimeSlots {
       const { timeSlotId, currentBookings } = req.body;
 
       // Validate input
-      if (!timeSlotId || currentBookings === undefined) {
+      if (!timeSlotId) {
         return res.status(400).json({
           statusCode: 400,
           status: "error",
           message: "Time Slot ID and current bookings are required",
+        });
+      }
+
+      if (currentBookings === undefined) {
+
+        return res.status(400).json({
+          statusCode: 400,
+          status: "error",
+          message: "Current bookings are required",
         });
       }
 

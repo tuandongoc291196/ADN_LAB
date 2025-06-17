@@ -6,11 +6,35 @@ const createTimeSlot = async (req, res) => {
     const { id, slotDate, startTime, endTime, maxCapacity, staffId, notes } = req.body;
 
     // Validate input
-    if (!id || !slotDate || !startTime || !endTime || !maxCapacity) {
+    if (!id) {
       return res.status(400).json({
         statusCode: 400,
         status: "error",
-        message: "Time Slot ID, slot date, start time, end time, and max capacity are required",
+        message: "Time Slot ID is required",
+      });
+    }
+    
+    if (!slotDate) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "Slot date is required",
+      });
+    }
+
+    if (!startTime) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "Start time is required",
+      });
+    }
+
+    if (!endTime) { 
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "End time is required",
       });
     }
 
