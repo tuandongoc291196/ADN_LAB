@@ -36,8 +36,15 @@ const getAllServiceAndMethods = async (req, res) => {
     console.log("Executing GraphQL query:", GET_SERVICES_AND_METHODS_QUERY);
     const response = await dataConnect.executeGraphql(GET_SERVICES_AND_METHODS_QUERY);
 
-    const responseData = response.data || [];
+    const responseData = response.data;
 
+    if (responseData.role === null) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "There are no services in the database",
+      });
+    }
     res.status(200).json({
       statusCode: 200,
       status: "success",
@@ -121,7 +128,7 @@ const getOneServiceAndMethods = async (req, res) => {
       variables: variables,
     });
 
-    const responseData = response.data || [];
+    const responseData = response.data;
 
     res.status(200).json({
       statusCode: 200,

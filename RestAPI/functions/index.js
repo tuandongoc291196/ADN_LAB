@@ -11,52 +11,10 @@ const {getAllUsers, getOneUser} = require('./controllers/users/getUsers');
 // Service controllers
 const {getAllServiceAndMethods, getOneServiceAndMethods} = require('./controllers/services/getServicesAndMethods');
 
-// Blog controllers
-const { getAllBlogs, getBlogById } = require('./controllers/blogs/getBlog');
-const { getBlogById } = require('./controllers/blogs/getBlogById');
-const {createBlog} = require('./controllers/blogs/addBlog');
-const { updateBlog } = require('./controllers/blogs/updateBlog');
-const { deleteBlog } = require('./controllers/blogs/deleteBlog');
-
-// Sample controllers
-const GetSample = require('./controllers/sample/getSample');
-const sampleController = new GetSample();
-const { createSample } = require('./controllers/sample/addSample');
-const { updateSampleStatus } = require('./controllers/sample/updateSampleStatus');
-
-// Test Result controllers
-const GetTestResult = require('./controllers/testResult/getTestResult');
-const testResultController = new GetTestResult();
-const { createTestResult } = require('./controllers/testResult/addTestResult');
-const { updateTestResult } = require('./controllers/testResult/updateTestResult');
-
-// Role controllers
-const { getAllRoles } = require('./controllers/role/getRole');
-const { createRole } = require('./controllers/role/createRole');
-const { updateRole } = require('./controllers/role/updateRole');
-const { deleteRole } = require('./controllers/role/deleteRole');
-
-// Payment controller
-const {getAllPayments, getPayment} = require('./controllers/payments/getPayment');
-const {addPayment} = require('./controllers/payments/addPayment');
-const { refundPayment } = require('./controllers/payments/refundPayment');
-
-// Kit controllers
-const GetKit = require('./controllers/kit/getKit');
-const kitController = new GetKit();
-const { createKit } = require('./controllers/kit/addKit');
-const { updateKitStatus } = require('./controllers/kit/updateKitStatus');
-
-// TimeSlot controllers
-const GetTimeSlot = require('./controllers/timeslots/getTimeSlot');
-const timeSlotController = new GetTimeSlot();
-const UpdateTimeSlots = require('./controllers/timeslots/updateTimeSlot');
-const updateTimeSlotsController = new UpdateTimeSlots();
-const { createTimeSlot } = require('./controllers/timeslots/createTimeSlot');
-
-
-
-
+const {getAllRoles, getOneRole} = require('./controllers/roles/getRoles');
+const {updateRole} = require('./controllers/roles/updateRole');
+const {deleteRole} = require('./controllers/roles/deleteRole');
+const {addRole} = require('./controllers/roles/addRole');
 
 const app = express();
 
@@ -95,69 +53,583 @@ app.get('/', (req, res) => {
   res.send("Hey there. We've been trying to reach you concerning your vehicle's extended warrant. For Swagger, visit /api-docs");
 });
 
-// Service routes
+/**
+ * @swagger
+ * /services&methods:
+ *   get:
+ *     tags:
+ *       - Services
+ *     summary: Get all services and collection methods
+ *     description: Retrieve a list of all DNA services and their associated collection methods
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Services and methods retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ServicesResponse'
+ *       500:
+ *         description: Failed to retrieve services and methods
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 app.get('/services&methods', getAllServiceAndMethods);
+
+/**
+ * @swagger
+ * /services&methods:
+ *   post:
+ *     tags:
+ *       - Services
+ *     summary: Get specific service with methods
+ *     description: Retrieve details of a specific DNA service and its collection methods
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ServiceRequest'
+ *     responses:
+ *       200:
+ *         description: Service and methods retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: number
+ *                   example: 200
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Service and methods retrieved successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     service:
+ *                       $ref: '#/components/schemas/Service'
+ *                     methods:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/ServiceCollectionMethod'
+ *       400:
+ *         description: serviceId is required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Service not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Failed to retrieve service and methods
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 app.post('/services&methods', getOneServiceAndMethods);
 
-// User routes
+/**
+ * @swagger
+ * /users:
+ *   get:
+ *     tags:
+ *       - Users
+ *     summary: Get all users
+ *     description: Retrieve a list of all users in the system
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Users retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UsersResponse'
+ *       500:
+ *         description: Failed to retrieve users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 app.get('/users', getAllUsers);
+
+/**
+ * @swagger
+ * /users:
+ *   post:
+ *     tags:
+ *       - Users
+ *     summary: Get specific user details
+ *     description: Retrieve details of a specific user by user ID
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UserRequest'
+ *     responses:
+ *       200:
+ *         description: User retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: number
+ *                   example: 200
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: User retrieved successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *       400:
+ *         description: userId is required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Failed to retrieve user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 app.post('/users', getOneUser);
 
+/**
+ * @swagger
+ * /roles:
+ *   get:
+ *     tags:
+ *       - Roles
+ *     summary: Get all roles
+ *     description: Retrieve a list of all roles in the system
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Roles retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RolesResponse'
+ *       404:
+ *         description: No roles found in the database
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Failed to retrieve roles
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+app.get('/roles', getAllRoles);
 
+/**
+ * @swagger
+ * /roles:
+ *   post:
+ *     tags:
+ *       - Roles
+ *     summary: Get a specific role by ID
+ *     description: Retrieve details of a specific role using its ID
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/RoleRequest'
+ *     responses:
+ *       200:
+ *         description: Role retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: number
+ *                   example: 200
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Role retrieved successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     role:
+ *                       $ref: '#/components/schemas/Role'
+ *       400:
+ *         description: roleId is required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Role not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Failed to retrieve role
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+app.post('/roles', getOneRole);
 
-// Blog routes
-app.get('/blogs', getAllBlogs);
-app.get('/blogs/category', getBlogByCategory);
-app.get('/blogs/:id', getBlogById);
-app.post('/blogs', createBlog);
-app.put('/blogs/:id', updateBlog);
-app.delete('/blogs/:id', deleteBlog);
+/**
+ * @swagger
+ * /roles:
+ *   put:
+ *     tags:
+ *       - Roles
+ *     summary: Update an existing role
+ *     description: Update the name and description of an existing role
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UpdateRoleRequest'
+ *     responses:
+ *       200:
+ *         description: Role updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: number
+ *                   example: 200
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Role updated successfully
+ *                 data:
+ *                   type: object
+ *       400:
+ *         description: Missing required fields (roleId, name, description)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Role not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Failed to update role
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+app.put('/roles', updateRole);
 
-// Sample routes
-app.post('/samples', createSample);
-app.put('/samples/:id', updateSampleStatus);
-app.get('/samples/:sampleId', sampleController.getSampleById);
-app.get('/samples', sampleController.getSamplesByStatus);
-app.get('/samples/booking/:bookingId', sampleController.getBookingSamples);
-app.get('/samples/staff/:staffId', sampleController.getStaffSamples);
+/**
+ * @swagger
+ * /roles:
+ *   delete:
+ *     tags:
+ *       - Roles
+ *     summary: Delete a role
+ *     description: Delete an existing role from the system
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/DeleteRoleRequest'
+ *     responses:
+ *       200:
+ *         description: Role deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: number
+ *                   example: 200
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Role deleted successfully
+ *                 data:
+ *                   type: object
+ *       400:
+ *         description: roleId is required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Role not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Failed to delete role
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+app.delete('/roles', deleteRole);
 
-// Test Result routes
-app.post('/testResults', createTestResult);
-app.put('/testResults/:id', updateTestResult);
-app.get('/testResults/:resultId', testResultController.getTestResultById);
-app.get('/testResults', testResultController.getTestResultsByStatus);
-app.get('/testResults/user/:userId', testResultController.getUserTestResults);
-app.get('/testResults/booking/:bookingId', testResultController.getBookingTestResults);
+/**
+ * @swagger
+ * /roles/add:
+ *   post:
+ *     tags:
+ *       - Roles
+ *     summary: Create a new role
+ *     description: Add a new role to the system with specified ID, name, and description
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateRoleRequest'
+ *     responses:
+ *       201:
+ *         description: Role created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: number
+ *                   example: 201
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Role created successfully
+ *                 data:
+ *                   type: object
+ *       400:
+ *         description: Missing required fields (id, name, description) or database operation failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       409:
+ *         description: Role with this ID already exists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Failed to create role
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+app.post('/roles/add', addRole);
 
-
-// Role routes
-app.get('/roles', getRole);
-app.post('/roles', createRole);
-app.put('/roles/:id', updateRole);
-app.delete('/roles/:id', deleteRole);
-
-// Additional payment route
+/**
+ * @swagger
+ * /payments:
+ *   post:
+ *     tags:
+ *       - Payments
+ *     summary: Create a new payment
+ *     description: Create a payment request for MOMO, VNPAY, or ZALOPAY and get payment URL
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/PaymentRequest'
+ *     responses:
+ *       200:
+ *         description: Payment URL generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PaymentResponse'
+ *       400:
+ *         description: Invalid payment data or missing required fields
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Failed to create payment
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 app.post('/payments', addPayment);
+
+/**
+ * @swagger
+ * /payments:
+ *   get:
+ *     tags:
+ *       - Payments
+ *     summary: Get all payments
+ *     description: Retrieve a list of all payments in the system
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Payments retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: number
+ *                   example: 200
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Payments retrieved successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     payments:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Payment'
+ *       500:
+ *         description: Failed to retrieve payments
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 app.get('/payments', getAllPayments);
-app.post('/payments/refund', refundPayment);
-app.get('/payments/:id', getPayment);
 
-// Kit routes
-app.post('/kits', createKit);
-app.put('/kits/:id', updateKitStatus);
-app.get('/kits/:kitId', kitController.getKitById);
-app.get('/kits/available', kitController.getAvailableKits);
-app.get('/kits', kitController.getAllKits);
-
-// TimeSlot routes
-app.post('/timeslots', createTimeSlot);
-app.put('/timeslots/:id', updateTimeSlotsController.updateTimeSlot);
-app.put('/timeslots/bookings/:id', updateTimeSlotsController.updateTimeSlotBookings);
-app.get('/timeslots/available', timeSlotController.getAvailableTimeSlots);
-app.get('/timeslots/:id', timeSlotController.getTimeSlotById);
-app.get('/timeslots/staff/:staffId', timeSlotController.getTimeSlotsByStaff);
-app.get('/timeslots/booking/:bookingId', timeSlotController.getTimeSlotsInRange);
-
-
+/**
+ * @swagger
+ * /payments/details:
+ *   post:
+ *     tags:
+ *       - Payments
+ *     summary: Get specific payment details
+ *     description: Retrieve details of a specific payment by payment ID
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: ['paymentId']
+ *             properties:
+ *               paymentId:
+ *                 type: string
+ *                 description: Payment ID to retrieve
+ *                 example: 'PAY_12345'
+ *     responses:
+ *       200:
+ *         description: Payment details retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: number
+ *                   example: 200
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Payment retrieved successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     payment:
+ *                       $ref: '#/components/schemas/Payment'
+ *       400:
+ *         description: paymentId is required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Payment not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Failed to retrieve payment
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+app.post('/payments/details', getPayment);
  
 exports.app = functions.https.onRequest(app);
