@@ -81,6 +81,10 @@ For technical support or questions about this API, please contact:
       {
         name: 'Services',
         description: 'DNA services and collection methods endpoints'
+      },
+      {
+        name: 'Roles',
+        description: 'Role management endpoints for user access control'
       }
     ],
     components: {
@@ -505,6 +509,133 @@ For technical support or questions about this API, please contact:
                   type: 'array',
                   items: {
                     $ref: '#/components/schemas/ServiceCollectionMethod'
+                  }
+                }
+              }
+            }
+          }
+        },
+        Role: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              description: 'Role ID',
+              example: 'admin'
+            },
+            name: {
+              type: 'string',
+              description: 'Role name',
+              example: 'Administrator'
+            },
+            description: {
+              type: 'string',
+              description: 'Role description',
+              example: 'Full system access with administrative privileges'
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Role creation timestamp',
+              example: '2024-12-06T10:30:00.000Z'
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Role last update timestamp',
+              example: '2024-12-06T12:30:00.000Z'
+            }
+          }
+        },
+        RoleRequest: {
+          type: 'object',
+          required: ['roleId'],
+          properties: {
+            roleId: {
+              type: 'string',
+              description: 'Role ID to retrieve',
+              example: 'admin'
+            }
+          }
+        },
+        CreateRoleRequest: {
+          type: 'object',
+          required: ['id', 'name', 'description'],
+          properties: {
+            id: {
+              type: 'string',
+              description: 'Unique role ID',
+              example: 'manager'
+            },
+            name: {
+              type: 'string',
+              description: 'Role name',
+              example: 'Manager'
+            },
+            description: {
+              type: 'string',
+              description: 'Role description',
+              example: 'Manager role with limited administrative access'
+            }
+          }
+        },
+        UpdateRoleRequest: {
+          type: 'object',
+          required: ['roleId', 'name', 'description'],
+          properties: {
+            roleId: {
+              type: 'string',
+              description: 'Role ID to update',
+              example: 'manager'
+            },
+            name: {
+              type: 'string',
+              description: 'Updated role name',
+              example: 'Senior Manager'
+            },
+            description: {
+              type: 'string',
+              description: 'Updated role description',
+              example: 'Senior manager role with extended privileges'
+            }
+          }
+        },
+        DeleteRoleRequest: {
+          type: 'object',
+          required: ['roleId'],
+          properties: {
+            roleId: {
+              type: 'string',
+              description: 'Role ID to delete',
+              example: 'manager'
+            }
+          }
+        },
+        RolesResponse: {
+          type: 'object',
+          properties: {
+            statusCode: {
+              type: 'number',
+              description: 'HTTP status code',
+              example: 200
+            },
+            status: {
+              type: 'string',
+              description: 'Response status',
+              example: 'success'
+            },
+            message: {
+              type: 'string',
+              description: 'Response message',
+              example: 'Roles retrieved successfully'
+            },
+            data: {
+              type: 'object',
+              properties: {
+                roles: {
+                  type: 'array',
+                  items: {
+                    $ref: '#/components/schemas/Role'
                   }
                 }
               }

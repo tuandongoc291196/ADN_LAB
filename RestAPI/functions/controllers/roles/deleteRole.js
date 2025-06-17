@@ -1,15 +1,27 @@
 const { dataConnect } = require("../../config/firebase.js");
+const { checkRoleExists } = require('../roles/getRoles.js');
 
 const deleteRole = async (req, res) => {
   try {
-    const { roleId } = req.body;
+    const {roleId} = req.body;
 
-    // Validate input
     if (!roleId) {
       return res.status(400).json({
         statusCode: 400,
         status: "error",
-        message: "Role ID is required",
+        message: "roleId is required",
+      });
+    }
+
+    console.log("Checking if role exists before deletion, roleId:", roleId);
+    const existingRole = await checkRoleExists(roleId);
+    console.log("Role existence check result:", existingRole);
+    if (!existingRole) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "Role not found",
+        error: "Role with the provided ID does not exist",
       });
     }
 
@@ -26,20 +38,16 @@ const deleteRole = async (req, res) => {
     console.log("Executing GraphQL mutation:", DELETE_ROLE_MUTATION, "with variables:", variables);
 
     const response = await dataConnect.executeGraphql(DELETE_ROLE_MUTATION, {
-      variables,
+      variables : variables,
     });
 
-    const result = response.data?.role_delete;
-
-    if (!result) {
-      throw new Error("Failed to delete role");
-    }
+    const responseData = response.data;
 
     res.status(200).json({
       statusCode: 200,
       status: "success",
       message: "Role deleted successfully",
-      data: { roleId },
+      data: responseData,
     });
   } catch (error) {
     console.error("Error deleting role:", error);
