@@ -213,33 +213,6 @@ mutation CreateServiceCollectionMethod(
   })
 }
 
-# ====== KIT MUTATIONS ======
-
-# Create kit
-mutation CreateKit(
-  $id: String!
-  $amount: Int!
-) @auth(level: USER) {
-  kit_insert(data: {
-    id: $id
-    amount: $amount
-    status: "available"
-  })
-}
-
-# Update kit status
-mutation UpdateKitStatus(
-  $kitId: String!
-  $status: String!
-) @auth(level: USER) {
-  kit_update(
-    key: { id: $kitId }
-    data: {
-      status: $status
-    }
-  )
-}
-
 # ====== TIME SLOT MUTATIONS ======
 
 # Create time slot
@@ -249,7 +222,6 @@ mutation CreateTimeSlot(
   $startTime: String!
   $endTime: String!
   $maxCapacity: Int!
-  $staffId: String
   $notes: String
 ) @auth(level: USER) {
   timeSlot_insert(data: {
@@ -258,7 +230,6 @@ mutation CreateTimeSlot(
     startTime: $startTime
     endTime: $endTime
     maxCapacity: $maxCapacity
-    staffId: $staffId
     notes: $notes
     currentBookings: 0
     available: true
@@ -272,7 +243,6 @@ mutation UpdateTimeSlot(
   $startTime: String
   $endTime: String
   $maxCapacity: Int
-  $staffId: String
   $notes: String
   $available: Boolean
 ) @auth(level: USER) {
@@ -283,7 +253,6 @@ mutation UpdateTimeSlot(
       startTime: $startTime
       endTime: $endTime
       maxCapacity: $maxCapacity
-      staffId: $staffId
       notes: $notes
       available: $available
       updatedAt_expr: "request.time"
@@ -312,9 +281,11 @@ mutation CreateBooking(
   $id: String!
   $userId: String!
   $staffId: String
-  $kitId: String
   $timeSlotId: String
+  $serviceId: String!
   $collectionMethod: String!
+  $price: Float!
+  $quantity: Int!
   $notes: String
   $totalAmount: Float!
 ) @auth(level: USER) {
@@ -322,9 +293,11 @@ mutation CreateBooking(
     id: $id
     userId: $userId
     staffId: $staffId
-    kitId: $kitId
     timeSlotId: $timeSlotId
+    serviceId: $serviceId
     collectionMethod: $collectionMethod
+    price: $price
+    quantity: $quantity
     notes: $notes
     totalAmount: $totalAmount
     status: "pending"
@@ -362,47 +335,6 @@ mutation AssignBookingStaff(
 }
 
 # ====== BOOKING ITEM MUTATIONS ======
-
-# Add booking item
-mutation AddBookingItem(
-  $id: String!
-  $bookingId: String!
-  $serviceId: String!
-  $price: Float!
-  $quantity: Int!
-  $notes: String
-) @auth(level: USER) {
-  bookingItem_insert(data: {
-    id: $id
-    bookingId: $bookingId
-    serviceId: $serviceId
-    price: $price
-    quantity: $quantity
-    notes: $notes
-  })
-}
-
-# Update booking item
-mutation UpdateBookingItem(
-  $itemId: String!
-  $price: Float
-  $quantity: Int
-  $notes: String
-) @auth(level: USER) {
-  bookingItem_update(
-    key: { id: $itemId }
-    data: {
-      price: $price
-      quantity: $quantity
-      notes: $notes
-    }
-  )
-}
-
-# Remove booking item
-mutation RemoveBookingItem($itemId: String!) @auth(level: USER) {
-  bookingItem_delete(key: { id: $itemId })
-}
 
 # ====== SAMPLE MUTATIONS ======
 
@@ -541,6 +473,19 @@ mutation UpdatePaymentStatus(
       status: $status
       transactionId: $transactionId
       refundDetail: $refundDetail
+    }
+  )
+}
+
+# Add refund detail to payment
+mutation AddRefundDetail(
+  $paymentId: String!
+  $refundDetails: String!
+) @auth(level: USER) {
+  payment_update(
+    key: { id: $paymentId }
+    data: {
+      refundDetail: $refundDetails
     }
   )
 }

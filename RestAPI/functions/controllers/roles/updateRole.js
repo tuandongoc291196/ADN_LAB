@@ -13,22 +13,6 @@ const updateRole = async (req, res) => {
       });
     }
 
-    if (!name) {
-      return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "name is required",
-      });
-    }
-
-    if (!description) {
-      return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "description is required",
-      });
-    }
-    
     console.log("Checking if role exists before deletion, roleId:", roleId);
     const existingRole = await checkRoleExists(roleId);
     console.log("Role existence check result:", existingRole);
@@ -48,9 +32,9 @@ const updateRole = async (req, res) => {
     `;
 
     const variables = {
-      roleId : roleId,
-      name: name,
-      description: description,
+      roleId,
+      name: name || "",
+      description: description || "",
     };
 
     console.log("Executing GraphQL mutation:", UPDATE_ROLE_MUTATION, "with variables:", variables);

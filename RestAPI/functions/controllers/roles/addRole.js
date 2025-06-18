@@ -56,7 +56,7 @@ const addRole = async (req, res) => {
     });
   } catch (error) {
     console.error("Error creating role:", error);
-    if (error.message && error.message.includes('duplicate key value violates unique constraint "role_pkey"')) {
+    if (error.message && error.message.includes('duplicate key value violates unique constraint')) {
       return res.status(409).json({
         statusCode: 409,
         status: "error",

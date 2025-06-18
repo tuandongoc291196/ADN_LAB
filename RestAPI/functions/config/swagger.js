@@ -85,6 +85,14 @@ For technical support or questions about this API, please contact:
       {
         name: 'Roles',
         description: 'Role management endpoints for user access control'
+      },
+      {
+        name: 'Time Slots',
+        description: 'Time slot management endpoints for appointment scheduling'
+      },
+      {
+        name: 'Bookings',
+        description: 'Booking management endpoints for appointment booking'
       }
     ],
     components: {
@@ -636,6 +644,205 @@ For technical support or questions about this API, please contact:
                   type: 'array',
                   items: {
                     $ref: '#/components/schemas/Role'
+                  }
+                }
+              }
+            }
+          }
+        },
+        TimeSlot: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              description: 'Time slot ID',
+              example: 'slot_12345'
+            },
+            date: {
+              type: 'string',
+              format: 'date',
+              description: 'Date of the time slot',
+              example: '2024-12-06'
+            },
+            time: {
+              type: 'string',
+              description: 'Time of the slot',
+              example: '09:00'
+            },
+            isAvailable: {
+              type: 'boolean',
+              description: 'Whether the time slot is available',
+              example: false
+            },
+            staffId: {
+              type: 'string',
+              description: 'Assigned staff ID',
+              example: 'staff_123'
+            },
+            serviceId: {
+              type: 'string',
+              description: 'Associated service ID',
+              example: 'service_123'
+            }
+          }
+        },
+        TimeSlotRequest: {
+          type: 'object',
+          required: ['timeSlotId'],
+          properties: {
+            timeSlotId: {
+              type: 'string',
+              description: 'Time slot ID to retrieve',
+              example: 'slot_12345'
+            }
+          }
+        },
+        TimeSlotsResponse: {
+          type: 'object',
+          properties: {
+            statusCode: {
+              type: 'number',
+              description: 'HTTP status code',
+              example: 200
+            },
+            status: {
+              type: 'string',
+              description: 'Response status',
+              example: 'success'
+            },
+            message: {
+              type: 'string',
+              description: 'Response message',
+              example: 'Time slots retrieved successfully'
+            },
+            data: {
+              type: 'object',
+              properties: {
+                timeSlots: {
+                  type: 'array',
+                  items: {
+                    $ref: '#/components/schemas/TimeSlot'
+                  }
+                }
+              }
+            }
+          }
+        },
+        Booking: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              description: 'Booking ID',
+              example: 'booking_12345'
+            },
+            userId: {
+              type: 'string',
+              description: 'User ID who made the booking',
+              example: 'user_12345'
+            },
+            serviceId: {
+              type: 'string',
+              description: 'Booked service ID',
+              example: 'service_123'
+            },
+            timeSlotId: {
+              type: 'string',
+              description: 'Booked time slot ID',
+              example: 'slot_12345'
+            },
+            status: {
+              type: 'string',
+              enum: ['pending', 'confirmed', 'completed', 'cancelled'],
+              description: 'Booking status',
+              example: 'confirmed'
+            },
+            bookingDate: {
+              type: 'string',
+              format: 'date-time',
+              description: 'When the booking was made',
+              example: '2024-12-06T10:30:00.000Z'
+            },
+            appointmentDate: {
+              type: 'string',
+              format: 'date',
+              description: 'Date of the appointment',
+              example: '2024-12-10'
+            },
+            notes: {
+              type: 'string',
+              description: 'Additional booking notes',
+              example: 'Special instructions for sample collection'
+            },
+            totalAmount: {
+              type: 'number',
+              description: 'Total booking amount',
+              example: 500000
+            }
+          }
+        },
+        BookingRequest: {
+          type: 'object',
+          required: ['bookingId'],
+          properties: {
+            bookingId: {
+              type: 'string',
+              description: 'Booking ID to retrieve',
+              example: 'booking_12345'
+            }
+          }
+        },
+        CreateBookingRequest: {
+          type: 'object',
+          required: ['userId', 'serviceId', 'timeSlotId'],
+          properties: {
+            userId: {
+              type: 'string',
+              description: 'User ID making the booking',
+              example: 'user_12345'
+            },
+            serviceId: {
+              type: 'string',
+              description: 'Service ID to book',
+              example: 'service_123'
+            },
+            timeSlotId: {
+              type: 'string',
+              description: 'Time slot ID to book',
+              example: 'slot_12345'
+            },
+            notes: {
+              type: 'string',
+              description: 'Optional booking notes',
+              example: 'Special instructions for sample collection'
+            }
+          }
+        },
+        BookingsResponse: {
+          type: 'object',
+          properties: {
+            statusCode: {
+              type: 'number',
+              description: 'HTTP status code',
+              example: 200
+            },
+            status: {
+              type: 'string',
+              description: 'Response status',
+              example: 'success'
+            },
+            message: {
+              type: 'string',
+              description: 'Response message',
+              example: 'Bookings retrieved successfully'
+            },
+            data: {
+              type: 'object',
+              properties: {
+                bookings: {
+                  type: 'array',
+                  items: {
+                    $ref: '#/components/schemas/Booking'
                   }
                 }
               }

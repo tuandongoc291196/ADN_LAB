@@ -369,37 +369,6 @@ query GetFeaturedServicesWithMethods @auth(level: USER) {
   }
 }
 
-# ====== KIT QUERIES ======
-
-# Get all kits
-query GetKits @auth(level: USER) {
-  kits(orderBy: { createdAt: DESC }) {
-    id
-    status
-    amount
-    createdAt
-  }
-}
-
-# Get available kits
-query GetAvailableKits @auth(level: USER) {
-  kits(where: { status: { eq: "available" } }) {
-    id
-    amount
-    createdAt
-  }
-}
-
-# Get kit by ID
-query GetKitById($kitId: String!) @auth(level: USER) {
-  kit(key: { id: $kitId }) {
-    id
-    status
-    amount
-    createdAt
-  }
-}
-
 # ====== TIME SLOT QUERIES ======
 
 # Get available time slots for a specific date
@@ -414,24 +383,6 @@ query GetAvailableTimeSlots($slotDate: Date!) @auth(level: USER) {
     endTime
     maxCapacity
     currentBookings
-    staff {
-      id
-      fullname
-    }
-    notes
-  }
-}
-
-# Get time slots by staff
-query GetTimeSlotsByStaff($staffId: String!) @auth(level: USER) {
-  timeSlots(where: { staffId: { eq: $staffId } }, orderBy: [{ slotDate: ASC }, { startTime: ASC }]) {
-    id
-    slotDate
-    startTime
-    endTime
-    maxCapacity
-    currentBookings
-    available
     notes
   }
 }
@@ -446,10 +397,6 @@ query GetTimeSlotById($timeSlotId: String!) @auth(level: USER) {
     maxCapacity
     currentBookings
     available
-    staff {
-      id
-      fullname
-    }
     notes
     createdAt
     updatedAt
@@ -468,9 +415,6 @@ query GetTimeSlotsInRange($startDate: Date!, $endDate: Date!) @auth(level: USER)
     maxCapacity
     currentBookings
     available
-    staff {
-      fullname
-    }
   }
 }
 
@@ -483,6 +427,15 @@ query GetUserBookings($userId: String!) @auth(level: USER) {
     status
     collectionMethod
     totalAmount
+    price
+    quantity
+    service {
+      id
+      title
+      description
+      category
+      serviceType
+    }
     timeSlot {
       slotDate
       startTime
@@ -490,10 +443,6 @@ query GetUserBookings($userId: String!) @auth(level: USER) {
     }
     staff {
       fullname
-    }
-    kit {
-      id
-      status
     }
     createdAt
     updatedAt
@@ -507,7 +456,17 @@ query GetMyBookings @auth(level: USER) {
     status
     collectionMethod
     totalAmount
+    price
+    quantity
     notes
+    service {
+      id
+      title
+      description
+      category
+      serviceType
+      duration
+    }
     timeSlot {
       slotDate
       startTime
@@ -515,10 +474,6 @@ query GetMyBookings @auth(level: USER) {
     }
     staff {
       fullname
-    }
-    kit {
-      id
-      status
     }
     createdAt
     updatedAt
@@ -540,21 +495,29 @@ query GetBookingById($bookingId: String!) @auth(level: USER) {
       id
       fullname
     }
-    kit {
+    service {
       id
-      status
-      amount
+      title
+      description
+      fullDescription
+      price
+      duration
+      category
+      serviceType
+      hasLegalValue
+      participants
+      requiredDocuments
+      procedures
     }
     timeSlot {
       slotDate
       startTime
       endTime
-      staff {
-        fullname
-      }
     }
     status
     collectionMethod
+    price
+    quantity
     notes
     totalAmount
     createdAt
@@ -573,6 +536,14 @@ query GetBookingsByStatus($status: String!) @auth(level: USER) {
     status
     collectionMethod
     totalAmount
+    price
+    quantity
+    service {
+      id
+      title
+      category
+      serviceType
+    }
     timeSlot {
       slotDate
       startTime
@@ -596,6 +567,14 @@ query GetStaffBookings($staffId: String!) @auth(level: USER) {
     status
     collectionMethod
     totalAmount
+    price
+    quantity
+    service {
+      id
+      title
+      category
+      serviceType
+    }
     timeSlot {
       slotDate
       startTime
@@ -603,47 +582,6 @@ query GetStaffBookings($staffId: String!) @auth(level: USER) {
     }
     notes
     createdAt
-  }
-}
-
-# ====== BOOKING ITEM QUERIES ======
-
-# Get booking items for a booking
-query GetBookingItems($bookingId: String!) @auth(level: USER) {
-  bookingItems(where: { bookingId: { eq: $bookingId } }) {
-    id
-    service {
-      id
-      title
-      description
-      price
-      duration
-      category
-    }
-    price
-    quantity
-    notes
-  }
-}
-
-# Get booking item by ID
-query GetBookingItemById($itemId: String!) @auth(level: USER) {
-  bookingItem(key: { id: $itemId }) {
-    id
-    booking {
-      id
-      user {
-        fullname
-      }
-    }
-    service {
-      id
-      title
-      price
-    }
-    price
-    quantity
-    notes
   }
 }
 
@@ -1065,7 +1003,7 @@ query GetBookingStats @auth(level: USER) {
 
 # Get service popularity
 query GetServicePopularity @auth(level: USER) {
-  bookingItems {
+  bookings {
     service {
       id
       title

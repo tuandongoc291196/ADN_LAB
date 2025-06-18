@@ -21,7 +21,7 @@ type User @table {
   roleId: String! @default(value: "0")
   role: Role! @ref(fields: "roleId")
   dailySlotCount: Int! @default(value: 0)
-  maxDailySlots: Int! @default(value: 3)  
+  maxDailySlots: Int! @default(value: 4)  
   createdAt: Timestamp! @default(expr: "request.time")
   lastLogin: Timestamp
 }
@@ -62,72 +62,38 @@ type ServiceCollectionMethod @table {
   createdAt: Timestamp! @default(expr: "request.time")
 }
 
-# Testing kits
-type Kit @table {
-  id: String! @col(name: "kit_id")
-  status: String! @default(value: "available")
-  amount: Int! @default(value: 1)
-  createdAt: Timestamp! @default(expr: "request.time")
-  updatedAt: Timestamp
-}
-
 # Appointment time slots
 type TimeSlot @table {
   id: String! @col(name: "time_slot_id")
   slotDate: Date!
   startTime: String!
   endTime: String!
-  maxCapacity: Int!
+  maxCapacity: Int
   currentBookings: Int! @default(value: 0)
   available: Boolean! @default(value: true)
-  
-  staffId: String
-  staff: User @ref(fields: "staffId")
-  
   notes: String
   createdAt: Timestamp! @default(expr: "request.time")
   updatedAt: Timestamp
 }
 
-# Service bookings
+# Service bookings (merged with BookingItem)
 type Booking @table {
   id: String! @col(name: "booking_id")
-  
   userId: String!
   user: User! @ref(fields: "userId")
-  
   staffId: String
   staff: User @ref(fields: "staffId")
-  
-  kitId: String
-  kit: Kit @ref(fields: "kitId")
-  
   timeSlotId: String
   timeSlot: TimeSlot @ref(fields: "timeSlotId")
-  
+  serviceId: String!
+  service: DnaService! @ref(fields: "serviceId")
   status: String! @default(value: "pending")
   bookingCreatedAt: Timestamp! @default(expr: "request.time")
   collectionMethod: String!
-  notes: String
-  totalAmount: Float!
-  
-  createdAt: Timestamp! @default(expr: "request.time")
-  updatedAt: Timestamp
-}
-
-# Junction table for booking and services
-type BookingItem @table {
-  id: String! @col(name: "item_id")
-  
-  bookingId: String!
-  booking: Booking! @ref(fields: "bookingId")
-  
-  serviceId: String!
-  service: DnaService! @ref(fields: "serviceId")
-  
   price: Float!
   quantity: Int! @default(value: 1)
   notes: String
+  totalAmount: Float!
   createdAt: Timestamp! @default(expr: "request.time")
   updatedAt: Timestamp
 }
@@ -192,7 +158,8 @@ type Payment @table {
   transactionId: String
   status: String! @default(value: "pending")
   paymentDate: Date
-  refundDetail: String
+  refundDetail: String!
+  otherDetails: [String] @default(value: [])
   createdAt: Timestamp! @default(expr: "request.time")
   updatedAt: Timestamp
 }

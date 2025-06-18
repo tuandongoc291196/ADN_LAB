@@ -1,35 +1,4 @@
 const { dataConnect } = require("../../config/firebase.js");
-
-/**
- * @swagger
- * /services&methods:
- *   get:
- *     tags:
- *       - Services
- *     summary: Get all services and collection methods
- *     description: Retrieves all DNA services along with their available collection methods (requires authentication)
- *     security:
- *       - BearerAuth: []
- *     responses:
- *       200:
- *         description: Services and methods retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ServicesResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-
-/**
- * Get all services with their collection methods
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- */
 const getAllServiceAndMethods = async (req, res) => {
   try {
     const GET_SERVICES_AND_METHODS_QUERY = "query GetServicesWithCollectionMethods @auth(level: USER) { dnaServices(orderBy: {title: ASC}) { id title description fullDescription price duration category serviceType hasLegalValue icon participants requiredDocuments procedures featured createdAt updatedAt } serviceCollectionMethods { id serviceId methodId methodTitle methodDescription methodIcon methodColor methodNote methodProcess allowedFor createdAt } }";
@@ -62,50 +31,6 @@ const getAllServiceAndMethods = async (req, res) => {
   }
 };
 
-/**
- * @swagger
- * /services&methods:
- *   post:
- *     tags:
- *       - Services
- *     summary: Get a specific service with its collection methods
- *     description: Retrieves detailed information about a specific DNA service and its available collection methods (requires authentication)
- *     security:
- *       - BearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/ServiceRequest'
- *           example:
- *             serviceId: "service_123"
- *     responses:
- *       200:
- *         description: Service and methods retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ServicesResponse'
- *       400:
- *         description: Bad request - Service ID is required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-
-/**
- * Get a specific service with its collection methods
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- */
 const getOneServiceAndMethods = async (req, res) => {
   try {
     const {serviceId} = req.body;
@@ -115,6 +40,18 @@ const getOneServiceAndMethods = async (req, res) => {
         statusCode: 400,
         status: "error",
         message: "serviceId is required",
+      });
+    }
+    
+    console.log("Checking if service exists before update, serviceId:", serviceId);
+    const existingService = await checkServiceExists(serviceId);
+    console.log("Service existence check result:", existingService);
+    if (!existingService) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "Service not found",
+        error: "Service with the provided ID does not exist",
       });
     }
 
@@ -147,7 +84,49 @@ const getOneServiceAndMethods = async (req, res) => {
   }
 };
 
+const checkServiceExists = async (serviceId) => {
+  try {
+    const GET_ONE_SERVICE_QUERY = `
+      query GetServiceById($serviceId: String!) @auth(level: USER) {
+        dnaService(key: {id: $serviceId}) {
+          id
+          title
+          description
+          fullDescription
+          price
+          duration
+          category
+          serviceType
+          hasLegalValue
+          icon
+          participants
+          requiredDocuments
+          procedures
+          featured
+          createdAt
+          updatedAt
+        }
+      }
+    `;
+
+    const variables = {
+      serviceId: serviceId,
+    };
+
+    const response = await dataConnect.executeGraphql(GET_ONE_SERVICE_QUERY, {
+      variables: variables,
+    }); 
+    
+    const responseData = response.data;
+    return responseData.dnaService;
+  } catch (error) {
+    console.error("Error checking if service exists:", error);
+    throw error;
+  }
+};
+
 module.exports = {
   getAllServiceAndMethods,
   getOneServiceAndMethods,
+  checkServiceExists
 };

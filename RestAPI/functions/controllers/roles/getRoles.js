@@ -2,7 +2,6 @@ const { dataConnect } = require("../../config/firebase.js");
 
 const getAllRoles = async (req, res) => {
   try {
-
     const GET_ROLES_QUERY = `
       query GetRoles @auth(level: USER) {
         roles {
@@ -104,7 +103,6 @@ const getOneRole = async (req, res) => {
   }
 }
 
-// Helper function to check if a role exists (for internal use)
 const checkRoleExists = async (roleId) => {
   try {
     const GET_ONE_ROLE_QUERY = `

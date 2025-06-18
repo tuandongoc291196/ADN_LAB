@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://app-bggwpxm32a-uc.a.run.app';
+const API_BASE_URL = 'https://app-bggwpxm32a-uc.a.run.app';
 
 // Lấy tất cả dịch vụ và phương thức
 export const getAllServicesAndMethods = async () => {
