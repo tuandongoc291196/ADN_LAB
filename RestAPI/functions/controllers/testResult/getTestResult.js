@@ -1,8 +1,6 @@
 const { dataConnect } = require("../../config/firebase.js");
 
-class GetTestResult {
-    //GET /api/test-results/resultId(result-001)
-  async getTestResultById(req, res) {
+const getTestResultById = async (req, res) => {
     try {
       const { resultId } = req.params;
 
@@ -84,7 +82,7 @@ class GetTestResult {
   }
 
   //GET /api/test-results?status(status=completed)
-  async getTestResultsByStatus(req, res) {
+  const getTestResultsByStatus = async (req, res) => {
     try {
       const { status } = req.query;
 
@@ -144,7 +142,7 @@ class GetTestResult {
   }
 
   //GET /api/test-results/user/userId(user-001)
-  async getUserTestResults(req, res) {
+  const getUserTestResults = async (req, res) => {
     try {
       const { userId } = req.params;
 
@@ -198,7 +196,7 @@ class GetTestResult {
   }
 
   //GET /api/test-results/booking/bookingId(booking-001)
-  async getBookingTestResults(req, res) {
+  const getBookingTestResults = async (req, res) => {
     try {
       const { bookingId } = req.params;
 
@@ -260,6 +258,10 @@ class GetTestResult {
       });
     }
   }
-}
 
-module.exports = GetTestResult;
+module.exports = {
+  getTestResultById,
+  getTestResultsByStatus,
+  getUserTestResults,
+  getBookingTestResults
+};

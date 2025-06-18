@@ -5,11 +5,27 @@ const createSample = async (req, res) => {
     const { id, bookingId, serviceId, staffId, collectionDate, notes } = req.body;
 
     // Validate input
-    if (!id || !bookingId || !serviceId) {
+    if (!id) {
       return res.status(400).json({
         statusCode: 400,
         status: "error",
-        message: "Sample ID, Booking ID, and Service ID are required",
+        message: "Sample ID is required",
+      });
+    }
+
+    if (!bookingId) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "Booking ID is required",
+      });
+    }
+
+    if (!serviceId) { 
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "Service ID is required",
       });
     }
 

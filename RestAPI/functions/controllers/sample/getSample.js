@@ -1,7 +1,6 @@
 const { dataConnect } = require("../../config/firebase.js");
 
-class GetSample {
-  async getSampleById(req, res) {
+const getSampleById = async (req, res) => {
     try {
       const { sampleId } = req.params;
       
@@ -69,7 +68,7 @@ class GetSample {
     }
   }
   
-  async getSamplesByStatus(req, res) {
+  const getSamplesByStatus = async (req, res) => {
     try {
       const { status } = req.query;
       
@@ -127,7 +126,7 @@ class GetSample {
     }
   }
   
-  async getBookingSamples(req, res) {
+  const getBookingSamples = async (req, res) => {
     try {
       const { bookingId } = req.params;
       
@@ -179,7 +178,7 @@ class GetSample {
     }
   }
   
-  async getStaffSamples(req, res) {
+  const getStaffSamples = async (req, res) => {
     try {
       const { staffId } = req.params;
       
@@ -232,5 +231,10 @@ class GetSample {
       });
     }
   }
-}
-module.exports = GetSample;
+
+module.exports = {
+  getSampleById,
+  getSamplesByStatus,
+  getBookingSamples,
+  getStaffSamples
+};

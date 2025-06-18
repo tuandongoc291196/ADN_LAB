@@ -2,6 +2,8 @@ const { dataConnect } = require("../../config/firebase.js");
 
 const getAllBlogs = async (req, res) => {
   try {
+    const { limit, offset } = req.query;
+
     const variables = {
       "limit": 20,
       "offset": 0
