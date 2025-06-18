@@ -14,10 +14,54 @@ Welcome to the ADN LAB API documentation. This API provides comprehensive access
 
 ## Features
 
-- **Payment Processing**: Support for multiple payment gateways (MOMO, VNPAY, ZALOPAY)
-- **User Management**: Complete user account and profile management
-- **DNA Services**: Management of DNA testing services and collection methods
-- **Authentication**: Secure access control with role-based permissions
+- **🧬 DNA Testing Services**: Comprehensive DNA analysis and testing services
+- **💳 Payment Processing**: Support for multiple payment gateways (MOMO, VNPAY, ZALOPAY)
+- **👥 User Management**: Complete user account and profile management
+- **🔐 Role-Based Access**: Secure access control with role-based permissions
+- **📅 Appointment Booking**: Schedule and manage DNA testing appointments
+- **⏰ Time Slot Management**: Efficient time slot allocation and tracking
+
+## Quick Start
+
+1. **Authentication**: Obtain a JWT token through Firebase Authentication
+2. **Base URL**: Use the appropriate base URL for your environment
+3. **Headers**: Include \`Authorization: Bearer <token>\` for authenticated endpoints
+4. **Content-Type**: Use \`application/json\` for request bodies
+
+## Payment Integration
+
+This API supports three major payment gateways in Vietnam:
+- **MOMO**: Mobile money payments
+- **VNPAY**: Vietnam's leading payment gateway
+- **ZALOPAY**: Digital wallet payments
+
+## Rate Limiting
+
+- **Authenticated Users**: 1000 requests per hour
+- **Public Endpoints**: 100 requests per hour
+
+## Response Format
+
+All API responses follow a consistent format:
+\`\`\`json
+{
+  "statusCode": 200,
+  "status": "success",
+  "message": "Operation completed successfully",
+  "data": { ... }
+}
+\`\`\`
+
+## Error Handling
+
+Error responses include detailed information:
+\`\`\`json
+{
+  "statusCode": 400,
+  "message": "Invalid request",
+  "error": "Detailed error description"
+}
+\`\`\`
 
 ## Authentication
 
@@ -843,6 +887,114 @@ For technical support or questions about this API, please contact:
                   type: 'array',
                   items: {
                     $ref: '#/components/schemas/Booking'
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      responses: {
+        BadRequest: {
+          description: 'Bad request - Invalid input parameters',
+          content: {
+            'application/json': {
+              schema: {
+                $ref: '#/components/schemas/Error'
+              }
+            }
+          }
+        },
+        Unauthorized: {
+          description: 'Unauthorized - Invalid or missing authentication token',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  statusCode: {
+                    type: 'number',
+                    example: 401
+                  },
+                  message: {
+                    type: 'string',
+                    example: 'Unauthorized access'
+                  },
+                  error: {
+                    type: 'string',
+                    example: 'Invalid or missing authentication token'
+                  }
+                }
+              }
+            }
+          }
+        },
+        NotFound: {
+          description: 'Resource not found',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  statusCode: {
+                    type: 'number',
+                    example: 404
+                  },
+                  message: {
+                    type: 'string',
+                    example: 'Resource not found'
+                  },
+                  error: {
+                    type: 'string',
+                    example: 'The requested resource does not exist'
+                  }
+                }
+              }
+            }
+          }
+        },
+        Forbidden: {
+          description: 'Forbidden - Insufficient permissions',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  statusCode: {
+                    type: 'number',
+                    example: 403
+                  },
+                  message: {
+                    type: 'string',
+                    example: 'Forbidden access'
+                  },
+                  error: {
+                    type: 'string',
+                    example: 'Insufficient permissions to access this resource'
+                  }
+                }
+              }
+            }
+          }
+        },
+        InternalServerError: {
+          description: 'Internal server error',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  statusCode: {
+                    type: 'number',
+                    example: 500
+                  },
+                  message: {
+                    type: 'string',
+                    example: 'Internal server error'
+                  },
+                  error: {
+                    type: 'string',
+                    example: 'An unexpected error occurred'
                   }
                 }
               }

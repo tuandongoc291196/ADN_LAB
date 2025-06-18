@@ -37,7 +37,7 @@ const addBooking = async (req, res) => {
       return res.status(400).json({
         statusCode: 400,
         status: "error",
-        message: "Slot date is required",
+        message: "slotDate is required",
       });
     }
 
@@ -45,7 +45,7 @@ const addBooking = async (req, res) => {
       return res.status(400).json({
         statusCode: 400,
         status: "error",
-        message: "Start time is required",
+        message: "startTime is required",
       });
     }
 
@@ -53,7 +53,7 @@ const addBooking = async (req, res) => {
       return res.status(400).json({
         statusCode: 400,
         status: "error",
-        message: "End time is required",
+        message: "endTime is required",
       });
     }
 
