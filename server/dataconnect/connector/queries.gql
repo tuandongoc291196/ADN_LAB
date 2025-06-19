@@ -55,7 +55,6 @@ query GetUser @auth(level: USER) {
       description
     }
     dailySlotCount
-    maxDailySlots
     createdAt
     lastLogin
   }
@@ -80,7 +79,6 @@ query GetUserById($userId: String!) @auth(level: USER) {
       description
     }
     dailySlotCount
-    maxDailySlots
     createdAt
     lastLogin
   }
@@ -139,24 +137,79 @@ query GetStaffMembers @auth(level: USER) {
   }
 }
 
-# ====== DNA SERVICE QUERIES ======
+# ====== SERVICE QUERIES ======
+
+# Get all service categories
+query GetServiceCategories @auth(level: USER) {
+  serviceCategories(orderBy: { name: ASC }) {
+    id
+    name
+    description
+    hasLegalValue
+    icon
+    color
+    createdAt
+    updatedAt
+  }
+}
+
+# Get service category by ID
+query GetServiceCategoryById($categoryId: String!) @auth(level: USER) {
+  serviceCategory(key: { id: $categoryId }) {
+    id
+    name
+    description
+    hasLegalValue
+    icon
+    color
+    createdAt
+    updatedAt
+  }
+}
+
+# Get all methods
+query GetMethods @auth(level: USER) {
+  methods(orderBy: { name: ASC }) {
+    id
+    name
+    description
+    price
+    createdAt
+    updatedAt
+  }
+}
+
+# Get method by ID
+query GetMethodById($methodId: String!) @auth(level: USER) {
+  method(key: { id: $methodId }) {
+    id
+    name
+    description
+    price
+    createdAt
+    updatedAt
+  }
+}
 
 # Get all services
-query GetDnaServices @auth(level: USER) {
-  dnaServices(orderBy: { title: ASC }) {
+query GetServices @auth(level: USER) {
+  services(orderBy: { title: ASC }) {
     id
     title
     description
     fullDescription
     price
     duration
-    category
-    serviceType
-    hasLegalValue
+    categoryId
+    category {
+      id
+      name
+      description
+      hasLegalValue
+      icon
+      color
+    }
     icon
-    participants
-    requiredDocuments
-    procedures
     featured
     createdAt
     updatedAt
@@ -164,21 +217,24 @@ query GetDnaServices @auth(level: USER) {
 }
 
 # Get service by ID
-query GetDnaServiceById($serviceId: String!) @auth(level: USER) {
-  dnaService(key: { id: $serviceId }) {
+query GetServiceById($serviceId: String!) @auth(level: USER) {
+  service(key: { id: $serviceId }) {
     id
     title
     description
     fullDescription
     price
     duration
-    category
-    serviceType
-    hasLegalValue
+    categoryId
+    category {
+      id
+      name
+      description
+      hasLegalValue
+      icon
+      color
+    }
     icon
-    participants
-    requiredDocuments
-    procedures
     featured
     createdAt
     updatedAt
@@ -186,21 +242,20 @@ query GetDnaServiceById($serviceId: String!) @auth(level: USER) {
 }
 
 # Get services by category
-query GetDnaServicesByCategory($category: String!) @auth(level: USER) {
-  dnaServices(where: { category: { eq: $category } }, orderBy: { title: ASC }) {
+query GetServicesByCategory($categoryId: String!) @auth(level: USER) {
+  services(where: { categoryId: { eq: $categoryId } }, orderBy: { title: ASC }) {
     id
     title
     description
     fullDescription
     price
     duration
-    category
-    serviceType
-    hasLegalValue
+    category {
+      id
+      name
+      hasLegalValue
+    }
     icon
-    participants
-    requiredDocuments
-    procedures
     featured
     createdAt
     updatedAt
@@ -208,182 +263,131 @@ query GetDnaServicesByCategory($category: String!) @auth(level: USER) {
 }
 
 # Get featured services
-query GetFeaturedDnaServices @auth(level: USER) {
-  dnaServices(where: { featured: { eq: true } }, orderBy: { title: ASC }) {
+query GetFeaturedServices @auth(level: USER) {
+  services(where: { featured: { eq: true } }, orderBy: { title: ASC }) {
     id
     title
     description
     fullDescription
     price
     duration
-    category
-    serviceType
-    hasLegalValue
+    category {
+      id
+      name
+      hasLegalValue
+    }
     icon
-    participants
-    requiredDocuments
-    procedures
     featured
     createdAt
     updatedAt
   }
 }
 
-# Get service collection methods for a service
-query GetServiceCollectionMethods($serviceId: String!) @auth(level: USER) {
-  serviceCollectionMethods(where: { serviceId: { eq: $serviceId } }) {
+# Get service methods for a service
+query GetServiceMethods($serviceId: String!) @auth(level: USER) {
+  serviceMethods(where: { serviceId: { eq: $serviceId } }) {
     id
     serviceId
     methodId
-    methodTitle
-    methodDescription
-    methodIcon
-    methodColor
-    methodNote
-    methodProcess
-    allowedFor
-    createdAt
     service {
       id
       title
     }
+    method {
+      id
+      name
+      description
+      price
+    }
+    createdAt
+    updatedAt
   }
 }
 
-# Get services by collection method
-query GetServicesByCollectionMethod($methodId: String!) @auth(level: USER) {
-  serviceCollectionMethods(where: { methodId: { eq: $methodId } }) {
+# Get methods for a service
+query GetMethodsForService($serviceId: String!) @auth(level: USER) {
+  serviceMethods(where: { serviceId: { eq: $serviceId } }) {
     id
-    methodId
-    methodTitle
+    method {
+      id
+      name
+      description
+      price
+    }
+    createdAt
+  }
+}
+
+# Get services for a method
+query GetServicesForMethod($methodId: String!) @auth(level: USER) {
+  serviceMethods(where: { methodId: { eq: $methodId } }) {
+    id
     service {
       id
       title
       description
       price
       duration
-      category
-      serviceType
-      hasLegalValue
+      category {
+        name
+        hasLegalValue
+      }
       icon
       featured
     }
+    createdAt
   }
 }
 
-# Get complete service with collection methods (client-side join)
-query GetDnaServiceWithMethods($serviceId: String!) @auth(level: USER) {
-  dnaService(key: { id: $serviceId }) {
+# Get complete service with methods
+query GetServiceWithMethods($serviceId: String!) @auth(level: USER) {
+  service(key: { id: $serviceId }) {
     id
     title
     description
     fullDescription
     price
     duration
-    category
-    serviceType
-    hasLegalValue
+    category {
+      id
+      name
+      description
+      hasLegalValue
+      icon
+      color
+    }
     icon
-    participants
-    requiredDocuments
-    procedures
     featured
     createdAt
     updatedAt
   }
-  serviceCollectionMethods(where: { serviceId: { eq: $serviceId } }) {
+  serviceMethods(where: { serviceId: { eq: $serviceId } }) {
     id
-    methodId
-    methodTitle
-    methodDescription
-    methodIcon
-    methodColor
-    methodNote
-    methodProcess
-    allowedFor
-    createdAt
-  }
-}
-
-# Get all services with their collection methods (using GraphQL relationship)
-query GetServicesWithCollectionMethods @auth(level: USER) {
-  dnaServices(orderBy: { title: ASC }) {
-    id
-    title
-    description
-    fullDescription
-    price
-    duration
-    category
-    serviceType
-    hasLegalValue
-    icon
-    participants
-    requiredDocuments
-    procedures
-    featured
-    createdAt
-    updatedAt
-  }
-  serviceCollectionMethods {
-    id
-    serviceId
-    methodId
-    methodTitle
-    methodDescription
-    methodIcon
-    methodColor
-    methodNote
-    methodProcess
-    allowedFor
-    createdAt
-  }
-}
-
-# Get featured services with their collection methods
-query GetFeaturedServicesWithMethods @auth(level: USER) {
-  dnaServices(where: { featured: { eq: true } }, orderBy: { title: ASC }) {
-    id
-    title
-    description
-    price
-    duration
-    category
-    serviceType
-    hasLegalValue
-    icon
-    featured
-  }
-  serviceCollectionMethods {
-    id
-    serviceId
-    methodId
-    methodTitle
-    methodDescription
-    methodIcon
-    methodColor
-    methodNote
-    methodProcess
-    allowedFor
+    method {
+      id
+      name
+      description
+      price
+    }
     createdAt
   }
 }
 
 # ====== TIME SLOT QUERIES ======
 
-# Get available time slots for a specific date
-query GetAvailableTimeSlots($slotDate: Date!) @auth(level: USER) {
+# Get time slots for a specific date
+query GetTimeSlots($slotDate: Date!) @auth(level: USER) {
   timeSlots(where: { 
     slotDate: { eq: $slotDate }
-    available: { eq: true }
   }, orderBy: { startTime: ASC }) {
     id
     slotDate
     startTime
     endTime
-    maxCapacity
     currentBookings
     notes
+    createdAt
+    updatedAt
   }
 }
 
@@ -394,9 +398,7 @@ query GetTimeSlotById($timeSlotId: String!) @auth(level: USER) {
     slotDate
     startTime
     endTime
-    maxCapacity
     currentBookings
-    available
     notes
     createdAt
     updatedAt
@@ -412,9 +414,9 @@ query GetTimeSlotsInRange($startDate: Date!, $endDate: Date!) @auth(level: USER)
     slotDate
     startTime
     endTime
-    maxCapacity
     currentBookings
-    available
+    notes
+    createdAt
   }
 }
 
@@ -424,17 +426,23 @@ query GetTimeSlotsInRange($startDate: Date!, $endDate: Date!) @auth(level: USER)
 query GetUserBookings($userId: String!) @auth(level: USER) {
   bookings(where: { userId: { eq: $userId } }, orderBy: { createdAt: DESC }) {
     id
-    status
-    collectionMethod
     totalAmount
-    price
-    quantity
-    service {
+    serviceMethod {
       id
-      title
-      description
-      category
-      serviceType
+      service {
+        id
+        title
+        description
+        category {
+          name
+        }
+      }
+      method {
+        id
+        name
+        description
+        price
+      }
     }
     timeSlot {
       slotDate
@@ -444,6 +452,7 @@ query GetUserBookings($userId: String!) @auth(level: USER) {
     staff {
       fullname
     }
+    bookingCreatedAt
     createdAt
     updatedAt
   }
@@ -453,19 +462,24 @@ query GetUserBookings($userId: String!) @auth(level: USER) {
 query GetMyBookings @auth(level: USER) {
   bookings(where: { userId: { eq_expr: "auth.uid" } }, orderBy: { createdAt: DESC }) {
     id
-    status
-    collectionMethod
     totalAmount
-    price
-    quantity
-    notes
-    service {
+    serviceMethod {
       id
-      title
-      description
-      category
-      serviceType
-      duration
+      service {
+        id
+        title
+        description
+        duration
+        category {
+          name
+        }
+      }
+      method {
+        id
+        name
+        description
+        price
+      }
     }
     timeSlot {
       slotDate
@@ -475,6 +489,7 @@ query GetMyBookings @auth(level: USER) {
     staff {
       fullname
     }
+    bookingCreatedAt
     createdAt
     updatedAt
   }
@@ -495,67 +510,53 @@ query GetBookingById($bookingId: String!) @auth(level: USER) {
       id
       fullname
     }
-    service {
+    serviceMethod {
       id
-      title
-      description
-      fullDescription
-      price
-      duration
-      category
-      serviceType
-      hasLegalValue
-      participants
-      requiredDocuments
-      procedures
+      service {
+        id
+        title
+        description
+        fullDescription
+        price
+        duration
+        category {
+          id
+          name
+          description
+          hasLegalValue
+        }
+      }
+      method {
+        id
+        name
+        description
+        price
+      }
     }
     timeSlot {
       slotDate
       startTime
       endTime
     }
-    status
-    collectionMethod
-    price
-    quantity
-    notes
     totalAmount
+    bookingCreatedAt
     createdAt
     updatedAt
   }
 }
 
-# Get bookings by status
-query GetBookingsByStatus($status: String!) @auth(level: USER) {
-  bookings(where: { status: { eq: $status } }, orderBy: { createdAt: DESC }) {
+# Get booking history for a booking
+query GetBookingHistory($bookingId: String!) @auth(level: USER) {
+  bookingHistories(where: { bookingId: { eq: $bookingId } }, orderBy: { createdAt: DESC }) {
     id
-    user {
-      fullname
-      email
-    }
+    description
     status
-    collectionMethod
-    totalAmount
-    price
-    quantity
-    service {
-      id
-      title
-      category
-      serviceType
-    }
-    timeSlot {
-      slotDate
-      startTime
-    }
-    staff {
-      fullname
-    }
     createdAt
+    updatedAt
   }
 }
 
-# Get staff's assigned bookings
+# Get bookings by staff member
 query GetStaffBookings($staffId: String!) @auth(level: USER) {
   bookings(where: { staffId: { eq: $staffId } }, orderBy: { createdAt: DESC }) {
     id
@@ -564,23 +565,26 @@ query GetStaffBookings($staffId: String!) @auth(level: USER) {
       email
       phone
     }
-    status
-    collectionMethod
     totalAmount
-    price
-    quantity
-    service {
-      id
-      title
-      category
-      serviceType
+    serviceMethod {
+      service {
+        id
+        title
+        category {
+          name
+        }
+      }
+      method {
+        name
+        price
+      }
     }
     timeSlot {
       slotDate
       startTime
       endTime
     }
-    notes
+    bookingCreatedAt
     createdAt
   }
 }
@@ -591,9 +595,15 @@ query GetStaffBookings($staffId: String!) @auth(level: USER) {
 query GetBookingSamples($bookingId: String!) @auth(level: USER) {
   samples(where: { bookingId: { eq: $bookingId } }) {
     id
-    service {
-      title
-      category
+    booking {
+      serviceMethod {
+        service {
+          title
+          category {
+            name
+          }
+        }
+      }
     }
     staff {
       fullname
@@ -601,6 +611,8 @@ query GetBookingSamples($bookingId: String!) @auth(level: USER) {
     collectionDate
     status
     notes
+    createdAt
+    updatedAt
   }
 }
 
@@ -613,10 +625,14 @@ query GetSamplesByStatus($status: String!) @auth(level: USER) {
       user {
         fullname
       }
-    }
-    service {
-      title
-      category
+      serviceMethod {
+        service {
+          title
+          category {
+            name
+          }
+        }
+      }
     }
     staff {
       fullname
@@ -624,6 +640,7 @@ query GetSamplesByStatus($status: String!) @auth(level: USER) {
     collectionDate
     status
     notes
+    createdAt
   }
 }
 
@@ -637,11 +654,18 @@ query GetSampleById($sampleId: String!) @auth(level: USER) {
         fullname
         email
       }
-    }
-    service {
-      title
-      category
-      description
+      serviceMethod {
+        service {
+          title
+          description
+          category {
+            name
+          }
+        }
+        method {
+          name
+        }
+      }
     }
     staff {
       fullname
@@ -649,6 +673,8 @@ query GetSampleById($sampleId: String!) @auth(level: USER) {
     collectionDate
     status
     notes
+    createdAt
+    updatedAt
   }
 }
 
@@ -660,14 +686,19 @@ query GetStaffSamples($staffId: String!) @auth(level: USER) {
       user {
         fullname
       }
-    }
-    service {
-      title
-      category
+      serviceMethod {
+        service {
+          title
+          category {
+            name
+          }
+        }
+      }
     }
     collectionDate
     status
     notes
+    createdAt
   }
 }
 
@@ -680,20 +711,21 @@ query GetBookingTestResults($bookingId: String!) @auth(level: USER) {
     sample {
       id
     }
-    service {
-      title
+    booking {
+      serviceMethod {
+        service {
+          title
+        }
+      }
     }
     staff {
-      fullname
-    }
-    verifier {
       fullname
     }
     testDate
     reportDate
     status
-    reportUrl
-    notes
+    createdAt
+    updatedAt
   }
 }
 
@@ -707,27 +739,29 @@ query GetTestResultById($resultId: String!) @auth(level: USER) {
         fullname
         email
       }
+      serviceMethod {
+        service {
+          title
+          description
+        }
+        method {
+          name
+        }
+      }
     }
     sample {
       id
       collectionDate
     }
-    service {
-      title
-      description
-    }
     staff {
-      fullname
-    }
-    verifier {
       fullname
     }
     testDate
     reportDate
     resultData
     status
-    reportUrl
-    notes
+    createdAt
+    updatedAt
   }
 }
 
@@ -739,15 +773,18 @@ query GetTestResultsByStatus($status: String!) @auth(level: USER) {
       user {
         fullname
       }
-    }
-    service {
-      title
+      serviceMethod {
+        service {
+          title
+        }
+      }
     }
     staff {
       fullname
     }
     testDate
     status
+    createdAt
   }
 }
 
@@ -757,13 +794,17 @@ query GetUserTestResults($userId: String!) @auth(level: USER) {
     booking: { userId: { eq: $userId } }
   }, orderBy: { testDate: DESC }) {
     id
-    service {
-      title
+    booking {
+      serviceMethod {
+        service {
+          title
+        }
+      }
     }
     testDate
     reportDate
     status
-    reportUrl
+    createdAt
   }
 }
 
@@ -775,10 +816,11 @@ query GetBookingPayment($bookingId: String!) @auth(level: USER) {
     id
     amount
     paymentMethod
-    transactionId
     status
     paymentDate
     refundDetail
+    createdAt
+    updatedAt
   }
 }
 
@@ -796,10 +838,11 @@ query GetPaymentById($paymentId: String!) @auth(level: USER) {
     }
     amount
     paymentMethod
-    transactionId
     status
     paymentDate
     refundDetail
+    createdAt
+    updatedAt
   }
 }
 
@@ -814,8 +857,8 @@ query GetPaymentsByStatus($status: String!) @auth(level: USER) {
     }
     amount
     paymentMethod
-    transactionId
     paymentDate
+    createdAt
   }
 }
 
@@ -829,6 +872,7 @@ query GetUserPayments($userId: String!) @auth(level: USER) {
     paymentMethod
     status
     paymentDate
+    createdAt
   }
 }
 
@@ -995,7 +1039,6 @@ query GetNotificationById($notificationId: String!) @auth(level: USER) {
 query GetBookingStats @auth(level: USER) {
   bookings {
     id
-    status
     totalAmount
     createdAt
   }
@@ -1004,16 +1047,17 @@ query GetBookingStats @auth(level: USER) {
 # Get service popularity
 query GetServicePopularity @auth(level: USER) {
   bookings {
-    service {
-      id
-      title
+    serviceMethod {
+      service {
+        id
+        title
+      }
     }
-    quantity
   }
 }
 
 # Get monthly revenue
-query GetMonthlyRevenue($year: Int!, $month: Int!, $startDate: Date!, $endDate: Date!) @auth(level: USER) {
+query GetMonthlyRevenue($startDate: Date!, $endDate: Date!) @auth(level: USER) {
   payments(where: { 
     status: { eq: "completed" }
     paymentDate: { 
@@ -1026,40 +1070,20 @@ query GetMonthlyRevenue($year: Int!, $month: Int!, $startDate: Date!, $endDate: 
   }
 }
 
-# Get DNA services by sample type (convenience query)
-query GetDnaServicesBySampleType($sampleType: String!) @auth(level: USER) {
-  dnaServices(where: { 
-    serviceType: { eq: $sampleType }
+# Get services by category (convenience query)
+query GetServicesByCategory($categoryId: String!) @auth(level: USER) {
+  services(where: { 
+    categoryId: { eq: $categoryId }
   }, orderBy: { title: ASC }) {
     id
     title
     description
     price
     duration
-    category
-    serviceType
-    hasLegalValue
-    featured
-  }
-}
-
-# Get at-home collection services
-query GetAtHomeServices @auth(level: USER) {
-  serviceCollectionMethods(where: { 
-    methodTitle: { contains: "At Home" }
-  }) {
-    id
-    service {
-      id
-      title
-      description
-      price
-      duration
-      category
-      featured
+    category {
+      name
+      hasLegalValue
     }
-    methodTitle
-    methodDescription
-    methodIcon
+    featured
   }
 }
