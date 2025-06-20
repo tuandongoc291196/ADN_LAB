@@ -23,6 +23,14 @@ const {getAllBookings, getOneBooking} = require('./controllers/bookings/getBooki
 const {addPayment} = require('./controllers/payments/addPayment');
 
 const {getUnavailableTimeSlots, getOneTimeSlot} = require('./controllers/timeSlots/getTimeSlot');
+
+// Blog Controllers
+const { addBlog } = require('./controllers/blogs/addBlog');
+const { getAllBlogs } = require('./controllers/blogs/getBlog');
+const { getBlogById } = require('./controllers/blogs/getBlogById');
+const { updateBlog } = require('./controllers/blogs/updateBlog');
+const { deleteBlog } = require('./controllers/blogs/deleteBlog');
+
 const app = express();
 
 app.use(express.json());
@@ -68,6 +76,13 @@ app.post('/bookings', getOneBooking);
 app.post('/bookings/add', addBooking);
 
 app.post('/payments', addPayment);
+
+// Blog Routes
+app.get('/blogs', getAllBlogs);
+app.get('/blogs/:id', getBlogById);
+app.post('/blogs/add', addBlog);
+app.put('/blogs/:id', updateBlog);
+app.delete('/blogs/:id', deleteBlog);
 
 /**
  * @swagger

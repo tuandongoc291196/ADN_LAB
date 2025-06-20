@@ -9,6 +9,9 @@ import MainNavbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './components/Home';
 import About from './components/About';
+import Guides from './components/Guides';
+import Blog from './components/Blog';
+import BlogDetail from './components/BlogDetail';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import Reset from './components/auth/Reset';
@@ -135,6 +138,9 @@ function App() {
             {/* ======================== PUBLIC ROUTES ======================== */}
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
+            <Route path="/guides" element={<Guides />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:id" element={<BlogDetail />} />
             
             {/* Authentication Routes */}
             <Route path="/login" element={<Login setUser={setUser} />} />
@@ -180,9 +186,6 @@ function App() {
             
             {/* Information & Library Pages */}
             <Route path="/library" element={<div className="container py-5"><h2>Thư viện ADN</h2><p>Thư viện kiến thức đang được phát triển...</p></div>} />
-            <Route path="/library/technology" element={<div className="container py-5"><h2>Công nghệ ADN</h2><p>Nội dung đang được cập nhật...</p></div>} />
-            <Route path="/library/samples" element={<div className="container py-5"><h2>Mẫu xét nghiệm</h2><p>Nội dung đang được cập nhật...</p></div>} />
-            <Route path="/library/guides" element={<div className="container py-5"><h2>Hướng dẫn</h2><p>Nội dung đang được cập nhật...</p></div>} />
             
             {/* Business Pages */}
             <Route path="/prices" element={
