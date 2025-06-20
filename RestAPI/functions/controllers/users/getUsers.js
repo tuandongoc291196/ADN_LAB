@@ -1,43 +1,5 @@
 const { dataConnect } = require("../../config/firebase.js");
 
-/**
- * @swagger
- * /users:
- *   get:
- *     tags:
- *       - Users
- *     summary: Get all users
- *     description: Retrieves a list of all users with pagination support (requires authentication)
- *     security:
- *       - BearerAuth: []
- *     parameters:
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 20
- *         description: Maximum number of users to return
- *       - in: query
- *         name: offset
- *         schema:
- *           type: integer
- *           default: 0
- *         description: Number of users to skip for pagination
- *     responses:
- *       200:
- *         description: Users retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/UsersResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-
 const getAllUsers = async (req, res) => {
   try {
     const variables = {
@@ -70,54 +32,10 @@ const getAllUsers = async (req, res) => {
   }
 };
 
-/**
- * @swagger
- * /users:
- *   post:
- *     tags:
- *       - Users
- *     summary: Get a specific user
- *     description: Retrieves detailed information about a specific user by ID (requires authentication)
- *     security:
- *       - BearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/UserRequest'
- *           example:
- *             userId: "user_12345"
- *     responses:
- *       200:
- *         description: User retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/UsersResponse'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       $ref: '#/components/schemas/User'
- *       400:
- *         description: Bad request - User ID is required
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-
 const getOneUser = async (req, res) => {
   try {
     const {userId} = req.body;
-
+    
     if (!userId) {
       return res.status(400).json({
         statusCode: 400,
@@ -126,6 +44,18 @@ const getOneUser = async (req, res) => {
       });
     }
 
+    console.log("Checking if user exists before update, userId:", userId);
+    const existingUser = await checkUserExists(userId);
+    console.log("User existence check result:", existingUser);
+    if (!existingUser) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "User not found",
+        error: "User with the provided ID does not exist",
+      });
+    }
+    
     const variables = {
       userId: userId,
     };
@@ -154,7 +84,109 @@ const getOneUser = async (req, res) => {
   }
 };
 
+const checkUserExists = async (userId) => {
+  try {
+    const GET_ONE_USER_QUERY = `
+      query GetUserById($userId: String!) @auth(level: USER) {
+        user(key: {id: $userId}) {
+          id
+          fullname
+          email
+          accountStatus
+          role {
+            id
+            name
+          }
+          createdAt
+          lastLogin
+        }
+      }
+    `;
+
+    const variables = {userId};
+    console.log("Executing GraphQL query:", GET_ONE_USER_QUERY, "with variables:", variables);
+    const response = await dataConnect.executeGraphql(GET_ONE_USER_QUERY, { variables });
+    
+    return response.data?.user || null;
+  } catch (error) {
+    console.error("Error checking user existence:", error);
+    throw error;
+  }
+};
+
+const countUsersByRole = async (roleId) => {
+  try {
+    if (!roleId) {
+      throw new Error("roleId is required");
+    }
+
+    const COUNT_USERS_BY_ROLE_QUERY = `
+      query CountUsersByRole($roleId: String!) @auth(level: USER) {
+        users(where: {roleId: {eq: $roleId}}) {
+          id
+        }
+      }
+    `;
+
+    const variables = { roleId };
+    console.log("Executing GraphQL query:", COUNT_USERS_BY_ROLE_QUERY, "with variables:", variables);
+    const response = await dataConnect.executeGraphql(COUNT_USERS_BY_ROLE_QUERY, { variables });
+    
+    const responseData = response.data?.users || [];
+    const userCount = responseData.length;
+    
+    console.log(`Found ${userCount} users with roleId "${roleId}"`);
+    return userCount;
+  } catch (error) {
+    console.error(`Error counting users with roleId ${roleId}:`, error);
+    throw error;
+  }
+};
+
+const getStaffWithLowestSlotCount = async () => {
+  try {
+    const GET_STAFF_WITH_LOWEST_SLOT_COUNT_QUERY = `
+      query GetStaffWithLowestSlotCount @auth(level: USER) {
+        users(
+          where: {roleId: {eq: "1"}}
+          orderBy: {dailySlotCount: ASC}
+          limit: 1
+        ) {
+          id
+          fullname
+          email
+          dailySlotCount
+          maxDailySlots
+          role {
+            id
+            name
+          }
+        }
+      }
+    `;
+
+    console.log("Executing GraphQL query:", GET_STAFF_WITH_LOWEST_SLOT_COUNT_QUERY);
+    const response = await dataConnect.executeGraphql(GET_STAFF_WITH_LOWEST_SLOT_COUNT_QUERY);
+
+    const staff = response.data.users?.[0];
+    
+    if (!staff) {
+      console.log("No staff members found with roleId '1'");
+      return null;
+    }
+
+    console.log(`Found staff with lowest slot count: ${staff.fullname} (ID: ${staff.id}) with ${staff.dailySlotCount} slots`);
+    return staff.id;
+  } catch (error) {
+    console.error("Error getting staff with lowest slot count:", error);
+    throw error;
+  }
+};
+
 module.exports = {
   getAllUsers,
   getOneUser,
+  checkUserExists,
+  countUsersByRole,
+  getStaffWithLowestSlotCount
 };

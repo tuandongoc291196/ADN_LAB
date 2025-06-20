@@ -1,63 +1,93 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { Container, Row, Col, Card, Button, Tab, Nav, Accordion, ListGroup, Badge, Alert } from 'react-bootstrap';
-import { getServiceById, getAvailableMethodsForService, COLLECTION_METHODS } from '../data/services-data';
+import { Link, useParams } from 'react-router-dom';
+import { Container, Row, Col, Card, Button, Badge, Alert, Accordion, Tab, Nav } from 'react-bootstrap';
+import { getServiceAndMethodsById } from '../../services/api';
 
 const ServiceDetail = () => {
-  const { id } = useParams();
   const [service, setService] = useState(null);
-  const [availableMethods, setAvailableMethods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+  const { id } = useParams();
+
   useEffect(() => {
-    setLoading(true);
-    
-    try {
-      const serviceData = getServiceById(id);
-      if (serviceData) {
-        setService(serviceData);
-        setAvailableMethods(getAvailableMethodsForService(id));
-        setLoading(false);
-      } else {
-        setError('Không tìm thấy thông tin dịch vụ');
+    const fetchService = async () => {
+      try {
+        setLoading(true);
+        const data = await getServiceAndMethodsById(id);
+        const { dnaService, serviceCollectionMethods } = data;
+        
+        if (dnaService) {
+          // Tạo map của collection methods để dễ truy cập
+          const methodsMap = {};
+          serviceCollectionMethods.forEach(method => {
+            if (!methodsMap[method.methodId]) {
+              methodsMap[method.methodId] = {
+                id: method.methodId,
+                title: method.methodTitle,
+                description: method.methodDescription,
+                icon: method.methodIcon,
+                color: method.methodColor,
+                note: method.methodNote,
+                process: method.methodProcess
+              };
+            }
+          });
+
+          // Gắn thông tin methods vào service
+          const serviceWithMethods = {
+            ...dnaService,
+            methodDetails: serviceCollectionMethods
+              .filter(method => method.serviceId === dnaService.id)
+              .map(method => methodsMap[method.methodId])
+          };
+
+          setService(serviceWithMethods);
+        } else {
+          setError('Không tìm thấy thông tin dịch vụ');
+        }
+      } catch (err) {
+        setError(err.message);
+      } finally {
         setLoading(false);
       }
-    } catch (err) {
-      setError('Lỗi khi tải thông tin dịch vụ');
-      setLoading(false);
-    }
+    };
+
+    fetchService();
   }, [id]);
 
   const getServiceTypeBadge = (serviceType) => {
     return serviceType === 'administrative' 
-      ? <Badge bg="warning" text="dark" className="fs-6">Có giá trị pháp lý</Badge>
-      : <Badge bg="success" className="fs-6">Dân sự - Tham khảo</Badge>;
+      ? <Badge bg="warning" text="dark">Có giá trị pháp lý</Badge>
+      : <Badge bg="success">Dân sự</Badge>;
+  };
+
+  const getMethodBadges = (methodDetails) => {
+    return methodDetails.map(method => (
+      <Badge 
+        key={method.id} 
+        bg={method.color} 
+        className="me-1"
+        title={method.description}
+      >
+        <i className={`${method.icon} me-1`}></i>
+        {method.title}
+      </Badge>
+    ));
   };
 
   const getMethodCard = (method) => (
-    <Card key={method.id} className={`mb-3 border-${method.color}`}>
-      <Card.Header className={`bg-${method.color} bg-opacity-10`}>
-        <div className="d-flex align-items-center">
-          <i className={`${method.icon} fs-4 text-${method.color} me-3`}></i>
-          <div>
-            <h6 className="mb-0">{method.title}</h6>
-            <small className="text-muted">{method.description}</small>
-          </div>
-        </div>
-      </Card.Header>
+    <Card key={method.id} className="mb-3 border-0 bg-light">
       <Card.Body>
-        <div className="mb-3">
-          <strong>Quy trình:</strong>
-          <ol className="mt-2 mb-0">
-            {method.process.map((step, index) => (
-              <li key={index} className="small">{step}</li>
-            ))}
-          </ol>
+        <div className="d-flex align-items-center mb-2">
+          <div className={`rounded-circle p-2 me-3 bg-${method.color}`}>
+            <i className={`${method.icon} text-white`}></i>
+          </div>
+          <h6 className="mb-0">{method.title}</h6>
         </div>
+        <p className="small text-muted mb-2">{method.description}</p>
         {method.note && (
           <Alert variant={method.color} className="small mb-0">
-            <i className="bi bi-info-circle me-2"></i>
+            <i className="bi bi-info-circle me-1"></i>
             {method.note}
           </Alert>
         )}
@@ -65,46 +95,25 @@ const ServiceDetail = () => {
     </Card>
   );
 
-  // Enhanced FAQ data based on service type
   const getFAQs = (service) => {
-    const commonFAQs = [
+    return [
       {
-        question: `Độ chính xác của ${service.title} là bao nhiêu?`,
-        answer: 'Độ chính xác lên đến 99.999% khi xác nhận quan hệ huyết thống và 100% khi loại trừ quan hệ.'
+        question: 'Thời gian có kết quả là bao lâu?',
+        answer: `Kết quả sẽ có sau ${service.duration}. Chúng tôi sẽ thông báo ngay khi có kết quả.`
       },
       {
-        question: `Thời gian có kết quả ${service.title} là bao lâu?`,
-        answer: `Thời gian nhận kết quả thông thường là ${service.duration}. Chúng tôi cũng có dịch vụ khẩn cấp với phụ phí.`
+        question: 'Độ chính xác của xét nghiệm là bao nhiêu?',
+        answer: 'Xét nghiệm ADN có độ chính xác 99.999% trong việc xác định mối quan hệ huyết thống.'
       },
       {
-        question: 'Cần chuẩn bị những gì khi đi xét nghiệm?',
-        answer: `Cần mang theo: ${service.requiredDocuments.join(', ')}. Với trẻ em dưới 14 tuổi cần có người giám hộ.`
+        question: 'Tôi có thể tự lấy mẫu tại nhà không?',
+        answer: service.serviceType === 'administrative' 
+          ? 'Với xét nghiệm có giá trị pháp lý, bạn cần đến cơ sở của chúng tôi để được nhân viên y tế lấy mẫu và giám sát quá trình.'
+          : 'Có, bạn có thể tự lấy mẫu tại nhà theo hướng dẫn. Tuy nhiên, để đảm bảo độ chính xác, chúng tôi khuyến nghị đến cơ sở của chúng tôi.'
       }
     ];
-
-    const serviceSpecificFAQs = service.serviceType === 'administrative' ? [
-      {
-        question: 'Kết quả có giá trị pháp lý như thế nào?',
-        answer: 'Kết quả được công chứng và có đầy đủ giá trị pháp lý để sử dụng trong các thủ tục hành chính, tòa án và cơ quan nhà nước.'
-      },
-      {
-        question: 'Có thể tự lấy mẫu tại nhà không?',
-        answer: 'Không thể. Xét nghiệm có giá trị pháp lý bắt buộc phải thu mẫu tại cơ sở hoặc có nhân viên giám sát để đảm bảo tính chính xác và pháp lý.'
-      }
-    ] : [
-      {
-        question: 'Tự lấy mẫu tại nhà có chính xác không?',
-        answer: 'Hoàn toàn chính xác nếu thực hiện đúng hướng dẫn. Kit lấy mẫu được thiết kế đơn giản và kèm hướng dẫn chi tiết.'
-      },
-      {
-        question: 'Kết quả có thể sử dụng làm bằng chứng pháp lý không?',
-        answer: 'Không. Xét nghiệm dân sự chỉ mang tính tham khảo cá nhân. Nếu cần giá trị pháp lý, vui lòng chọn xét nghiệm hành chính.'
-      }
-    ];
-
-    return [...commonFAQs, ...serviceSpecificFAQs];
   };
-  
+
   if (loading) {
     return (
       <Container>
@@ -117,22 +126,29 @@ const ServiceDetail = () => {
       </Container>
     );
   }
-  
-  if (error || !service) {
+
+  if (error) {
     return (
       <Container>
         <Alert variant="danger" className="my-5">
           <i className="bi bi-exclamation-triangle me-2"></i>
-          {error || 'Không tìm thấy thông tin dịch vụ'}
+          {error}
         </Alert>
-        <Button as={Link} to="/services" variant="primary">
-          <i className="bi bi-arrow-left me-2"></i>
-          Quay lại danh sách dịch vụ
-        </Button>
       </Container>
     );
   }
-  
+
+  if (!service) {
+    return (
+      <Container>
+        <Alert variant="warning" className="my-5">
+          <i className="bi bi-exclamation-circle me-2"></i>
+          Không tìm thấy thông tin dịch vụ
+        </Alert>
+      </Container>
+    );
+  }
+
   return (
     <Container className="py-5">
       {/* Breadcrumb */}
@@ -191,6 +207,40 @@ const ServiceDetail = () => {
               </Card>
             </Col>
           </Row>
+
+          {/* Participants */}
+          <Card className="mb-4">
+            <Card.Header>
+              <h5 className="mb-0">Đối tượng tham gia</h5>
+            </Card.Header>
+            <Card.Body>
+              <p className="mb-0">{service.participants}</p>
+            </Card.Body>
+          </Card>
+
+          {/* Required Documents */}
+          <Card className="mb-4">
+            <Card.Header>
+              <h5 className="mb-0">Yêu cầu</h5>
+            </Card.Header>
+            <Card.Body>
+              <p className="mb-0">{service.requiredDocuments}</p>
+            </Card.Body>
+          </Card>
+
+          {/* Procedures */}
+          <Card className="mb-4">
+            <Card.Header>
+              <h5 className="mb-0">Quy trình</h5>
+            </Card.Header>
+            <Card.Body>
+              <ol className="mb-0">
+                {service.procedures.split(' → ').map((step, index) => (
+                  <li key={index}>{step}</li>
+                ))}
+              </ol>
+            </Card.Body>
+          </Card>
         </Col>
 
         {/* Quick Action Sidebar */}
@@ -207,31 +257,16 @@ const ServiceDetail = () => {
             <Card.Body>
               <div className="mb-3">
                 <strong>Người tham gia:</strong>
-                <ul className="list-unstyled mt-2">
-                  {service.participants.map((participant, index) => (
-                    <li key={index} className="small">
-                      <i className="bi bi-person me-2 text-muted"></i>
-                      {participant}
-                    </li>
-                  ))}
-                </ul>
+                <p className="mb-0">{service.participants}</p>
               </div>
-              
               <div className="mb-4">
-                <strong>Giấy tờ cần thiết:</strong>
-                <ul className="list-unstyled mt-2">
-                  {service.requiredDocuments.map((doc, index) => (
-                    <li key={index} className="small">
-                      <i className="bi bi-file-text me-2 text-muted"></i>
-                      {doc}
-                    </li>
-                  ))}
-                </ul>
+                <strong>Yêu cầu:</strong>
+                <p className="mb-0">{service.requiredDocuments}</p>
               </div>
 
               <div className="d-grid gap-2">
                 <Button 
-                  variant={service.serviceType === 'administrative' ? 'warning' : 'success'} 
+                  variant={service.serviceType === 'administrative' ? 'warning' : 'success'}
                   size="lg" 
                   as={Link} 
                   to="/appointment"
@@ -249,7 +284,7 @@ const ServiceDetail = () => {
           </Card>
         </Col>
       </Row>
-      
+
       {/* Detailed Information Tabs */}
       <Tab.Container id="service-details-tabs" defaultActiveKey="description">
         <Nav variant="tabs" className="mb-4">
@@ -320,7 +355,7 @@ const ServiceDetail = () => {
                 </p>
               </div>
               
-              {availableMethods.map(method => getMethodCard(method))}
+              {service.methodDetails.map(method => getMethodCard(method))}
               
               {service.serviceType === 'administrative' && (
                 <Alert variant="warning">
@@ -340,7 +375,7 @@ const ServiceDetail = () => {
                 <h4 className="mb-4">Quy trình thực hiện xét nghiệm</h4>
                 <div className="row">
                   <div className="col-lg-8">
-                    {service.procedures.map((step, index) => (
+                    {service.procedures.split(' → ').map((step, index) => (
                       <div key={index} className="d-flex align-items-start mb-4">
                         <div className={`rounded-circle d-flex align-items-center justify-content-center me-3 ${
                           service.serviceType === 'administrative' ? 'bg-warning' : 'bg-success'
@@ -349,7 +384,7 @@ const ServiceDetail = () => {
                         </div>
                         <div>
                           <h6 className="mb-2">{step}</h6>
-                          {index < service.procedures.length - 1 && (
+                          {index < service.procedures.split(' → ').length - 1 && (
                             <div className="border-start border-2 border-light ms-3 ps-3" style={{ minHeight: '20px' }}></div>
                           )}
                         </div>

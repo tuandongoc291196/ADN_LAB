@@ -112,61 +112,120 @@ mutation UpdateUserAccountStatus(
   )
 }
 
-# ====== DNA SERVICE MUTATIONS ======
+# ====== SERVICE MUTATIONS ======
+
+# Create service category
+mutation CreateServiceCategory(
+  $id: String!
+  $name: String!
+  $description: String
+  $hasLegalValue: Boolean!
+  $icon: String
+  $color: String
+) @auth(level: USER) {
+  serviceCategory_insert(data: {
+    id: $id
+    name: $name
+    description: $description
+    hasLegalValue: $hasLegalValue
+    icon: $icon
+    color: $color
+  })
+}
+
+# Update service category
+mutation UpdateServiceCategory(
+  $categoryId: String!
+  $name: String
+  $description: String
+  $hasLegalValue: Boolean
+  $icon: String
+  $color: String
+) @auth(level: USER) {
+  serviceCategory_update(
+    key: { id: $categoryId }
+    data: {
+      name: $name
+      description: $description
+      hasLegalValue: $hasLegalValue
+      icon: $icon
+      color: $color
+      updatedAt_expr: "request.time"
+    }
+  )
+}
+
+# Create method
+mutation CreateMethod(
+  $id: String!
+  $name: String!
+  $description: String
+  $price: Float!
+) @auth(level: USER) {
+  method_insert(data: {
+    id: $id
+    name: $name
+    description: $description
+    price: $price
+  })
+}
+
+# Update method
+mutation UpdateMethod(
+  $methodId: String!
+  $name: String
+  $description: String
+  $price: Float
+) @auth(level: USER) {
+  method_update(
+    key: { id: $methodId }
+    data: {
+      name: $name
+      description: $description
+      price: $price
+      updatedAt_expr: "request.time"
+    }
+  )
+}
 
 # Create service
-mutation CreateDnaService(
+mutation CreateService(
   $id: String!
   $title: String!
   $description: String!
   $fullDescription: String
-  $price: String!
+  $price: Float!
   $duration: String!
-  $category: String!
-  $serviceType: String!
-  $hasLegalValue: Boolean!
+  $categoryId: String!
   $icon: String
-  $participants: String
-  $requiredDocuments: String
-  $procedures: String
   $featured: Boolean!
 ) @auth(level: USER) {
-  dnaService_insert(data: {
+  service_insert(data: {
     id: $id
     title: $title
     description: $description
     fullDescription: $fullDescription
     price: $price
     duration: $duration
-    category: $category
-    serviceType: $serviceType
-    hasLegalValue: $hasLegalValue
+    categoryId: $categoryId
     icon: $icon
-    participants: $participants
-    requiredDocuments: $requiredDocuments
-    procedures: $procedures
     featured: $featured
   })
 }
 
 # Update service
-mutation UpdateDnaService(
+mutation UpdateService(
   $serviceId: String!
   $title: String
   $description: String
   $fullDescription: String
-  $price: String
+  $price: Float
   $duration: String
-  $category: String
-  $serviceType: String
-  $hasLegalValue: Boolean
+  $categoryId: String
   $icon: String
-  $participants: String
-  $requiredDocuments: String
-  $procedures: String
   $featured: Boolean
 ) @auth(level: USER) {
-  dnaService_update(
+  service_update(
     key: { id: $serviceId }
     data: {
       title: $title
@@ -174,70 +233,30 @@ mutation UpdateDnaService(
       fullDescription: $fullDescription
       price: $price
       duration: $duration
-      category: $category
-      serviceType: $serviceType
-      hasLegalValue: $hasLegalValue
+      categoryId: $categoryId
       icon: $icon
-      participants: $participants
-      requiredDocuments: $requiredDocuments
-      procedures: $procedures
       featured: $featured
+      updatedAt_expr: "request.time"
     }
   )
 }
 
-# Create service collection method
-mutation CreateServiceCollectionMethod(
+# Create service method association
+mutation CreateServiceMethod(
   $id: String!
   $serviceId: String!
   $methodId: String!
-  $methodTitle: String!
-  $methodDescription: String
-  $methodIcon: String
-  $methodColor: String
-  $methodNote: String
-  $methodProcess: String
-  $allowedFor: String
 ) @auth(level: USER) {
-  serviceCollectionMethod_insert(data: {
+  serviceMethod_insert(data: {
     id: $id
     serviceId: $serviceId
     methodId: $methodId
-    methodTitle: $methodTitle
-    methodDescription: $methodDescription
-    methodIcon: $methodIcon
-    methodColor: $methodColor
-    methodNote: $methodNote
-    methodProcess: $methodProcess
-    allowedFor: $allowedFor
   })
 }
 
-# ====== KIT MUTATIONS ======
-
-# Create kit
-mutation CreateKit(
-  $id: String!
-  $amount: Int!
-) @auth(level: USER) {
-  kit_insert(data: {
-    id: $id
-    amount: $amount
-    status: "available"
-  })
-}
-
-# Update kit status
-mutation UpdateKitStatus(
-  $kitId: String!
-  $status: String!
-) @auth(level: USER) {
-  kit_update(
-    key: { id: $kitId }
-    data: {
-      status: $status
-    }
-  )
+# Delete service method association
+mutation DeleteServiceMethod($serviceMethodId: String!) @auth(level: USER) {
+  serviceMethod_delete(key: { id: $serviceMethodId })
 }
 
 # ====== TIME SLOT MUTATIONS ======
@@ -248,8 +267,6 @@ mutation CreateTimeSlot(
   $slotDate: Date!
   $startTime: String!
   $endTime: String!
-  $maxCapacity: Int!
-  $staffId: String
   $notes: String
 ) @auth(level: USER) {
   timeSlot_insert(data: {
@@ -257,11 +274,7 @@ mutation CreateTimeSlot(
     slotDate: $slotDate
     startTime: $startTime
     endTime: $endTime
-    maxCapacity: $maxCapacity
-    staffId: $staffId
     notes: $notes
-    currentBookings: 0
-    available: true
   })
 }
 
@@ -271,10 +284,7 @@ mutation UpdateTimeSlot(
   $slotDate: Date
   $startTime: String
   $endTime: String
-  $maxCapacity: Int
-  $staffId: String
   $notes: String
-  $available: Boolean
 ) @auth(level: USER) {
   timeSlot_update(
     key: { id: $timeSlotId }
@@ -282,10 +292,7 @@ mutation UpdateTimeSlot(
       slotDate: $slotDate
       startTime: $startTime
       endTime: $endTime
-      maxCapacity: $maxCapacity
-      staffId: $staffId
       notes: $notes
-      available: $available
       updatedAt_expr: "request.time"
     }
   )
@@ -312,36 +319,35 @@ mutation CreateBooking(
   $id: String!
   $userId: String!
   $staffId: String
-  $kitId: String
   $timeSlotId: String
-  $collectionMethod: String!
-  $notes: String
+  $serviceMethodId: String!
   $totalAmount: Float!
 ) @auth(level: USER) {
   booking_insert(data: {
     id: $id
     userId: $userId
     staffId: $staffId
-    kitId: $kitId
     timeSlotId: $timeSlotId
-    collectionMethod: $collectionMethod
-    notes: $notes
+    serviceMethodId: $serviceMethodId
     totalAmount: $totalAmount
-    status: "pending"
   })
 }
 
-# Update booking status
-mutation UpdateBookingStatus(
+# Update booking
+mutation UpdateBooking(
   $bookingId: String!
-  $status: String!
   $staffId: String
+  $timeSlotId: String
+  $serviceMethodId: String
+  $totalAmount: Float
 ) @auth(level: USER) {
   booking_update(
     key: { id: $bookingId }
     data: {
-      status: $status
       staffId: $staffId
+      timeSlotId: $timeSlotId
+      serviceMethodId: $serviceMethodId
+      totalAmount: $totalAmount
       updatedAt_expr: "request.time"
     }
   )
@@ -361,47 +367,35 @@ mutation AssignBookingStaff(
   )
 }
 
-# ====== BOOKING ITEM MUTATIONS ======
-
-# Add booking item
-mutation AddBookingItem(
+# Create booking history entry
+mutation CreateBookingHistory(
   $id: String!
   $bookingId: String!
-  $serviceId: String!
-  $price: Float!
-  $quantity: Int!
-  $notes: String
+  $description: String!
+  $status: String!
 ) @auth(level: USER) {
-  bookingItem_insert(data: {
+  bookingHistory_insert(data: {
     id: $id
     bookingId: $bookingId
-    serviceId: $serviceId
-    price: $price
-    quantity: $quantity
-    notes: $notes
+    description: $description
+    status: $status
   })
 }
 
-# Update booking item
-mutation UpdateBookingItem(
-  $itemId: String!
-  $price: Float
-  $quantity: Int
-  $notes: String
+# Update booking history status
+mutation UpdateBookingHistory(
+  $historyId: String!
+  $description: String
+  $status: String
 ) @auth(level: USER) {
-  bookingItem_update(
-    key: { id: $itemId }
+  bookingHistory_update(
+    key: { id: $historyId }
     data: {
-      price: $price
-      quantity: $quantity
-      notes: $notes
+      description: $description
+      status: $status
+      updatedAt_expr: "request.time"
     }
   )
-}
-
-# Remove booking item
-mutation RemoveBookingItem($itemId: String!) @auth(level: USER) {
-  bookingItem_delete(key: { id: $itemId })
 }
 
 # ====== SAMPLE MUTATIONS ======
@@ -410,19 +404,18 @@ mutation RemoveBookingItem($itemId: String!) @auth(level: USER) {
 mutation CreateSample(
   $id: String!
   $bookingId: String!
-  $serviceId: String!
   $staffId: String
   $collectionDate: Date
+  $status: String
   $notes: String
 ) @auth(level: USER) {
   sample_insert(data: {
     id: $id
     bookingId: $bookingId
-    serviceId: $serviceId
     staffId: $staffId
     collectionDate: $collectionDate
+    status: $status
     notes: $notes
-    status: "pending"
   })
 }
 
@@ -441,6 +434,7 @@ mutation UpdateSampleStatus(
       staffId: $staffId
       collectionDate: $collectionDate
       notes: $notes
+      updatedAt_expr: "request.time"
     }
   )
 }
@@ -452,22 +446,21 @@ mutation CreateTestResult(
   $id: String!
   $bookingId: String!
   $sampleId: String!
-  $serviceId: String!
   $staffId: String
   $testDate: Date
+  $reportDate: Date
   $resultData: String
-  $notes: String
+  $status: String
 ) @auth(level: USER) {
   testResult_insert(data: {
     id: $id
     bookingId: $bookingId
     sampleId: $sampleId
-    serviceId: $serviceId
     staffId: $staffId
     testDate: $testDate
+    reportDate: $reportDate
     resultData: $resultData
-    notes: $notes
-    status: "pending"
+    status: $status
   })
 }
 
@@ -477,8 +470,7 @@ mutation UpdateTestResult(
   $resultData: String
   $status: String
   $reportDate: Date
-  $reportUrl: String
-  $notes: String
+  $testDate: Date
 ) @auth(level: USER) {
   testResult_update(
     key: { id: $resultId }
@@ -486,22 +478,22 @@ mutation UpdateTestResult(
       resultData: $resultData
       status: $status
       reportDate: $reportDate
-      reportUrl: $reportUrl
-      notes: $notes
+      testDate: $testDate
+      updatedAt_expr: "request.time"
     }
   )
 }
 
-# Verify test result
-mutation VerifyTestResult(
+# Assign staff to test result
+mutation AssignTestResultStaff(
   $resultId: String!
-  $verifiedBy: String!
+  $staffId: String!
 ) @auth(level: USER) {
   testResult_update(
     key: { id: $resultId }
     data: {
-      verifiedBy: $verifiedBy
-      status: "verified"
+      staffId: $staffId
+      updatedAt_expr: "request.time"
     }
   )
 }
@@ -514,17 +506,16 @@ mutation CreatePayment(
   $bookingId: String!
   $amount: Float!
   $paymentMethod: String!
-  $transactionId: String
-  $paymentDate: Date!
+  $status: String
+  $paymentDate: Date
 ) @auth(level: USER) {
   payment_insert(data: {
     id: $id
     bookingId: $bookingId
     amount: $amount
     paymentMethod: $paymentMethod
-    transactionId: $transactionId
+    status: $status
     paymentDate: $paymentDate
-    status: "pending"
   })
 }
 
@@ -532,15 +523,28 @@ mutation CreatePayment(
 mutation UpdatePaymentStatus(
   $paymentId: String!
   $status: String!
-  $transactionId: String
-  $refundDetail: String
+  $paymentDate: Date
 ) @auth(level: USER) {
   payment_update(
     key: { id: $paymentId }
     data: {
       status: $status
-      transactionId: $transactionId
-      refundDetail: $refundDetail
+      paymentDate: $paymentDate
+      updatedAt_expr: "request.time"
+    }
+  )
+}
+
+# Add refund detail to payment
+mutation AddRefundDetail(
+  $paymentId: String!
+  $refundDetails: [String!]!
+) @auth(level: USER) {
+  payment_update(
+    key: { id: $paymentId }
+    data: {
+      refundDetail: $refundDetails
+      updatedAt_expr: "request.time"
     }
   )
 }

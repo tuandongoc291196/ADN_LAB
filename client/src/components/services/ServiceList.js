@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Form, InputGroup, Badge, Alert } from 'react-bootstrap';
-import { getAllServices, getServicesByType, COLLECTION_METHODS } from '../data/services-data';
+import { getAllServicesAndMethods } from '../../services/api';
 
 const ServiceList = () => {
   const [services, setServices] = useState([]);
@@ -10,6 +10,7 @@ const ServiceList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [selectedMethod, setSelectedMethod] = useState('all');
+  const [collectionMethods, setCollectionMethods] = useState([]);
 
   // Categories for filtering
   const serviceTypes = [
@@ -18,30 +19,62 @@ const ServiceList = () => {
     { id: 'civil', name: 'ADN Dân sự (Không có giá trị pháp lý)', count: 0 }
   ];
 
-  const collectionMethods = [
-    { id: 'all', name: 'Tất cả phương thức' },
-    { id: 'self-sample', name: 'Lấy mẫu tại nhà' },
-    { id: 'home-visit', name: 'Nhân viên tới nhà' },
-    { id: 'at-facility', name: 'Tới cơ sở lấy mẫu' }
-  ];
-
   useEffect(() => {
-    // Load services data
-    setLoading(true);
-    try {
-      const allServices = getAllServices();
-      setServices(allServices);
-      
-      // Update counts
-      serviceTypes[0].count = allServices.length;
-      serviceTypes[1].count = getServicesByType('administrative').length;
-      serviceTypes[2].count = getServicesByType('civil').length;
-      
-      setLoading(false);
-    } catch (err) {
-      setError('Không thể tải danh sách dịch vụ');
-      setLoading(false);
-    }
+    const fetchServices = async () => {
+      setLoading(true);
+      try {
+        const data = await getAllServicesAndMethods();
+        const { dnaServices, serviceCollectionMethods } = data;
+        
+        // Tạo map của collection methods để dễ truy cập
+        const methodsMap = {};
+        serviceCollectionMethods.forEach(method => {
+          if (!methodsMap[method.methodId]) {
+            methodsMap[method.methodId] = {
+              id: method.methodId,
+              title: method.methodTitle,
+              description: method.methodDescription,
+              icon: method.methodIcon,
+              color: method.methodColor,
+              note: method.methodNote,
+              process: method.methodProcess
+            };
+          }
+        });
+
+        // Gắn thông tin methods vào services
+        const servicesWithMethods = dnaServices.map(service => ({
+          ...service,
+          methodDetails: serviceCollectionMethods
+            .filter(method => method.serviceId === service.id)
+            .map(method => methodsMap[method.methodId])
+        }));
+        
+        setServices(servicesWithMethods);
+        
+        // Cập nhật danh sách phương thức lấy mẫu cho filter
+        const uniqueMethods = [...new Set(serviceCollectionMethods.map(m => m.methodId))];
+        setCollectionMethods([
+          { id: 'all', name: 'Tất cả phương thức' },
+          ...uniqueMethods.map(id => ({
+            id: id,
+            name: methodsMap[id].title
+          }))
+        ]);
+        
+        // Update counts
+        serviceTypes[0].count = servicesWithMethods.length;
+        serviceTypes[1].count = servicesWithMethods.filter(s => s.serviceType === 'administrative').length;
+        serviceTypes[2].count = servicesWithMethods.filter(s => s.serviceType === 'civil').length;
+        
+        setLoading(false);
+      } catch (err) {
+        setError('Không thể tải danh sách dịch vụ');
+        setLoading(false);
+      }
+    };
+
+    fetchServices();
   }, []);
 
   // Filter services based on criteria
@@ -52,7 +85,7 @@ const ServiceList = () => {
     const matchesType = selectedType === 'all' || service.serviceType === selectedType;
     
     const matchesMethod = selectedMethod === 'all' || 
-      service.allowedMethods.includes(selectedMethod);
+      service.methodDetails.some(method => method.id === selectedMethod);
     
     return matchesSearch && matchesType && matchesMethod;
   });
@@ -75,21 +108,18 @@ const ServiceList = () => {
       : <Badge bg="success">Dân sự</Badge>;
   };
 
-  const getMethodBadges = (allowedMethods) => {
-    return allowedMethods.map(methodId => {
-      const method = COLLECTION_METHODS[methodId];
-      return (
-        <Badge 
-          key={methodId} 
-          bg={method.color} 
-          className="me-1"
-          title={method.description}
-        >
-          <i className={`${method.icon} me-1`}></i>
-          {method.title}
-        </Badge>
-      );
-    });
+  const getMethodBadges = (methodDetails) => {
+    return methodDetails.map(method => (
+      <Badge 
+        key={method.id} 
+        bg={method.color} 
+        className="me-1"
+        title={method.description}
+      >
+        <i className={`${method.icon} me-1`}></i>
+        {method.title}
+      </Badge>
+    ));
   };
 
   if (loading) {
@@ -309,7 +339,7 @@ const ServiceList = () => {
                   <div className="mb-3">
                     <small className="text-muted d-block mb-2">Phương thức lấy mẫu:</small>
                     <div className="d-flex flex-wrap gap-1">
-                      {getMethodBadges(service.allowedMethods)}
+                      {getMethodBadges(service.methodDetails)}
                     </div>
                   </div>
                 </Card.Body>

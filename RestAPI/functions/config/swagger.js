@@ -14,10 +14,54 @@ Welcome to the ADN LAB API documentation. This API provides comprehensive access
 
 ## Features
 
-- **Payment Processing**: Support for multiple payment gateways (MOMO, VNPAY, ZALOPAY)
-- **User Management**: Complete user account and profile management
-- **DNA Services**: Management of DNA testing services and collection methods
-- **Authentication**: Secure access control with role-based permissions
+- **🧬 DNA Testing Services**: Comprehensive DNA analysis and testing services
+- **💳 Payment Processing**: Support for multiple payment gateways (MOMO, VNPAY, ZALOPAY)
+- **👥 User Management**: Complete user account and profile management
+- **🔐 Role-Based Access**: Secure access control with role-based permissions
+- **📅 Appointment Booking**: Schedule and manage DNA testing appointments
+- **⏰ Time Slot Management**: Efficient time slot allocation and tracking
+
+## Quick Start
+
+1. **Authentication**: Obtain a JWT token through Firebase Authentication
+2. **Base URL**: Use the appropriate base URL for your environment
+3. **Headers**: Include \`Authorization: Bearer <token>\` for authenticated endpoints
+4. **Content-Type**: Use \`application/json\` for request bodies
+
+## Payment Integration
+
+This API supports three major payment gateways in Vietnam:
+- **MOMO**: Mobile money payments
+- **VNPAY**: Vietnam's leading payment gateway
+- **ZALOPAY**: Digital wallet payments
+
+## Rate Limiting
+
+- **Authenticated Users**: 1000 requests per hour
+- **Public Endpoints**: 100 requests per hour
+
+## Response Format
+
+All API responses follow a consistent format:
+\`\`\`json
+{
+  "statusCode": 200,
+  "status": "success",
+  "message": "Operation completed successfully",
+  "data": { ... }
+}
+\`\`\`
+
+## Error Handling
+
+Error responses include detailed information:
+\`\`\`json
+{
+  "statusCode": 400,
+  "message": "Invalid request",
+  "error": "Detailed error description"
+}
+\`\`\`
 
 ## Authentication
 
@@ -81,6 +125,18 @@ For technical support or questions about this API, please contact:
       {
         name: 'Services',
         description: 'DNA services and collection methods endpoints'
+      },
+      {
+        name: 'Roles',
+        description: 'Role management endpoints for user access control'
+      },
+      {
+        name: 'Time Slots',
+        description: 'Time slot management endpoints for appointment scheduling'
+      },
+      {
+        name: 'Bookings',
+        description: 'Booking management endpoints for appointment booking'
       }
     ],
     components: {
@@ -505,6 +561,440 @@ For technical support or questions about this API, please contact:
                   type: 'array',
                   items: {
                     $ref: '#/components/schemas/ServiceCollectionMethod'
+                  }
+                }
+              }
+            }
+          }
+        },
+        Role: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              description: 'Role ID',
+              example: 'admin'
+            },
+            name: {
+              type: 'string',
+              description: 'Role name',
+              example: 'Administrator'
+            },
+            description: {
+              type: 'string',
+              description: 'Role description',
+              example: 'Full system access with administrative privileges'
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Role creation timestamp',
+              example: '2024-12-06T10:30:00.000Z'
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Role last update timestamp',
+              example: '2024-12-06T12:30:00.000Z'
+            }
+          }
+        },
+        RoleRequest: {
+          type: 'object',
+          required: ['roleId'],
+          properties: {
+            roleId: {
+              type: 'string',
+              description: 'Role ID to retrieve',
+              example: 'admin'
+            }
+          }
+        },
+        CreateRoleRequest: {
+          type: 'object',
+          required: ['id', 'name', 'description'],
+          properties: {
+            id: {
+              type: 'string',
+              description: 'Unique role ID',
+              example: 'manager'
+            },
+            name: {
+              type: 'string',
+              description: 'Role name',
+              example: 'Manager'
+            },
+            description: {
+              type: 'string',
+              description: 'Role description',
+              example: 'Manager role with limited administrative access'
+            }
+          }
+        },
+        UpdateRoleRequest: {
+          type: 'object',
+          required: ['roleId', 'name', 'description'],
+          properties: {
+            roleId: {
+              type: 'string',
+              description: 'Role ID to update',
+              example: 'manager'
+            },
+            name: {
+              type: 'string',
+              description: 'Updated role name',
+              example: 'Senior Manager'
+            },
+            description: {
+              type: 'string',
+              description: 'Updated role description',
+              example: 'Senior manager role with extended privileges'
+            }
+          }
+        },
+        DeleteRoleRequest: {
+          type: 'object',
+          required: ['roleId'],
+          properties: {
+            roleId: {
+              type: 'string',
+              description: 'Role ID to delete',
+              example: 'manager'
+            }
+          }
+        },
+        RolesResponse: {
+          type: 'object',
+          properties: {
+            statusCode: {
+              type: 'number',
+              description: 'HTTP status code',
+              example: 200
+            },
+            status: {
+              type: 'string',
+              description: 'Response status',
+              example: 'success'
+            },
+            message: {
+              type: 'string',
+              description: 'Response message',
+              example: 'Roles retrieved successfully'
+            },
+            data: {
+              type: 'object',
+              properties: {
+                roles: {
+                  type: 'array',
+                  items: {
+                    $ref: '#/components/schemas/Role'
+                  }
+                }
+              }
+            }
+          }
+        },
+        TimeSlot: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              description: 'Time slot ID',
+              example: 'slot_12345'
+            },
+            date: {
+              type: 'string',
+              format: 'date',
+              description: 'Date of the time slot',
+              example: '2024-12-06'
+            },
+            time: {
+              type: 'string',
+              description: 'Time of the slot',
+              example: '09:00'
+            },
+            isAvailable: {
+              type: 'boolean',
+              description: 'Whether the time slot is available',
+              example: false
+            },
+            staffId: {
+              type: 'string',
+              description: 'Assigned staff ID',
+              example: 'staff_123'
+            },
+            serviceId: {
+              type: 'string',
+              description: 'Associated service ID',
+              example: 'service_123'
+            }
+          }
+        },
+        TimeSlotRequest: {
+          type: 'object',
+          required: ['timeSlotId'],
+          properties: {
+            timeSlotId: {
+              type: 'string',
+              description: 'Time slot ID to retrieve',
+              example: 'slot_12345'
+            }
+          }
+        },
+        TimeSlotsResponse: {
+          type: 'object',
+          properties: {
+            statusCode: {
+              type: 'number',
+              description: 'HTTP status code',
+              example: 200
+            },
+            status: {
+              type: 'string',
+              description: 'Response status',
+              example: 'success'
+            },
+            message: {
+              type: 'string',
+              description: 'Response message',
+              example: 'Time slots retrieved successfully'
+            },
+            data: {
+              type: 'object',
+              properties: {
+                timeSlots: {
+                  type: 'array',
+                  items: {
+                    $ref: '#/components/schemas/TimeSlot'
+                  }
+                }
+              }
+            }
+          }
+        },
+        Booking: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              description: 'Booking ID',
+              example: 'booking_12345'
+            },
+            userId: {
+              type: 'string',
+              description: 'User ID who made the booking',
+              example: 'user_12345'
+            },
+            serviceId: {
+              type: 'string',
+              description: 'Booked service ID',
+              example: 'service_123'
+            },
+            timeSlotId: {
+              type: 'string',
+              description: 'Booked time slot ID',
+              example: 'slot_12345'
+            },
+            status: {
+              type: 'string',
+              enum: ['pending', 'confirmed', 'completed', 'cancelled'],
+              description: 'Booking status',
+              example: 'confirmed'
+            },
+            bookingDate: {
+              type: 'string',
+              format: 'date-time',
+              description: 'When the booking was made',
+              example: '2024-12-06T10:30:00.000Z'
+            },
+            appointmentDate: {
+              type: 'string',
+              format: 'date',
+              description: 'Date of the appointment',
+              example: '2024-12-10'
+            },
+            notes: {
+              type: 'string',
+              description: 'Additional booking notes',
+              example: 'Special instructions for sample collection'
+            },
+            totalAmount: {
+              type: 'number',
+              description: 'Total booking amount',
+              example: 500000
+            }
+          }
+        },
+        BookingRequest: {
+          type: 'object',
+          required: ['bookingId'],
+          properties: {
+            bookingId: {
+              type: 'string',
+              description: 'Booking ID to retrieve',
+              example: 'booking_12345'
+            }
+          }
+        },
+        CreateBookingRequest: {
+          type: 'object',
+          required: ['userId', 'serviceId', 'timeSlotId'],
+          properties: {
+            userId: {
+              type: 'string',
+              description: 'User ID making the booking',
+              example: 'user_12345'
+            },
+            serviceId: {
+              type: 'string',
+              description: 'Service ID to book',
+              example: 'service_123'
+            },
+            timeSlotId: {
+              type: 'string',
+              description: 'Time slot ID to book',
+              example: 'slot_12345'
+            },
+            notes: {
+              type: 'string',
+              description: 'Optional booking notes',
+              example: 'Special instructions for sample collection'
+            }
+          }
+        },
+        BookingsResponse: {
+          type: 'object',
+          properties: {
+            statusCode: {
+              type: 'number',
+              description: 'HTTP status code',
+              example: 200
+            },
+            status: {
+              type: 'string',
+              description: 'Response status',
+              example: 'success'
+            },
+            message: {
+              type: 'string',
+              description: 'Response message',
+              example: 'Bookings retrieved successfully'
+            },
+            data: {
+              type: 'object',
+              properties: {
+                bookings: {
+                  type: 'array',
+                  items: {
+                    $ref: '#/components/schemas/Booking'
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      responses: {
+        BadRequest: {
+          description: 'Bad request - Invalid input parameters',
+          content: {
+            'application/json': {
+              schema: {
+                $ref: '#/components/schemas/Error'
+              }
+            }
+          }
+        },
+        Unauthorized: {
+          description: 'Unauthorized - Invalid or missing authentication token',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  statusCode: {
+                    type: 'number',
+                    example: 401
+                  },
+                  message: {
+                    type: 'string',
+                    example: 'Unauthorized access'
+                  },
+                  error: {
+                    type: 'string',
+                    example: 'Invalid or missing authentication token'
+                  }
+                }
+              }
+            }
+          }
+        },
+        NotFound: {
+          description: 'Resource not found',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  statusCode: {
+                    type: 'number',
+                    example: 404
+                  },
+                  message: {
+                    type: 'string',
+                    example: 'Resource not found'
+                  },
+                  error: {
+                    type: 'string',
+                    example: 'The requested resource does not exist'
+                  }
+                }
+              }
+            }
+          }
+        },
+        Forbidden: {
+          description: 'Forbidden - Insufficient permissions',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  statusCode: {
+                    type: 'number',
+                    example: 403
+                  },
+                  message: {
+                    type: 'string',
+                    example: 'Forbidden access'
+                  },
+                  error: {
+                    type: 'string',
+                    example: 'Insufficient permissions to access this resource'
+                  }
+                }
+              }
+            }
+          }
+        },
+        InternalServerError: {
+          description: 'Internal server error',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  statusCode: {
+                    type: 'number',
+                    example: 500
+                  },
+                  message: {
+                    type: 'string',
+                    example: 'Internal server error'
+                  },
+                  error: {
+                    type: 'string',
+                    example: 'An unexpected error occurred'
                   }
                 }
               }

@@ -13,6 +13,20 @@ async function randomAlphanumeric(minLength = 1, maxLength = 100) {
     return result;
 }
 
+function randomAlphanumericWithLength(length) {
+    if (length < 1 || length > 100) {
+        throw new Error("Length must be between 1 and 100 (inclusive).");
+    }
+    const alphanumeric = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz";
+    
+    let result = "";
+    for (let i = 0; i < length; i++) {
+        result += alphanumeric.charAt(Math.floor(Math.random() * alphanumeric.length));
+    }
+    
+    return result;
+}
+
 async function getDateYYMMDD() {
     const date = new Date();
     const year = date.getFullYear().toString().slice(-2);
@@ -33,5 +47,6 @@ module.exports = {
     randomAlphanumeric,
     getDateYYMMDD,
     generateOrderId,
-    generateRequestId
+    generateRequestId,
+    randomAlphanumericWithLength
 };

@@ -291,30 +291,10 @@ const MainNavbar = ({ setUser }) => {
                   <i className="bi bi-building me-2 text-primary"></i>
                   Về chúng tôi
                 </NavDropdown.Item>
-                
-                <NavDropdown.Item 
-                  as={Link} 
-                  to="/library/technology" 
-                  onClick={handleNavClick}
-                  className="py-2"
-                >
-                  <i className="bi bi-cpu me-2 text-info"></i>
-                  Công nghệ ADN
-                </NavDropdown.Item>
-                
-                <NavDropdown.Item 
-                  as={Link} 
-                  to="/library/samples" 
-                  onClick={handleNavClick}
-                  className="py-2"
-                >
-                  <i className="bi bi-droplet me-2 text-success"></i>
-                  Mẫu xét nghiệm ADN
-                </NavDropdown.Item>
-                
-                <NavDropdown.Item 
-                  as={Link} 
-                  to="/library/guides" 
+
+                <NavDropdown.Item
+                  as={Link}
+                  to="/guides"
                   onClick={handleNavClick}
                   className="py-2"
                 >
@@ -325,12 +305,12 @@ const MainNavbar = ({ setUser }) => {
 
               <Nav.Link 
                 as={Link} 
-                to="/prices" 
-                className={`fw-medium ${isActive('/prices') ? 'active text-primary' : ''}`}
+                to="/blog" 
+                className={`fw-medium ${location.pathname.startsWith('/blog') ? 'active text-primary' : ''}`}
                 onClick={handleNavClick}
               >
-                <i className="bi bi-currency-dollar me-2"></i>
-                Bảng giá
+                <i className="bi bi-newspaper me-2"></i>
+                Blog
               </Nav.Link>
 
               <Nav.Link 

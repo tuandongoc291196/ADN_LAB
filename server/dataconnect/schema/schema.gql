@@ -21,52 +21,52 @@ type User @table {
   roleId: String! @default(value: "0")
   role: Role! @ref(fields: "roleId")
   dailySlotCount: Int! @default(value: 0)
-  maxDailySlots: Int! @default(value: 3)  
   createdAt: Timestamp! @default(expr: "request.time")
   lastLogin: Timestamp
 }
 
 # DNA testing services
-type DnaService @table {
+type Service @table {
   id: String! @col(name: "service_id")
   title: String!
   description: String!
   fullDescription: String
-  price: String!
+  price: Float!
   duration: String!
-  category: String! # 'administrative' or 'civil'
-  serviceType: String! # 'administrative' or 'civil'
-  hasLegalValue: Boolean! @default(value: false)
+  categoryId: String!
+  category: ServiceCategory! @ref(fields: "categoryId")
   icon: String
-  participants: String # JSON array of participant types
-  requiredDocuments: String # JSON array of required documents
-  procedures: String # JSON array of procedure steps
   featured: Boolean! @default(value: false)
   createdAt: Timestamp! @default(expr: "request.time")
   updatedAt: Timestamp
 }
 
-# Junction table for services and their allowed collection methods
-type ServiceCollectionMethod @table {
-  id: String! @col(name: "scm_id")
-  serviceId: String!
-  service: DnaService! @ref(fields: "serviceId")
-  methodId: String! # 'self-sample', 'home-visit', 'at-facility'
-  methodTitle: String!
-  methodDescription: String
-  methodIcon: String
-  methodColor: String
-  methodNote: String
-  methodProcess: String # JSON array of process steps
-  allowedFor: String # JSON array of service types this method is allowed for
+type ServiceCategory @table {
+  id: String! @col(name: "category_id")
+  name: String! @unique
+  description: String
+  hasLegalValue: Boolean!
+  icon: String
+  color: String
   createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
 }
 
-# Testing kits
-type Kit @table {
-  id: String! @col(name: "kit_id")
-  status: String! @default(value: "available")
-  amount: Int! @default(value: 1)
+type Method @table {
+  id: String! @col(name: "method_id")
+  name: String! @unique
+  description: String
+  price: Float!
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
+}
+
+type ServiceMethod @table {
+  id: String! @col(name: "service_method_id")
+  serviceId: String!
+  service: Service! @ref(fields: "serviceId")
+  methodId: String!
+  method: Method! @ref(fields: "methodId")
   createdAt: Timestamp! @default(expr: "request.time")
   updatedAt: Timestamp
 }
@@ -77,74 +77,46 @@ type TimeSlot @table {
   slotDate: Date!
   startTime: String!
   endTime: String!
-  maxCapacity: Int!
   currentBookings: Int! @default(value: 0)
-  available: Boolean! @default(value: true)
-  
-  staffId: String
-  staff: User @ref(fields: "staffId")
-  
   notes: String
   createdAt: Timestamp! @default(expr: "request.time")
   updatedAt: Timestamp
 }
 
-# Service bookings
+# Service bookings (merged with BookingItem)
 type Booking @table {
   id: String! @col(name: "booking_id")
-  
   userId: String!
   user: User! @ref(fields: "userId")
-  
   staffId: String
   staff: User @ref(fields: "staffId")
-  
-  kitId: String
-  kit: Kit @ref(fields: "kitId")
-  
   timeSlotId: String
   timeSlot: TimeSlot @ref(fields: "timeSlotId")
-  
-  status: String! @default(value: "pending")
+  serviceMethodId: String!
+  serviceMethod: ServiceMethod! @ref(fields: "serviceMethodId")
   bookingCreatedAt: Timestamp! @default(expr: "request.time")
-  collectionMethod: String!
-  notes: String
   totalAmount: Float!
-  
   createdAt: Timestamp! @default(expr: "request.time")
   updatedAt: Timestamp
 }
 
-# Junction table for booking and services
-type BookingItem @table {
-  id: String! @col(name: "item_id")
-  
+type BookingHistory @table {
+  id: String! @col(name: "booking_history_id")
   bookingId: String!
   booking: Booking! @ref(fields: "bookingId")
-  
-  serviceId: String!
-  service: DnaService! @ref(fields: "serviceId")
-  
-  price: Float!
-  quantity: Int! @default(value: 1)
-  notes: String
-  createdAt: Timestamp! @default(expr: "request.time")
+  description: String!
+  status: String! @default(value: "pending")
+   createdAt: Timestamp! @default(expr: "request.time")
   updatedAt: Timestamp
 }
 
 # DNA samples collected from bookings
 type Sample @table {
   id: String! @col(name: "sample_id")
-  
   bookingId: String!
   booking: Booking! @ref(fields: "bookingId")
-  
   staffId: String
   staff: User @ref(fields: "staffId")
-  
-  serviceId: String!
-  service: DnaService! @ref(fields: "serviceId")
-  
   collectionDate: Date
   status: String! @default(value: "pending")
   notes: String
@@ -155,27 +127,16 @@ type Sample @table {
 # DNA test results
 type TestResult @table {
   id: String! @col(name: "result_id")
-  
   bookingId: String!
   booking: Booking! @ref(fields: "bookingId")
-  
   sampleId: String!
   sample: Sample! @ref(fields: "sampleId")
-  
-  serviceId: String!
-  service: DnaService! @ref(fields: "serviceId")
-  
   staffId: String
   staff: User @ref(fields: "staffId")
-  verifiedBy: String
-  verifier: User @ref(fields: "verifiedBy")
-  
   testDate: Date
   reportDate: Date
   resultData: String
   status: String! @default(value: "pending")
-  reportUrl: String
-  notes: String
   createdAt: Timestamp! @default(expr: "request.time")
   updatedAt: Timestamp
 }
@@ -183,16 +144,13 @@ type TestResult @table {
 # Payment transactions
 type Payment @table {
   id: String! @col(name: "payment_id")
-  
   bookingId: String!
   booking: Booking! @ref(fields: "bookingId")
-  
   amount: Float!
   paymentMethod: String!
-  transactionId: String
   status: String! @default(value: "pending")
   paymentDate: Date
-  refundDetail: String
+  refundDetail: [String] @default(value: [])
   createdAt: Timestamp! @default(expr: "request.time")
   updatedAt: Timestamp
 }
@@ -200,10 +158,8 @@ type Payment @table {
 # User feedback and ratings
 type Feedback @table {
   id: String! @col(name: "feedback_id")
-  
   bookingId: String!
   booking: Booking! @ref(fields: "bookingId")
-  
   rating: Int!
   comment: String
   createdAt: Timestamp! @default(expr: "request.time")
@@ -223,13 +179,10 @@ type Blog @table {
 # System notifications
 type Notification @table {
   id: String! @col(name: "notification_id")
-  
   userId: String
   user: User @ref(fields: "userId")
-  
   staffId: String
   staff: User @ref(fields: "staffId")
-  
   title: String!
   message: String!
   isRead: Boolean! @default(value: false)
