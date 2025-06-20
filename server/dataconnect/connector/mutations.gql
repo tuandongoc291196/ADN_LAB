@@ -120,16 +120,12 @@ mutation CreateServiceCategory(
   $name: String!
   $description: String
   $hasLegalValue: Boolean!
-  $icon: String
-  $color: String
 ) @auth(level: USER) {
   serviceCategory_insert(data: {
     id: $id
     name: $name
     description: $description
     hasLegalValue: $hasLegalValue
-    icon: $icon
-    color: $color
   })
 }
 
@@ -139,8 +135,6 @@ mutation UpdateServiceCategory(
   $name: String
   $description: String
   $hasLegalValue: Boolean
-  $icon: String
-  $color: String
 ) @auth(level: USER) {
   serviceCategory_update(
     key: { id: $categoryId }
@@ -148,8 +142,6 @@ mutation UpdateServiceCategory(
       name: $name
       description: $description
       hasLegalValue: $hasLegalValue
-      icon: $icon
-      color: $color
       updatedAt_expr: "request.time"
     }
   )
@@ -243,20 +235,24 @@ mutation UpdateService(
 
 # Create service method association
 mutation CreateServiceMethod(
-  $id: String!
   $serviceId: String!
   $methodId: String!
 ) @auth(level: USER) {
   serviceMethod_insert(data: {
-    id: $id
     serviceId: $serviceId
     methodId: $methodId
   })
 }
 
 # Delete service method association
-mutation DeleteServiceMethod($serviceMethodId: String!) @auth(level: USER) {
-  serviceMethod_delete(key: { id: $serviceMethodId })
+mutation DeleteServiceMethod(
+  $serviceId: String!
+  $methodId: String!
+) @auth(level: USER) {
+  serviceMethod_delete(key: { 
+    serviceId: $serviceId,
+    methodId: $methodId 
+  })
 }
 
 # ====== TIME SLOT MUTATIONS ======
@@ -320,7 +316,8 @@ mutation CreateBooking(
   $userId: String!
   $staffId: String
   $timeSlotId: String
-  $serviceMethodId: String!
+  $serviceId: String!
+  $methodId: String!
   $totalAmount: Float!
 ) @auth(level: USER) {
   booking_insert(data: {
@@ -328,7 +325,8 @@ mutation CreateBooking(
     userId: $userId
     staffId: $staffId
     timeSlotId: $timeSlotId
-    serviceMethodId: $serviceMethodId
+    serviceId: $serviceId
+    methodId: $methodId
     totalAmount: $totalAmount
   })
 }
@@ -338,7 +336,8 @@ mutation UpdateBooking(
   $bookingId: String!
   $staffId: String
   $timeSlotId: String
-  $serviceMethodId: String
+  $serviceId: String
+  $methodId: String
   $totalAmount: Float
 ) @auth(level: USER) {
   booking_update(
@@ -346,7 +345,8 @@ mutation UpdateBooking(
     data: {
       staffId: $staffId
       timeSlotId: $timeSlotId
-      serviceMethodId: $serviceMethodId
+      serviceId: $serviceId
+      methodId: $methodId
       totalAmount: $totalAmount
       updatedAt_expr: "request.time"
     }
@@ -508,6 +508,8 @@ mutation CreatePayment(
   $paymentMethod: String!
   $status: String
   $paymentDate: Date
+  $refundDetail: String
+  $otherDetails: [String!]
 ) @auth(level: USER) {
   payment_insert(data: {
     id: $id
@@ -516,6 +518,8 @@ mutation CreatePayment(
     paymentMethod: $paymentMethod
     status: $status
     paymentDate: $paymentDate
+    refundDetail: $refundDetail
+    otherDetails: $otherDetails
   })
 }
 
@@ -535,15 +539,29 @@ mutation UpdatePaymentStatus(
   )
 }
 
-# Add refund detail to payment
-mutation AddRefundDetail(
+# Add other details to payment
+mutation AddPaymentDetails(
   $paymentId: String!
-  $refundDetails: [String!]!
+  $otherDetails: [String!]
 ) @auth(level: USER) {
   payment_update(
     key: { id: $paymentId }
     data: {
-      refundDetail: $refundDetails
+      otherDetails: $otherDetails
+      updatedAt_expr: "request.time"
+    }
+  )
+}
+
+# Update refund detail
+mutation UpdateRefundDetail(
+  $paymentId: String!
+  $refundDetail: String!
+) @auth(level: USER) {
+  payment_update(
+    key: { id: $paymentId }
+    data: {
+      refundDetail: $refundDetail
       updatedAt_expr: "request.time"
     }
   )

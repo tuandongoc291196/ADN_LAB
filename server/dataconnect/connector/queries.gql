@@ -146,8 +146,6 @@ query GetServiceCategories @auth(level: USER) {
     name
     description
     hasLegalValue
-    icon
-    color
     createdAt
     updatedAt
   }
@@ -160,8 +158,6 @@ query GetServiceCategoryById($categoryId: String!) @auth(level: USER) {
     name
     description
     hasLegalValue
-    icon
-    color
     createdAt
     updatedAt
   }
@@ -206,8 +202,6 @@ query GetServices @auth(level: USER) {
       name
       description
       hasLegalValue
-      icon
-      color
     }
     icon
     featured
@@ -231,8 +225,6 @@ query GetServiceById($serviceId: String!) @auth(level: USER) {
       name
       description
       hasLegalValue
-      icon
-      color
     }
     icon
     featured
@@ -286,7 +278,6 @@ query GetFeaturedServices @auth(level: USER) {
 # Get service methods for a service
 query GetServiceMethods($serviceId: String!) @auth(level: USER) {
   serviceMethods(where: { serviceId: { eq: $serviceId } }) {
-    id
     serviceId
     methodId
     service {
@@ -307,7 +298,8 @@ query GetServiceMethods($serviceId: String!) @auth(level: USER) {
 # Get methods for a service
 query GetMethodsForService($serviceId: String!) @auth(level: USER) {
   serviceMethods(where: { serviceId: { eq: $serviceId } }) {
-    id
+    serviceId
+    methodId
     method {
       id
       name
@@ -321,7 +313,8 @@ query GetMethodsForService($serviceId: String!) @auth(level: USER) {
 # Get services for a method
 query GetServicesForMethod($methodId: String!) @auth(level: USER) {
   serviceMethods(where: { methodId: { eq: $methodId } }) {
-    id
+    serviceId
+    methodId
     service {
       id
       title
@@ -339,6 +332,34 @@ query GetServicesForMethod($methodId: String!) @auth(level: USER) {
   }
 }
 
+# Get specific service method by composite key
+query GetServiceMethod(
+  $serviceId: String!
+  $methodId: String!
+) @auth(level: USER) {
+  serviceMethod(key: { 
+    serviceId: $serviceId,
+    methodId: $methodId 
+  }) {
+    serviceId
+    methodId
+    service {
+      id
+      title
+      description
+      price
+    }
+    method {
+      id
+      name
+      description
+      price
+    }
+    createdAt
+    updatedAt
+  }
+}
+
 # Get complete service with methods
 query GetServiceWithMethods($serviceId: String!) @auth(level: USER) {
   service(key: { id: $serviceId }) {
@@ -353,8 +374,6 @@ query GetServiceWithMethods($serviceId: String!) @auth(level: USER) {
       name
       description
       hasLegalValue
-      icon
-      color
     }
     icon
     featured
@@ -362,7 +381,8 @@ query GetServiceWithMethods($serviceId: String!) @auth(level: USER) {
     updatedAt
   }
   serviceMethods(where: { serviceId: { eq: $serviceId } }) {
-    id
+    serviceId
+    methodId
     method {
       id
       name
@@ -427,22 +447,19 @@ query GetUserBookings($userId: String!) @auth(level: USER) {
   bookings(where: { userId: { eq: $userId } }, orderBy: { createdAt: DESC }) {
     id
     totalAmount
-    serviceMethod {
+    service {
       id
-      service {
-        id
-        title
-        description
-        category {
-          name
-        }
-      }
-      method {
-        id
+      title
+      description
+      category {
         name
-        description
-        price
       }
+    }
+    method {
+      id
+      name
+      description
+      price
     }
     timeSlot {
       slotDate
@@ -463,23 +480,20 @@ query GetMyBookings @auth(level: USER) {
   bookings(where: { userId: { eq_expr: "auth.uid" } }, orderBy: { createdAt: DESC }) {
     id
     totalAmount
-    serviceMethod {
+    service {
       id
-      service {
-        id
-        title
-        description
-        duration
-        category {
-          name
-        }
-      }
-      method {
-        id
+      title
+      description
+      duration
+      category {
         name
-        description
-        price
       }
+    }
+    method {
+      id
+      name
+      description
+      price
     }
     timeSlot {
       slotDate
@@ -510,28 +524,25 @@ query GetBookingById($bookingId: String!) @auth(level: USER) {
       id
       fullname
     }
-    serviceMethod {
+    service {
       id
-      service {
-        id
-        title
-        description
-        fullDescription
-        price
-        duration
-        category {
-          id
-          name
-          description
-          hasLegalValue
-        }
-      }
-      method {
+      title
+      description
+      fullDescription
+      price
+      duration
+      category {
         id
         name
         description
-        price
+        hasLegalValue
       }
+    }
+    method {
+      id
+      name
+      description
+      price
     }
     timeSlot {
       slotDate
@@ -566,18 +577,16 @@ query GetStaffBookings($staffId: String!) @auth(level: USER) {
       phone
     }
     totalAmount
-    serviceMethod {
-      service {
-        id
-        title
-        category {
-          name
-        }
-      }
-      method {
+    service {
+      id
+      title
+      category {
         name
-        price
       }
+    }
+    method {
+      name
+      price
     }
     timeSlot {
       slotDate
@@ -596,12 +605,10 @@ query GetBookingSamples($bookingId: String!) @auth(level: USER) {
   samples(where: { bookingId: { eq: $bookingId } }) {
     id
     booking {
-      serviceMethod {
-        service {
-          title
-          category {
-            name
-          }
+      service {
+        title
+        category {
+          name
         }
       }
     }
@@ -625,12 +632,10 @@ query GetSamplesByStatus($status: String!) @auth(level: USER) {
       user {
         fullname
       }
-      serviceMethod {
-        service {
-          title
-          category {
-            name
-          }
+      service {
+        title
+        category {
+          name
         }
       }
     }
@@ -654,17 +659,15 @@ query GetSampleById($sampleId: String!) @auth(level: USER) {
         fullname
         email
       }
-      serviceMethod {
-        service {
-          title
-          description
-          category {
-            name
-          }
-        }
-        method {
+      service {
+        title
+        description
+        category {
           name
         }
+      }
+      method {
+        name
       }
     }
     staff {
@@ -686,12 +689,10 @@ query GetStaffSamples($staffId: String!) @auth(level: USER) {
       user {
         fullname
       }
-      serviceMethod {
-        service {
-          title
-          category {
-            name
-          }
+      service {
+        title
+        category {
+          name
         }
       }
     }
@@ -712,10 +713,8 @@ query GetBookingTestResults($bookingId: String!) @auth(level: USER) {
       id
     }
     booking {
-      serviceMethod {
-        service {
-          title
-        }
+      service {
+        title
       }
     }
     staff {
@@ -739,14 +738,12 @@ query GetTestResultById($resultId: String!) @auth(level: USER) {
         fullname
         email
       }
-      serviceMethod {
-        service {
-          title
-          description
-        }
-        method {
-          name
-        }
+      service {
+        title
+        description
+      }
+      method {
+        name
       }
     }
     sample {
@@ -773,10 +770,8 @@ query GetTestResultsByStatus($status: String!) @auth(level: USER) {
       user {
         fullname
       }
-      serviceMethod {
-        service {
-          title
-        }
+      service {
+        title
       }
     }
     staff {
@@ -795,10 +790,8 @@ query GetUserTestResults($userId: String!) @auth(level: USER) {
   }, orderBy: { testDate: DESC }) {
     id
     booking {
-      serviceMethod {
-        service {
-          title
-        }
+      service {
+        title
       }
     }
     testDate
@@ -819,6 +812,7 @@ query GetBookingPayment($bookingId: String!) @auth(level: USER) {
     status
     paymentDate
     refundDetail
+    otherDetails
     createdAt
     updatedAt
   }
@@ -841,6 +835,7 @@ query GetPaymentById($paymentId: String!) @auth(level: USER) {
     status
     paymentDate
     refundDetail
+    otherDetails
     createdAt
     updatedAt
   }
@@ -858,6 +853,8 @@ query GetPaymentsByStatus($status: String!) @auth(level: USER) {
     amount
     paymentMethod
     paymentDate
+    refundDetail
+    otherDetails
     createdAt
   }
 }
@@ -872,6 +869,8 @@ query GetUserPayments($userId: String!) @auth(level: USER) {
     paymentMethod
     status
     paymentDate
+    refundDetail
+    otherDetails
     createdAt
   }
 }
@@ -1047,11 +1046,9 @@ query GetBookingStats @auth(level: USER) {
 # Get service popularity
 query GetServicePopularity @auth(level: USER) {
   bookings {
-    serviceMethod {
-      service {
-        id
-        title
-      }
+    service {
+      id
+      title
     }
   }
 }

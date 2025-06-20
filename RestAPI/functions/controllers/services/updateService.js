@@ -1,170 +1,130 @@
 const { dataConnect } = require("../../config/firebase.js");
-const {checkServiceExists} = require('./getServicesAndMethods.js');
-const {addServiceMethods} = require('./addService.js');
-const {deleteServiceMethods} = require('./deleteService.js');
+const { checkCatergoryExists } = require("../categories/getCategories.js");
+const { checkServiceExists } = require("./getServices.js");
+const { getServiceMethods } = require("../methodService/getMethodServices.js");
+const { addServiceMethod } = require("../methodService/addMethodService.js");
+const { deleteMethodService } = require("../methodService/deleteMethodService.js");
+const { checkMethodExists } = require("../methods/getMethods.js");
 
 const updateService = async (req, res) => {
-  try {
-    const { 
-      serviceId, 
-      title, 
-      description, 
-      fullDescription, 
-      price, 
-      duration, 
-      category, 
-      serviceType, 
-      hasLegalValue, 
-      icon, 
-      participants, 
-      requiredDocuments, 
-      procedures,
-      serviceMethods, 
-      featured 
-    } = req.body;
+    try {
+        const {
+            serviceId,
+            title,
+            description,
+            fullDescription,
+            price,
+            duration,
+            categoryId,
+            icon,
+            featured,
+            methods,
+        } = req.body;
+        
+        if (!serviceId) {
+            return res.status(400).json({
+                statusCode: 400,
+                status: "error",
+                message: "Service ID is required",
+            });
+        }
 
-    if (!serviceId) {
-      return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "Service ID is required",
-      });
+        if (!(await checkServiceExists(serviceId))) {
+            return res.status(404).json({
+                statusCode: 404,
+                status: "error",
+                message: "Service does not exist",
+            });
+        }
+
+        if (categoryId && !(await checkCatergoryExists(categoryId))) {
+            return res.status(400).json({
+                statusCode: 400,
+                status: "error",
+                message: "Category does not exist",
+            });
+        }
+
+        if (featured !== undefined && typeof featured !== 'boolean') {
+            return res.status(400).json({
+                statusCode: 400,
+                status: "error",
+                message: "Featured must be a boolean value",
+            });
+        }
+
+        for (const methodId of methods) {
+            if (!(await checkMethodExists(methodId))) {
+                return res.status(400).json({
+                    statusCode: 400,
+                    status: "error",
+                    message: `Method with ID ${methodId} does not exist`,
+                });
+            }
+        }
+
+        const variables = {
+            serviceId: serviceId,
+            title: title,
+            description: description,
+            fullDescription: fullDescription,
+            price: price,
+            duration: duration,
+            categoryId: categoryId,
+            icon: icon,
+            featured: featured,
+        };
+
+        const UPDATE_SERVICE_MUTATION = `
+            mutation UpdateService($serviceId: String!, $title: String, $description: String, $fullDescription: String, $price: Float, $duration: String, $categoryId: String, $icon: String, $featured: Boolean) @auth(level: USER) {
+                service_update(key: {id: $serviceId}, data: {title: $title, description: $description, fullDescription: $fullDescription, price: $price, duration: $duration, categoryId: $categoryId, icon: $icon, featured: $featured, updatedAt_expr: "request.time"})
+            }
+        `;
+
+        console.log("Executing GraphQL mutation:", UPDATE_SERVICE_MUTATION, "with variables:", variables);
+        const response = await dataConnect.executeGraphql(UPDATE_SERVICE_MUTATION, { variables });
+        const responseData = response.data.service_update || {};
+
+        if (methods && Array.isArray(methods)) {
+            try {
+                const currentMethods = await getServiceMethods(serviceId);
+                const currentMethodIds = currentMethods.map(sm => sm.methodId);
+                
+                const methodsToAdd = methods.filter(methodId => !currentMethodIds.includes(methodId));
+                
+                const methodsToRemove = currentMethodIds.filter(methodId => !methods.includes(methodId));
+                
+                for (const methodId of methodsToAdd) {
+                    await addServiceMethod(serviceId, methodId);
+                    console.log(`Added method ${methodId} to service ${serviceId}`);
+                }
+                
+                for (const methodId of methodsToRemove) {
+                    await deleteMethodService(serviceId, methodId);
+                    console.log(`Removed method ${methodId} from service ${serviceId}`);
+                }
+            } catch (error) {
+                console.error("Error updating service methods:", error);
+            }
+        }
+
+        res.status(200).json({
+            statusCode: 200,
+            status: "success",
+            message: "Service and its methods updated successfully",
+            data: responseData,
+        });
+    } catch (error) {
+        console.error("Error updating service:", error);
+        res.status(500).json({
+            statusCode: 500,
+            status: "error",
+            message: "Failed to update service",
+            error: error.message,
+        });
     }
-
-    if (!title) {
-      return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "title is required",
-      });
-    }
-
-    if (!description) {
-      return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "description is required",
-      });
-    }
-
-    if (!price) {
-      return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "price is required",
-      });
-    }
-
-    if (!duration) {
-      return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "duration is required",
-      });
-    }
-
-    if (!category) {
-      return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "category is required",
-      });
-    }
-
-    if (!serviceType) {
-      return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "serviceType is required",
-      });
-    }
-
-    if (hasLegalValue === undefined || hasLegalValue === null) {
-      return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "hasLegalValue is required",
-      });
-    }
-
-    if (!serviceMethods || !Array.isArray(serviceMethods) || serviceMethods.length === 0) {
-      return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "serviceMethods is required and must be a non-empty array",
-      });
-    }
-
-    console.log("Checking if service exists before update, serviceId:", serviceId);
-    const existingService = await checkServiceExists(serviceId);
-    console.log("Service existence check result:", existingService);
-    if (!existingService) {
-      return res.status(404).json({
-        statusCode: 404,
-        status: "error",
-        message: "Service not found",
-        error: "Service with the provided ID does not exist",
-      });
-    }
-
-    const UPDATE_DNA_SERVICE_MUTATION = `
-      mutation UpdateDnaService($serviceId: String!, $title: String, $description: String, $fullDescription: String, $price: String, $duration: String, $category: String, $serviceType: String, $hasLegalValue: Boolean, $icon: String, $participants: String, $requiredDocuments: String, $procedures: String, $featured: Boolean) @auth(level: USER) {
-        dnaService_update(key: {id: $serviceId}, data: {title: $title, description: $description, fullDescription: $fullDescription, price: $price, duration: $duration, category: $category, serviceType: $serviceType, hasLegalValue: $hasLegalValue, icon: $icon, participants: $participants, requiredDocuments: $requiredDocuments, procedures: $procedures, featured: $featured})
-      }
-    `;
-
-    const variables = {
-      serviceId,
-      title: title || "",
-      description: description || "",
-      fullDescription: fullDescription || "",
-      price: price || "",
-      duration: duration || "",
-      category: category || "",
-      serviceType: serviceType || "",
-      hasLegalValue: hasLegalValue !== undefined ? hasLegalValue : null,
-      icon: icon || "",
-      participants: participants || "",
-      requiredDocuments: requiredDocuments || "",
-      procedures: procedures || "",
-      featured: featured !== undefined ? featured : null,
-    };
-
-    console.log("Executing GraphQL mutation:", UPDATE_DNA_SERVICE_MUTATION, "with variables:", variables);
-
-    const response = await dataConnect.executeGraphql(UPDATE_DNA_SERVICE_MUTATION, {
-      variables,
-    });
-    const responseData = response.data;
-
-    let responseMethodData = [];
-    if (serviceMethods && Array.isArray(serviceMethods) && serviceMethods.length > 0) {
-      console.log("Updating service methods for serviceId:", serviceId);
-      await deleteServiceMethods(serviceId);
-      responseMethodData = await addServiceMethods(serviceId, serviceMethods);
-      console.log("Service methods updated successfully");
-    }
-
-    res.status(200).json({
-      statusCode: 200,
-      status: "success",
-      message: "DNA service updated successfully",
-      data: {
-        service: responseData,
-        methods: responseMethodData
-      },
-    });
-  } catch (error) {
-    console.error("Error updating DNA service:", error);
-    res.status(500).json({
-      statusCode: 500,
-      status: "error",
-      message: "Failed to update DNA service",
-      error: error.message,
-    });
-  }
-};
+}
 
 module.exports = {
-  updateService,
+    updateService,
 };

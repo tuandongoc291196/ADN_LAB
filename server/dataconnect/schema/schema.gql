@@ -46,8 +46,6 @@ type ServiceCategory @table {
   name: String! @unique
   description: String
   hasLegalValue: Boolean!
-  icon: String
-  color: String
   createdAt: Timestamp! @default(expr: "request.time")
   updatedAt: Timestamp
 }
@@ -61,8 +59,7 @@ type Method @table {
   updatedAt: Timestamp
 }
 
-type ServiceMethod @table {
-  id: String! @col(name: "service_method_id")
+type ServiceMethod @table(key: ["serviceId", "methodId"]) {
   serviceId: String!
   service: Service! @ref(fields: "serviceId")
   methodId: String!
@@ -92,8 +89,10 @@ type Booking @table {
   staff: User @ref(fields: "staffId")
   timeSlotId: String
   timeSlot: TimeSlot @ref(fields: "timeSlotId")
-  serviceMethodId: String!
-  serviceMethod: ServiceMethod! @ref(fields: "serviceMethodId")
+  serviceId: String!
+  service: Service! @ref(fields: "serviceId")
+  methodId: String!
+  method: Method! @ref(fields: "methodId")
   bookingCreatedAt: Timestamp! @default(expr: "request.time")
   totalAmount: Float!
   createdAt: Timestamp! @default(expr: "request.time")
@@ -150,7 +149,8 @@ type Payment @table {
   paymentMethod: String!
   status: String! @default(value: "pending")
   paymentDate: Date
-  refundDetail: [String] @default(value: [])
+  refundDetail: String
+  otherDetails: [String] @default(value: [])
   createdAt: Timestamp! @default(expr: "request.time")
   updatedAt: Timestamp
 }

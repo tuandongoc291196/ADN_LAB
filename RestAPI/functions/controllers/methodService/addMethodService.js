@@ -1,0 +1,39 @@
+const {dataConnect} = require("../../config/firebase.js");
+const {checkMethodServiceExists} = require("./getMethodServices.js");
+
+const addServiceMethod = async (serviceId, methodId) => {
+    try {
+        console.log("Adding service method with serviceId:", serviceId, "and methodId:", methodId);
+        if (!serviceId) {
+            throw new Error("serviceId is required");
+        }
+
+        if (!methodId) {
+            throw new Error("methodId is required");
+        }
+
+        if (await checkMethodServiceExists(serviceId, methodId)) {
+            throw new Error("Method already exists for this service")
+        }
+
+        const variables = {serviceId, methodId};
+        const ADD_METHOD_SERVICE_MUTATION = `
+            mutation CreateServiceMethod($serviceId: String!, $methodId: String!) @auth(level: USER) {
+                serviceMethod_insert(data: {serviceId: $serviceId, methodId: $methodId})
+            }
+        `;
+
+        console.log("Executing GraphQL mutation:", ADD_METHOD_SERVICE_MUTATION, "with variables:", variables);
+        const response = await dataConnect.executeGraphql(ADD_METHOD_SERVICE_MUTATION, {
+            variables : variables,
+        });
+        const responseData = response.data.serviceMethod_insert || {};
+        console.log("Response data:", responseData);
+
+    } catch (error) {
+        console.error("Error in addServiceMethod:", error);
+        throw new Error("Failed to add method to service");
+    }
+}
+
+exports.addServiceMethod = addServiceMethod;
