@@ -9,6 +9,9 @@ import MainNavbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './components/Home';
 import About from './components/About';
+import Guides from './components/Guides';
+import Blog from './components/Blog';
+import BlogDetail from './components/BlogDetail';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import Reset from './components/auth/Reset';
@@ -135,6 +138,9 @@ function App() {
             {/* ======================== PUBLIC ROUTES ======================== */}
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
+            <Route path="/guides" element={<Guides />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:id" element={<BlogDetail />} />
             
             {/* Authentication Routes */}
             <Route path="/login" element={<Login setUser={setUser} />} />
@@ -180,48 +186,8 @@ function App() {
             
             {/* Information & Library Pages */}
             <Route path="/library" element={<div className="container py-5"><h2>Thư viện ADN</h2><p>Thư viện kiến thức đang được phát triển...</p></div>} />
-            <Route path="/library/technology" element={<div className="container py-5"><h2>Công nghệ ADN</h2><p>Nội dung đang được cập nhật...</p></div>} />
-            <Route path="/library/samples" element={<div className="container py-5"><h2>Mẫu xét nghiệm</h2><p>Nội dung đang được cập nhật...</p></div>} />
-            <Route path="/library/guides" element={<div className="container py-5"><h2>Hướng dẫn</h2><p>Nội dung đang được cập nhật...</p></div>} />
             
             {/* Business Pages */}
-            <Route path="/prices" element={
-              <div className="container py-5">
-                <div className="text-center mb-5">
-                  <h2>
-                    <i className="bi bi-tags text-primary me-2"></i>
-                    Bảng giá dịch vụ
-                  </h2>
-                  <p className="lead text-muted">Giá cả minh bạch và cạnh tranh</p>
-                </div>
-                <div className="row justify-content-center">
-                  <div className="col-lg-8">
-                    <div className="alert alert-info text-center">
-                      <i className="bi bi-info-circle me-2"></i>
-                      Bảng giá chi tiết đang được cập nhật. Vui lòng liên hệ hotline <strong>1900 1234</strong> để biết thêm thông tin.
-                    </div>
-                    <div className="card border-0 shadow-sm">
-                      <div className="card-body">
-                        <h5>Liên hệ để nhận báo giá:</h5>
-                        <div className="row mt-3">
-                          <div className="col-md-6 text-center mb-3">
-                            <i className="bi bi-telephone text-primary fs-3"></i>
-                            <p className="mt-2 mb-0"><strong>1900 1234</strong></p>
-                            <small className="text-muted">Hotline 24/7</small>
-                          </div>
-                          <div className="col-md-6 text-center mb-3">
-                            <i className="bi bi-envelope text-primary fs-3"></i>
-                            <p className="mt-2 mb-0"><strong>support@adnlab.vn</strong></p>
-                            <small className="text-muted">Email hỗ trợ</small>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            } />
-
             <Route path="/contact" element={
               <div className="container py-5">
                 <div className="text-center mb-5">
