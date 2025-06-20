@@ -1069,21 +1069,3 @@ query GetMonthlyRevenue($startDate: Date!, $endDate: Date!) @auth(level: USER) {
     paymentDate
   }
 }
-
-# Get services by category (convenience query)
-query GetServicesByCategory($categoryId: String!) @auth(level: USER) {
-  services(where: { 
-    categoryId: { eq: $categoryId }
-  }, orderBy: { title: ASC }) {
-    id
-    title
-    description
-    price
-    duration
-    category {
-      name
-      hasLegalValue
-    }
-    featured
-  }
-}

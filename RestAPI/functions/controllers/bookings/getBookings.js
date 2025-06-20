@@ -189,6 +189,12 @@ const checkBookingExists = async (bookingId) => {
   }
 };
 
+
+// Get boooking by UserID/StaffID
+
+// Check for user's booking (1 user/ 1 booking/ 1 slot)
+
+// Change relation between service and methods (one service table, one servicemethod table, one method table)
 module.exports = {
   getAllBookings,
   getOneBooking,

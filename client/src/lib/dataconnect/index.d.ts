@@ -8,17 +8,13 @@ export type Int64String = string;
 export type DateString = string;
 
 
-export interface AddBookingItemData {
-  bookingItem_insert: BookingItem_Key;
+export interface AddRefundDetailData {
+  payment_update?: Payment_Key | null;
 }
 
-export interface AddBookingItemVariables {
-  id: string;
-  bookingId: string;
-  serviceId: string;
-  price: number;
-  quantity: number;
-  notes?: string | null;
+export interface AddRefundDetailVariables {
+  paymentId: string;
+  refundDetails: string[];
 }
 
 export interface AssignBookingStaffData {
@@ -30,14 +26,23 @@ export interface AssignBookingStaffVariables {
   staffId: string;
 }
 
+export interface AssignTestResultStaffData {
+  testResult_update?: TestResult_Key | null;
+}
+
+export interface AssignTestResultStaffVariables {
+  resultId: string;
+  staffId: string;
+}
+
 export interface Blog_Key {
   id: string;
   __typename?: 'Blog_Key';
 }
 
-export interface BookingItem_Key {
+export interface BookingHistory_Key {
   id: string;
-  __typename?: 'BookingItem_Key';
+  __typename?: 'BookingHistory_Key';
 }
 
 export interface Booking_Key {
@@ -60,36 +65,24 @@ export interface CreateBookingData {
   booking_insert: Booking_Key;
 }
 
+export interface CreateBookingHistoryData {
+  bookingHistory_insert: BookingHistory_Key;
+}
+
+export interface CreateBookingHistoryVariables {
+  id: string;
+  bookingId: string;
+  description: string;
+  status: string;
+}
+
 export interface CreateBookingVariables {
   id: string;
   userId: string;
   staffId?: string | null;
-  kitId?: string | null;
   timeSlotId?: string | null;
-  collectionMethod: string;
-  notes?: string | null;
+  serviceMethodId: string;
   totalAmount: number;
-}
-
-export interface CreateDnaServiceData {
-  dnaService_insert: DnaService_Key;
-}
-
-export interface CreateDnaServiceVariables {
-  id: string;
-  title: string;
-  description: string;
-  fullDescription?: string | null;
-  price: string;
-  duration: string;
-  category: string;
-  serviceType: string;
-  hasLegalValue: boolean;
-  icon?: string | null;
-  participants?: string | null;
-  requiredDocuments?: string | null;
-  procedures?: string | null;
-  featured: boolean;
 }
 
 export interface CreateFeedbackData {
@@ -103,13 +96,15 @@ export interface CreateFeedbackVariables {
   comment?: string | null;
 }
 
-export interface CreateKitData {
-  kit_insert: Kit_Key;
+export interface CreateMethodData {
+  method_insert: Method_Key;
 }
 
-export interface CreateKitVariables {
+export interface CreateMethodVariables {
   id: string;
-  amount: number;
+  name: string;
+  description?: string | null;
+  price: number;
 }
 
 export interface CreateNotificationData {
@@ -149,8 +144,8 @@ export interface CreatePaymentVariables {
   bookingId: string;
   amount: number;
   paymentMethod: string;
-  transactionId?: string | null;
-  paymentDate: DateString;
+  status?: string | null;
+  paymentDate?: DateString | null;
 }
 
 export interface CreateRoleData {
@@ -170,27 +165,49 @@ export interface CreateSampleData {
 export interface CreateSampleVariables {
   id: string;
   bookingId: string;
-  serviceId: string;
   staffId?: string | null;
   collectionDate?: DateString | null;
+  status?: string | null;
   notes?: string | null;
 }
 
-export interface CreateServiceCollectionMethodData {
-  serviceCollectionMethod_insert: ServiceCollectionMethod_Key;
+export interface CreateServiceCategoryData {
+  serviceCategory_insert: ServiceCategory_Key;
 }
 
-export interface CreateServiceCollectionMethodVariables {
+export interface CreateServiceCategoryVariables {
+  id: string;
+  name: string;
+  description?: string | null;
+  hasLegalValue: boolean;
+  icon?: string | null;
+  color?: string | null;
+}
+
+export interface CreateServiceData {
+  service_insert: Service_Key;
+}
+
+export interface CreateServiceMethodData {
+  serviceMethod_insert: ServiceMethod_Key;
+}
+
+export interface CreateServiceMethodVariables {
   id: string;
   serviceId: string;
   methodId: string;
-  methodTitle: string;
-  methodDescription?: string | null;
-  methodIcon?: string | null;
-  methodColor?: string | null;
-  methodNote?: string | null;
-  methodProcess?: string | null;
-  allowedFor?: string | null;
+}
+
+export interface CreateServiceVariables {
+  id: string;
+  title: string;
+  description: string;
+  fullDescription?: string | null;
+  price: number;
+  duration: string;
+  categoryId: string;
+  icon?: string | null;
+  featured: boolean;
 }
 
 export interface CreateTestResultData {
@@ -201,11 +218,11 @@ export interface CreateTestResultVariables {
   id: string;
   bookingId: string;
   sampleId: string;
-  serviceId: string;
   staffId?: string | null;
   testDate?: DateString | null;
+  reportDate?: DateString | null;
   resultData?: string | null;
-  notes?: string | null;
+  status?: string | null;
 }
 
 export interface CreateTimeSlotData {
@@ -217,8 +234,6 @@ export interface CreateTimeSlotVariables {
   slotDate: DateString;
   startTime: string;
   endTime: string;
-  maxCapacity: number;
-  staffId?: string | null;
   notes?: string | null;
 }
 
@@ -246,9 +261,12 @@ export interface DeleteRoleVariables {
   roleId: string;
 }
 
-export interface DnaService_Key {
-  id: string;
-  __typename?: 'DnaService_Key';
+export interface DeleteServiceMethodData {
+  serviceMethod_delete?: ServiceMethod_Key | null;
+}
+
+export interface DeleteServiceMethodVariables {
+  serviceMethodId: string;
 }
 
 export interface Feedback_Key {
@@ -273,52 +291,6 @@ export interface GetAllFeedbackData {
 export interface GetAllFeedbackVariables {
   limit?: number | null;
   offset?: number | null;
-}
-
-export interface GetAtHomeServicesData {
-  serviceCollectionMethods: ({
-    id: string;
-    service: {
-      id: string;
-      title: string;
-      description: string;
-      price: string;
-      duration: string;
-      category: string;
-      featured: boolean;
-    } & DnaService_Key;
-      methodTitle: string;
-      methodDescription?: string | null;
-      methodIcon?: string | null;
-  } & ServiceCollectionMethod_Key)[];
-}
-
-export interface GetAvailableKitsData {
-  kits: ({
-    id: string;
-    amount: number;
-    createdAt: TimestampString;
-  } & Kit_Key)[];
-}
-
-export interface GetAvailableTimeSlotsData {
-  timeSlots: ({
-    id: string;
-    slotDate: DateString;
-    startTime: string;
-    endTime: string;
-    maxCapacity: number;
-    currentBookings: number;
-    staff?: {
-      id: string;
-      fullname: string;
-    } & User_Key;
-      notes?: string | null;
-  } & TimeSlot_Key)[];
-}
-
-export interface GetAvailableTimeSlotsVariables {
-  slotDate: DateString;
 }
 
 export interface GetBlogByIdData {
@@ -388,23 +360,36 @@ export interface GetBookingByIdData {
         id: string;
         fullname: string;
       } & User_Key;
-        kit?: {
+        serviceMethod: {
           id: string;
-          status: string;
-          amount: number;
-        } & Kit_Key;
+          service: {
+            id: string;
+            title: string;
+            description: string;
+            fullDescription?: string | null;
+            price: number;
+            duration: string;
+            category: {
+              id: string;
+              name: string;
+              description?: string | null;
+              hasLegalValue: boolean;
+            } & ServiceCategory_Key;
+          } & Service_Key;
+            method: {
+              id: string;
+              name: string;
+              description?: string | null;
+              price: number;
+            } & Method_Key;
+        } & ServiceMethod_Key;
           timeSlot?: {
             slotDate: DateString;
             startTime: string;
             endTime: string;
-            staff?: {
-              fullname: string;
-            };
           };
-            status: string;
-            collectionMethod: string;
-            notes?: string | null;
             totalAmount: number;
+            bookingCreatedAt: TimestampString;
             createdAt: TimestampString;
             updatedAt?: TimestampString | null;
   } & Booking_Key;
@@ -427,48 +412,17 @@ export interface GetBookingFeedbackVariables {
   bookingId: string;
 }
 
-export interface GetBookingItemByIdData {
-  bookingItem?: {
+export interface GetBookingHistoryData {
+  bookingHistories: ({
     id: string;
-    booking: {
-      id: string;
-      user: {
-        fullname: string;
-      };
-    } & Booking_Key;
-      service: {
-        id: string;
-        title: string;
-        price: string;
-      } & DnaService_Key;
-        price: number;
-        quantity: number;
-        notes?: string | null;
-  } & BookingItem_Key;
+    description: string;
+    status: string;
+    createdAt: TimestampString;
+    updatedAt?: TimestampString | null;
+  } & BookingHistory_Key)[];
 }
 
-export interface GetBookingItemByIdVariables {
-  itemId: string;
-}
-
-export interface GetBookingItemsData {
-  bookingItems: ({
-    id: string;
-    service: {
-      id: string;
-      title: string;
-      description: string;
-      price: string;
-      duration: string;
-      category: string;
-    } & DnaService_Key;
-      price: number;
-      quantity: number;
-      notes?: string | null;
-  } & BookingItem_Key)[];
-}
-
-export interface GetBookingItemsVariables {
+export interface GetBookingHistoryVariables {
   bookingId: string;
 }
 
@@ -477,10 +431,11 @@ export interface GetBookingPaymentData {
     id: string;
     amount: number;
     paymentMethod: string;
-    transactionId?: string | null;
     status: string;
     paymentDate?: DateString | null;
-    refundDetail?: string | null;
+    refundDetail?: string[] | null;
+    createdAt: TimestampString;
+    updatedAt?: TimestampString | null;
   } & Payment_Key)[];
 }
 
@@ -491,9 +446,15 @@ export interface GetBookingPaymentVariables {
 export interface GetBookingSamplesData {
   samples: ({
     id: string;
-    service: {
-      title: string;
-      category: string;
+    booking: {
+      serviceMethod: {
+        service: {
+          title: string;
+          category: {
+            name: string;
+          };
+        };
+      };
     };
       staff?: {
         fullname: string;
@@ -501,6 +462,8 @@ export interface GetBookingSamplesData {
         collectionDate?: DateString | null;
         status: string;
         notes?: string | null;
+        createdAt: TimestampString;
+        updatedAt?: TimestampString | null;
   } & Sample_Key)[];
 }
 
@@ -511,7 +474,6 @@ export interface GetBookingSamplesVariables {
 export interface GetBookingStatsData {
   bookings: ({
     id: string;
-    status: string;
     totalAmount: number;
     createdAt: TimestampString;
   } & Booking_Key)[];
@@ -523,20 +485,21 @@ export interface GetBookingTestResultsData {
     sample: {
       id: string;
     } & Sample_Key;
-      service: {
-        title: string;
+      booking: {
+        serviceMethod: {
+          service: {
+            title: string;
+          };
+        };
       };
         staff?: {
           fullname: string;
         };
-          verifier?: {
-            fullname: string;
-          };
-            testDate?: DateString | null;
-            reportDate?: DateString | null;
-            status: string;
-            reportUrl?: string | null;
-            notes?: string | null;
+          testDate?: DateString | null;
+          reportDate?: DateString | null;
+          status: string;
+          createdAt: TimestampString;
+          updatedAt?: TimestampString | null;
   } & TestResult_Key)[];
 }
 
@@ -544,191 +507,24 @@ export interface GetBookingTestResultsVariables {
   bookingId: string;
 }
 
-export interface GetBookingsByStatusData {
-  bookings: ({
-    id: string;
-    user: {
-      fullname: string;
-      email: string;
-    };
-      status: string;
-      collectionMethod: string;
-      totalAmount: number;
-      timeSlot?: {
-        slotDate: DateString;
-        startTime: string;
-      };
-        staff?: {
-          fullname: string;
-        };
-          createdAt: TimestampString;
-  } & Booking_Key)[];
-}
-
-export interface GetBookingsByStatusVariables {
-  status: string;
-}
-
-export interface GetDnaServiceByIdData {
-  dnaService?: {
+export interface GetFeaturedServicesData {
+  services: ({
     id: string;
     title: string;
     description: string;
     fullDescription?: string | null;
-    price: string;
+    price: number;
     duration: string;
-    category: string;
-    serviceType: string;
-    hasLegalValue: boolean;
-    icon?: string | null;
-    participants?: string | null;
-    requiredDocuments?: string | null;
-    procedures?: string | null;
-    featured: boolean;
-    createdAt: TimestampString;
-    updatedAt?: TimestampString | null;
-  } & DnaService_Key;
-}
-
-export interface GetDnaServiceByIdVariables {
-  serviceId: string;
-}
-
-export interface GetDnaServiceWithMethodsData {
-  dnaService?: {
-    id: string;
-    title: string;
-    description: string;
-    fullDescription?: string | null;
-    price: string;
-    duration: string;
-    category: string;
-    serviceType: string;
-    hasLegalValue: boolean;
-    icon?: string | null;
-    participants?: string | null;
-    requiredDocuments?: string | null;
-    procedures?: string | null;
-    featured: boolean;
-    createdAt: TimestampString;
-    updatedAt?: TimestampString | null;
-  } & DnaService_Key;
-    serviceCollectionMethods: ({
+    category: {
       id: string;
-      methodId: string;
-      methodTitle: string;
-      methodDescription?: string | null;
-      methodIcon?: string | null;
-      methodColor?: string | null;
-      methodNote?: string | null;
-      methodProcess?: string | null;
-      allowedFor?: string | null;
+      name: string;
+      hasLegalValue: boolean;
+    } & ServiceCategory_Key;
+      icon?: string | null;
+      featured: boolean;
       createdAt: TimestampString;
-    } & ServiceCollectionMethod_Key)[];
-}
-
-export interface GetDnaServiceWithMethodsVariables {
-  serviceId: string;
-}
-
-export interface GetDnaServicesByCategoryData {
-  dnaServices: ({
-    id: string;
-    title: string;
-    description: string;
-    fullDescription?: string | null;
-    price: string;
-    duration: string;
-    category: string;
-    serviceType: string;
-    hasLegalValue: boolean;
-    icon?: string | null;
-    participants?: string | null;
-    requiredDocuments?: string | null;
-    procedures?: string | null;
-    featured: boolean;
-    createdAt: TimestampString;
-    updatedAt?: TimestampString | null;
-  } & DnaService_Key)[];
-}
-
-export interface GetDnaServicesByCategoryVariables {
-  category: string;
-}
-
-export interface GetDnaServicesBySampleTypeData {
-  dnaServices: ({
-    id: string;
-    title: string;
-    description: string;
-    price: string;
-    duration: string;
-    category: string;
-    serviceType: string;
-    hasLegalValue: boolean;
-    featured: boolean;
-  } & DnaService_Key)[];
-}
-
-export interface GetDnaServicesBySampleTypeVariables {
-  sampleType: string;
-}
-
-export interface GetDnaServicesData {
-  dnaServices: ({
-    id: string;
-    title: string;
-    description: string;
-    fullDescription?: string | null;
-    price: string;
-    duration: string;
-    category: string;
-    serviceType: string;
-    hasLegalValue: boolean;
-    icon?: string | null;
-    participants?: string | null;
-    requiredDocuments?: string | null;
-    procedures?: string | null;
-    featured: boolean;
-    createdAt: TimestampString;
-    updatedAt?: TimestampString | null;
-  } & DnaService_Key)[];
-}
-
-export interface GetFeaturedDnaServicesData {
-  dnaServices: ({
-    id: string;
-    title: string;
-    description: string;
-    fullDescription?: string | null;
-    price: string;
-    duration: string;
-    category: string;
-    serviceType: string;
-    hasLegalValue: boolean;
-    icon?: string | null;
-    participants?: string | null;
-    requiredDocuments?: string | null;
-    procedures?: string | null;
-    featured: boolean;
-    createdAt: TimestampString;
-    updatedAt?: TimestampString | null;
-  } & DnaService_Key)[];
-}
-
-export interface GetFeaturedServicesWithMethodsData {
-  dnaServices: ({
-    id: string;
-    title: string;
-    description: string;
-    price: string;
-    duration: string;
-    category: string;
-    serviceType: string;
-    hasLegalValue: boolean;
-    icon?: string | null;
-    featured: boolean;
-  } & DnaService_Key)[];
+      updatedAt?: TimestampString | null;
+  } & Service_Key)[];
 }
 
 export interface GetFeedbackByRatingData {
@@ -749,26 +545,47 @@ export interface GetFeedbackByRatingVariables {
   rating: number;
 }
 
-export interface GetKitByIdData {
-  kit?: {
+export interface GetMethodByIdData {
+  method?: {
     id: string;
-    status: string;
-    amount: number;
+    name: string;
+    description?: string | null;
+    price: number;
     createdAt: TimestampString;
-  } & Kit_Key;
+    updatedAt?: TimestampString | null;
+  } & Method_Key;
 }
 
-export interface GetKitByIdVariables {
-  kitId: string;
+export interface GetMethodByIdVariables {
+  methodId: string;
 }
 
-export interface GetKitsData {
-  kits: ({
+export interface GetMethodsData {
+  methods: ({
     id: string;
-    status: string;
-    amount: number;
+    name: string;
+    description?: string | null;
+    price: number;
     createdAt: TimestampString;
-  } & Kit_Key)[];
+    updatedAt?: TimestampString | null;
+  } & Method_Key)[];
+}
+
+export interface GetMethodsForServiceData {
+  serviceMethods: ({
+    id: string;
+    method: {
+      id: string;
+      name: string;
+      description?: string | null;
+      price: number;
+    } & Method_Key;
+      createdAt: TimestampString;
+  } & ServiceMethod_Key)[];
+}
+
+export interface GetMethodsForServiceVariables {
+  serviceId: string;
 }
 
 export interface GetMonthlyRevenueData {
@@ -779,8 +596,6 @@ export interface GetMonthlyRevenueData {
 }
 
 export interface GetMonthlyRevenueVariables {
-  year: number;
-  month: number;
   startDate: DateString;
   endDate: DateString;
 }
@@ -797,22 +612,34 @@ export interface GetMyBlogsData {
 export interface GetMyBookingsData {
   bookings: ({
     id: string;
-    status: string;
-    collectionMethod: string;
     totalAmount: number;
-    notes?: string | null;
-    timeSlot?: {
-      slotDate: DateString;
-      startTime: string;
-      endTime: string;
-    };
-      staff?: {
-        fullname: string;
-      };
-        kit?: {
+    serviceMethod: {
+      id: string;
+      service: {
+        id: string;
+        title: string;
+        description: string;
+        duration: string;
+        category: {
+          name: string;
+        };
+      } & Service_Key;
+        method: {
           id: string;
-          status: string;
-        } & Kit_Key;
+          name: string;
+          description?: string | null;
+          price: number;
+        } & Method_Key;
+    } & ServiceMethod_Key;
+      timeSlot?: {
+        slotDate: DateString;
+        startTime: string;
+        endTime: string;
+      };
+        staff?: {
+          fullname: string;
+        };
+          bookingCreatedAt: TimestampString;
           createdAt: TimestampString;
           updatedAt?: TimestampString | null;
   } & Booking_Key)[];
@@ -866,10 +693,11 @@ export interface GetPaymentByIdData {
     } & Booking_Key;
       amount: number;
       paymentMethod: string;
-      transactionId?: string | null;
       status: string;
       paymentDate?: DateString | null;
-      refundDetail?: string | null;
+      refundDetail?: string[] | null;
+      createdAt: TimestampString;
+      updatedAt?: TimestampString | null;
   } & Payment_Key;
 }
 
@@ -887,8 +715,8 @@ export interface GetPaymentsByStatusData {
     };
       amount: number;
       paymentMethod: string;
-      transactionId?: string | null;
       paymentDate?: DateString | null;
+      createdAt: TimestampString;
   } & Payment_Key)[];
 }
 
@@ -941,18 +769,27 @@ export interface GetSampleByIdData {
         fullname: string;
         email: string;
       };
-    } & Booking_Key;
-      service: {
-        title: string;
-        category: string;
-        description: string;
-      };
-        staff?: {
-          fullname: string;
+        serviceMethod: {
+          service: {
+            title: string;
+            description: string;
+            category: {
+              name: string;
+            };
+          };
+            method: {
+              name: string;
+            };
         };
-          collectionDate?: DateString | null;
-          status: string;
-          notes?: string | null;
+    } & Booking_Key;
+      staff?: {
+        fullname: string;
+      };
+        collectionDate?: DateString | null;
+        status: string;
+        notes?: string | null;
+        createdAt: TimestampString;
+        updatedAt?: TimestampString | null;
   } & Sample_Key;
 }
 
@@ -968,17 +805,22 @@ export interface GetSamplesByStatusData {
       user: {
         fullname: string;
       };
-    } & Booking_Key;
-      service: {
-        title: string;
-        category: string;
-      };
-        staff?: {
-          fullname: string;
+        serviceMethod: {
+          service: {
+            title: string;
+            category: {
+              name: string;
+            };
+          };
         };
-          collectionDate?: DateString | null;
-          status: string;
-          notes?: string | null;
+    } & Booking_Key;
+      staff?: {
+        fullname: string;
+      };
+        collectionDate?: DateString | null;
+        status: string;
+        notes?: string | null;
+        createdAt: TimestampString;
   } & Sample_Key)[];
 }
 
@@ -986,83 +828,206 @@ export interface GetSamplesByStatusVariables {
   status: string;
 }
 
-export interface GetServiceCollectionMethodsData {
-  serviceCollectionMethods: ({
-    id: string;
-    serviceId: string;
-    methodId: string;
-    methodTitle: string;
-    methodDescription?: string | null;
-    methodIcon?: string | null;
-    methodColor?: string | null;
-    methodNote?: string | null;
-    methodProcess?: string | null;
-    allowedFor?: string | null;
-    createdAt: TimestampString;
-    service: {
-      id: string;
-      title: string;
-    } & DnaService_Key;
-  } & ServiceCollectionMethod_Key)[];
-}
-
-export interface GetServiceCollectionMethodsVariables {
-  serviceId: string;
-}
-
-export interface GetServicePopularityData {
-  bookingItems: ({
-    service: {
-      id: string;
-      title: string;
-    } & DnaService_Key;
-      quantity: number;
-  })[];
-}
-
-export interface GetServicesByCollectionMethodData {
-  serviceCollectionMethods: ({
-    id: string;
-    methodId: string;
-    methodTitle: string;
-    service: {
-      id: string;
-      title: string;
-      description: string;
-      price: string;
-      duration: string;
-      category: string;
-      serviceType: string;
-      hasLegalValue: boolean;
-      icon?: string | null;
-      featured: boolean;
-    } & DnaService_Key;
-  } & ServiceCollectionMethod_Key)[];
-}
-
-export interface GetServicesByCollectionMethodVariables {
-  methodId: string;
-}
-
-export interface GetServicesWithCollectionMethodsData {
-  dnaServices: ({
+export interface GetServiceByIdData {
+  service?: {
     id: string;
     title: string;
     description: string;
     fullDescription?: string | null;
-    price: string;
+    price: number;
     duration: string;
-    category: string;
-    serviceType: string;
+    categoryId: string;
+    category: {
+      id: string;
+      name: string;
+      description?: string | null;
+      hasLegalValue: boolean;
+      icon?: string | null;
+      color?: string | null;
+    } & ServiceCategory_Key;
+      icon?: string | null;
+      featured: boolean;
+      createdAt: TimestampString;
+      updatedAt?: TimestampString | null;
+  } & Service_Key;
+}
+
+export interface GetServiceByIdVariables {
+  serviceId: string;
+}
+
+export interface GetServiceCategoriesData {
+  serviceCategories: ({
+    id: string;
+    name: string;
+    description?: string | null;
     hasLegalValue: boolean;
     icon?: string | null;
-    participants?: string | null;
-    requiredDocuments?: string | null;
-    procedures?: string | null;
-    featured: boolean;
+    color?: string | null;
     createdAt: TimestampString;
     updatedAt?: TimestampString | null;
-  } & DnaService_Key)[];
+  } & ServiceCategory_Key)[];
+}
+
+export interface GetServiceCategoryByIdData {
+  serviceCategory?: {
+    id: string;
+    name: string;
+    description?: string | null;
+    hasLegalValue: boolean;
+    icon?: string | null;
+    color?: string | null;
+    createdAt: TimestampString;
+    updatedAt?: TimestampString | null;
+  } & ServiceCategory_Key;
+}
+
+export interface GetServiceCategoryByIdVariables {
+  categoryId: string;
+}
+
+export interface GetServiceMethodsData {
+  serviceMethods: ({
+    id: string;
+    serviceId: string;
+    methodId: string;
+    service: {
+      id: string;
+      title: string;
+    } & Service_Key;
+      method: {
+        id: string;
+        name: string;
+        description?: string | null;
+        price: number;
+      } & Method_Key;
+        createdAt: TimestampString;
+        updatedAt?: TimestampString | null;
+  } & ServiceMethod_Key)[];
+}
+
+export interface GetServiceMethodsVariables {
+  serviceId: string;
+}
+
+export interface GetServicePopularityData {
+  bookings: ({
+    serviceMethod: {
+      service: {
+        id: string;
+        title: string;
+      } & Service_Key;
+    };
+  })[];
+}
+
+export interface GetServiceWithMethodsData {
+  service?: {
+    id: string;
+    title: string;
+    description: string;
+    fullDescription?: string | null;
+    price: number;
+    duration: string;
+    category: {
+      id: string;
+      name: string;
+      description?: string | null;
+      hasLegalValue: boolean;
+      icon?: string | null;
+      color?: string | null;
+    } & ServiceCategory_Key;
+      icon?: string | null;
+      featured: boolean;
+      createdAt: TimestampString;
+      updatedAt?: TimestampString | null;
+  } & Service_Key;
+    serviceMethods: ({
+      id: string;
+      method: {
+        id: string;
+        name: string;
+        description?: string | null;
+        price: number;
+      } & Method_Key;
+        createdAt: TimestampString;
+    } & ServiceMethod_Key)[];
+}
+
+export interface GetServiceWithMethodsVariables {
+  serviceId: string;
+}
+
+export interface GetServicesByCategoryData {
+  services: ({
+    id: string;
+    title: string;
+    description: string;
+    fullDescription?: string | null;
+    price: number;
+    duration: string;
+    category: {
+      id: string;
+      name: string;
+      hasLegalValue: boolean;
+    } & ServiceCategory_Key;
+      icon?: string | null;
+      featured: boolean;
+      createdAt: TimestampString;
+      updatedAt?: TimestampString | null;
+  } & Service_Key)[];
+}
+
+export interface GetServicesByCategoryVariables {
+  categoryId: string;
+}
+
+export interface GetServicesData {
+  services: ({
+    id: string;
+    title: string;
+    description: string;
+    fullDescription?: string | null;
+    price: number;
+    duration: string;
+    categoryId: string;
+    category: {
+      id: string;
+      name: string;
+      description?: string | null;
+      hasLegalValue: boolean;
+      icon?: string | null;
+      color?: string | null;
+    } & ServiceCategory_Key;
+      icon?: string | null;
+      featured: boolean;
+      createdAt: TimestampString;
+      updatedAt?: TimestampString | null;
+  } & Service_Key)[];
+}
+
+export interface GetServicesForMethodData {
+  serviceMethods: ({
+    id: string;
+    service: {
+      id: string;
+      title: string;
+      description: string;
+      price: number;
+      duration: string;
+      category: {
+        name: string;
+        hasLegalValue: boolean;
+      };
+        icon?: string | null;
+        featured: boolean;
+    } & Service_Key;
+      createdAt: TimestampString;
+  } & ServiceMethod_Key)[];
+}
+
+export interface GetServicesForMethodVariables {
+  methodId: string;
 }
 
 export interface GetStaffBookingsData {
@@ -1073,16 +1038,27 @@ export interface GetStaffBookingsData {
       email: string;
       phone?: string | null;
     };
-      status: string;
-      collectionMethod: string;
       totalAmount: number;
-      timeSlot?: {
-        slotDate: DateString;
-        startTime: string;
-        endTime: string;
+      serviceMethod: {
+        service: {
+          id: string;
+          title: string;
+          category: {
+            name: string;
+          };
+        } & Service_Key;
+          method: {
+            name: string;
+            price: number;
+          };
       };
-        notes?: string | null;
-        createdAt: TimestampString;
+        timeSlot?: {
+          slotDate: DateString;
+          startTime: string;
+          endTime: string;
+        };
+          bookingCreatedAt: TimestampString;
+          createdAt: TimestampString;
   } & Booking_Key)[];
 }
 
@@ -1111,14 +1087,19 @@ export interface GetStaffSamplesData {
       user: {
         fullname: string;
       };
+        serviceMethod: {
+          service: {
+            title: string;
+            category: {
+              name: string;
+            };
+          };
+        };
     };
-      service: {
-        title: string;
-        category: string;
-      };
-        collectionDate?: DateString | null;
-        status: string;
-        notes?: string | null;
+      collectionDate?: DateString | null;
+      status: string;
+      notes?: string | null;
+      createdAt: TimestampString;
   } & Sample_Key)[];
 }
 
@@ -1135,27 +1116,29 @@ export interface GetTestResultByIdData {
         fullname: string;
         email: string;
       };
+        serviceMethod: {
+          service: {
+            title: string;
+            description: string;
+          };
+            method: {
+              name: string;
+            };
+        };
     } & Booking_Key;
       sample: {
         id: string;
         collectionDate?: DateString | null;
       } & Sample_Key;
-        service: {
-          title: string;
-          description: string;
+        staff?: {
+          fullname: string;
         };
-          staff?: {
-            fullname: string;
-          };
-            verifier?: {
-              fullname: string;
-            };
-              testDate?: DateString | null;
-              reportDate?: DateString | null;
-              resultData?: string | null;
-              status: string;
-              reportUrl?: string | null;
-              notes?: string | null;
+          testDate?: DateString | null;
+          reportDate?: DateString | null;
+          resultData?: string | null;
+          status: string;
+          createdAt: TimestampString;
+          updatedAt?: TimestampString | null;
   } & TestResult_Key;
 }
 
@@ -1170,15 +1153,18 @@ export interface GetTestResultsByStatusData {
       user: {
         fullname: string;
       };
-    };
-      service: {
-        title: string;
-      };
-        staff?: {
-          fullname: string;
+        serviceMethod: {
+          service: {
+            title: string;
+          };
         };
-          testDate?: DateString | null;
-          status: string;
+    };
+      staff?: {
+        fullname: string;
+      };
+        testDate?: DateString | null;
+        status: string;
+        createdAt: TimestampString;
   } & TestResult_Key)[];
 }
 
@@ -1192,16 +1178,10 @@ export interface GetTimeSlotByIdData {
     slotDate: DateString;
     startTime: string;
     endTime: string;
-    maxCapacity: number;
     currentBookings: number;
-    available: boolean;
-    staff?: {
-      id: string;
-      fullname: string;
-    } & User_Key;
-      notes?: string | null;
-      createdAt: TimestampString;
-      updatedAt?: TimestampString | null;
+    notes?: string | null;
+    createdAt: TimestampString;
+    updatedAt?: TimestampString | null;
   } & TimeSlot_Key;
 }
 
@@ -1209,21 +1189,17 @@ export interface GetTimeSlotByIdVariables {
   timeSlotId: string;
 }
 
-export interface GetTimeSlotsByStaffData {
+export interface GetTimeSlotsData {
   timeSlots: ({
     id: string;
     slotDate: DateString;
     startTime: string;
     endTime: string;
-    maxCapacity: number;
     currentBookings: number;
-    available: boolean;
     notes?: string | null;
+    createdAt: TimestampString;
+    updatedAt?: TimestampString | null;
   } & TimeSlot_Key)[];
-}
-
-export interface GetTimeSlotsByStaffVariables {
-  staffId: string;
 }
 
 export interface GetTimeSlotsInRangeData {
@@ -1232,18 +1208,19 @@ export interface GetTimeSlotsInRangeData {
     slotDate: DateString;
     startTime: string;
     endTime: string;
-    maxCapacity: number;
     currentBookings: number;
-    available: boolean;
-    staff?: {
-      fullname: string;
-    };
+    notes?: string | null;
+    createdAt: TimestampString;
   } & TimeSlot_Key)[];
 }
 
 export interface GetTimeSlotsInRangeVariables {
   startDate: DateString;
   endDate: DateString;
+}
+
+export interface GetTimeSlotsVariables {
+  slotDate: DateString;
 }
 
 export interface GetUnreadNotificationsCountData {
@@ -1259,21 +1236,33 @@ export interface GetUnreadNotificationsCountVariables {
 export interface GetUserBookingsData {
   bookings: ({
     id: string;
-    status: string;
-    collectionMethod: string;
     totalAmount: number;
-    timeSlot?: {
-      slotDate: DateString;
-      startTime: string;
-      endTime: string;
-    };
-      staff?: {
-        fullname: string;
-      };
-        kit?: {
+    serviceMethod: {
+      id: string;
+      service: {
+        id: string;
+        title: string;
+        description: string;
+        category: {
+          name: string;
+        };
+      } & Service_Key;
+        method: {
           id: string;
-          status: string;
-        } & Kit_Key;
+          name: string;
+          description?: string | null;
+          price: number;
+        } & Method_Key;
+    } & ServiceMethod_Key;
+      timeSlot?: {
+        slotDate: DateString;
+        startTime: string;
+        endTime: string;
+      };
+        staff?: {
+          fullname: string;
+        };
+          bookingCreatedAt: TimestampString;
           createdAt: TimestampString;
           updatedAt?: TimestampString | null;
   } & Booking_Key)[];
@@ -1301,7 +1290,6 @@ export interface GetUserByIdData {
       description?: string | null;
     } & Role_Key;
       dailySlotCount: number;
-      maxDailySlots: number;
       createdAt: TimestampString;
       lastLogin?: TimestampString | null;
   } & User_Key;
@@ -1329,7 +1317,6 @@ export interface GetUserData {
       description?: string | null;
     } & Role_Key;
       dailySlotCount: number;
-      maxDailySlots: number;
       createdAt: TimestampString;
       lastLogin?: TimestampString | null;
   } & User_Key;
@@ -1360,6 +1347,7 @@ export interface GetUserPaymentsData {
     paymentMethod: string;
     status: string;
     paymentDate?: DateString | null;
+    createdAt: TimestampString;
   } & Payment_Key)[];
 }
 
@@ -1370,13 +1358,17 @@ export interface GetUserPaymentsVariables {
 export interface GetUserTestResultsData {
   testResults: ({
     id: string;
-    service: {
-      title: string;
+    booking: {
+      serviceMethod: {
+        service: {
+          title: string;
+        };
+      };
     };
       testDate?: DateString | null;
       reportDate?: DateString | null;
       status: string;
-      reportUrl?: string | null;
+      createdAt: TimestampString;
   } & TestResult_Key)[];
 }
 
@@ -1425,11 +1417,6 @@ export interface GetUsersVariables {
   offset?: number | null;
 }
 
-export interface Kit_Key {
-  id: string;
-  __typename?: 'Kit_Key';
-}
-
 export interface MarkAllNotificationsReadData {
   notification_updateMany: number;
 }
@@ -1446,6 +1433,11 @@ export interface MarkNotificationReadVariables {
   notificationId: string;
 }
 
+export interface Method_Key {
+  id: string;
+  __typename?: 'Method_Key';
+}
+
 export interface Notification_Key {
   id: string;
   __typename?: 'Notification_Key';
@@ -1454,14 +1446,6 @@ export interface Notification_Key {
 export interface Payment_Key {
   id: string;
   __typename?: 'Payment_Key';
-}
-
-export interface RemoveBookingItemData {
-  bookingItem_delete?: BookingItem_Key | null;
-}
-
-export interface RemoveBookingItemVariables {
-  itemId: string;
 }
 
 export interface Role_Key {
@@ -1474,9 +1458,19 @@ export interface Sample_Key {
   __typename?: 'Sample_Key';
 }
 
-export interface ServiceCollectionMethod_Key {
+export interface ServiceCategory_Key {
   id: string;
-  __typename?: 'ServiceCollectionMethod_Key';
+  __typename?: 'ServiceCategory_Key';
+}
+
+export interface ServiceMethod_Key {
+  id: string;
+  __typename?: 'ServiceMethod_Key';
+}
+
+export interface Service_Key {
+  id: string;
+  __typename?: 'Service_Key';
 }
 
 export interface TestResult_Key {
@@ -1499,46 +1493,26 @@ export interface UpdateBlogVariables {
   imageUrl?: string | null;
 }
 
-export interface UpdateBookingItemData {
-  bookingItem_update?: BookingItem_Key | null;
-}
-
-export interface UpdateBookingItemVariables {
-  itemId: string;
-  price?: number | null;
-  quantity?: number | null;
-  notes?: string | null;
-}
-
-export interface UpdateBookingStatusData {
+export interface UpdateBookingData {
   booking_update?: Booking_Key | null;
 }
 
-export interface UpdateBookingStatusVariables {
-  bookingId: string;
-  status: string;
-  staffId?: string | null;
+export interface UpdateBookingHistoryData {
+  bookingHistory_update?: BookingHistory_Key | null;
 }
 
-export interface UpdateDnaServiceData {
-  dnaService_update?: DnaService_Key | null;
-}
-
-export interface UpdateDnaServiceVariables {
-  serviceId: string;
-  title?: string | null;
+export interface UpdateBookingHistoryVariables {
+  historyId: string;
   description?: string | null;
-  fullDescription?: string | null;
-  price?: string | null;
-  duration?: string | null;
-  category?: string | null;
-  serviceType?: string | null;
-  hasLegalValue?: boolean | null;
-  icon?: string | null;
-  participants?: string | null;
-  requiredDocuments?: string | null;
-  procedures?: string | null;
-  featured?: boolean | null;
+  status?: string | null;
+}
+
+export interface UpdateBookingVariables {
+  bookingId: string;
+  staffId?: string | null;
+  timeSlotId?: string | null;
+  serviceMethodId?: string | null;
+  totalAmount?: number | null;
 }
 
 export interface UpdateFeedbackData {
@@ -1551,13 +1525,15 @@ export interface UpdateFeedbackVariables {
   comment?: string | null;
 }
 
-export interface UpdateKitStatusData {
-  kit_update?: Kit_Key | null;
+export interface UpdateMethodData {
+  method_update?: Method_Key | null;
 }
 
-export interface UpdateKitStatusVariables {
-  kitId: string;
-  status: string;
+export interface UpdateMethodVariables {
+  methodId: string;
+  name?: string | null;
+  description?: string | null;
+  price?: number | null;
 }
 
 export interface UpdatePaymentStatusData {
@@ -1567,8 +1543,7 @@ export interface UpdatePaymentStatusData {
 export interface UpdatePaymentStatusVariables {
   paymentId: string;
   status: string;
-  transactionId?: string | null;
-  refundDetail?: string | null;
+  paymentDate?: DateString | null;
 }
 
 export interface UpdateRoleData {
@@ -1593,6 +1568,35 @@ export interface UpdateSampleStatusVariables {
   notes?: string | null;
 }
 
+export interface UpdateServiceCategoryData {
+  serviceCategory_update?: ServiceCategory_Key | null;
+}
+
+export interface UpdateServiceCategoryVariables {
+  categoryId: string;
+  name?: string | null;
+  description?: string | null;
+  hasLegalValue?: boolean | null;
+  icon?: string | null;
+  color?: string | null;
+}
+
+export interface UpdateServiceData {
+  service_update?: Service_Key | null;
+}
+
+export interface UpdateServiceVariables {
+  serviceId: string;
+  title?: string | null;
+  description?: string | null;
+  fullDescription?: string | null;
+  price?: number | null;
+  duration?: string | null;
+  categoryId?: string | null;
+  icon?: string | null;
+  featured?: boolean | null;
+}
+
 export interface UpdateTestResultData {
   testResult_update?: TestResult_Key | null;
 }
@@ -1602,8 +1606,7 @@ export interface UpdateTestResultVariables {
   resultData?: string | null;
   status?: string | null;
   reportDate?: DateString | null;
-  reportUrl?: string | null;
-  notes?: string | null;
+  testDate?: DateString | null;
 }
 
 export interface UpdateTimeSlotBookingsData {
@@ -1624,10 +1627,7 @@ export interface UpdateTimeSlotVariables {
   slotDate?: DateString | null;
   startTime?: string | null;
   endTime?: string | null;
-  maxCapacity?: number | null;
-  staffId?: string | null;
   notes?: string | null;
-  available?: boolean | null;
 }
 
 export interface UpdateUserAccountStatusData {
@@ -1664,459 +1664,6 @@ export interface User_Key {
   id: string;
   __typename?: 'User_Key';
 }
-
-export interface VerifyTestResultData {
-  testResult_update?: TestResult_Key | null;
-}
-
-export interface VerifyTestResultVariables {
-  resultId: string;
-  verifiedBy: string;
-}
-
-interface CreateRoleRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: CreateRoleVariables): MutationRef<CreateRoleData, CreateRoleVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: CreateRoleVariables): MutationRef<CreateRoleData, CreateRoleVariables>;
-  operationName: string;
-}
-export const createRoleRef: CreateRoleRef;
-
-export function createRole(vars: CreateRoleVariables): MutationPromise<CreateRoleData, CreateRoleVariables>;
-export function createRole(dc: DataConnect, vars: CreateRoleVariables): MutationPromise<CreateRoleData, CreateRoleVariables>;
-
-interface UpdateRoleRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: UpdateRoleVariables): MutationRef<UpdateRoleData, UpdateRoleVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: UpdateRoleVariables): MutationRef<UpdateRoleData, UpdateRoleVariables>;
-  operationName: string;
-}
-export const updateRoleRef: UpdateRoleRef;
-
-export function updateRole(vars: UpdateRoleVariables): MutationPromise<UpdateRoleData, UpdateRoleVariables>;
-export function updateRole(dc: DataConnect, vars: UpdateRoleVariables): MutationPromise<UpdateRoleData, UpdateRoleVariables>;
-
-interface DeleteRoleRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: DeleteRoleVariables): MutationRef<DeleteRoleData, DeleteRoleVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: DeleteRoleVariables): MutationRef<DeleteRoleData, DeleteRoleVariables>;
-  operationName: string;
-}
-export const deleteRoleRef: DeleteRoleRef;
-
-export function deleteRole(vars: DeleteRoleVariables): MutationPromise<DeleteRoleData, DeleteRoleVariables>;
-export function deleteRole(dc: DataConnect, vars: DeleteRoleVariables): MutationPromise<DeleteRoleData, DeleteRoleVariables>;
-
-interface CreateOrUpdateUserRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: CreateOrUpdateUserVariables): MutationRef<CreateOrUpdateUserData, CreateOrUpdateUserVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: CreateOrUpdateUserVariables): MutationRef<CreateOrUpdateUserData, CreateOrUpdateUserVariables>;
-  operationName: string;
-}
-export const createOrUpdateUserRef: CreateOrUpdateUserRef;
-
-export function createOrUpdateUser(vars: CreateOrUpdateUserVariables): MutationPromise<CreateOrUpdateUserData, CreateOrUpdateUserVariables>;
-export function createOrUpdateUser(dc: DataConnect, vars: CreateOrUpdateUserVariables): MutationPromise<CreateOrUpdateUserData, CreateOrUpdateUserVariables>;
-
-interface UpdateUserProfileRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars?: UpdateUserProfileVariables): MutationRef<UpdateUserProfileData, UpdateUserProfileVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars?: UpdateUserProfileVariables): MutationRef<UpdateUserProfileData, UpdateUserProfileVariables>;
-  operationName: string;
-}
-export const updateUserProfileRef: UpdateUserProfileRef;
-
-export function updateUserProfile(vars?: UpdateUserProfileVariables): MutationPromise<UpdateUserProfileData, UpdateUserProfileVariables>;
-export function updateUserProfile(dc: DataConnect, vars?: UpdateUserProfileVariables): MutationPromise<UpdateUserProfileData, UpdateUserProfileVariables>;
-
-interface UpdateUserRoleRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: UpdateUserRoleVariables): MutationRef<UpdateUserRoleData, UpdateUserRoleVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: UpdateUserRoleVariables): MutationRef<UpdateUserRoleData, UpdateUserRoleVariables>;
-  operationName: string;
-}
-export const updateUserRoleRef: UpdateUserRoleRef;
-
-export function updateUserRole(vars: UpdateUserRoleVariables): MutationPromise<UpdateUserRoleData, UpdateUserRoleVariables>;
-export function updateUserRole(dc: DataConnect, vars: UpdateUserRoleVariables): MutationPromise<UpdateUserRoleData, UpdateUserRoleVariables>;
-
-interface UpdateUserAccountStatusRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: UpdateUserAccountStatusVariables): MutationRef<UpdateUserAccountStatusData, UpdateUserAccountStatusVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: UpdateUserAccountStatusVariables): MutationRef<UpdateUserAccountStatusData, UpdateUserAccountStatusVariables>;
-  operationName: string;
-}
-export const updateUserAccountStatusRef: UpdateUserAccountStatusRef;
-
-export function updateUserAccountStatus(vars: UpdateUserAccountStatusVariables): MutationPromise<UpdateUserAccountStatusData, UpdateUserAccountStatusVariables>;
-export function updateUserAccountStatus(dc: DataConnect, vars: UpdateUserAccountStatusVariables): MutationPromise<UpdateUserAccountStatusData, UpdateUserAccountStatusVariables>;
-
-interface CreateDnaServiceRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: CreateDnaServiceVariables): MutationRef<CreateDnaServiceData, CreateDnaServiceVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: CreateDnaServiceVariables): MutationRef<CreateDnaServiceData, CreateDnaServiceVariables>;
-  operationName: string;
-}
-export const createDnaServiceRef: CreateDnaServiceRef;
-
-export function createDnaService(vars: CreateDnaServiceVariables): MutationPromise<CreateDnaServiceData, CreateDnaServiceVariables>;
-export function createDnaService(dc: DataConnect, vars: CreateDnaServiceVariables): MutationPromise<CreateDnaServiceData, CreateDnaServiceVariables>;
-
-interface UpdateDnaServiceRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: UpdateDnaServiceVariables): MutationRef<UpdateDnaServiceData, UpdateDnaServiceVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: UpdateDnaServiceVariables): MutationRef<UpdateDnaServiceData, UpdateDnaServiceVariables>;
-  operationName: string;
-}
-export const updateDnaServiceRef: UpdateDnaServiceRef;
-
-export function updateDnaService(vars: UpdateDnaServiceVariables): MutationPromise<UpdateDnaServiceData, UpdateDnaServiceVariables>;
-export function updateDnaService(dc: DataConnect, vars: UpdateDnaServiceVariables): MutationPromise<UpdateDnaServiceData, UpdateDnaServiceVariables>;
-
-interface CreateServiceCollectionMethodRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: CreateServiceCollectionMethodVariables): MutationRef<CreateServiceCollectionMethodData, CreateServiceCollectionMethodVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: CreateServiceCollectionMethodVariables): MutationRef<CreateServiceCollectionMethodData, CreateServiceCollectionMethodVariables>;
-  operationName: string;
-}
-export const createServiceCollectionMethodRef: CreateServiceCollectionMethodRef;
-
-export function createServiceCollectionMethod(vars: CreateServiceCollectionMethodVariables): MutationPromise<CreateServiceCollectionMethodData, CreateServiceCollectionMethodVariables>;
-export function createServiceCollectionMethod(dc: DataConnect, vars: CreateServiceCollectionMethodVariables): MutationPromise<CreateServiceCollectionMethodData, CreateServiceCollectionMethodVariables>;
-
-interface CreateKitRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: CreateKitVariables): MutationRef<CreateKitData, CreateKitVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: CreateKitVariables): MutationRef<CreateKitData, CreateKitVariables>;
-  operationName: string;
-}
-export const createKitRef: CreateKitRef;
-
-export function createKit(vars: CreateKitVariables): MutationPromise<CreateKitData, CreateKitVariables>;
-export function createKit(dc: DataConnect, vars: CreateKitVariables): MutationPromise<CreateKitData, CreateKitVariables>;
-
-interface UpdateKitStatusRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: UpdateKitStatusVariables): MutationRef<UpdateKitStatusData, UpdateKitStatusVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: UpdateKitStatusVariables): MutationRef<UpdateKitStatusData, UpdateKitStatusVariables>;
-  operationName: string;
-}
-export const updateKitStatusRef: UpdateKitStatusRef;
-
-export function updateKitStatus(vars: UpdateKitStatusVariables): MutationPromise<UpdateKitStatusData, UpdateKitStatusVariables>;
-export function updateKitStatus(dc: DataConnect, vars: UpdateKitStatusVariables): MutationPromise<UpdateKitStatusData, UpdateKitStatusVariables>;
-
-interface CreateTimeSlotRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: CreateTimeSlotVariables): MutationRef<CreateTimeSlotData, CreateTimeSlotVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: CreateTimeSlotVariables): MutationRef<CreateTimeSlotData, CreateTimeSlotVariables>;
-  operationName: string;
-}
-export const createTimeSlotRef: CreateTimeSlotRef;
-
-export function createTimeSlot(vars: CreateTimeSlotVariables): MutationPromise<CreateTimeSlotData, CreateTimeSlotVariables>;
-export function createTimeSlot(dc: DataConnect, vars: CreateTimeSlotVariables): MutationPromise<CreateTimeSlotData, CreateTimeSlotVariables>;
-
-interface UpdateTimeSlotRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: UpdateTimeSlotVariables): MutationRef<UpdateTimeSlotData, UpdateTimeSlotVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: UpdateTimeSlotVariables): MutationRef<UpdateTimeSlotData, UpdateTimeSlotVariables>;
-  operationName: string;
-}
-export const updateTimeSlotRef: UpdateTimeSlotRef;
-
-export function updateTimeSlot(vars: UpdateTimeSlotVariables): MutationPromise<UpdateTimeSlotData, UpdateTimeSlotVariables>;
-export function updateTimeSlot(dc: DataConnect, vars: UpdateTimeSlotVariables): MutationPromise<UpdateTimeSlotData, UpdateTimeSlotVariables>;
-
-interface UpdateTimeSlotBookingsRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: UpdateTimeSlotBookingsVariables): MutationRef<UpdateTimeSlotBookingsData, UpdateTimeSlotBookingsVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: UpdateTimeSlotBookingsVariables): MutationRef<UpdateTimeSlotBookingsData, UpdateTimeSlotBookingsVariables>;
-  operationName: string;
-}
-export const updateTimeSlotBookingsRef: UpdateTimeSlotBookingsRef;
-
-export function updateTimeSlotBookings(vars: UpdateTimeSlotBookingsVariables): MutationPromise<UpdateTimeSlotBookingsData, UpdateTimeSlotBookingsVariables>;
-export function updateTimeSlotBookings(dc: DataConnect, vars: UpdateTimeSlotBookingsVariables): MutationPromise<UpdateTimeSlotBookingsData, UpdateTimeSlotBookingsVariables>;
-
-interface CreateBookingRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: CreateBookingVariables): MutationRef<CreateBookingData, CreateBookingVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: CreateBookingVariables): MutationRef<CreateBookingData, CreateBookingVariables>;
-  operationName: string;
-}
-export const createBookingRef: CreateBookingRef;
-
-export function createBooking(vars: CreateBookingVariables): MutationPromise<CreateBookingData, CreateBookingVariables>;
-export function createBooking(dc: DataConnect, vars: CreateBookingVariables): MutationPromise<CreateBookingData, CreateBookingVariables>;
-
-interface UpdateBookingStatusRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: UpdateBookingStatusVariables): MutationRef<UpdateBookingStatusData, UpdateBookingStatusVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: UpdateBookingStatusVariables): MutationRef<UpdateBookingStatusData, UpdateBookingStatusVariables>;
-  operationName: string;
-}
-export const updateBookingStatusRef: UpdateBookingStatusRef;
-
-export function updateBookingStatus(vars: UpdateBookingStatusVariables): MutationPromise<UpdateBookingStatusData, UpdateBookingStatusVariables>;
-export function updateBookingStatus(dc: DataConnect, vars: UpdateBookingStatusVariables): MutationPromise<UpdateBookingStatusData, UpdateBookingStatusVariables>;
-
-interface AssignBookingStaffRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: AssignBookingStaffVariables): MutationRef<AssignBookingStaffData, AssignBookingStaffVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: AssignBookingStaffVariables): MutationRef<AssignBookingStaffData, AssignBookingStaffVariables>;
-  operationName: string;
-}
-export const assignBookingStaffRef: AssignBookingStaffRef;
-
-export function assignBookingStaff(vars: AssignBookingStaffVariables): MutationPromise<AssignBookingStaffData, AssignBookingStaffVariables>;
-export function assignBookingStaff(dc: DataConnect, vars: AssignBookingStaffVariables): MutationPromise<AssignBookingStaffData, AssignBookingStaffVariables>;
-
-interface AddBookingItemRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: AddBookingItemVariables): MutationRef<AddBookingItemData, AddBookingItemVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: AddBookingItemVariables): MutationRef<AddBookingItemData, AddBookingItemVariables>;
-  operationName: string;
-}
-export const addBookingItemRef: AddBookingItemRef;
-
-export function addBookingItem(vars: AddBookingItemVariables): MutationPromise<AddBookingItemData, AddBookingItemVariables>;
-export function addBookingItem(dc: DataConnect, vars: AddBookingItemVariables): MutationPromise<AddBookingItemData, AddBookingItemVariables>;
-
-interface UpdateBookingItemRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: UpdateBookingItemVariables): MutationRef<UpdateBookingItemData, UpdateBookingItemVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: UpdateBookingItemVariables): MutationRef<UpdateBookingItemData, UpdateBookingItemVariables>;
-  operationName: string;
-}
-export const updateBookingItemRef: UpdateBookingItemRef;
-
-export function updateBookingItem(vars: UpdateBookingItemVariables): MutationPromise<UpdateBookingItemData, UpdateBookingItemVariables>;
-export function updateBookingItem(dc: DataConnect, vars: UpdateBookingItemVariables): MutationPromise<UpdateBookingItemData, UpdateBookingItemVariables>;
-
-interface RemoveBookingItemRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: RemoveBookingItemVariables): MutationRef<RemoveBookingItemData, RemoveBookingItemVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: RemoveBookingItemVariables): MutationRef<RemoveBookingItemData, RemoveBookingItemVariables>;
-  operationName: string;
-}
-export const removeBookingItemRef: RemoveBookingItemRef;
-
-export function removeBookingItem(vars: RemoveBookingItemVariables): MutationPromise<RemoveBookingItemData, RemoveBookingItemVariables>;
-export function removeBookingItem(dc: DataConnect, vars: RemoveBookingItemVariables): MutationPromise<RemoveBookingItemData, RemoveBookingItemVariables>;
-
-interface CreateSampleRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: CreateSampleVariables): MutationRef<CreateSampleData, CreateSampleVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: CreateSampleVariables): MutationRef<CreateSampleData, CreateSampleVariables>;
-  operationName: string;
-}
-export const createSampleRef: CreateSampleRef;
-
-export function createSample(vars: CreateSampleVariables): MutationPromise<CreateSampleData, CreateSampleVariables>;
-export function createSample(dc: DataConnect, vars: CreateSampleVariables): MutationPromise<CreateSampleData, CreateSampleVariables>;
-
-interface UpdateSampleStatusRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: UpdateSampleStatusVariables): MutationRef<UpdateSampleStatusData, UpdateSampleStatusVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: UpdateSampleStatusVariables): MutationRef<UpdateSampleStatusData, UpdateSampleStatusVariables>;
-  operationName: string;
-}
-export const updateSampleStatusRef: UpdateSampleStatusRef;
-
-export function updateSampleStatus(vars: UpdateSampleStatusVariables): MutationPromise<UpdateSampleStatusData, UpdateSampleStatusVariables>;
-export function updateSampleStatus(dc: DataConnect, vars: UpdateSampleStatusVariables): MutationPromise<UpdateSampleStatusData, UpdateSampleStatusVariables>;
-
-interface CreateTestResultRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: CreateTestResultVariables): MutationRef<CreateTestResultData, CreateTestResultVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: CreateTestResultVariables): MutationRef<CreateTestResultData, CreateTestResultVariables>;
-  operationName: string;
-}
-export const createTestResultRef: CreateTestResultRef;
-
-export function createTestResult(vars: CreateTestResultVariables): MutationPromise<CreateTestResultData, CreateTestResultVariables>;
-export function createTestResult(dc: DataConnect, vars: CreateTestResultVariables): MutationPromise<CreateTestResultData, CreateTestResultVariables>;
-
-interface UpdateTestResultRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: UpdateTestResultVariables): MutationRef<UpdateTestResultData, UpdateTestResultVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: UpdateTestResultVariables): MutationRef<UpdateTestResultData, UpdateTestResultVariables>;
-  operationName: string;
-}
-export const updateTestResultRef: UpdateTestResultRef;
-
-export function updateTestResult(vars: UpdateTestResultVariables): MutationPromise<UpdateTestResultData, UpdateTestResultVariables>;
-export function updateTestResult(dc: DataConnect, vars: UpdateTestResultVariables): MutationPromise<UpdateTestResultData, UpdateTestResultVariables>;
-
-interface VerifyTestResultRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: VerifyTestResultVariables): MutationRef<VerifyTestResultData, VerifyTestResultVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: VerifyTestResultVariables): MutationRef<VerifyTestResultData, VerifyTestResultVariables>;
-  operationName: string;
-}
-export const verifyTestResultRef: VerifyTestResultRef;
-
-export function verifyTestResult(vars: VerifyTestResultVariables): MutationPromise<VerifyTestResultData, VerifyTestResultVariables>;
-export function verifyTestResult(dc: DataConnect, vars: VerifyTestResultVariables): MutationPromise<VerifyTestResultData, VerifyTestResultVariables>;
-
-interface CreatePaymentRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: CreatePaymentVariables): MutationRef<CreatePaymentData, CreatePaymentVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: CreatePaymentVariables): MutationRef<CreatePaymentData, CreatePaymentVariables>;
-  operationName: string;
-}
-export const createPaymentRef: CreatePaymentRef;
-
-export function createPayment(vars: CreatePaymentVariables): MutationPromise<CreatePaymentData, CreatePaymentVariables>;
-export function createPayment(dc: DataConnect, vars: CreatePaymentVariables): MutationPromise<CreatePaymentData, CreatePaymentVariables>;
-
-interface UpdatePaymentStatusRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: UpdatePaymentStatusVariables): MutationRef<UpdatePaymentStatusData, UpdatePaymentStatusVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: UpdatePaymentStatusVariables): MutationRef<UpdatePaymentStatusData, UpdatePaymentStatusVariables>;
-  operationName: string;
-}
-export const updatePaymentStatusRef: UpdatePaymentStatusRef;
-
-export function updatePaymentStatus(vars: UpdatePaymentStatusVariables): MutationPromise<UpdatePaymentStatusData, UpdatePaymentStatusVariables>;
-export function updatePaymentStatus(dc: DataConnect, vars: UpdatePaymentStatusVariables): MutationPromise<UpdatePaymentStatusData, UpdatePaymentStatusVariables>;
-
-interface CreateFeedbackRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: CreateFeedbackVariables): MutationRef<CreateFeedbackData, CreateFeedbackVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: CreateFeedbackVariables): MutationRef<CreateFeedbackData, CreateFeedbackVariables>;
-  operationName: string;
-}
-export const createFeedbackRef: CreateFeedbackRef;
-
-export function createFeedback(vars: CreateFeedbackVariables): MutationPromise<CreateFeedbackData, CreateFeedbackVariables>;
-export function createFeedback(dc: DataConnect, vars: CreateFeedbackVariables): MutationPromise<CreateFeedbackData, CreateFeedbackVariables>;
-
-interface UpdateFeedbackRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: UpdateFeedbackVariables): MutationRef<UpdateFeedbackData, UpdateFeedbackVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: UpdateFeedbackVariables): MutationRef<UpdateFeedbackData, UpdateFeedbackVariables>;
-  operationName: string;
-}
-export const updateFeedbackRef: UpdateFeedbackRef;
-
-export function updateFeedback(vars: UpdateFeedbackVariables): MutationPromise<UpdateFeedbackData, UpdateFeedbackVariables>;
-export function updateFeedback(dc: DataConnect, vars: UpdateFeedbackVariables): MutationPromise<UpdateFeedbackData, UpdateFeedbackVariables>;
-
-interface CreateBlogRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: CreateBlogVariables): MutationRef<CreateBlogData, CreateBlogVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: CreateBlogVariables): MutationRef<CreateBlogData, CreateBlogVariables>;
-  operationName: string;
-}
-export const createBlogRef: CreateBlogRef;
-
-export function createBlog(vars: CreateBlogVariables): MutationPromise<CreateBlogData, CreateBlogVariables>;
-export function createBlog(dc: DataConnect, vars: CreateBlogVariables): MutationPromise<CreateBlogData, CreateBlogVariables>;
-
-interface UpdateBlogRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: UpdateBlogVariables): MutationRef<UpdateBlogData, UpdateBlogVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: UpdateBlogVariables): MutationRef<UpdateBlogData, UpdateBlogVariables>;
-  operationName: string;
-}
-export const updateBlogRef: UpdateBlogRef;
-
-export function updateBlog(vars: UpdateBlogVariables): MutationPromise<UpdateBlogData, UpdateBlogVariables>;
-export function updateBlog(dc: DataConnect, vars: UpdateBlogVariables): MutationPromise<UpdateBlogData, UpdateBlogVariables>;
-
-interface DeleteBlogRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: DeleteBlogVariables): MutationRef<DeleteBlogData, DeleteBlogVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: DeleteBlogVariables): MutationRef<DeleteBlogData, DeleteBlogVariables>;
-  operationName: string;
-}
-export const deleteBlogRef: DeleteBlogRef;
-
-export function deleteBlog(vars: DeleteBlogVariables): MutationPromise<DeleteBlogData, DeleteBlogVariables>;
-export function deleteBlog(dc: DataConnect, vars: DeleteBlogVariables): MutationPromise<DeleteBlogData, DeleteBlogVariables>;
-
-interface CreateNotificationRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: CreateNotificationVariables): MutationRef<CreateNotificationData, CreateNotificationVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: CreateNotificationVariables): MutationRef<CreateNotificationData, CreateNotificationVariables>;
-  operationName: string;
-}
-export const createNotificationRef: CreateNotificationRef;
-
-export function createNotification(vars: CreateNotificationVariables): MutationPromise<CreateNotificationData, CreateNotificationVariables>;
-export function createNotification(dc: DataConnect, vars: CreateNotificationVariables): MutationPromise<CreateNotificationData, CreateNotificationVariables>;
-
-interface MarkNotificationReadRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: MarkNotificationReadVariables): MutationRef<MarkNotificationReadData, MarkNotificationReadVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: MarkNotificationReadVariables): MutationRef<MarkNotificationReadData, MarkNotificationReadVariables>;
-  operationName: string;
-}
-export const markNotificationReadRef: MarkNotificationReadRef;
-
-export function markNotificationRead(vars: MarkNotificationReadVariables): MutationPromise<MarkNotificationReadData, MarkNotificationReadVariables>;
-export function markNotificationRead(dc: DataConnect, vars: MarkNotificationReadVariables): MutationPromise<MarkNotificationReadData, MarkNotificationReadVariables>;
-
-interface MarkAllNotificationsReadRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: MarkAllNotificationsReadVariables): MutationRef<MarkAllNotificationsReadData, MarkAllNotificationsReadVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: MarkAllNotificationsReadVariables): MutationRef<MarkAllNotificationsReadData, MarkAllNotificationsReadVariables>;
-  operationName: string;
-}
-export const markAllNotificationsReadRef: MarkAllNotificationsReadRef;
-
-export function markAllNotificationsRead(vars: MarkAllNotificationsReadVariables): MutationPromise<MarkAllNotificationsReadData, MarkAllNotificationsReadVariables>;
-export function markAllNotificationsRead(dc: DataConnect, vars: MarkAllNotificationsReadVariables): MutationPromise<MarkAllNotificationsReadData, MarkAllNotificationsReadVariables>;
-
-interface DeleteNotificationRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: DeleteNotificationVariables): MutationRef<DeleteNotificationData, DeleteNotificationVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: DeleteNotificationVariables): MutationRef<DeleteNotificationData, DeleteNotificationVariables>;
-  operationName: string;
-}
-export const deleteNotificationRef: DeleteNotificationRef;
-
-export function deleteNotification(vars: DeleteNotificationVariables): MutationPromise<DeleteNotificationData, DeleteNotificationVariables>;
-export function deleteNotification(dc: DataConnect, vars: DeleteNotificationVariables): MutationPromise<DeleteNotificationData, DeleteNotificationVariables>;
 
 interface GetRolesRef {
   /* Allow users to create refs without passing in DataConnect */
@@ -2214,173 +1761,161 @@ export const getStaffMembersRef: GetStaffMembersRef;
 export function getStaffMembers(): QueryPromise<GetStaffMembersData, undefined>;
 export function getStaffMembers(dc: DataConnect): QueryPromise<GetStaffMembersData, undefined>;
 
-interface GetDnaServicesRef {
+interface GetServiceCategoriesRef {
   /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetDnaServicesData, undefined>;
+  (): QueryRef<GetServiceCategoriesData, undefined>;
   /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetDnaServicesData, undefined>;
+  (dc: DataConnect): QueryRef<GetServiceCategoriesData, undefined>;
   operationName: string;
 }
-export const getDnaServicesRef: GetDnaServicesRef;
+export const getServiceCategoriesRef: GetServiceCategoriesRef;
 
-export function getDnaServices(): QueryPromise<GetDnaServicesData, undefined>;
-export function getDnaServices(dc: DataConnect): QueryPromise<GetDnaServicesData, undefined>;
+export function getServiceCategories(): QueryPromise<GetServiceCategoriesData, undefined>;
+export function getServiceCategories(dc: DataConnect): QueryPromise<GetServiceCategoriesData, undefined>;
 
-interface GetDnaServiceByIdRef {
+interface GetServiceCategoryByIdRef {
   /* Allow users to create refs without passing in DataConnect */
-  (vars: GetDnaServiceByIdVariables): QueryRef<GetDnaServiceByIdData, GetDnaServiceByIdVariables>;
+  (vars: GetServiceCategoryByIdVariables): QueryRef<GetServiceCategoryByIdData, GetServiceCategoryByIdVariables>;
   /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetDnaServiceByIdVariables): QueryRef<GetDnaServiceByIdData, GetDnaServiceByIdVariables>;
+  (dc: DataConnect, vars: GetServiceCategoryByIdVariables): QueryRef<GetServiceCategoryByIdData, GetServiceCategoryByIdVariables>;
   operationName: string;
 }
-export const getDnaServiceByIdRef: GetDnaServiceByIdRef;
+export const getServiceCategoryByIdRef: GetServiceCategoryByIdRef;
 
-export function getDnaServiceById(vars: GetDnaServiceByIdVariables): QueryPromise<GetDnaServiceByIdData, GetDnaServiceByIdVariables>;
-export function getDnaServiceById(dc: DataConnect, vars: GetDnaServiceByIdVariables): QueryPromise<GetDnaServiceByIdData, GetDnaServiceByIdVariables>;
+export function getServiceCategoryById(vars: GetServiceCategoryByIdVariables): QueryPromise<GetServiceCategoryByIdData, GetServiceCategoryByIdVariables>;
+export function getServiceCategoryById(dc: DataConnect, vars: GetServiceCategoryByIdVariables): QueryPromise<GetServiceCategoryByIdData, GetServiceCategoryByIdVariables>;
 
-interface GetDnaServicesByCategoryRef {
+interface GetMethodsRef {
   /* Allow users to create refs without passing in DataConnect */
-  (vars: GetDnaServicesByCategoryVariables): QueryRef<GetDnaServicesByCategoryData, GetDnaServicesByCategoryVariables>;
+  (): QueryRef<GetMethodsData, undefined>;
   /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetDnaServicesByCategoryVariables): QueryRef<GetDnaServicesByCategoryData, GetDnaServicesByCategoryVariables>;
+  (dc: DataConnect): QueryRef<GetMethodsData, undefined>;
   operationName: string;
 }
-export const getDnaServicesByCategoryRef: GetDnaServicesByCategoryRef;
+export const getMethodsRef: GetMethodsRef;
 
-export function getDnaServicesByCategory(vars: GetDnaServicesByCategoryVariables): QueryPromise<GetDnaServicesByCategoryData, GetDnaServicesByCategoryVariables>;
-export function getDnaServicesByCategory(dc: DataConnect, vars: GetDnaServicesByCategoryVariables): QueryPromise<GetDnaServicesByCategoryData, GetDnaServicesByCategoryVariables>;
+export function getMethods(): QueryPromise<GetMethodsData, undefined>;
+export function getMethods(dc: DataConnect): QueryPromise<GetMethodsData, undefined>;
 
-interface GetFeaturedDnaServicesRef {
+interface GetMethodByIdRef {
   /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetFeaturedDnaServicesData, undefined>;
+  (vars: GetMethodByIdVariables): QueryRef<GetMethodByIdData, GetMethodByIdVariables>;
   /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetFeaturedDnaServicesData, undefined>;
+  (dc: DataConnect, vars: GetMethodByIdVariables): QueryRef<GetMethodByIdData, GetMethodByIdVariables>;
   operationName: string;
 }
-export const getFeaturedDnaServicesRef: GetFeaturedDnaServicesRef;
+export const getMethodByIdRef: GetMethodByIdRef;
 
-export function getFeaturedDnaServices(): QueryPromise<GetFeaturedDnaServicesData, undefined>;
-export function getFeaturedDnaServices(dc: DataConnect): QueryPromise<GetFeaturedDnaServicesData, undefined>;
+export function getMethodById(vars: GetMethodByIdVariables): QueryPromise<GetMethodByIdData, GetMethodByIdVariables>;
+export function getMethodById(dc: DataConnect, vars: GetMethodByIdVariables): QueryPromise<GetMethodByIdData, GetMethodByIdVariables>;
 
-interface GetServiceCollectionMethodsRef {
+interface GetServicesRef {
   /* Allow users to create refs without passing in DataConnect */
-  (vars: GetServiceCollectionMethodsVariables): QueryRef<GetServiceCollectionMethodsData, GetServiceCollectionMethodsVariables>;
+  (): QueryRef<GetServicesData, undefined>;
   /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetServiceCollectionMethodsVariables): QueryRef<GetServiceCollectionMethodsData, GetServiceCollectionMethodsVariables>;
+  (dc: DataConnect): QueryRef<GetServicesData, undefined>;
   operationName: string;
 }
-export const getServiceCollectionMethodsRef: GetServiceCollectionMethodsRef;
+export const getServicesRef: GetServicesRef;
 
-export function getServiceCollectionMethods(vars: GetServiceCollectionMethodsVariables): QueryPromise<GetServiceCollectionMethodsData, GetServiceCollectionMethodsVariables>;
-export function getServiceCollectionMethods(dc: DataConnect, vars: GetServiceCollectionMethodsVariables): QueryPromise<GetServiceCollectionMethodsData, GetServiceCollectionMethodsVariables>;
+export function getServices(): QueryPromise<GetServicesData, undefined>;
+export function getServices(dc: DataConnect): QueryPromise<GetServicesData, undefined>;
 
-interface GetServicesByCollectionMethodRef {
+interface GetServiceByIdRef {
   /* Allow users to create refs without passing in DataConnect */
-  (vars: GetServicesByCollectionMethodVariables): QueryRef<GetServicesByCollectionMethodData, GetServicesByCollectionMethodVariables>;
+  (vars: GetServiceByIdVariables): QueryRef<GetServiceByIdData, GetServiceByIdVariables>;
   /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetServicesByCollectionMethodVariables): QueryRef<GetServicesByCollectionMethodData, GetServicesByCollectionMethodVariables>;
+  (dc: DataConnect, vars: GetServiceByIdVariables): QueryRef<GetServiceByIdData, GetServiceByIdVariables>;
   operationName: string;
 }
-export const getServicesByCollectionMethodRef: GetServicesByCollectionMethodRef;
+export const getServiceByIdRef: GetServiceByIdRef;
 
-export function getServicesByCollectionMethod(vars: GetServicesByCollectionMethodVariables): QueryPromise<GetServicesByCollectionMethodData, GetServicesByCollectionMethodVariables>;
-export function getServicesByCollectionMethod(dc: DataConnect, vars: GetServicesByCollectionMethodVariables): QueryPromise<GetServicesByCollectionMethodData, GetServicesByCollectionMethodVariables>;
+export function getServiceById(vars: GetServiceByIdVariables): QueryPromise<GetServiceByIdData, GetServiceByIdVariables>;
+export function getServiceById(dc: DataConnect, vars: GetServiceByIdVariables): QueryPromise<GetServiceByIdData, GetServiceByIdVariables>;
 
-interface GetDnaServiceWithMethodsRef {
+interface GetServicesByCategoryRef {
   /* Allow users to create refs without passing in DataConnect */
-  (vars: GetDnaServiceWithMethodsVariables): QueryRef<GetDnaServiceWithMethodsData, GetDnaServiceWithMethodsVariables>;
+  (vars: GetServicesByCategoryVariables): QueryRef<GetServicesByCategoryData, GetServicesByCategoryVariables>;
   /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetDnaServiceWithMethodsVariables): QueryRef<GetDnaServiceWithMethodsData, GetDnaServiceWithMethodsVariables>;
+  (dc: DataConnect, vars: GetServicesByCategoryVariables): QueryRef<GetServicesByCategoryData, GetServicesByCategoryVariables>;
   operationName: string;
 }
-export const getDnaServiceWithMethodsRef: GetDnaServiceWithMethodsRef;
+export const getServicesByCategoryRef: GetServicesByCategoryRef;
 
-export function getDnaServiceWithMethods(vars: GetDnaServiceWithMethodsVariables): QueryPromise<GetDnaServiceWithMethodsData, GetDnaServiceWithMethodsVariables>;
-export function getDnaServiceWithMethods(dc: DataConnect, vars: GetDnaServiceWithMethodsVariables): QueryPromise<GetDnaServiceWithMethodsData, GetDnaServiceWithMethodsVariables>;
+export function getServicesByCategory(vars: GetServicesByCategoryVariables): QueryPromise<GetServicesByCategoryData, GetServicesByCategoryVariables>;
+export function getServicesByCategory(dc: DataConnect, vars: GetServicesByCategoryVariables): QueryPromise<GetServicesByCategoryData, GetServicesByCategoryVariables>;
 
-interface GetServicesWithCollectionMethodsRef {
+interface GetFeaturedServicesRef {
   /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetServicesWithCollectionMethodsData, undefined>;
+  (): QueryRef<GetFeaturedServicesData, undefined>;
   /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetServicesWithCollectionMethodsData, undefined>;
+  (dc: DataConnect): QueryRef<GetFeaturedServicesData, undefined>;
   operationName: string;
 }
-export const getServicesWithCollectionMethodsRef: GetServicesWithCollectionMethodsRef;
+export const getFeaturedServicesRef: GetFeaturedServicesRef;
 
-export function getServicesWithCollectionMethods(): QueryPromise<GetServicesWithCollectionMethodsData, undefined>;
-export function getServicesWithCollectionMethods(dc: DataConnect): QueryPromise<GetServicesWithCollectionMethodsData, undefined>;
+export function getFeaturedServices(): QueryPromise<GetFeaturedServicesData, undefined>;
+export function getFeaturedServices(dc: DataConnect): QueryPromise<GetFeaturedServicesData, undefined>;
 
-interface GetFeaturedServicesWithMethodsRef {
+interface GetServiceMethodsRef {
   /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetFeaturedServicesWithMethodsData, undefined>;
+  (vars: GetServiceMethodsVariables): QueryRef<GetServiceMethodsData, GetServiceMethodsVariables>;
   /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetFeaturedServicesWithMethodsData, undefined>;
+  (dc: DataConnect, vars: GetServiceMethodsVariables): QueryRef<GetServiceMethodsData, GetServiceMethodsVariables>;
   operationName: string;
 }
-export const getFeaturedServicesWithMethodsRef: GetFeaturedServicesWithMethodsRef;
+export const getServiceMethodsRef: GetServiceMethodsRef;
 
-export function getFeaturedServicesWithMethods(): QueryPromise<GetFeaturedServicesWithMethodsData, undefined>;
-export function getFeaturedServicesWithMethods(dc: DataConnect): QueryPromise<GetFeaturedServicesWithMethodsData, undefined>;
+export function getServiceMethods(vars: GetServiceMethodsVariables): QueryPromise<GetServiceMethodsData, GetServiceMethodsVariables>;
+export function getServiceMethods(dc: DataConnect, vars: GetServiceMethodsVariables): QueryPromise<GetServiceMethodsData, GetServiceMethodsVariables>;
 
-interface GetKitsRef {
+interface GetMethodsForServiceRef {
   /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetKitsData, undefined>;
+  (vars: GetMethodsForServiceVariables): QueryRef<GetMethodsForServiceData, GetMethodsForServiceVariables>;
   /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetKitsData, undefined>;
+  (dc: DataConnect, vars: GetMethodsForServiceVariables): QueryRef<GetMethodsForServiceData, GetMethodsForServiceVariables>;
   operationName: string;
 }
-export const getKitsRef: GetKitsRef;
+export const getMethodsForServiceRef: GetMethodsForServiceRef;
 
-export function getKits(): QueryPromise<GetKitsData, undefined>;
-export function getKits(dc: DataConnect): QueryPromise<GetKitsData, undefined>;
+export function getMethodsForService(vars: GetMethodsForServiceVariables): QueryPromise<GetMethodsForServiceData, GetMethodsForServiceVariables>;
+export function getMethodsForService(dc: DataConnect, vars: GetMethodsForServiceVariables): QueryPromise<GetMethodsForServiceData, GetMethodsForServiceVariables>;
 
-interface GetAvailableKitsRef {
+interface GetServicesForMethodRef {
   /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetAvailableKitsData, undefined>;
+  (vars: GetServicesForMethodVariables): QueryRef<GetServicesForMethodData, GetServicesForMethodVariables>;
   /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetAvailableKitsData, undefined>;
+  (dc: DataConnect, vars: GetServicesForMethodVariables): QueryRef<GetServicesForMethodData, GetServicesForMethodVariables>;
   operationName: string;
 }
-export const getAvailableKitsRef: GetAvailableKitsRef;
+export const getServicesForMethodRef: GetServicesForMethodRef;
 
-export function getAvailableKits(): QueryPromise<GetAvailableKitsData, undefined>;
-export function getAvailableKits(dc: DataConnect): QueryPromise<GetAvailableKitsData, undefined>;
+export function getServicesForMethod(vars: GetServicesForMethodVariables): QueryPromise<GetServicesForMethodData, GetServicesForMethodVariables>;
+export function getServicesForMethod(dc: DataConnect, vars: GetServicesForMethodVariables): QueryPromise<GetServicesForMethodData, GetServicesForMethodVariables>;
 
-interface GetKitByIdRef {
+interface GetServiceWithMethodsRef {
   /* Allow users to create refs without passing in DataConnect */
-  (vars: GetKitByIdVariables): QueryRef<GetKitByIdData, GetKitByIdVariables>;
+  (vars: GetServiceWithMethodsVariables): QueryRef<GetServiceWithMethodsData, GetServiceWithMethodsVariables>;
   /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetKitByIdVariables): QueryRef<GetKitByIdData, GetKitByIdVariables>;
+  (dc: DataConnect, vars: GetServiceWithMethodsVariables): QueryRef<GetServiceWithMethodsData, GetServiceWithMethodsVariables>;
   operationName: string;
 }
-export const getKitByIdRef: GetKitByIdRef;
+export const getServiceWithMethodsRef: GetServiceWithMethodsRef;
 
-export function getKitById(vars: GetKitByIdVariables): QueryPromise<GetKitByIdData, GetKitByIdVariables>;
-export function getKitById(dc: DataConnect, vars: GetKitByIdVariables): QueryPromise<GetKitByIdData, GetKitByIdVariables>;
+export function getServiceWithMethods(vars: GetServiceWithMethodsVariables): QueryPromise<GetServiceWithMethodsData, GetServiceWithMethodsVariables>;
+export function getServiceWithMethods(dc: DataConnect, vars: GetServiceWithMethodsVariables): QueryPromise<GetServiceWithMethodsData, GetServiceWithMethodsVariables>;
 
-interface GetAvailableTimeSlotsRef {
+interface GetTimeSlotsRef {
   /* Allow users to create refs without passing in DataConnect */
-  (vars: GetAvailableTimeSlotsVariables): QueryRef<GetAvailableTimeSlotsData, GetAvailableTimeSlotsVariables>;
+  (vars: GetTimeSlotsVariables): QueryRef<GetTimeSlotsData, GetTimeSlotsVariables>;
   /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetAvailableTimeSlotsVariables): QueryRef<GetAvailableTimeSlotsData, GetAvailableTimeSlotsVariables>;
+  (dc: DataConnect, vars: GetTimeSlotsVariables): QueryRef<GetTimeSlotsData, GetTimeSlotsVariables>;
   operationName: string;
 }
-export const getAvailableTimeSlotsRef: GetAvailableTimeSlotsRef;
+export const getTimeSlotsRef: GetTimeSlotsRef;
 
-export function getAvailableTimeSlots(vars: GetAvailableTimeSlotsVariables): QueryPromise<GetAvailableTimeSlotsData, GetAvailableTimeSlotsVariables>;
-export function getAvailableTimeSlots(dc: DataConnect, vars: GetAvailableTimeSlotsVariables): QueryPromise<GetAvailableTimeSlotsData, GetAvailableTimeSlotsVariables>;
-
-interface GetTimeSlotsByStaffRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetTimeSlotsByStaffVariables): QueryRef<GetTimeSlotsByStaffData, GetTimeSlotsByStaffVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetTimeSlotsByStaffVariables): QueryRef<GetTimeSlotsByStaffData, GetTimeSlotsByStaffVariables>;
-  operationName: string;
-}
-export const getTimeSlotsByStaffRef: GetTimeSlotsByStaffRef;
-
-export function getTimeSlotsByStaff(vars: GetTimeSlotsByStaffVariables): QueryPromise<GetTimeSlotsByStaffData, GetTimeSlotsByStaffVariables>;
-export function getTimeSlotsByStaff(dc: DataConnect, vars: GetTimeSlotsByStaffVariables): QueryPromise<GetTimeSlotsByStaffData, GetTimeSlotsByStaffVariables>;
+export function getTimeSlots(vars: GetTimeSlotsVariables): QueryPromise<GetTimeSlotsData, GetTimeSlotsVariables>;
+export function getTimeSlots(dc: DataConnect, vars: GetTimeSlotsVariables): QueryPromise<GetTimeSlotsData, GetTimeSlotsVariables>;
 
 interface GetTimeSlotByIdRef {
   /* Allow users to create refs without passing in DataConnect */
@@ -2442,17 +1977,17 @@ export const getBookingByIdRef: GetBookingByIdRef;
 export function getBookingById(vars: GetBookingByIdVariables): QueryPromise<GetBookingByIdData, GetBookingByIdVariables>;
 export function getBookingById(dc: DataConnect, vars: GetBookingByIdVariables): QueryPromise<GetBookingByIdData, GetBookingByIdVariables>;
 
-interface GetBookingsByStatusRef {
+interface GetBookingHistoryRef {
   /* Allow users to create refs without passing in DataConnect */
-  (vars: GetBookingsByStatusVariables): QueryRef<GetBookingsByStatusData, GetBookingsByStatusVariables>;
+  (vars: GetBookingHistoryVariables): QueryRef<GetBookingHistoryData, GetBookingHistoryVariables>;
   /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetBookingsByStatusVariables): QueryRef<GetBookingsByStatusData, GetBookingsByStatusVariables>;
+  (dc: DataConnect, vars: GetBookingHistoryVariables): QueryRef<GetBookingHistoryData, GetBookingHistoryVariables>;
   operationName: string;
 }
-export const getBookingsByStatusRef: GetBookingsByStatusRef;
+export const getBookingHistoryRef: GetBookingHistoryRef;
 
-export function getBookingsByStatus(vars: GetBookingsByStatusVariables): QueryPromise<GetBookingsByStatusData, GetBookingsByStatusVariables>;
-export function getBookingsByStatus(dc: DataConnect, vars: GetBookingsByStatusVariables): QueryPromise<GetBookingsByStatusData, GetBookingsByStatusVariables>;
+export function getBookingHistory(vars: GetBookingHistoryVariables): QueryPromise<GetBookingHistoryData, GetBookingHistoryVariables>;
+export function getBookingHistory(dc: DataConnect, vars: GetBookingHistoryVariables): QueryPromise<GetBookingHistoryData, GetBookingHistoryVariables>;
 
 interface GetStaffBookingsRef {
   /* Allow users to create refs without passing in DataConnect */
@@ -2465,30 +2000,6 @@ export const getStaffBookingsRef: GetStaffBookingsRef;
 
 export function getStaffBookings(vars: GetStaffBookingsVariables): QueryPromise<GetStaffBookingsData, GetStaffBookingsVariables>;
 export function getStaffBookings(dc: DataConnect, vars: GetStaffBookingsVariables): QueryPromise<GetStaffBookingsData, GetStaffBookingsVariables>;
-
-interface GetBookingItemsRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetBookingItemsVariables): QueryRef<GetBookingItemsData, GetBookingItemsVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetBookingItemsVariables): QueryRef<GetBookingItemsData, GetBookingItemsVariables>;
-  operationName: string;
-}
-export const getBookingItemsRef: GetBookingItemsRef;
-
-export function getBookingItems(vars: GetBookingItemsVariables): QueryPromise<GetBookingItemsData, GetBookingItemsVariables>;
-export function getBookingItems(dc: DataConnect, vars: GetBookingItemsVariables): QueryPromise<GetBookingItemsData, GetBookingItemsVariables>;
-
-interface GetBookingItemByIdRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetBookingItemByIdVariables): QueryRef<GetBookingItemByIdData, GetBookingItemByIdVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetBookingItemByIdVariables): QueryRef<GetBookingItemByIdData, GetBookingItemByIdVariables>;
-  operationName: string;
-}
-export const getBookingItemByIdRef: GetBookingItemByIdRef;
-
-export function getBookingItemById(vars: GetBookingItemByIdVariables): QueryPromise<GetBookingItemByIdData, GetBookingItemByIdVariables>;
-export function getBookingItemById(dc: DataConnect, vars: GetBookingItemByIdVariables): QueryPromise<GetBookingItemByIdData, GetBookingItemByIdVariables>;
 
 interface GetBookingSamplesRef {
   /* Allow users to create refs without passing in DataConnect */
@@ -2802,27 +2313,483 @@ export const getMonthlyRevenueRef: GetMonthlyRevenueRef;
 export function getMonthlyRevenue(vars: GetMonthlyRevenueVariables): QueryPromise<GetMonthlyRevenueData, GetMonthlyRevenueVariables>;
 export function getMonthlyRevenue(dc: DataConnect, vars: GetMonthlyRevenueVariables): QueryPromise<GetMonthlyRevenueData, GetMonthlyRevenueVariables>;
 
-interface GetDnaServicesBySampleTypeRef {
+interface CreateRoleRef {
   /* Allow users to create refs without passing in DataConnect */
-  (vars: GetDnaServicesBySampleTypeVariables): QueryRef<GetDnaServicesBySampleTypeData, GetDnaServicesBySampleTypeVariables>;
+  (vars: CreateRoleVariables): MutationRef<CreateRoleData, CreateRoleVariables>;
   /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetDnaServicesBySampleTypeVariables): QueryRef<GetDnaServicesBySampleTypeData, GetDnaServicesBySampleTypeVariables>;
+  (dc: DataConnect, vars: CreateRoleVariables): MutationRef<CreateRoleData, CreateRoleVariables>;
   operationName: string;
 }
-export const getDnaServicesBySampleTypeRef: GetDnaServicesBySampleTypeRef;
+export const createRoleRef: CreateRoleRef;
 
-export function getDnaServicesBySampleType(vars: GetDnaServicesBySampleTypeVariables): QueryPromise<GetDnaServicesBySampleTypeData, GetDnaServicesBySampleTypeVariables>;
-export function getDnaServicesBySampleType(dc: DataConnect, vars: GetDnaServicesBySampleTypeVariables): QueryPromise<GetDnaServicesBySampleTypeData, GetDnaServicesBySampleTypeVariables>;
+export function createRole(vars: CreateRoleVariables): MutationPromise<CreateRoleData, CreateRoleVariables>;
+export function createRole(dc: DataConnect, vars: CreateRoleVariables): MutationPromise<CreateRoleData, CreateRoleVariables>;
 
-interface GetAtHomeServicesRef {
+interface UpdateRoleRef {
   /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetAtHomeServicesData, undefined>;
+  (vars: UpdateRoleVariables): MutationRef<UpdateRoleData, UpdateRoleVariables>;
   /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetAtHomeServicesData, undefined>;
+  (dc: DataConnect, vars: UpdateRoleVariables): MutationRef<UpdateRoleData, UpdateRoleVariables>;
   operationName: string;
 }
-export const getAtHomeServicesRef: GetAtHomeServicesRef;
+export const updateRoleRef: UpdateRoleRef;
 
-export function getAtHomeServices(): QueryPromise<GetAtHomeServicesData, undefined>;
-export function getAtHomeServices(dc: DataConnect): QueryPromise<GetAtHomeServicesData, undefined>;
+export function updateRole(vars: UpdateRoleVariables): MutationPromise<UpdateRoleData, UpdateRoleVariables>;
+export function updateRole(dc: DataConnect, vars: UpdateRoleVariables): MutationPromise<UpdateRoleData, UpdateRoleVariables>;
+
+interface DeleteRoleRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: DeleteRoleVariables): MutationRef<DeleteRoleData, DeleteRoleVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: DeleteRoleVariables): MutationRef<DeleteRoleData, DeleteRoleVariables>;
+  operationName: string;
+}
+export const deleteRoleRef: DeleteRoleRef;
+
+export function deleteRole(vars: DeleteRoleVariables): MutationPromise<DeleteRoleData, DeleteRoleVariables>;
+export function deleteRole(dc: DataConnect, vars: DeleteRoleVariables): MutationPromise<DeleteRoleData, DeleteRoleVariables>;
+
+interface CreateOrUpdateUserRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: CreateOrUpdateUserVariables): MutationRef<CreateOrUpdateUserData, CreateOrUpdateUserVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: CreateOrUpdateUserVariables): MutationRef<CreateOrUpdateUserData, CreateOrUpdateUserVariables>;
+  operationName: string;
+}
+export const createOrUpdateUserRef: CreateOrUpdateUserRef;
+
+export function createOrUpdateUser(vars: CreateOrUpdateUserVariables): MutationPromise<CreateOrUpdateUserData, CreateOrUpdateUserVariables>;
+export function createOrUpdateUser(dc: DataConnect, vars: CreateOrUpdateUserVariables): MutationPromise<CreateOrUpdateUserData, CreateOrUpdateUserVariables>;
+
+interface UpdateUserProfileRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars?: UpdateUserProfileVariables): MutationRef<UpdateUserProfileData, UpdateUserProfileVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars?: UpdateUserProfileVariables): MutationRef<UpdateUserProfileData, UpdateUserProfileVariables>;
+  operationName: string;
+}
+export const updateUserProfileRef: UpdateUserProfileRef;
+
+export function updateUserProfile(vars?: UpdateUserProfileVariables): MutationPromise<UpdateUserProfileData, UpdateUserProfileVariables>;
+export function updateUserProfile(dc: DataConnect, vars?: UpdateUserProfileVariables): MutationPromise<UpdateUserProfileData, UpdateUserProfileVariables>;
+
+interface UpdateUserRoleRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: UpdateUserRoleVariables): MutationRef<UpdateUserRoleData, UpdateUserRoleVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: UpdateUserRoleVariables): MutationRef<UpdateUserRoleData, UpdateUserRoleVariables>;
+  operationName: string;
+}
+export const updateUserRoleRef: UpdateUserRoleRef;
+
+export function updateUserRole(vars: UpdateUserRoleVariables): MutationPromise<UpdateUserRoleData, UpdateUserRoleVariables>;
+export function updateUserRole(dc: DataConnect, vars: UpdateUserRoleVariables): MutationPromise<UpdateUserRoleData, UpdateUserRoleVariables>;
+
+interface UpdateUserAccountStatusRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: UpdateUserAccountStatusVariables): MutationRef<UpdateUserAccountStatusData, UpdateUserAccountStatusVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: UpdateUserAccountStatusVariables): MutationRef<UpdateUserAccountStatusData, UpdateUserAccountStatusVariables>;
+  operationName: string;
+}
+export const updateUserAccountStatusRef: UpdateUserAccountStatusRef;
+
+export function updateUserAccountStatus(vars: UpdateUserAccountStatusVariables): MutationPromise<UpdateUserAccountStatusData, UpdateUserAccountStatusVariables>;
+export function updateUserAccountStatus(dc: DataConnect, vars: UpdateUserAccountStatusVariables): MutationPromise<UpdateUserAccountStatusData, UpdateUserAccountStatusVariables>;
+
+interface CreateServiceCategoryRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: CreateServiceCategoryVariables): MutationRef<CreateServiceCategoryData, CreateServiceCategoryVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: CreateServiceCategoryVariables): MutationRef<CreateServiceCategoryData, CreateServiceCategoryVariables>;
+  operationName: string;
+}
+export const createServiceCategoryRef: CreateServiceCategoryRef;
+
+export function createServiceCategory(vars: CreateServiceCategoryVariables): MutationPromise<CreateServiceCategoryData, CreateServiceCategoryVariables>;
+export function createServiceCategory(dc: DataConnect, vars: CreateServiceCategoryVariables): MutationPromise<CreateServiceCategoryData, CreateServiceCategoryVariables>;
+
+interface UpdateServiceCategoryRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: UpdateServiceCategoryVariables): MutationRef<UpdateServiceCategoryData, UpdateServiceCategoryVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: UpdateServiceCategoryVariables): MutationRef<UpdateServiceCategoryData, UpdateServiceCategoryVariables>;
+  operationName: string;
+}
+export const updateServiceCategoryRef: UpdateServiceCategoryRef;
+
+export function updateServiceCategory(vars: UpdateServiceCategoryVariables): MutationPromise<UpdateServiceCategoryData, UpdateServiceCategoryVariables>;
+export function updateServiceCategory(dc: DataConnect, vars: UpdateServiceCategoryVariables): MutationPromise<UpdateServiceCategoryData, UpdateServiceCategoryVariables>;
+
+interface CreateMethodRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: CreateMethodVariables): MutationRef<CreateMethodData, CreateMethodVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: CreateMethodVariables): MutationRef<CreateMethodData, CreateMethodVariables>;
+  operationName: string;
+}
+export const createMethodRef: CreateMethodRef;
+
+export function createMethod(vars: CreateMethodVariables): MutationPromise<CreateMethodData, CreateMethodVariables>;
+export function createMethod(dc: DataConnect, vars: CreateMethodVariables): MutationPromise<CreateMethodData, CreateMethodVariables>;
+
+interface UpdateMethodRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: UpdateMethodVariables): MutationRef<UpdateMethodData, UpdateMethodVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: UpdateMethodVariables): MutationRef<UpdateMethodData, UpdateMethodVariables>;
+  operationName: string;
+}
+export const updateMethodRef: UpdateMethodRef;
+
+export function updateMethod(vars: UpdateMethodVariables): MutationPromise<UpdateMethodData, UpdateMethodVariables>;
+export function updateMethod(dc: DataConnect, vars: UpdateMethodVariables): MutationPromise<UpdateMethodData, UpdateMethodVariables>;
+
+interface CreateServiceRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: CreateServiceVariables): MutationRef<CreateServiceData, CreateServiceVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: CreateServiceVariables): MutationRef<CreateServiceData, CreateServiceVariables>;
+  operationName: string;
+}
+export const createServiceRef: CreateServiceRef;
+
+export function createService(vars: CreateServiceVariables): MutationPromise<CreateServiceData, CreateServiceVariables>;
+export function createService(dc: DataConnect, vars: CreateServiceVariables): MutationPromise<CreateServiceData, CreateServiceVariables>;
+
+interface UpdateServiceRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: UpdateServiceVariables): MutationRef<UpdateServiceData, UpdateServiceVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: UpdateServiceVariables): MutationRef<UpdateServiceData, UpdateServiceVariables>;
+  operationName: string;
+}
+export const updateServiceRef: UpdateServiceRef;
+
+export function updateService(vars: UpdateServiceVariables): MutationPromise<UpdateServiceData, UpdateServiceVariables>;
+export function updateService(dc: DataConnect, vars: UpdateServiceVariables): MutationPromise<UpdateServiceData, UpdateServiceVariables>;
+
+interface CreateServiceMethodRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: CreateServiceMethodVariables): MutationRef<CreateServiceMethodData, CreateServiceMethodVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: CreateServiceMethodVariables): MutationRef<CreateServiceMethodData, CreateServiceMethodVariables>;
+  operationName: string;
+}
+export const createServiceMethodRef: CreateServiceMethodRef;
+
+export function createServiceMethod(vars: CreateServiceMethodVariables): MutationPromise<CreateServiceMethodData, CreateServiceMethodVariables>;
+export function createServiceMethod(dc: DataConnect, vars: CreateServiceMethodVariables): MutationPromise<CreateServiceMethodData, CreateServiceMethodVariables>;
+
+interface DeleteServiceMethodRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: DeleteServiceMethodVariables): MutationRef<DeleteServiceMethodData, DeleteServiceMethodVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: DeleteServiceMethodVariables): MutationRef<DeleteServiceMethodData, DeleteServiceMethodVariables>;
+  operationName: string;
+}
+export const deleteServiceMethodRef: DeleteServiceMethodRef;
+
+export function deleteServiceMethod(vars: DeleteServiceMethodVariables): MutationPromise<DeleteServiceMethodData, DeleteServiceMethodVariables>;
+export function deleteServiceMethod(dc: DataConnect, vars: DeleteServiceMethodVariables): MutationPromise<DeleteServiceMethodData, DeleteServiceMethodVariables>;
+
+interface CreateTimeSlotRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: CreateTimeSlotVariables): MutationRef<CreateTimeSlotData, CreateTimeSlotVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: CreateTimeSlotVariables): MutationRef<CreateTimeSlotData, CreateTimeSlotVariables>;
+  operationName: string;
+}
+export const createTimeSlotRef: CreateTimeSlotRef;
+
+export function createTimeSlot(vars: CreateTimeSlotVariables): MutationPromise<CreateTimeSlotData, CreateTimeSlotVariables>;
+export function createTimeSlot(dc: DataConnect, vars: CreateTimeSlotVariables): MutationPromise<CreateTimeSlotData, CreateTimeSlotVariables>;
+
+interface UpdateTimeSlotRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: UpdateTimeSlotVariables): MutationRef<UpdateTimeSlotData, UpdateTimeSlotVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: UpdateTimeSlotVariables): MutationRef<UpdateTimeSlotData, UpdateTimeSlotVariables>;
+  operationName: string;
+}
+export const updateTimeSlotRef: UpdateTimeSlotRef;
+
+export function updateTimeSlot(vars: UpdateTimeSlotVariables): MutationPromise<UpdateTimeSlotData, UpdateTimeSlotVariables>;
+export function updateTimeSlot(dc: DataConnect, vars: UpdateTimeSlotVariables): MutationPromise<UpdateTimeSlotData, UpdateTimeSlotVariables>;
+
+interface UpdateTimeSlotBookingsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: UpdateTimeSlotBookingsVariables): MutationRef<UpdateTimeSlotBookingsData, UpdateTimeSlotBookingsVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: UpdateTimeSlotBookingsVariables): MutationRef<UpdateTimeSlotBookingsData, UpdateTimeSlotBookingsVariables>;
+  operationName: string;
+}
+export const updateTimeSlotBookingsRef: UpdateTimeSlotBookingsRef;
+
+export function updateTimeSlotBookings(vars: UpdateTimeSlotBookingsVariables): MutationPromise<UpdateTimeSlotBookingsData, UpdateTimeSlotBookingsVariables>;
+export function updateTimeSlotBookings(dc: DataConnect, vars: UpdateTimeSlotBookingsVariables): MutationPromise<UpdateTimeSlotBookingsData, UpdateTimeSlotBookingsVariables>;
+
+interface CreateBookingRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: CreateBookingVariables): MutationRef<CreateBookingData, CreateBookingVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: CreateBookingVariables): MutationRef<CreateBookingData, CreateBookingVariables>;
+  operationName: string;
+}
+export const createBookingRef: CreateBookingRef;
+
+export function createBooking(vars: CreateBookingVariables): MutationPromise<CreateBookingData, CreateBookingVariables>;
+export function createBooking(dc: DataConnect, vars: CreateBookingVariables): MutationPromise<CreateBookingData, CreateBookingVariables>;
+
+interface UpdateBookingRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: UpdateBookingVariables): MutationRef<UpdateBookingData, UpdateBookingVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: UpdateBookingVariables): MutationRef<UpdateBookingData, UpdateBookingVariables>;
+  operationName: string;
+}
+export const updateBookingRef: UpdateBookingRef;
+
+export function updateBooking(vars: UpdateBookingVariables): MutationPromise<UpdateBookingData, UpdateBookingVariables>;
+export function updateBooking(dc: DataConnect, vars: UpdateBookingVariables): MutationPromise<UpdateBookingData, UpdateBookingVariables>;
+
+interface AssignBookingStaffRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: AssignBookingStaffVariables): MutationRef<AssignBookingStaffData, AssignBookingStaffVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: AssignBookingStaffVariables): MutationRef<AssignBookingStaffData, AssignBookingStaffVariables>;
+  operationName: string;
+}
+export const assignBookingStaffRef: AssignBookingStaffRef;
+
+export function assignBookingStaff(vars: AssignBookingStaffVariables): MutationPromise<AssignBookingStaffData, AssignBookingStaffVariables>;
+export function assignBookingStaff(dc: DataConnect, vars: AssignBookingStaffVariables): MutationPromise<AssignBookingStaffData, AssignBookingStaffVariables>;
+
+interface CreateBookingHistoryRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: CreateBookingHistoryVariables): MutationRef<CreateBookingHistoryData, CreateBookingHistoryVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: CreateBookingHistoryVariables): MutationRef<CreateBookingHistoryData, CreateBookingHistoryVariables>;
+  operationName: string;
+}
+export const createBookingHistoryRef: CreateBookingHistoryRef;
+
+export function createBookingHistory(vars: CreateBookingHistoryVariables): MutationPromise<CreateBookingHistoryData, CreateBookingHistoryVariables>;
+export function createBookingHistory(dc: DataConnect, vars: CreateBookingHistoryVariables): MutationPromise<CreateBookingHistoryData, CreateBookingHistoryVariables>;
+
+interface UpdateBookingHistoryRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: UpdateBookingHistoryVariables): MutationRef<UpdateBookingHistoryData, UpdateBookingHistoryVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: UpdateBookingHistoryVariables): MutationRef<UpdateBookingHistoryData, UpdateBookingHistoryVariables>;
+  operationName: string;
+}
+export const updateBookingHistoryRef: UpdateBookingHistoryRef;
+
+export function updateBookingHistory(vars: UpdateBookingHistoryVariables): MutationPromise<UpdateBookingHistoryData, UpdateBookingHistoryVariables>;
+export function updateBookingHistory(dc: DataConnect, vars: UpdateBookingHistoryVariables): MutationPromise<UpdateBookingHistoryData, UpdateBookingHistoryVariables>;
+
+interface CreateSampleRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: CreateSampleVariables): MutationRef<CreateSampleData, CreateSampleVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: CreateSampleVariables): MutationRef<CreateSampleData, CreateSampleVariables>;
+  operationName: string;
+}
+export const createSampleRef: CreateSampleRef;
+
+export function createSample(vars: CreateSampleVariables): MutationPromise<CreateSampleData, CreateSampleVariables>;
+export function createSample(dc: DataConnect, vars: CreateSampleVariables): MutationPromise<CreateSampleData, CreateSampleVariables>;
+
+interface UpdateSampleStatusRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: UpdateSampleStatusVariables): MutationRef<UpdateSampleStatusData, UpdateSampleStatusVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: UpdateSampleStatusVariables): MutationRef<UpdateSampleStatusData, UpdateSampleStatusVariables>;
+  operationName: string;
+}
+export const updateSampleStatusRef: UpdateSampleStatusRef;
+
+export function updateSampleStatus(vars: UpdateSampleStatusVariables): MutationPromise<UpdateSampleStatusData, UpdateSampleStatusVariables>;
+export function updateSampleStatus(dc: DataConnect, vars: UpdateSampleStatusVariables): MutationPromise<UpdateSampleStatusData, UpdateSampleStatusVariables>;
+
+interface CreateTestResultRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: CreateTestResultVariables): MutationRef<CreateTestResultData, CreateTestResultVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: CreateTestResultVariables): MutationRef<CreateTestResultData, CreateTestResultVariables>;
+  operationName: string;
+}
+export const createTestResultRef: CreateTestResultRef;
+
+export function createTestResult(vars: CreateTestResultVariables): MutationPromise<CreateTestResultData, CreateTestResultVariables>;
+export function createTestResult(dc: DataConnect, vars: CreateTestResultVariables): MutationPromise<CreateTestResultData, CreateTestResultVariables>;
+
+interface UpdateTestResultRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: UpdateTestResultVariables): MutationRef<UpdateTestResultData, UpdateTestResultVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: UpdateTestResultVariables): MutationRef<UpdateTestResultData, UpdateTestResultVariables>;
+  operationName: string;
+}
+export const updateTestResultRef: UpdateTestResultRef;
+
+export function updateTestResult(vars: UpdateTestResultVariables): MutationPromise<UpdateTestResultData, UpdateTestResultVariables>;
+export function updateTestResult(dc: DataConnect, vars: UpdateTestResultVariables): MutationPromise<UpdateTestResultData, UpdateTestResultVariables>;
+
+interface AssignTestResultStaffRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: AssignTestResultStaffVariables): MutationRef<AssignTestResultStaffData, AssignTestResultStaffVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: AssignTestResultStaffVariables): MutationRef<AssignTestResultStaffData, AssignTestResultStaffVariables>;
+  operationName: string;
+}
+export const assignTestResultStaffRef: AssignTestResultStaffRef;
+
+export function assignTestResultStaff(vars: AssignTestResultStaffVariables): MutationPromise<AssignTestResultStaffData, AssignTestResultStaffVariables>;
+export function assignTestResultStaff(dc: DataConnect, vars: AssignTestResultStaffVariables): MutationPromise<AssignTestResultStaffData, AssignTestResultStaffVariables>;
+
+interface CreatePaymentRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: CreatePaymentVariables): MutationRef<CreatePaymentData, CreatePaymentVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: CreatePaymentVariables): MutationRef<CreatePaymentData, CreatePaymentVariables>;
+  operationName: string;
+}
+export const createPaymentRef: CreatePaymentRef;
+
+export function createPayment(vars: CreatePaymentVariables): MutationPromise<CreatePaymentData, CreatePaymentVariables>;
+export function createPayment(dc: DataConnect, vars: CreatePaymentVariables): MutationPromise<CreatePaymentData, CreatePaymentVariables>;
+
+interface UpdatePaymentStatusRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: UpdatePaymentStatusVariables): MutationRef<UpdatePaymentStatusData, UpdatePaymentStatusVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: UpdatePaymentStatusVariables): MutationRef<UpdatePaymentStatusData, UpdatePaymentStatusVariables>;
+  operationName: string;
+}
+export const updatePaymentStatusRef: UpdatePaymentStatusRef;
+
+export function updatePaymentStatus(vars: UpdatePaymentStatusVariables): MutationPromise<UpdatePaymentStatusData, UpdatePaymentStatusVariables>;
+export function updatePaymentStatus(dc: DataConnect, vars: UpdatePaymentStatusVariables): MutationPromise<UpdatePaymentStatusData, UpdatePaymentStatusVariables>;
+
+interface AddRefundDetailRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: AddRefundDetailVariables): MutationRef<AddRefundDetailData, AddRefundDetailVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: AddRefundDetailVariables): MutationRef<AddRefundDetailData, AddRefundDetailVariables>;
+  operationName: string;
+}
+export const addRefundDetailRef: AddRefundDetailRef;
+
+export function addRefundDetail(vars: AddRefundDetailVariables): MutationPromise<AddRefundDetailData, AddRefundDetailVariables>;
+export function addRefundDetail(dc: DataConnect, vars: AddRefundDetailVariables): MutationPromise<AddRefundDetailData, AddRefundDetailVariables>;
+
+interface CreateFeedbackRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: CreateFeedbackVariables): MutationRef<CreateFeedbackData, CreateFeedbackVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: CreateFeedbackVariables): MutationRef<CreateFeedbackData, CreateFeedbackVariables>;
+  operationName: string;
+}
+export const createFeedbackRef: CreateFeedbackRef;
+
+export function createFeedback(vars: CreateFeedbackVariables): MutationPromise<CreateFeedbackData, CreateFeedbackVariables>;
+export function createFeedback(dc: DataConnect, vars: CreateFeedbackVariables): MutationPromise<CreateFeedbackData, CreateFeedbackVariables>;
+
+interface UpdateFeedbackRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: UpdateFeedbackVariables): MutationRef<UpdateFeedbackData, UpdateFeedbackVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: UpdateFeedbackVariables): MutationRef<UpdateFeedbackData, UpdateFeedbackVariables>;
+  operationName: string;
+}
+export const updateFeedbackRef: UpdateFeedbackRef;
+
+export function updateFeedback(vars: UpdateFeedbackVariables): MutationPromise<UpdateFeedbackData, UpdateFeedbackVariables>;
+export function updateFeedback(dc: DataConnect, vars: UpdateFeedbackVariables): MutationPromise<UpdateFeedbackData, UpdateFeedbackVariables>;
+
+interface CreateBlogRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: CreateBlogVariables): MutationRef<CreateBlogData, CreateBlogVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: CreateBlogVariables): MutationRef<CreateBlogData, CreateBlogVariables>;
+  operationName: string;
+}
+export const createBlogRef: CreateBlogRef;
+
+export function createBlog(vars: CreateBlogVariables): MutationPromise<CreateBlogData, CreateBlogVariables>;
+export function createBlog(dc: DataConnect, vars: CreateBlogVariables): MutationPromise<CreateBlogData, CreateBlogVariables>;
+
+interface UpdateBlogRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: UpdateBlogVariables): MutationRef<UpdateBlogData, UpdateBlogVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: UpdateBlogVariables): MutationRef<UpdateBlogData, UpdateBlogVariables>;
+  operationName: string;
+}
+export const updateBlogRef: UpdateBlogRef;
+
+export function updateBlog(vars: UpdateBlogVariables): MutationPromise<UpdateBlogData, UpdateBlogVariables>;
+export function updateBlog(dc: DataConnect, vars: UpdateBlogVariables): MutationPromise<UpdateBlogData, UpdateBlogVariables>;
+
+interface DeleteBlogRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: DeleteBlogVariables): MutationRef<DeleteBlogData, DeleteBlogVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: DeleteBlogVariables): MutationRef<DeleteBlogData, DeleteBlogVariables>;
+  operationName: string;
+}
+export const deleteBlogRef: DeleteBlogRef;
+
+export function deleteBlog(vars: DeleteBlogVariables): MutationPromise<DeleteBlogData, DeleteBlogVariables>;
+export function deleteBlog(dc: DataConnect, vars: DeleteBlogVariables): MutationPromise<DeleteBlogData, DeleteBlogVariables>;
+
+interface CreateNotificationRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: CreateNotificationVariables): MutationRef<CreateNotificationData, CreateNotificationVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: CreateNotificationVariables): MutationRef<CreateNotificationData, CreateNotificationVariables>;
+  operationName: string;
+}
+export const createNotificationRef: CreateNotificationRef;
+
+export function createNotification(vars: CreateNotificationVariables): MutationPromise<CreateNotificationData, CreateNotificationVariables>;
+export function createNotification(dc: DataConnect, vars: CreateNotificationVariables): MutationPromise<CreateNotificationData, CreateNotificationVariables>;
+
+interface MarkNotificationReadRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: MarkNotificationReadVariables): MutationRef<MarkNotificationReadData, MarkNotificationReadVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: MarkNotificationReadVariables): MutationRef<MarkNotificationReadData, MarkNotificationReadVariables>;
+  operationName: string;
+}
+export const markNotificationReadRef: MarkNotificationReadRef;
+
+export function markNotificationRead(vars: MarkNotificationReadVariables): MutationPromise<MarkNotificationReadData, MarkNotificationReadVariables>;
+export function markNotificationRead(dc: DataConnect, vars: MarkNotificationReadVariables): MutationPromise<MarkNotificationReadData, MarkNotificationReadVariables>;
+
+interface MarkAllNotificationsReadRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: MarkAllNotificationsReadVariables): MutationRef<MarkAllNotificationsReadData, MarkAllNotificationsReadVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: MarkAllNotificationsReadVariables): MutationRef<MarkAllNotificationsReadData, MarkAllNotificationsReadVariables>;
+  operationName: string;
+}
+export const markAllNotificationsReadRef: MarkAllNotificationsReadRef;
+
+export function markAllNotificationsRead(vars: MarkAllNotificationsReadVariables): MutationPromise<MarkAllNotificationsReadData, MarkAllNotificationsReadVariables>;
+export function markAllNotificationsRead(dc: DataConnect, vars: MarkAllNotificationsReadVariables): MutationPromise<MarkAllNotificationsReadData, MarkAllNotificationsReadVariables>;
+
+interface DeleteNotificationRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: DeleteNotificationVariables): MutationRef<DeleteNotificationData, DeleteNotificationVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: DeleteNotificationVariables): MutationRef<DeleteNotificationData, DeleteNotificationVariables>;
+  operationName: string;
+}
+export const deleteNotificationRef: DeleteNotificationRef;
+
+export function deleteNotification(vars: DeleteNotificationVariables): MutationPromise<DeleteNotificationData, DeleteNotificationVariables>;
+export function deleteNotification(dc: DataConnect, vars: DeleteNotificationVariables): MutationPromise<DeleteNotificationData, DeleteNotificationVariables>;
 
