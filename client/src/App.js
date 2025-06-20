@@ -188,43 +188,6 @@ function App() {
             <Route path="/library" element={<div className="container py-5"><h2>Thư viện ADN</h2><p>Thư viện kiến thức đang được phát triển...</p></div>} />
             
             {/* Business Pages */}
-            <Route path="/prices" element={
-              <div className="container py-5">
-                <div className="text-center mb-5">
-                  <h2>
-                    <i className="bi bi-tags text-primary me-2"></i>
-                    Bảng giá dịch vụ
-                  </h2>
-                  <p className="lead text-muted">Giá cả minh bạch và cạnh tranh</p>
-                </div>
-                <div className="row justify-content-center">
-                  <div className="col-lg-8">
-                    <div className="alert alert-info text-center">
-                      <i className="bi bi-info-circle me-2"></i>
-                      Bảng giá chi tiết đang được cập nhật. Vui lòng liên hệ hotline <strong>1900 1234</strong> để biết thêm thông tin.
-                    </div>
-                    <div className="card border-0 shadow-sm">
-                      <div className="card-body">
-                        <h5>Liên hệ để nhận báo giá:</h5>
-                        <div className="row mt-3">
-                          <div className="col-md-6 text-center mb-3">
-                            <i className="bi bi-telephone text-primary fs-3"></i>
-                            <p className="mt-2 mb-0"><strong>1900 1234</strong></p>
-                            <small className="text-muted">Hotline 24/7</small>
-                          </div>
-                          <div className="col-md-6 text-center mb-3">
-                            <i className="bi bi-envelope text-primary fs-3"></i>
-                            <p className="mt-2 mb-0"><strong>support@adnlab.vn</strong></p>
-                            <small className="text-muted">Email hỗ trợ</small>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            } />
-
             <Route path="/contact" element={
               <div className="container py-5">
                 <div className="text-center mb-5">
