@@ -11,6 +11,9 @@
   - [*GetUsers*](#getusers)
   - [*GetUsersByRole*](#getusersbyrole)
   - [*GetStaffMembers*](#getstaffmembers)
+  - [*GetStaffById*](#getstaffbyid)
+  - [*GetManagers*](#getmanagers)
+  - [*GetManagerById*](#getmanagerbyid)
   - [*GetServiceCategories*](#getservicecategories)
   - [*GetServiceCategoryById*](#getservicecategorybyid)
   - [*GetMethods*](#getmethods)
@@ -22,6 +25,7 @@
   - [*GetServiceMethods*](#getservicemethods)
   - [*GetMethodsForService*](#getmethodsforservice)
   - [*GetServicesForMethod*](#getservicesformethod)
+  - [*GetServiceMethod*](#getservicemethod)
   - [*GetServiceWithMethods*](#getservicewithmethods)
   - [*GetTimeSlots*](#gettimeslots)
   - [*GetTimeSlotById*](#gettimeslotbyid)
@@ -31,14 +35,21 @@
   - [*GetBookingById*](#getbookingbyid)
   - [*GetBookingHistory*](#getbookinghistory)
   - [*GetStaffBookings*](#getstaffbookings)
+  - [*GetBookingParticipants*](#getbookingparticipants)
+  - [*GetParticipantById*](#getparticipantbyid)
   - [*GetBookingSamples*](#getbookingsamples)
-  - [*GetSamplesByStatus*](#getsamplesbystatus)
+  - [*GetSamplesByQuality*](#getsamplesbyquality)
   - [*GetSampleById*](#getsamplebyid)
   - [*GetStaffSamples*](#getstaffsamples)
+  - [*GetParticipantSamples*](#getparticipantsamples)
+  - [*GetAllSamples*](#getallsamples)
   - [*GetBookingTestResults*](#getbookingtestresults)
   - [*GetTestResultById*](#gettestresultbyid)
   - [*GetTestResultsByStatus*](#gettestresultsbystatus)
   - [*GetUserTestResults*](#getusertestresults)
+  - [*GetManagerTestResults*](#getmanagertestresults)
+  - [*GetTestResultsByType*](#gettestresultsbytype)
+  - [*GetPositiveTestResults*](#getpositivetestresults)
   - [*GetBookingPayment*](#getbookingpayment)
   - [*GetPaymentById*](#getpaymentbyid)
   - [*GetPaymentsByStatus*](#getpaymentsbystatus)
@@ -57,6 +68,14 @@
   - [*GetBookingStats*](#getbookingstats)
   - [*GetServicePopularity*](#getservicepopularity)
   - [*GetMonthlyRevenue*](#getmonthlyrevenue)
+  - [*GetStaffBySpecification*](#getstaffbyspecification)
+  - [*GetAvailableStaff*](#getavailablestaff)
+  - [*GetManagersBySpecification*](#getmanagersbyspecification)
+  - [*GetBookingCountByDateRange*](#getbookingcountbydaterange)
+  - [*GetRevenueByCategory*](#getrevenuebycategory)
+  - [*GetStaffWorkload*](#getstaffworkload)
+  - [*GetTestCompletionStats*](#gettestcompletionstats)
+  - [*GetCustomerSatisfactionStats*](#getcustomersatisfactionstats)
 - [**Mutations**](#mutations)
   - [*CreateRole*](#createrole)
   - [*UpdateRole*](#updaterole)
@@ -65,6 +84,10 @@
   - [*UpdateUserProfile*](#updateuserprofile)
   - [*UpdateUserRole*](#updateuserrole)
   - [*UpdateUserAccountStatus*](#updateuseraccountstatus)
+  - [*CreateStaff*](#createstaff)
+  - [*UpdateStaff*](#updatestaff)
+  - [*CreateManager*](#createmanager)
+  - [*UpdateManager*](#updatemanager)
   - [*CreateServiceCategory*](#createservicecategory)
   - [*UpdateServiceCategory*](#updateservicecategory)
   - [*CreateMethod*](#createmethod)
@@ -81,14 +104,20 @@
   - [*AssignBookingStaff*](#assignbookingstaff)
   - [*CreateBookingHistory*](#createbookinghistory)
   - [*UpdateBookingHistory*](#updatebookinghistory)
+  - [*CreateParticipant*](#createparticipant)
+  - [*UpdateParticipant*](#updateparticipant)
+  - [*DeleteParticipant*](#deleteparticipant)
   - [*CreateSample*](#createsample)
-  - [*UpdateSampleStatus*](#updatesamplestatus)
+  - [*UpdateSample*](#updatesample)
+  - [*DeleteSample*](#deletesample)
   - [*CreateTestResult*](#createtestresult)
   - [*UpdateTestResult*](#updatetestresult)
-  - [*AssignTestResultStaff*](#assigntestresultstaff)
+  - [*AssignTestResultManager*](#assigntestresultmanager)
+  - [*DeleteTestResult*](#deletetestresult)
   - [*CreatePayment*](#createpayment)
   - [*UpdatePaymentStatus*](#updatepaymentstatus)
-  - [*AddRefundDetail*](#addrefunddetail)
+  - [*AddPaymentDetails*](#addpaymentdetails)
+  - [*UpdateRefundDetail*](#updaterefunddetail)
   - [*CreateFeedback*](#createfeedback)
   - [*UpdateFeedback*](#updatefeedback)
   - [*CreateBlog*](#createblog)
@@ -98,6 +127,13 @@
   - [*MarkNotificationRead*](#marknotificationread)
   - [*MarkAllNotificationsRead*](#markallnotificationsread)
   - [*DeleteNotification*](#deletenotification)
+  - [*DeleteServiceCategory*](#deleteservicecategory)
+  - [*DeleteMethod*](#deletemethod)
+  - [*DeleteService*](#deleteservice)
+  - [*DeleteTimeSlot*](#deletetimeslot)
+  - [*DeleteBooking*](#deletebooking)
+  - [*DeleteStaff*](#deletestaff)
+  - [*DeleteManager*](#deletemanager)
 
 # Generated TypeScript README
 This README will guide you through the process of using the generated JavaScript SDK package for the connector `default`. It will also provide examples on how to use your generated SDK to call your Data Connect queries and mutations.
@@ -522,14 +558,13 @@ export interface GetUserData {
     accountStatus: string;
     authProvider: string;
     phone?: string | null;
-    shippingAddress?: string | null;
+    address?: string | null;
     roleId: string;
     role: {
       id: string;
       name: string;
       description?: string | null;
     } & Role_Key;
-      dailySlotCount: number;
       createdAt: TimestampString;
       lastLogin?: TimestampString | null;
   } & User_Key;
@@ -638,14 +673,13 @@ export interface GetUserByIdData {
     accountStatus: string;
     authProvider: string;
     phone?: string | null;
-    shippingAddress?: string | null;
+    address?: string | null;
     roleId: string;
     role: {
       id: string;
       name: string;
       description?: string | null;
     } & Role_Key;
-      dailySlotCount: number;
       createdAt: TimestampString;
       lastLogin?: TimestampString | null;
   } & User_Key;
@@ -1000,17 +1034,24 @@ Recall that executing the `GetStaffMembers` query returns a `QueryPromise` that 
 The `data` property is an object of type `GetStaffMembersData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
 ```typescript
 export interface GetStaffMembersData {
-  users: ({
+  staffs: ({
     id: string;
-    fullname: string;
-    gender?: string | null;
-    avatar?: string | null;
-    email: string;
-    role: {
-      name: string;
-    };
+    user: {
+      id: string;
+      fullname: string;
+      gender?: string | null;
+      avatar?: string | null;
+      email: string;
       accountStatus: string;
-  } & User_Key)[];
+    } & User_Key;
+      hireDate?: DateString | null;
+      slot?: number | null;
+      specification?: string[] | null;
+      certifications?: string[] | null;
+      position?: string | null;
+      createdAt: TimestampString;
+      updatedAt?: TimestampString | null;
+  } & Staff_Key)[];
 }
 ```
 ### Using `GetStaffMembers`'s action shortcut function
@@ -1028,12 +1069,12 @@ const { data } = await getStaffMembers();
 const dataConnect = getDataConnect(connectorConfig);
 const { data } = await getStaffMembers(dataConnect);
 
-console.log(data.users);
+console.log(data.staffs);
 
 // Or, you can use the `Promise` API.
 getStaffMembers().then((response) => {
   const data = response.data;
-  console.log(data.users);
+  console.log(data.staffs);
 });
 ```
 
@@ -1055,12 +1096,374 @@ const ref = getStaffMembersRef(dataConnect);
 // You can use the `await` keyword to wait for the promise to resolve.
 const { data } = await executeQuery(ref);
 
-console.log(data.users);
+console.log(data.staffs);
 
 // Or, you can use the `Promise` API.
 executeQuery(ref).then((response) => {
   const data = response.data;
-  console.log(data.users);
+  console.log(data.staffs);
+});
+```
+
+## GetStaffById
+You can execute the `GetStaffById` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getStaffById(vars: GetStaffByIdVariables): QueryPromise<GetStaffByIdData, GetStaffByIdVariables>;
+
+interface GetStaffByIdRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetStaffByIdVariables): QueryRef<GetStaffByIdData, GetStaffByIdVariables>;
+}
+export const getStaffByIdRef: GetStaffByIdRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getStaffById(dc: DataConnect, vars: GetStaffByIdVariables): QueryPromise<GetStaffByIdData, GetStaffByIdVariables>;
+
+interface GetStaffByIdRef {
+  ...
+  (dc: DataConnect, vars: GetStaffByIdVariables): QueryRef<GetStaffByIdData, GetStaffByIdVariables>;
+}
+export const getStaffByIdRef: GetStaffByIdRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getStaffByIdRef:
+```typescript
+const name = getStaffByIdRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetStaffById` query requires an argument of type `GetStaffByIdVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface GetStaffByIdVariables {
+  staffId: string;
+}
+```
+### Return Type
+Recall that executing the `GetStaffById` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetStaffByIdData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetStaffByIdData {
+  staff?: {
+    id: string;
+    user: {
+      id: string;
+      fullname: string;
+      gender?: string | null;
+      avatar?: string | null;
+      email: string;
+      phone?: string | null;
+      address?: string | null;
+      accountStatus: string;
+    } & User_Key;
+      hireDate?: DateString | null;
+      slot?: number | null;
+      specification?: string[] | null;
+      certifications?: string[] | null;
+      position?: string | null;
+      createdAt: TimestampString;
+      updatedAt?: TimestampString | null;
+  } & Staff_Key;
+}
+```
+### Using `GetStaffById`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getStaffById, GetStaffByIdVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetStaffById` query requires an argument of type `GetStaffByIdVariables`:
+const getStaffByIdVars: GetStaffByIdVariables = {
+  staffId: ..., 
+};
+
+// Call the `getStaffById()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getStaffById(getStaffByIdVars);
+// Variables can be defined inline as well.
+const { data } = await getStaffById({ staffId: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getStaffById(dataConnect, getStaffByIdVars);
+
+console.log(data.staff);
+
+// Or, you can use the `Promise` API.
+getStaffById(getStaffByIdVars).then((response) => {
+  const data = response.data;
+  console.log(data.staff);
+});
+```
+
+### Using `GetStaffById`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getStaffByIdRef, GetStaffByIdVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetStaffById` query requires an argument of type `GetStaffByIdVariables`:
+const getStaffByIdVars: GetStaffByIdVariables = {
+  staffId: ..., 
+};
+
+// Call the `getStaffByIdRef()` function to get a reference to the query.
+const ref = getStaffByIdRef(getStaffByIdVars);
+// Variables can be defined inline as well.
+const ref = getStaffByIdRef({ staffId: ..., });
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getStaffByIdRef(dataConnect, getStaffByIdVars);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.staff);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.staff);
+});
+```
+
+## GetManagers
+You can execute the `GetManagers` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getManagers(): QueryPromise<GetManagersData, undefined>;
+
+interface GetManagersRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetManagersData, undefined>;
+}
+export const getManagersRef: GetManagersRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getManagers(dc: DataConnect): QueryPromise<GetManagersData, undefined>;
+
+interface GetManagersRef {
+  ...
+  (dc: DataConnect): QueryRef<GetManagersData, undefined>;
+}
+export const getManagersRef: GetManagersRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getManagersRef:
+```typescript
+const name = getManagersRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetManagers` query has no variables.
+### Return Type
+Recall that executing the `GetManagers` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetManagersData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetManagersData {
+  managers: ({
+    id: string;
+    user: {
+      id: string;
+      fullname: string;
+      gender?: string | null;
+      avatar?: string | null;
+      email: string;
+      accountStatus: string;
+    } & User_Key;
+      hireDate?: DateString | null;
+      slot?: number | null;
+      specification?: string[] | null;
+      certifications?: string[] | null;
+      createdAt: TimestampString;
+      updatedAt?: TimestampString | null;
+  } & Manager_Key)[];
+}
+```
+### Using `GetManagers`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getManagers } from '@firebasegen/adnlab-connector';
+
+
+// Call the `getManagers()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getManagers();
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getManagers(dataConnect);
+
+console.log(data.managers);
+
+// Or, you can use the `Promise` API.
+getManagers().then((response) => {
+  const data = response.data;
+  console.log(data.managers);
+});
+```
+
+### Using `GetManagers`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getManagersRef } from '@firebasegen/adnlab-connector';
+
+
+// Call the `getManagersRef()` function to get a reference to the query.
+const ref = getManagersRef();
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getManagersRef(dataConnect);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.managers);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.managers);
+});
+```
+
+## GetManagerById
+You can execute the `GetManagerById` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getManagerById(vars: GetManagerByIdVariables): QueryPromise<GetManagerByIdData, GetManagerByIdVariables>;
+
+interface GetManagerByIdRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetManagerByIdVariables): QueryRef<GetManagerByIdData, GetManagerByIdVariables>;
+}
+export const getManagerByIdRef: GetManagerByIdRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getManagerById(dc: DataConnect, vars: GetManagerByIdVariables): QueryPromise<GetManagerByIdData, GetManagerByIdVariables>;
+
+interface GetManagerByIdRef {
+  ...
+  (dc: DataConnect, vars: GetManagerByIdVariables): QueryRef<GetManagerByIdData, GetManagerByIdVariables>;
+}
+export const getManagerByIdRef: GetManagerByIdRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getManagerByIdRef:
+```typescript
+const name = getManagerByIdRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetManagerById` query requires an argument of type `GetManagerByIdVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface GetManagerByIdVariables {
+  managerId: string;
+}
+```
+### Return Type
+Recall that executing the `GetManagerById` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetManagerByIdData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetManagerByIdData {
+  manager?: {
+    id: string;
+    user: {
+      id: string;
+      fullname: string;
+      gender?: string | null;
+      avatar?: string | null;
+      email: string;
+      phone?: string | null;
+      address?: string | null;
+      accountStatus: string;
+    } & User_Key;
+      hireDate?: DateString | null;
+      slot?: number | null;
+      specification?: string[] | null;
+      certifications?: string[] | null;
+      createdAt: TimestampString;
+      updatedAt?: TimestampString | null;
+  } & Manager_Key;
+}
+```
+### Using `GetManagerById`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getManagerById, GetManagerByIdVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetManagerById` query requires an argument of type `GetManagerByIdVariables`:
+const getManagerByIdVars: GetManagerByIdVariables = {
+  managerId: ..., 
+};
+
+// Call the `getManagerById()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getManagerById(getManagerByIdVars);
+// Variables can be defined inline as well.
+const { data } = await getManagerById({ managerId: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getManagerById(dataConnect, getManagerByIdVars);
+
+console.log(data.manager);
+
+// Or, you can use the `Promise` API.
+getManagerById(getManagerByIdVars).then((response) => {
+  const data = response.data;
+  console.log(data.manager);
+});
+```
+
+### Using `GetManagerById`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getManagerByIdRef, GetManagerByIdVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetManagerById` query requires an argument of type `GetManagerByIdVariables`:
+const getManagerByIdVars: GetManagerByIdVariables = {
+  managerId: ..., 
+};
+
+// Call the `getManagerByIdRef()` function to get a reference to the query.
+const ref = getManagerByIdRef(getManagerByIdVars);
+// Variables can be defined inline as well.
+const ref = getManagerByIdRef({ managerId: ..., });
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getManagerByIdRef(dataConnect, getManagerByIdVars);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.manager);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.manager);
 });
 ```
 
@@ -1106,8 +1509,6 @@ export interface GetServiceCategoriesData {
     name: string;
     description?: string | null;
     hasLegalValue: boolean;
-    icon?: string | null;
-    color?: string | null;
     createdAt: TimestampString;
     updatedAt?: TimestampString | null;
   } & ServiceCategory_Key)[];
@@ -1212,8 +1613,6 @@ export interface GetServiceCategoryByIdData {
     name: string;
     description?: string | null;
     hasLegalValue: boolean;
-    icon?: string | null;
-    color?: string | null;
     createdAt: TimestampString;
     updatedAt?: TimestampString | null;
   } & ServiceCategory_Key;
@@ -1546,8 +1945,6 @@ export interface GetServicesData {
       name: string;
       description?: string | null;
       hasLegalValue: boolean;
-      icon?: string | null;
-      color?: string | null;
     } & ServiceCategory_Key;
       icon?: string | null;
       featured: boolean;
@@ -1663,8 +2060,6 @@ export interface GetServiceByIdData {
       name: string;
       description?: string | null;
       hasLegalValue: boolean;
-      icon?: string | null;
-      color?: string | null;
     } & ServiceCategory_Key;
       icon?: string | null;
       featured: boolean;
@@ -2012,7 +2407,6 @@ The `data` property is an object of type `GetServiceMethodsData`, which is defin
 ```typescript
 export interface GetServiceMethodsData {
   serviceMethods: ({
-    id: string;
     serviceId: string;
     methodId: string;
     service: {
@@ -2137,7 +2531,8 @@ The `data` property is an object of type `GetMethodsForServiceData`, which is de
 ```typescript
 export interface GetMethodsForServiceData {
   serviceMethods: ({
-    id: string;
+    serviceId: string;
+    methodId: string;
     method: {
       id: string;
       name: string;
@@ -2255,7 +2650,8 @@ The `data` property is an object of type `GetServicesForMethodData`, which is de
 ```typescript
 export interface GetServicesForMethodData {
   serviceMethods: ({
-    id: string;
+    serviceId: string;
+    methodId: string;
     service: {
       id: string;
       title: string;
@@ -2336,6 +2732,135 @@ executeQuery(ref).then((response) => {
 });
 ```
 
+## GetServiceMethod
+You can execute the `GetServiceMethod` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getServiceMethod(vars: GetServiceMethodVariables): QueryPromise<GetServiceMethodData, GetServiceMethodVariables>;
+
+interface GetServiceMethodRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetServiceMethodVariables): QueryRef<GetServiceMethodData, GetServiceMethodVariables>;
+}
+export const getServiceMethodRef: GetServiceMethodRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getServiceMethod(dc: DataConnect, vars: GetServiceMethodVariables): QueryPromise<GetServiceMethodData, GetServiceMethodVariables>;
+
+interface GetServiceMethodRef {
+  ...
+  (dc: DataConnect, vars: GetServiceMethodVariables): QueryRef<GetServiceMethodData, GetServiceMethodVariables>;
+}
+export const getServiceMethodRef: GetServiceMethodRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getServiceMethodRef:
+```typescript
+const name = getServiceMethodRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetServiceMethod` query requires an argument of type `GetServiceMethodVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface GetServiceMethodVariables {
+  serviceId: string;
+  methodId: string;
+}
+```
+### Return Type
+Recall that executing the `GetServiceMethod` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetServiceMethodData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetServiceMethodData {
+  serviceMethod?: {
+    serviceId: string;
+    methodId: string;
+    service: {
+      id: string;
+      title: string;
+      description: string;
+      price: number;
+    } & Service_Key;
+      method: {
+        id: string;
+        name: string;
+        description?: string | null;
+        price: number;
+      } & Method_Key;
+        createdAt: TimestampString;
+        updatedAt?: TimestampString | null;
+  } & ServiceMethod_Key;
+}
+```
+### Using `GetServiceMethod`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getServiceMethod, GetServiceMethodVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetServiceMethod` query requires an argument of type `GetServiceMethodVariables`:
+const getServiceMethodVars: GetServiceMethodVariables = {
+  serviceId: ..., 
+  methodId: ..., 
+};
+
+// Call the `getServiceMethod()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getServiceMethod(getServiceMethodVars);
+// Variables can be defined inline as well.
+const { data } = await getServiceMethod({ serviceId: ..., methodId: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getServiceMethod(dataConnect, getServiceMethodVars);
+
+console.log(data.serviceMethod);
+
+// Or, you can use the `Promise` API.
+getServiceMethod(getServiceMethodVars).then((response) => {
+  const data = response.data;
+  console.log(data.serviceMethod);
+});
+```
+
+### Using `GetServiceMethod`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getServiceMethodRef, GetServiceMethodVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetServiceMethod` query requires an argument of type `GetServiceMethodVariables`:
+const getServiceMethodVars: GetServiceMethodVariables = {
+  serviceId: ..., 
+  methodId: ..., 
+};
+
+// Call the `getServiceMethodRef()` function to get a reference to the query.
+const ref = getServiceMethodRef(getServiceMethodVars);
+// Variables can be defined inline as well.
+const ref = getServiceMethodRef({ serviceId: ..., methodId: ..., });
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getServiceMethodRef(dataConnect, getServiceMethodVars);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.serviceMethod);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.serviceMethod);
+});
+```
+
 ## GetServiceWithMethods
 You can execute the `GetServiceWithMethods` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
 ```typescript
@@ -2391,8 +2916,6 @@ export interface GetServiceWithMethodsData {
       name: string;
       description?: string | null;
       hasLegalValue: boolean;
-      icon?: string | null;
-      color?: string | null;
     } & ServiceCategory_Key;
       icon?: string | null;
       featured: boolean;
@@ -2400,7 +2923,8 @@ export interface GetServiceWithMethodsData {
       updatedAt?: TimestampString | null;
   } & Service_Key;
     serviceMethods: ({
-      id: string;
+      serviceId: string;
+      methodId: string;
       method: {
         id: string;
         name: string;
@@ -2880,34 +3404,31 @@ export interface GetUserBookingsData {
   bookings: ({
     id: string;
     totalAmount: number;
-    serviceMethod: {
+    service: {
       id: string;
-      service: {
-        id: string;
-        title: string;
-        description: string;
-        category: {
-          name: string;
-        };
-      } & Service_Key;
-        method: {
-          id: string;
-          name: string;
-          description?: string | null;
-          price: number;
-        } & Method_Key;
-    } & ServiceMethod_Key;
-      timeSlot?: {
-        slotDate: DateString;
-        startTime: string;
-        endTime: string;
+      title: string;
+      description: string;
+      category: {
+        name: string;
       };
-        staff?: {
-          fullname: string;
+    } & Service_Key;
+      method: {
+        id: string;
+        name: string;
+        description?: string | null;
+        price: number;
+      } & Method_Key;
+        timeSlot?: {
+          slotDate: DateString;
+          startTime: string;
+          endTime: string;
         };
-          bookingCreatedAt: TimestampString;
-          createdAt: TimestampString;
-          updatedAt?: TimestampString | null;
+          staff: {
+            user: {
+              fullname: string;
+            };
+          };
+            createdAt: TimestampString;
   } & Booking_Key)[];
 }
 ```
@@ -3014,35 +3535,32 @@ export interface GetMyBookingsData {
   bookings: ({
     id: string;
     totalAmount: number;
-    serviceMethod: {
+    service: {
       id: string;
-      service: {
-        id: string;
-        title: string;
-        description: string;
-        duration: string;
-        category: {
-          name: string;
-        };
-      } & Service_Key;
-        method: {
-          id: string;
-          name: string;
-          description?: string | null;
-          price: number;
-        } & Method_Key;
-    } & ServiceMethod_Key;
-      timeSlot?: {
-        slotDate: DateString;
-        startTime: string;
-        endTime: string;
+      title: string;
+      description: string;
+      duration: string;
+      category: {
+        name: string;
       };
-        staff?: {
-          fullname: string;
+    } & Service_Key;
+      method: {
+        id: string;
+        name: string;
+        description?: string | null;
+        price: number;
+      } & Method_Key;
+        timeSlot?: {
+          slotDate: DateString;
+          startTime: string;
+          endTime: string;
         };
-          bookingCreatedAt: TimestampString;
-          createdAt: TimestampString;
-          updatedAt?: TimestampString | null;
+          staff: {
+            user: {
+              fullname: string;
+            };
+          };
+            createdAt: TimestampString;
   } & Booking_Key)[];
 }
 ```
@@ -3147,44 +3665,41 @@ export interface GetBookingByIdData {
       fullname: string;
       email: string;
       phone?: string | null;
-      shippingAddress?: string | null;
+      address?: string | null;
     } & User_Key;
-      staff?: {
+      staff: {
         id: string;
-        fullname: string;
-      } & User_Key;
-        serviceMethod: {
+        user: {
+          fullname: string;
+        };
+      } & Staff_Key;
+        service: {
           id: string;
-          service: {
+          title: string;
+          description: string;
+          fullDescription?: string | null;
+          price: number;
+          duration: string;
+          category: {
             id: string;
-            title: string;
-            description: string;
-            fullDescription?: string | null;
+            name: string;
+            description?: string | null;
+            hasLegalValue: boolean;
+          } & ServiceCategory_Key;
+        } & Service_Key;
+          method: {
+            id: string;
+            name: string;
+            description?: string | null;
             price: number;
-            duration: string;
-            category: {
-              id: string;
-              name: string;
-              description?: string | null;
-              hasLegalValue: boolean;
-            } & ServiceCategory_Key;
-          } & Service_Key;
-            method: {
-              id: string;
-              name: string;
-              description?: string | null;
-              price: number;
-            } & Method_Key;
-        } & ServiceMethod_Key;
-          timeSlot?: {
-            slotDate: DateString;
-            startTime: string;
-            endTime: string;
-          };
-            totalAmount: number;
-            bookingCreatedAt: TimestampString;
-            createdAt: TimestampString;
-            updatedAt?: TimestampString | null;
+          } & Method_Key;
+            timeSlot?: {
+              slotDate: DateString;
+              startTime: string;
+              endTime: string;
+            };
+              totalAmount: number;
+              createdAt: TimestampString;
   } & Booking_Key;
 }
 ```
@@ -3417,26 +3932,23 @@ export interface GetStaffBookingsData {
       phone?: string | null;
     };
       totalAmount: number;
-      serviceMethod: {
-        service: {
-          id: string;
-          title: string;
-          category: {
-            name: string;
-          };
-        } & Service_Key;
-          method: {
-            name: string;
-            price: number;
-          };
-      };
-        timeSlot?: {
-          slotDate: DateString;
-          startTime: string;
-          endTime: string;
+      service: {
+        id: string;
+        title: string;
+        category: {
+          name: string;
         };
-          bookingCreatedAt: TimestampString;
-          createdAt: TimestampString;
+      } & Service_Key;
+        method: {
+          name: string;
+          price: number;
+        };
+          timeSlot?: {
+            slotDate: DateString;
+            startTime: string;
+            endTime: string;
+          };
+            createdAt: TimestampString;
   } & Booking_Key)[];
 }
 ```
@@ -3503,6 +4015,251 @@ executeQuery(ref).then((response) => {
 });
 ```
 
+## GetBookingParticipants
+You can execute the `GetBookingParticipants` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getBookingParticipants(vars: GetBookingParticipantsVariables): QueryPromise<GetBookingParticipantsData, GetBookingParticipantsVariables>;
+
+interface GetBookingParticipantsRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetBookingParticipantsVariables): QueryRef<GetBookingParticipantsData, GetBookingParticipantsVariables>;
+}
+export const getBookingParticipantsRef: GetBookingParticipantsRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getBookingParticipants(dc: DataConnect, vars: GetBookingParticipantsVariables): QueryPromise<GetBookingParticipantsData, GetBookingParticipantsVariables>;
+
+interface GetBookingParticipantsRef {
+  ...
+  (dc: DataConnect, vars: GetBookingParticipantsVariables): QueryRef<GetBookingParticipantsData, GetBookingParticipantsVariables>;
+}
+export const getBookingParticipantsRef: GetBookingParticipantsRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getBookingParticipantsRef:
+```typescript
+const name = getBookingParticipantsRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetBookingParticipants` query requires an argument of type `GetBookingParticipantsVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface GetBookingParticipantsVariables {
+  bookingId: string;
+}
+```
+### Return Type
+Recall that executing the `GetBookingParticipants` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetBookingParticipantsData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetBookingParticipantsData {
+  participants: ({
+    id: string;
+    name: string;
+    age: number;
+    identification?: string | null;
+    gender: string;
+    relationship?: string | null;
+    createdAt: TimestampString;
+    updatedAt?: TimestampString | null;
+  } & Participant_Key)[];
+}
+```
+### Using `GetBookingParticipants`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getBookingParticipants, GetBookingParticipantsVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetBookingParticipants` query requires an argument of type `GetBookingParticipantsVariables`:
+const getBookingParticipantsVars: GetBookingParticipantsVariables = {
+  bookingId: ..., 
+};
+
+// Call the `getBookingParticipants()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getBookingParticipants(getBookingParticipantsVars);
+// Variables can be defined inline as well.
+const { data } = await getBookingParticipants({ bookingId: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getBookingParticipants(dataConnect, getBookingParticipantsVars);
+
+console.log(data.participants);
+
+// Or, you can use the `Promise` API.
+getBookingParticipants(getBookingParticipantsVars).then((response) => {
+  const data = response.data;
+  console.log(data.participants);
+});
+```
+
+### Using `GetBookingParticipants`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getBookingParticipantsRef, GetBookingParticipantsVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetBookingParticipants` query requires an argument of type `GetBookingParticipantsVariables`:
+const getBookingParticipantsVars: GetBookingParticipantsVariables = {
+  bookingId: ..., 
+};
+
+// Call the `getBookingParticipantsRef()` function to get a reference to the query.
+const ref = getBookingParticipantsRef(getBookingParticipantsVars);
+// Variables can be defined inline as well.
+const ref = getBookingParticipantsRef({ bookingId: ..., });
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getBookingParticipantsRef(dataConnect, getBookingParticipantsVars);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.participants);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.participants);
+});
+```
+
+## GetParticipantById
+You can execute the `GetParticipantById` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getParticipantById(vars: GetParticipantByIdVariables): QueryPromise<GetParticipantByIdData, GetParticipantByIdVariables>;
+
+interface GetParticipantByIdRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetParticipantByIdVariables): QueryRef<GetParticipantByIdData, GetParticipantByIdVariables>;
+}
+export const getParticipantByIdRef: GetParticipantByIdRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getParticipantById(dc: DataConnect, vars: GetParticipantByIdVariables): QueryPromise<GetParticipantByIdData, GetParticipantByIdVariables>;
+
+interface GetParticipantByIdRef {
+  ...
+  (dc: DataConnect, vars: GetParticipantByIdVariables): QueryRef<GetParticipantByIdData, GetParticipantByIdVariables>;
+}
+export const getParticipantByIdRef: GetParticipantByIdRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getParticipantByIdRef:
+```typescript
+const name = getParticipantByIdRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetParticipantById` query requires an argument of type `GetParticipantByIdVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface GetParticipantByIdVariables {
+  participantId: string;
+}
+```
+### Return Type
+Recall that executing the `GetParticipantById` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetParticipantByIdData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetParticipantByIdData {
+  participant?: {
+    id: string;
+    booking: {
+      id: string;
+      user: {
+        fullname: string;
+      };
+        service: {
+          title: string;
+        };
+    } & Booking_Key;
+      name: string;
+      age: number;
+      identification?: string | null;
+      gender: string;
+      relationship?: string | null;
+      createdAt: TimestampString;
+      updatedAt?: TimestampString | null;
+  } & Participant_Key;
+}
+```
+### Using `GetParticipantById`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getParticipantById, GetParticipantByIdVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetParticipantById` query requires an argument of type `GetParticipantByIdVariables`:
+const getParticipantByIdVars: GetParticipantByIdVariables = {
+  participantId: ..., 
+};
+
+// Call the `getParticipantById()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getParticipantById(getParticipantByIdVars);
+// Variables can be defined inline as well.
+const { data } = await getParticipantById({ participantId: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getParticipantById(dataConnect, getParticipantByIdVars);
+
+console.log(data.participant);
+
+// Or, you can use the `Promise` API.
+getParticipantById(getParticipantByIdVars).then((response) => {
+  const data = response.data;
+  console.log(data.participant);
+});
+```
+
+### Using `GetParticipantById`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getParticipantByIdRef, GetParticipantByIdVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetParticipantById` query requires an argument of type `GetParticipantByIdVariables`:
+const getParticipantByIdVars: GetParticipantByIdVariables = {
+  participantId: ..., 
+};
+
+// Call the `getParticipantByIdRef()` function to get a reference to the query.
+const ref = getParticipantByIdRef(getParticipantByIdVars);
+// Variables can be defined inline as well.
+const ref = getParticipantByIdRef({ participantId: ..., });
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getParticipantByIdRef(dataConnect, getParticipantByIdVars);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.participant);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.participant);
+});
+```
+
 ## GetBookingSamples
 You can execute the `GetBookingSamples` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
 ```typescript
@@ -3549,23 +4306,29 @@ export interface GetBookingSamplesData {
   samples: ({
     id: string;
     booking: {
-      serviceMethod: {
-        service: {
-          title: string;
-          category: {
-            name: string;
-          };
+      service: {
+        title: string;
+        category: {
+          name: string;
         };
       };
     };
       staff?: {
-        fullname: string;
+        user: {
+          fullname: string;
+        };
       };
-        collectionDate?: DateString | null;
-        status: string;
-        notes?: string | null;
-        createdAt: TimestampString;
-        updatedAt?: TimestampString | null;
+        participant?: {
+          name: string;
+          age: number;
+          gender: string;
+        };
+          collectionDate?: DateString | null;
+          sampleQuality: string;
+          sampleConcentration?: number | null;
+          notes?: string | null;
+          createdAt: TimestampString;
+          updatedAt?: TimestampString | null;
   } & Sample_Key)[];
 }
 ```
@@ -3632,49 +4395,49 @@ executeQuery(ref).then((response) => {
 });
 ```
 
-## GetSamplesByStatus
-You can execute the `GetSamplesByStatus` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+## GetSamplesByQuality
+You can execute the `GetSamplesByQuality` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
 ```typescript
-getSamplesByStatus(vars: GetSamplesByStatusVariables): QueryPromise<GetSamplesByStatusData, GetSamplesByStatusVariables>;
+getSamplesByQuality(vars: GetSamplesByQualityVariables): QueryPromise<GetSamplesByQualityData, GetSamplesByQualityVariables>;
 
-interface GetSamplesByStatusRef {
+interface GetSamplesByQualityRef {
   ...
   /* Allow users to create refs without passing in DataConnect */
-  (vars: GetSamplesByStatusVariables): QueryRef<GetSamplesByStatusData, GetSamplesByStatusVariables>;
+  (vars: GetSamplesByQualityVariables): QueryRef<GetSamplesByQualityData, GetSamplesByQualityVariables>;
 }
-export const getSamplesByStatusRef: GetSamplesByStatusRef;
+export const getSamplesByQualityRef: GetSamplesByQualityRef;
 ```
 You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
 ```typescript
-getSamplesByStatus(dc: DataConnect, vars: GetSamplesByStatusVariables): QueryPromise<GetSamplesByStatusData, GetSamplesByStatusVariables>;
+getSamplesByQuality(dc: DataConnect, vars: GetSamplesByQualityVariables): QueryPromise<GetSamplesByQualityData, GetSamplesByQualityVariables>;
 
-interface GetSamplesByStatusRef {
+interface GetSamplesByQualityRef {
   ...
-  (dc: DataConnect, vars: GetSamplesByStatusVariables): QueryRef<GetSamplesByStatusData, GetSamplesByStatusVariables>;
+  (dc: DataConnect, vars: GetSamplesByQualityVariables): QueryRef<GetSamplesByQualityData, GetSamplesByQualityVariables>;
 }
-export const getSamplesByStatusRef: GetSamplesByStatusRef;
+export const getSamplesByQualityRef: GetSamplesByQualityRef;
 ```
 
-If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getSamplesByStatusRef:
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getSamplesByQualityRef:
 ```typescript
-const name = getSamplesByStatusRef.operationName;
+const name = getSamplesByQualityRef.operationName;
 console.log(name);
 ```
 
 ### Variables
-The `GetSamplesByStatus` query requires an argument of type `GetSamplesByStatusVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+The `GetSamplesByQuality` query requires an argument of type `GetSamplesByQualityVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
 
 ```typescript
-export interface GetSamplesByStatusVariables {
-  status: string;
+export interface GetSamplesByQualityVariables {
+  sampleQuality: string;
 }
 ```
 ### Return Type
-Recall that executing the `GetSamplesByStatus` query returns a `QueryPromise` that resolves to an object with a `data` property.
+Recall that executing the `GetSamplesByQuality` query returns a `QueryPromise` that resolves to an object with a `data` property.
 
-The `data` property is an object of type `GetSamplesByStatusData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+The `data` property is an object of type `GetSamplesByQualityData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
 ```typescript
-export interface GetSamplesByStatusData {
+export interface GetSamplesByQualityData {
   samples: ({
     id: string;
     booking: {
@@ -3682,74 +4445,80 @@ export interface GetSamplesByStatusData {
       user: {
         fullname: string;
       };
-        serviceMethod: {
-          service: {
-            title: string;
-            category: {
-              name: string;
-            };
+        service: {
+          title: string;
+          category: {
+            name: string;
           };
         };
     } & Booking_Key;
       staff?: {
-        fullname: string;
+        user: {
+          fullname: string;
+        };
       };
-        collectionDate?: DateString | null;
-        status: string;
-        notes?: string | null;
-        createdAt: TimestampString;
+        participant?: {
+          name: string;
+          age: number;
+          gender: string;
+        };
+          collectionDate?: DateString | null;
+          sampleQuality: string;
+          sampleConcentration?: number | null;
+          notes?: string | null;
+          createdAt: TimestampString;
   } & Sample_Key)[];
 }
 ```
-### Using `GetSamplesByStatus`'s action shortcut function
+### Using `GetSamplesByQuality`'s action shortcut function
 
 ```typescript
 import { getDataConnect } from 'firebase/data-connect';
-import { connectorConfig, getSamplesByStatus, GetSamplesByStatusVariables } from '@firebasegen/adnlab-connector';
+import { connectorConfig, getSamplesByQuality, GetSamplesByQualityVariables } from '@firebasegen/adnlab-connector';
 
-// The `GetSamplesByStatus` query requires an argument of type `GetSamplesByStatusVariables`:
-const getSamplesByStatusVars: GetSamplesByStatusVariables = {
-  status: ..., 
+// The `GetSamplesByQuality` query requires an argument of type `GetSamplesByQualityVariables`:
+const getSamplesByQualityVars: GetSamplesByQualityVariables = {
+  sampleQuality: ..., 
 };
 
-// Call the `getSamplesByStatus()` function to execute the query.
+// Call the `getSamplesByQuality()` function to execute the query.
 // You can use the `await` keyword to wait for the promise to resolve.
-const { data } = await getSamplesByStatus(getSamplesByStatusVars);
+const { data } = await getSamplesByQuality(getSamplesByQualityVars);
 // Variables can be defined inline as well.
-const { data } = await getSamplesByStatus({ status: ..., });
+const { data } = await getSamplesByQuality({ sampleQuality: ..., });
 
 // You can also pass in a `DataConnect` instance to the action shortcut function.
 const dataConnect = getDataConnect(connectorConfig);
-const { data } = await getSamplesByStatus(dataConnect, getSamplesByStatusVars);
+const { data } = await getSamplesByQuality(dataConnect, getSamplesByQualityVars);
 
 console.log(data.samples);
 
 // Or, you can use the `Promise` API.
-getSamplesByStatus(getSamplesByStatusVars).then((response) => {
+getSamplesByQuality(getSamplesByQualityVars).then((response) => {
   const data = response.data;
   console.log(data.samples);
 });
 ```
 
-### Using `GetSamplesByStatus`'s `QueryRef` function
+### Using `GetSamplesByQuality`'s `QueryRef` function
 
 ```typescript
 import { getDataConnect, executeQuery } from 'firebase/data-connect';
-import { connectorConfig, getSamplesByStatusRef, GetSamplesByStatusVariables } from '@firebasegen/adnlab-connector';
+import { connectorConfig, getSamplesByQualityRef, GetSamplesByQualityVariables } from '@firebasegen/adnlab-connector';
 
-// The `GetSamplesByStatus` query requires an argument of type `GetSamplesByStatusVariables`:
-const getSamplesByStatusVars: GetSamplesByStatusVariables = {
-  status: ..., 
+// The `GetSamplesByQuality` query requires an argument of type `GetSamplesByQualityVariables`:
+const getSamplesByQualityVars: GetSamplesByQualityVariables = {
+  sampleQuality: ..., 
 };
 
-// Call the `getSamplesByStatusRef()` function to get a reference to the query.
-const ref = getSamplesByStatusRef(getSamplesByStatusVars);
+// Call the `getSamplesByQualityRef()` function to get a reference to the query.
+const ref = getSamplesByQualityRef(getSamplesByQualityVars);
 // Variables can be defined inline as well.
-const ref = getSamplesByStatusRef({ status: ..., });
+const ref = getSamplesByQualityRef({ sampleQuality: ..., });
 
 // You can also pass in a `DataConnect` instance to the `QueryRef` function.
 const dataConnect = getDataConnect(connectorConfig);
-const ref = getSamplesByStatusRef(dataConnect, getSamplesByStatusVars);
+const ref = getSamplesByQualityRef(dataConnect, getSamplesByQualityVars);
 
 // Call `executeQuery()` on the reference to execute the query.
 // You can use the `await` keyword to wait for the promise to resolve.
@@ -3815,27 +4584,35 @@ export interface GetSampleByIdData {
         fullname: string;
         email: string;
       };
-        serviceMethod: {
-          service: {
-            title: string;
-            description: string;
-            category: {
-              name: string;
-            };
+        service: {
+          title: string;
+          description: string;
+          category: {
+            name: string;
           };
-            method: {
-              name: string;
-            };
         };
+          method: {
+            name: string;
+          };
     } & Booking_Key;
       staff?: {
-        fullname: string;
+        user: {
+          fullname: string;
+        };
       };
-        collectionDate?: DateString | null;
-        status: string;
-        notes?: string | null;
-        createdAt: TimestampString;
-        updatedAt?: TimestampString | null;
+        participant?: {
+          name: string;
+          age: number;
+          gender: string;
+          identification?: string | null;
+          relationship?: string | null;
+        };
+          collectionDate?: DateString | null;
+          sampleQuality: string;
+          sampleConcentration?: number | null;
+          notes?: string | null;
+          createdAt: TimestampString;
+          updatedAt?: TimestampString | null;
   } & Sample_Key;
 }
 ```
@@ -3951,19 +4728,23 @@ export interface GetStaffSamplesData {
       user: {
         fullname: string;
       };
-        serviceMethod: {
-          service: {
-            title: string;
-            category: {
-              name: string;
-            };
+        service: {
+          title: string;
+          category: {
+            name: string;
           };
         };
     };
-      collectionDate?: DateString | null;
-      status: string;
-      notes?: string | null;
-      createdAt: TimestampString;
+      participant?: {
+        name: string;
+        age: number;
+        gender: string;
+      };
+        collectionDate?: DateString | null;
+        sampleQuality: string;
+        sampleConcentration?: number | null;
+        notes?: string | null;
+        createdAt: TimestampString;
   } & Sample_Key)[];
 }
 ```
@@ -4030,6 +4811,274 @@ executeQuery(ref).then((response) => {
 });
 ```
 
+## GetParticipantSamples
+You can execute the `GetParticipantSamples` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getParticipantSamples(vars: GetParticipantSamplesVariables): QueryPromise<GetParticipantSamplesData, GetParticipantSamplesVariables>;
+
+interface GetParticipantSamplesRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetParticipantSamplesVariables): QueryRef<GetParticipantSamplesData, GetParticipantSamplesVariables>;
+}
+export const getParticipantSamplesRef: GetParticipantSamplesRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getParticipantSamples(dc: DataConnect, vars: GetParticipantSamplesVariables): QueryPromise<GetParticipantSamplesData, GetParticipantSamplesVariables>;
+
+interface GetParticipantSamplesRef {
+  ...
+  (dc: DataConnect, vars: GetParticipantSamplesVariables): QueryRef<GetParticipantSamplesData, GetParticipantSamplesVariables>;
+}
+export const getParticipantSamplesRef: GetParticipantSamplesRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getParticipantSamplesRef:
+```typescript
+const name = getParticipantSamplesRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetParticipantSamples` query requires an argument of type `GetParticipantSamplesVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface GetParticipantSamplesVariables {
+  participantId: string;
+}
+```
+### Return Type
+Recall that executing the `GetParticipantSamples` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetParticipantSamplesData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetParticipantSamplesData {
+  samples: ({
+    id: string;
+    booking: {
+      id: string;
+      service: {
+        title: string;
+      };
+    } & Booking_Key;
+      collectionDate?: DateString | null;
+      sampleQuality: string;
+      sampleConcentration?: number | null;
+      notes?: string | null;
+      createdAt: TimestampString;
+      updatedAt?: TimestampString | null;
+  } & Sample_Key)[];
+}
+```
+### Using `GetParticipantSamples`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getParticipantSamples, GetParticipantSamplesVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetParticipantSamples` query requires an argument of type `GetParticipantSamplesVariables`:
+const getParticipantSamplesVars: GetParticipantSamplesVariables = {
+  participantId: ..., 
+};
+
+// Call the `getParticipantSamples()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getParticipantSamples(getParticipantSamplesVars);
+// Variables can be defined inline as well.
+const { data } = await getParticipantSamples({ participantId: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getParticipantSamples(dataConnect, getParticipantSamplesVars);
+
+console.log(data.samples);
+
+// Or, you can use the `Promise` API.
+getParticipantSamples(getParticipantSamplesVars).then((response) => {
+  const data = response.data;
+  console.log(data.samples);
+});
+```
+
+### Using `GetParticipantSamples`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getParticipantSamplesRef, GetParticipantSamplesVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetParticipantSamples` query requires an argument of type `GetParticipantSamplesVariables`:
+const getParticipantSamplesVars: GetParticipantSamplesVariables = {
+  participantId: ..., 
+};
+
+// Call the `getParticipantSamplesRef()` function to get a reference to the query.
+const ref = getParticipantSamplesRef(getParticipantSamplesVars);
+// Variables can be defined inline as well.
+const ref = getParticipantSamplesRef({ participantId: ..., });
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getParticipantSamplesRef(dataConnect, getParticipantSamplesVars);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.samples);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.samples);
+});
+```
+
+## GetAllSamples
+You can execute the `GetAllSamples` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getAllSamples(vars?: GetAllSamplesVariables): QueryPromise<GetAllSamplesData, GetAllSamplesVariables>;
+
+interface GetAllSamplesRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars?: GetAllSamplesVariables): QueryRef<GetAllSamplesData, GetAllSamplesVariables>;
+}
+export const getAllSamplesRef: GetAllSamplesRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getAllSamples(dc: DataConnect, vars?: GetAllSamplesVariables): QueryPromise<GetAllSamplesData, GetAllSamplesVariables>;
+
+interface GetAllSamplesRef {
+  ...
+  (dc: DataConnect, vars?: GetAllSamplesVariables): QueryRef<GetAllSamplesData, GetAllSamplesVariables>;
+}
+export const getAllSamplesRef: GetAllSamplesRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getAllSamplesRef:
+```typescript
+const name = getAllSamplesRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetAllSamples` query has an optional argument of type `GetAllSamplesVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface GetAllSamplesVariables {
+  limit?: number | null;
+  offset?: number | null;
+}
+```
+### Return Type
+Recall that executing the `GetAllSamples` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetAllSamplesData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetAllSamplesData {
+  samples: ({
+    id: string;
+    booking: {
+      id: string;
+      user: {
+        fullname: string;
+      };
+        service: {
+          title: string;
+          category: {
+            name: string;
+          };
+        };
+    } & Booking_Key;
+      staff?: {
+        user: {
+          fullname: string;
+        };
+      };
+        participant?: {
+          name: string;
+          age: number;
+          gender: string;
+        };
+          collectionDate?: DateString | null;
+          sampleQuality: string;
+          sampleConcentration?: number | null;
+          notes?: string | null;
+          createdAt: TimestampString;
+  } & Sample_Key)[];
+}
+```
+### Using `GetAllSamples`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getAllSamples, GetAllSamplesVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetAllSamples` query has an optional argument of type `GetAllSamplesVariables`:
+const getAllSamplesVars: GetAllSamplesVariables = {
+  limit: ..., // optional
+  offset: ..., // optional
+};
+
+// Call the `getAllSamples()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getAllSamples(getAllSamplesVars);
+// Variables can be defined inline as well.
+const { data } = await getAllSamples({ limit: ..., offset: ..., });
+// Since all variables are optional for this query, you can omit the `GetAllSamplesVariables` argument.
+const { data } = await getAllSamples();
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getAllSamples(dataConnect, getAllSamplesVars);
+
+console.log(data.samples);
+
+// Or, you can use the `Promise` API.
+getAllSamples(getAllSamplesVars).then((response) => {
+  const data = response.data;
+  console.log(data.samples);
+});
+```
+
+### Using `GetAllSamples`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getAllSamplesRef, GetAllSamplesVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetAllSamples` query has an optional argument of type `GetAllSamplesVariables`:
+const getAllSamplesVars: GetAllSamplesVariables = {
+  limit: ..., // optional
+  offset: ..., // optional
+};
+
+// Call the `getAllSamplesRef()` function to get a reference to the query.
+const ref = getAllSamplesRef(getAllSamplesVars);
+// Variables can be defined inline as well.
+const ref = getAllSamplesRef({ limit: ..., offset: ..., });
+// Since all variables are optional for this query, you can omit the `GetAllSamplesVariables` argument.
+const ref = getAllSamplesRef();
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getAllSamplesRef(dataConnect, getAllSamplesVars);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.samples);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.samples);
+});
+```
+
 ## GetBookingTestResults
 You can execute the `GetBookingTestResults` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
 ```typescript
@@ -4077,17 +5126,24 @@ export interface GetBookingTestResultsData {
     id: string;
     sample: {
       id: string;
+      participant?: {
+        name: string;
+      };
     } & Sample_Key;
       booking: {
-        serviceMethod: {
-          service: {
-            title: string;
-          };
+        service: {
+          title: string;
         };
       };
-        staff?: {
-          fullname: string;
+        manager?: {
+          user: {
+            fullname: string;
+          };
         };
+          testMethod: string;
+          positive: boolean;
+          accuracy: number;
+          testType: string;
           testDate?: DateString | null;
           reportDate?: DateString | null;
           status: string;
@@ -4210,26 +5266,36 @@ export interface GetTestResultByIdData {
         fullname: string;
         email: string;
       };
-        serviceMethod: {
-          service: {
-            title: string;
-            description: string;
-          };
-            method: {
-              name: string;
-            };
+        service: {
+          title: string;
+          description: string;
         };
+          method: {
+            name: string;
+          };
     } & Booking_Key;
       sample: {
         id: string;
         collectionDate?: DateString | null;
-      } & Sample_Key;
-        staff?: {
-          fullname: string;
+        participant?: {
+          name: string;
+          age: number;
+          gender: string;
         };
+      } & Sample_Key;
+        manager?: {
+          user: {
+            fullname: string;
+          };
+        };
+          testMethod: string;
+          positive: boolean;
+          accuracy: number;
+          testType: string;
           testDate?: DateString | null;
           reportDate?: DateString | null;
           resultData?: string | null;
+          resultNotes?: string | null;
           status: string;
           createdAt: TimestampString;
           updatedAt?: TimestampString | null;
@@ -4348,18 +5414,28 @@ export interface GetTestResultsByStatusData {
       user: {
         fullname: string;
       };
-        serviceMethod: {
-          service: {
-            title: string;
-          };
+        service: {
+          title: string;
         };
     };
-      staff?: {
-        fullname: string;
+      sample: {
+        participant?: {
+          name: string;
+        };
       };
-        testDate?: DateString | null;
-        status: string;
-        createdAt: TimestampString;
+        manager?: {
+          user: {
+            fullname: string;
+          };
+        };
+          testMethod: string;
+          positive: boolean;
+          accuracy: number;
+          testType: string;
+          testDate?: DateString | null;
+          reportDate?: DateString | null;
+          status: string;
+          createdAt: TimestampString;
   } & TestResult_Key)[];
 }
 ```
@@ -4472,12 +5548,14 @@ export interface GetUserTestResultsData {
   testResults: ({
     id: string;
     booking: {
-      serviceMethod: {
-        service: {
-          title: string;
-        };
+      service: {
+        title: string;
       };
     };
+      testMethod: string;
+      positive: boolean;
+      accuracy: number;
+      testType: string;
       testDate?: DateString | null;
       reportDate?: DateString | null;
       status: string;
@@ -4548,6 +5626,376 @@ executeQuery(ref).then((response) => {
 });
 ```
 
+## GetManagerTestResults
+You can execute the `GetManagerTestResults` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getManagerTestResults(vars: GetManagerTestResultsVariables): QueryPromise<GetManagerTestResultsData, GetManagerTestResultsVariables>;
+
+interface GetManagerTestResultsRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetManagerTestResultsVariables): QueryRef<GetManagerTestResultsData, GetManagerTestResultsVariables>;
+}
+export const getManagerTestResultsRef: GetManagerTestResultsRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getManagerTestResults(dc: DataConnect, vars: GetManagerTestResultsVariables): QueryPromise<GetManagerTestResultsData, GetManagerTestResultsVariables>;
+
+interface GetManagerTestResultsRef {
+  ...
+  (dc: DataConnect, vars: GetManagerTestResultsVariables): QueryRef<GetManagerTestResultsData, GetManagerTestResultsVariables>;
+}
+export const getManagerTestResultsRef: GetManagerTestResultsRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getManagerTestResultsRef:
+```typescript
+const name = getManagerTestResultsRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetManagerTestResults` query requires an argument of type `GetManagerTestResultsVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface GetManagerTestResultsVariables {
+  managerId: string;
+}
+```
+### Return Type
+Recall that executing the `GetManagerTestResults` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetManagerTestResultsData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetManagerTestResultsData {
+  testResults: ({
+    id: string;
+    booking: {
+      user: {
+        fullname: string;
+      };
+        service: {
+          title: string;
+        };
+    };
+      sample: {
+        participant?: {
+          name: string;
+        };
+      };
+        testMethod: string;
+        positive: boolean;
+        accuracy: number;
+        testType: string;
+        testDate?: DateString | null;
+        reportDate?: DateString | null;
+        status: string;
+        createdAt: TimestampString;
+  } & TestResult_Key)[];
+}
+```
+### Using `GetManagerTestResults`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getManagerTestResults, GetManagerTestResultsVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetManagerTestResults` query requires an argument of type `GetManagerTestResultsVariables`:
+const getManagerTestResultsVars: GetManagerTestResultsVariables = {
+  managerId: ..., 
+};
+
+// Call the `getManagerTestResults()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getManagerTestResults(getManagerTestResultsVars);
+// Variables can be defined inline as well.
+const { data } = await getManagerTestResults({ managerId: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getManagerTestResults(dataConnect, getManagerTestResultsVars);
+
+console.log(data.testResults);
+
+// Or, you can use the `Promise` API.
+getManagerTestResults(getManagerTestResultsVars).then((response) => {
+  const data = response.data;
+  console.log(data.testResults);
+});
+```
+
+### Using `GetManagerTestResults`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getManagerTestResultsRef, GetManagerTestResultsVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetManagerTestResults` query requires an argument of type `GetManagerTestResultsVariables`:
+const getManagerTestResultsVars: GetManagerTestResultsVariables = {
+  managerId: ..., 
+};
+
+// Call the `getManagerTestResultsRef()` function to get a reference to the query.
+const ref = getManagerTestResultsRef(getManagerTestResultsVars);
+// Variables can be defined inline as well.
+const ref = getManagerTestResultsRef({ managerId: ..., });
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getManagerTestResultsRef(dataConnect, getManagerTestResultsVars);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.testResults);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.testResults);
+});
+```
+
+## GetTestResultsByType
+You can execute the `GetTestResultsByType` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getTestResultsByType(vars: GetTestResultsByTypeVariables): QueryPromise<GetTestResultsByTypeData, GetTestResultsByTypeVariables>;
+
+interface GetTestResultsByTypeRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetTestResultsByTypeVariables): QueryRef<GetTestResultsByTypeData, GetTestResultsByTypeVariables>;
+}
+export const getTestResultsByTypeRef: GetTestResultsByTypeRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getTestResultsByType(dc: DataConnect, vars: GetTestResultsByTypeVariables): QueryPromise<GetTestResultsByTypeData, GetTestResultsByTypeVariables>;
+
+interface GetTestResultsByTypeRef {
+  ...
+  (dc: DataConnect, vars: GetTestResultsByTypeVariables): QueryRef<GetTestResultsByTypeData, GetTestResultsByTypeVariables>;
+}
+export const getTestResultsByTypeRef: GetTestResultsByTypeRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getTestResultsByTypeRef:
+```typescript
+const name = getTestResultsByTypeRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetTestResultsByType` query requires an argument of type `GetTestResultsByTypeVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface GetTestResultsByTypeVariables {
+  testType: string;
+}
+```
+### Return Type
+Recall that executing the `GetTestResultsByType` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetTestResultsByTypeData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetTestResultsByTypeData {
+  testResults: ({
+    id: string;
+    booking: {
+      user: {
+        fullname: string;
+      };
+        service: {
+          title: string;
+        };
+    };
+      testMethod: string;
+      positive: boolean;
+      accuracy: number;
+      testDate?: DateString | null;
+      status: string;
+      createdAt: TimestampString;
+  } & TestResult_Key)[];
+}
+```
+### Using `GetTestResultsByType`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getTestResultsByType, GetTestResultsByTypeVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetTestResultsByType` query requires an argument of type `GetTestResultsByTypeVariables`:
+const getTestResultsByTypeVars: GetTestResultsByTypeVariables = {
+  testType: ..., 
+};
+
+// Call the `getTestResultsByType()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getTestResultsByType(getTestResultsByTypeVars);
+// Variables can be defined inline as well.
+const { data } = await getTestResultsByType({ testType: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getTestResultsByType(dataConnect, getTestResultsByTypeVars);
+
+console.log(data.testResults);
+
+// Or, you can use the `Promise` API.
+getTestResultsByType(getTestResultsByTypeVars).then((response) => {
+  const data = response.data;
+  console.log(data.testResults);
+});
+```
+
+### Using `GetTestResultsByType`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getTestResultsByTypeRef, GetTestResultsByTypeVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetTestResultsByType` query requires an argument of type `GetTestResultsByTypeVariables`:
+const getTestResultsByTypeVars: GetTestResultsByTypeVariables = {
+  testType: ..., 
+};
+
+// Call the `getTestResultsByTypeRef()` function to get a reference to the query.
+const ref = getTestResultsByTypeRef(getTestResultsByTypeVars);
+// Variables can be defined inline as well.
+const ref = getTestResultsByTypeRef({ testType: ..., });
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getTestResultsByTypeRef(dataConnect, getTestResultsByTypeVars);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.testResults);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.testResults);
+});
+```
+
+## GetPositiveTestResults
+You can execute the `GetPositiveTestResults` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getPositiveTestResults(): QueryPromise<GetPositiveTestResultsData, undefined>;
+
+interface GetPositiveTestResultsRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetPositiveTestResultsData, undefined>;
+}
+export const getPositiveTestResultsRef: GetPositiveTestResultsRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getPositiveTestResults(dc: DataConnect): QueryPromise<GetPositiveTestResultsData, undefined>;
+
+interface GetPositiveTestResultsRef {
+  ...
+  (dc: DataConnect): QueryRef<GetPositiveTestResultsData, undefined>;
+}
+export const getPositiveTestResultsRef: GetPositiveTestResultsRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getPositiveTestResultsRef:
+```typescript
+const name = getPositiveTestResultsRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetPositiveTestResults` query has no variables.
+### Return Type
+Recall that executing the `GetPositiveTestResults` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetPositiveTestResultsData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetPositiveTestResultsData {
+  testResults: ({
+    id: string;
+    booking: {
+      user: {
+        fullname: string;
+      };
+        service: {
+          title: string;
+        };
+    };
+      sample: {
+        participant?: {
+          name: string;
+        };
+      };
+        testMethod: string;
+        accuracy: number;
+        testType: string;
+        testDate?: DateString | null;
+        reportDate?: DateString | null;
+        status: string;
+        createdAt: TimestampString;
+  } & TestResult_Key)[];
+}
+```
+### Using `GetPositiveTestResults`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getPositiveTestResults } from '@firebasegen/adnlab-connector';
+
+
+// Call the `getPositiveTestResults()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getPositiveTestResults();
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getPositiveTestResults(dataConnect);
+
+console.log(data.testResults);
+
+// Or, you can use the `Promise` API.
+getPositiveTestResults().then((response) => {
+  const data = response.data;
+  console.log(data.testResults);
+});
+```
+
+### Using `GetPositiveTestResults`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getPositiveTestResultsRef } from '@firebasegen/adnlab-connector';
+
+
+// Call the `getPositiveTestResultsRef()` function to get a reference to the query.
+const ref = getPositiveTestResultsRef();
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getPositiveTestResultsRef(dataConnect);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.testResults);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.testResults);
+});
+```
+
 ## GetBookingPayment
 You can execute the `GetBookingPayment` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
 ```typescript
@@ -4597,7 +6045,8 @@ export interface GetBookingPaymentData {
     paymentMethod: string;
     status: string;
     paymentDate?: DateString | null;
-    refundDetail?: string[] | null;
+    refundDetail?: string | null;
+    otherDetails?: string[] | null;
     createdAt: TimestampString;
     updatedAt?: TimestampString | null;
   } & Payment_Key)[];
@@ -4723,7 +6172,8 @@ export interface GetPaymentByIdData {
       paymentMethod: string;
       status: string;
       paymentDate?: DateString | null;
-      refundDetail?: string[] | null;
+      refundDetail?: string | null;
+      otherDetails?: string[] | null;
       createdAt: TimestampString;
       updatedAt?: TimestampString | null;
   } & Payment_Key;
@@ -4845,6 +6295,8 @@ export interface GetPaymentsByStatusData {
       amount: number;
       paymentMethod: string;
       paymentDate?: DateString | null;
+      refundDetail?: string | null;
+      otherDetails?: string[] | null;
       createdAt: TimestampString;
   } & Payment_Key)[];
 }
@@ -4961,6 +6413,8 @@ export interface GetUserPaymentsData {
     paymentMethod: string;
     status: string;
     paymentDate?: DateString | null;
+    refundDetail?: string | null;
+    otherDetails?: string[] | null;
     createdAt: TimestampString;
   } & Payment_Key)[];
 }
@@ -5438,9 +6892,11 @@ export interface GetBlogsData {
       fullname: string;
       avatar?: string | null;
     } & User_Key;
+      title: string;
       content: string;
       imageUrl?: string | null;
       createdAt: TimestampString;
+      updatedAt?: TimestampString | null;
   } & Blog_Key)[];
 }
 ```
@@ -5566,9 +7022,11 @@ export interface GetBlogByIdData {
         name: string;
       };
     } & User_Key;
+      title: string;
       content: string;
       imageUrl?: string | null;
       createdAt: TimestampString;
+      updatedAt?: TimestampString | null;
   } & Blog_Key;
 }
 ```
@@ -5680,9 +7138,11 @@ The `data` property is an object of type `GetBlogsByUserData`, which is defined 
 export interface GetBlogsByUserData {
   blogs: ({
     id: string;
+    title: string;
     content: string;
     imageUrl?: string | null;
     createdAt: TimestampString;
+    updatedAt?: TimestampString | null;
   } & Blog_Key)[];
 }
 ```
@@ -5788,9 +7248,11 @@ The `data` property is an object of type `GetMyBlogsData`, which is defined in [
 export interface GetMyBlogsData {
   blogs: ({
     id: string;
+    title: string;
     content: string;
     imageUrl?: string | null;
     createdAt: TimestampString;
+    updatedAt?: TimestampString | null;
   } & Blog_Key)[];
 }
 ```
@@ -5891,7 +7353,9 @@ export interface GetUserNotificationsData {
   notifications: ({
     id: string;
     staff?: {
-      fullname: string;
+      user: {
+        fullname: string;
+      };
     };
       title: string;
       message: string;
@@ -6004,7 +7468,9 @@ export interface GetMyNotificationsData {
   notifications: ({
     id: string;
     staff?: {
-      fullname: string;
+      user: {
+        fullname: string;
+      };
     };
       title: string;
       message: string;
@@ -6225,7 +7691,9 @@ export interface GetNotificationByIdData {
       fullname: string;
     };
       staff?: {
-        fullname: string;
+        user: {
+          fullname: string;
+        };
       };
         title: string;
         message: string;
@@ -6431,12 +7899,10 @@ The `data` property is an object of type `GetServicePopularityData`, which is de
 ```typescript
 export interface GetServicePopularityData {
   bookings: ({
-    serviceMethod: {
-      service: {
-        id: string;
-        title: string;
-      } & Service_Key;
-    };
+    service: {
+      id: string;
+      title: string;
+    } & Service_Key;
   })[];
 }
 ```
@@ -6603,6 +8069,861 @@ console.log(data.payments);
 executeQuery(ref).then((response) => {
   const data = response.data;
   console.log(data.payments);
+});
+```
+
+## GetStaffBySpecification
+You can execute the `GetStaffBySpecification` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getStaffBySpecification(vars: GetStaffBySpecificationVariables): QueryPromise<GetStaffBySpecificationData, GetStaffBySpecificationVariables>;
+
+interface GetStaffBySpecificationRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetStaffBySpecificationVariables): QueryRef<GetStaffBySpecificationData, GetStaffBySpecificationVariables>;
+}
+export const getStaffBySpecificationRef: GetStaffBySpecificationRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getStaffBySpecification(dc: DataConnect, vars: GetStaffBySpecificationVariables): QueryPromise<GetStaffBySpecificationData, GetStaffBySpecificationVariables>;
+
+interface GetStaffBySpecificationRef {
+  ...
+  (dc: DataConnect, vars: GetStaffBySpecificationVariables): QueryRef<GetStaffBySpecificationData, GetStaffBySpecificationVariables>;
+}
+export const getStaffBySpecificationRef: GetStaffBySpecificationRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getStaffBySpecificationRef:
+```typescript
+const name = getStaffBySpecificationRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetStaffBySpecification` query requires an argument of type `GetStaffBySpecificationVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface GetStaffBySpecificationVariables {
+  specification: string;
+}
+```
+### Return Type
+Recall that executing the `GetStaffBySpecification` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetStaffBySpecificationData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetStaffBySpecificationData {
+  staffs: ({
+    id: string;
+    user: {
+      fullname: string;
+      email: string;
+      phone?: string | null;
+    };
+      hireDate?: DateString | null;
+      slot?: number | null;
+      specification?: string[] | null;
+      certifications?: string[] | null;
+      position?: string | null;
+      createdAt: TimestampString;
+  } & Staff_Key)[];
+}
+```
+### Using `GetStaffBySpecification`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getStaffBySpecification, GetStaffBySpecificationVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetStaffBySpecification` query requires an argument of type `GetStaffBySpecificationVariables`:
+const getStaffBySpecificationVars: GetStaffBySpecificationVariables = {
+  specification: ..., 
+};
+
+// Call the `getStaffBySpecification()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getStaffBySpecification(getStaffBySpecificationVars);
+// Variables can be defined inline as well.
+const { data } = await getStaffBySpecification({ specification: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getStaffBySpecification(dataConnect, getStaffBySpecificationVars);
+
+console.log(data.staffs);
+
+// Or, you can use the `Promise` API.
+getStaffBySpecification(getStaffBySpecificationVars).then((response) => {
+  const data = response.data;
+  console.log(data.staffs);
+});
+```
+
+### Using `GetStaffBySpecification`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getStaffBySpecificationRef, GetStaffBySpecificationVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetStaffBySpecification` query requires an argument of type `GetStaffBySpecificationVariables`:
+const getStaffBySpecificationVars: GetStaffBySpecificationVariables = {
+  specification: ..., 
+};
+
+// Call the `getStaffBySpecificationRef()` function to get a reference to the query.
+const ref = getStaffBySpecificationRef(getStaffBySpecificationVars);
+// Variables can be defined inline as well.
+const ref = getStaffBySpecificationRef({ specification: ..., });
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getStaffBySpecificationRef(dataConnect, getStaffBySpecificationVars);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.staffs);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.staffs);
+});
+```
+
+## GetAvailableStaff
+You can execute the `GetAvailableStaff` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getAvailableStaff(): QueryPromise<GetAvailableStaffData, undefined>;
+
+interface GetAvailableStaffRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetAvailableStaffData, undefined>;
+}
+export const getAvailableStaffRef: GetAvailableStaffRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getAvailableStaff(dc: DataConnect): QueryPromise<GetAvailableStaffData, undefined>;
+
+interface GetAvailableStaffRef {
+  ...
+  (dc: DataConnect): QueryRef<GetAvailableStaffData, undefined>;
+}
+export const getAvailableStaffRef: GetAvailableStaffRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getAvailableStaffRef:
+```typescript
+const name = getAvailableStaffRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetAvailableStaff` query has no variables.
+### Return Type
+Recall that executing the `GetAvailableStaff` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetAvailableStaffData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetAvailableStaffData {
+  staffs: ({
+    id: string;
+    user: {
+      fullname: string;
+      email: string;
+    };
+      slot?: number | null;
+      specification?: string[] | null;
+      position?: string | null;
+      createdAt: TimestampString;
+  } & Staff_Key)[];
+}
+```
+### Using `GetAvailableStaff`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getAvailableStaff } from '@firebasegen/adnlab-connector';
+
+
+// Call the `getAvailableStaff()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getAvailableStaff();
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getAvailableStaff(dataConnect);
+
+console.log(data.staffs);
+
+// Or, you can use the `Promise` API.
+getAvailableStaff().then((response) => {
+  const data = response.data;
+  console.log(data.staffs);
+});
+```
+
+### Using `GetAvailableStaff`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getAvailableStaffRef } from '@firebasegen/adnlab-connector';
+
+
+// Call the `getAvailableStaffRef()` function to get a reference to the query.
+const ref = getAvailableStaffRef();
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getAvailableStaffRef(dataConnect);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.staffs);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.staffs);
+});
+```
+
+## GetManagersBySpecification
+You can execute the `GetManagersBySpecification` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getManagersBySpecification(vars: GetManagersBySpecificationVariables): QueryPromise<GetManagersBySpecificationData, GetManagersBySpecificationVariables>;
+
+interface GetManagersBySpecificationRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetManagersBySpecificationVariables): QueryRef<GetManagersBySpecificationData, GetManagersBySpecificationVariables>;
+}
+export const getManagersBySpecificationRef: GetManagersBySpecificationRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getManagersBySpecification(dc: DataConnect, vars: GetManagersBySpecificationVariables): QueryPromise<GetManagersBySpecificationData, GetManagersBySpecificationVariables>;
+
+interface GetManagersBySpecificationRef {
+  ...
+  (dc: DataConnect, vars: GetManagersBySpecificationVariables): QueryRef<GetManagersBySpecificationData, GetManagersBySpecificationVariables>;
+}
+export const getManagersBySpecificationRef: GetManagersBySpecificationRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getManagersBySpecificationRef:
+```typescript
+const name = getManagersBySpecificationRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetManagersBySpecification` query requires an argument of type `GetManagersBySpecificationVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface GetManagersBySpecificationVariables {
+  specification: string;
+}
+```
+### Return Type
+Recall that executing the `GetManagersBySpecification` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetManagersBySpecificationData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetManagersBySpecificationData {
+  managers: ({
+    id: string;
+    user: {
+      fullname: string;
+      email: string;
+      phone?: string | null;
+    };
+      hireDate?: DateString | null;
+      slot?: number | null;
+      specification?: string[] | null;
+      certifications?: string[] | null;
+      createdAt: TimestampString;
+  } & Manager_Key)[];
+}
+```
+### Using `GetManagersBySpecification`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getManagersBySpecification, GetManagersBySpecificationVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetManagersBySpecification` query requires an argument of type `GetManagersBySpecificationVariables`:
+const getManagersBySpecificationVars: GetManagersBySpecificationVariables = {
+  specification: ..., 
+};
+
+// Call the `getManagersBySpecification()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getManagersBySpecification(getManagersBySpecificationVars);
+// Variables can be defined inline as well.
+const { data } = await getManagersBySpecification({ specification: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getManagersBySpecification(dataConnect, getManagersBySpecificationVars);
+
+console.log(data.managers);
+
+// Or, you can use the `Promise` API.
+getManagersBySpecification(getManagersBySpecificationVars).then((response) => {
+  const data = response.data;
+  console.log(data.managers);
+});
+```
+
+### Using `GetManagersBySpecification`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getManagersBySpecificationRef, GetManagersBySpecificationVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetManagersBySpecification` query requires an argument of type `GetManagersBySpecificationVariables`:
+const getManagersBySpecificationVars: GetManagersBySpecificationVariables = {
+  specification: ..., 
+};
+
+// Call the `getManagersBySpecificationRef()` function to get a reference to the query.
+const ref = getManagersBySpecificationRef(getManagersBySpecificationVars);
+// Variables can be defined inline as well.
+const ref = getManagersBySpecificationRef({ specification: ..., });
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getManagersBySpecificationRef(dataConnect, getManagersBySpecificationVars);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.managers);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.managers);
+});
+```
+
+## GetBookingCountByDateRange
+You can execute the `GetBookingCountByDateRange` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getBookingCountByDateRange(vars: GetBookingCountByDateRangeVariables): QueryPromise<GetBookingCountByDateRangeData, GetBookingCountByDateRangeVariables>;
+
+interface GetBookingCountByDateRangeRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetBookingCountByDateRangeVariables): QueryRef<GetBookingCountByDateRangeData, GetBookingCountByDateRangeVariables>;
+}
+export const getBookingCountByDateRangeRef: GetBookingCountByDateRangeRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getBookingCountByDateRange(dc: DataConnect, vars: GetBookingCountByDateRangeVariables): QueryPromise<GetBookingCountByDateRangeData, GetBookingCountByDateRangeVariables>;
+
+interface GetBookingCountByDateRangeRef {
+  ...
+  (dc: DataConnect, vars: GetBookingCountByDateRangeVariables): QueryRef<GetBookingCountByDateRangeData, GetBookingCountByDateRangeVariables>;
+}
+export const getBookingCountByDateRangeRef: GetBookingCountByDateRangeRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getBookingCountByDateRangeRef:
+```typescript
+const name = getBookingCountByDateRangeRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetBookingCountByDateRange` query requires an argument of type `GetBookingCountByDateRangeVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface GetBookingCountByDateRangeVariables {
+  startDate: DateString;
+  endDate: DateString;
+}
+```
+### Return Type
+Recall that executing the `GetBookingCountByDateRange` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetBookingCountByDateRangeData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetBookingCountByDateRangeData {
+  bookings: ({
+    id: string;
+    createdAt: TimestampString;
+  } & Booking_Key)[];
+}
+```
+### Using `GetBookingCountByDateRange`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getBookingCountByDateRange, GetBookingCountByDateRangeVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetBookingCountByDateRange` query requires an argument of type `GetBookingCountByDateRangeVariables`:
+const getBookingCountByDateRangeVars: GetBookingCountByDateRangeVariables = {
+  startDate: ..., 
+  endDate: ..., 
+};
+
+// Call the `getBookingCountByDateRange()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getBookingCountByDateRange(getBookingCountByDateRangeVars);
+// Variables can be defined inline as well.
+const { data } = await getBookingCountByDateRange({ startDate: ..., endDate: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getBookingCountByDateRange(dataConnect, getBookingCountByDateRangeVars);
+
+console.log(data.bookings);
+
+// Or, you can use the `Promise` API.
+getBookingCountByDateRange(getBookingCountByDateRangeVars).then((response) => {
+  const data = response.data;
+  console.log(data.bookings);
+});
+```
+
+### Using `GetBookingCountByDateRange`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getBookingCountByDateRangeRef, GetBookingCountByDateRangeVariables } from '@firebasegen/adnlab-connector';
+
+// The `GetBookingCountByDateRange` query requires an argument of type `GetBookingCountByDateRangeVariables`:
+const getBookingCountByDateRangeVars: GetBookingCountByDateRangeVariables = {
+  startDate: ..., 
+  endDate: ..., 
+};
+
+// Call the `getBookingCountByDateRangeRef()` function to get a reference to the query.
+const ref = getBookingCountByDateRangeRef(getBookingCountByDateRangeVars);
+// Variables can be defined inline as well.
+const ref = getBookingCountByDateRangeRef({ startDate: ..., endDate: ..., });
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getBookingCountByDateRangeRef(dataConnect, getBookingCountByDateRangeVars);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.bookings);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.bookings);
+});
+```
+
+## GetRevenueByCategory
+You can execute the `GetRevenueByCategory` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getRevenueByCategory(): QueryPromise<GetRevenueByCategoryData, undefined>;
+
+interface GetRevenueByCategoryRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetRevenueByCategoryData, undefined>;
+}
+export const getRevenueByCategoryRef: GetRevenueByCategoryRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getRevenueByCategory(dc: DataConnect): QueryPromise<GetRevenueByCategoryData, undefined>;
+
+interface GetRevenueByCategoryRef {
+  ...
+  (dc: DataConnect): QueryRef<GetRevenueByCategoryData, undefined>;
+}
+export const getRevenueByCategoryRef: GetRevenueByCategoryRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getRevenueByCategoryRef:
+```typescript
+const name = getRevenueByCategoryRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetRevenueByCategory` query has no variables.
+### Return Type
+Recall that executing the `GetRevenueByCategory` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetRevenueByCategoryData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetRevenueByCategoryData {
+  payments: ({
+    amount: number;
+    booking: {
+      service: {
+        category: {
+          name: string;
+        };
+      };
+    };
+      paymentDate?: DateString | null;
+  })[];
+}
+```
+### Using `GetRevenueByCategory`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getRevenueByCategory } from '@firebasegen/adnlab-connector';
+
+
+// Call the `getRevenueByCategory()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getRevenueByCategory();
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getRevenueByCategory(dataConnect);
+
+console.log(data.payments);
+
+// Or, you can use the `Promise` API.
+getRevenueByCategory().then((response) => {
+  const data = response.data;
+  console.log(data.payments);
+});
+```
+
+### Using `GetRevenueByCategory`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getRevenueByCategoryRef } from '@firebasegen/adnlab-connector';
+
+
+// Call the `getRevenueByCategoryRef()` function to get a reference to the query.
+const ref = getRevenueByCategoryRef();
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getRevenueByCategoryRef(dataConnect);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.payments);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.payments);
+});
+```
+
+## GetStaffWorkload
+You can execute the `GetStaffWorkload` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getStaffWorkload(): QueryPromise<GetStaffWorkloadData, undefined>;
+
+interface GetStaffWorkloadRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetStaffWorkloadData, undefined>;
+}
+export const getStaffWorkloadRef: GetStaffWorkloadRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getStaffWorkload(dc: DataConnect): QueryPromise<GetStaffWorkloadData, undefined>;
+
+interface GetStaffWorkloadRef {
+  ...
+  (dc: DataConnect): QueryRef<GetStaffWorkloadData, undefined>;
+}
+export const getStaffWorkloadRef: GetStaffWorkloadRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getStaffWorkloadRef:
+```typescript
+const name = getStaffWorkloadRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetStaffWorkload` query has no variables.
+### Return Type
+Recall that executing the `GetStaffWorkload` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetStaffWorkloadData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetStaffWorkloadData {
+  staffs: ({
+    id: string;
+    user: {
+      fullname: string;
+    };
+      slot?: number | null;
+  } & Staff_Key)[];
+    bookings: ({
+      staffId: string;
+      createdAt: TimestampString;
+    })[];
+}
+```
+### Using `GetStaffWorkload`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getStaffWorkload } from '@firebasegen/adnlab-connector';
+
+
+// Call the `getStaffWorkload()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getStaffWorkload();
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getStaffWorkload(dataConnect);
+
+console.log(data.staffs);
+console.log(data.bookings);
+
+// Or, you can use the `Promise` API.
+getStaffWorkload().then((response) => {
+  const data = response.data;
+  console.log(data.staffs);
+  console.log(data.bookings);
+});
+```
+
+### Using `GetStaffWorkload`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getStaffWorkloadRef } from '@firebasegen/adnlab-connector';
+
+
+// Call the `getStaffWorkloadRef()` function to get a reference to the query.
+const ref = getStaffWorkloadRef();
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getStaffWorkloadRef(dataConnect);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.staffs);
+console.log(data.bookings);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.staffs);
+  console.log(data.bookings);
+});
+```
+
+## GetTestCompletionStats
+You can execute the `GetTestCompletionStats` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getTestCompletionStats(): QueryPromise<GetTestCompletionStatsData, undefined>;
+
+interface GetTestCompletionStatsRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetTestCompletionStatsData, undefined>;
+}
+export const getTestCompletionStatsRef: GetTestCompletionStatsRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getTestCompletionStats(dc: DataConnect): QueryPromise<GetTestCompletionStatsData, undefined>;
+
+interface GetTestCompletionStatsRef {
+  ...
+  (dc: DataConnect): QueryRef<GetTestCompletionStatsData, undefined>;
+}
+export const getTestCompletionStatsRef: GetTestCompletionStatsRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getTestCompletionStatsRef:
+```typescript
+const name = getTestCompletionStatsRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetTestCompletionStats` query has no variables.
+### Return Type
+Recall that executing the `GetTestCompletionStats` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetTestCompletionStatsData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetTestCompletionStatsData {
+  testResults: ({
+    id: string;
+    status: string;
+    testDate?: DateString | null;
+    reportDate?: DateString | null;
+  } & TestResult_Key)[];
+}
+```
+### Using `GetTestCompletionStats`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getTestCompletionStats } from '@firebasegen/adnlab-connector';
+
+
+// Call the `getTestCompletionStats()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getTestCompletionStats();
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getTestCompletionStats(dataConnect);
+
+console.log(data.testResults);
+
+// Or, you can use the `Promise` API.
+getTestCompletionStats().then((response) => {
+  const data = response.data;
+  console.log(data.testResults);
+});
+```
+
+### Using `GetTestCompletionStats`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getTestCompletionStatsRef } from '@firebasegen/adnlab-connector';
+
+
+// Call the `getTestCompletionStatsRef()` function to get a reference to the query.
+const ref = getTestCompletionStatsRef();
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getTestCompletionStatsRef(dataConnect);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.testResults);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.testResults);
+});
+```
+
+## GetCustomerSatisfactionStats
+You can execute the `GetCustomerSatisfactionStats` query using the following action shortcut function, or by calling `executeQuery()` after calling the following `QueryRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+getCustomerSatisfactionStats(): QueryPromise<GetCustomerSatisfactionStatsData, undefined>;
+
+interface GetCustomerSatisfactionStatsRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetCustomerSatisfactionStatsData, undefined>;
+}
+export const getCustomerSatisfactionStatsRef: GetCustomerSatisfactionStatsRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `QueryRef` function.
+```typescript
+getCustomerSatisfactionStats(dc: DataConnect): QueryPromise<GetCustomerSatisfactionStatsData, undefined>;
+
+interface GetCustomerSatisfactionStatsRef {
+  ...
+  (dc: DataConnect): QueryRef<GetCustomerSatisfactionStatsData, undefined>;
+}
+export const getCustomerSatisfactionStatsRef: GetCustomerSatisfactionStatsRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the getCustomerSatisfactionStatsRef:
+```typescript
+const name = getCustomerSatisfactionStatsRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `GetCustomerSatisfactionStats` query has no variables.
+### Return Type
+Recall that executing the `GetCustomerSatisfactionStats` query returns a `QueryPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `GetCustomerSatisfactionStatsData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface GetCustomerSatisfactionStatsData {
+  feedbacks: ({
+    rating: number;
+    createdAt: TimestampString;
+  })[];
+}
+```
+### Using `GetCustomerSatisfactionStats`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, getCustomerSatisfactionStats } from '@firebasegen/adnlab-connector';
+
+
+// Call the `getCustomerSatisfactionStats()` function to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await getCustomerSatisfactionStats();
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await getCustomerSatisfactionStats(dataConnect);
+
+console.log(data.feedbacks);
+
+// Or, you can use the `Promise` API.
+getCustomerSatisfactionStats().then((response) => {
+  const data = response.data;
+  console.log(data.feedbacks);
+});
+```
+
+### Using `GetCustomerSatisfactionStats`'s `QueryRef` function
+
+```typescript
+import { getDataConnect, executeQuery } from 'firebase/data-connect';
+import { connectorConfig, getCustomerSatisfactionStatsRef } from '@firebasegen/adnlab-connector';
+
+
+// Call the `getCustomerSatisfactionStatsRef()` function to get a reference to the query.
+const ref = getCustomerSatisfactionStatsRef();
+
+// You can also pass in a `DataConnect` instance to the `QueryRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = getCustomerSatisfactionStatsRef(dataConnect);
+
+// Call `executeQuery()` on the reference to execute the query.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeQuery(ref);
+
+console.log(data.feedbacks);
+
+// Or, you can use the `Promise` API.
+executeQuery(ref).then((response) => {
+  const data = response.data;
+  console.log(data.feedbacks);
 });
 ```
 
@@ -6999,7 +9320,7 @@ export interface CreateOrUpdateUserVariables {
   avatar?: string | null;
   email: string;
   phone?: string | null;
-  shippingAddress?: string | null;
+  address?: string | null;
   roleId?: string | null;
   authProvider: string;
 }
@@ -7026,7 +9347,7 @@ const createOrUpdateUserVars: CreateOrUpdateUserVariables = {
   avatar: ..., // optional
   email: ..., 
   phone: ..., // optional
-  shippingAddress: ..., // optional
+  address: ..., // optional
   roleId: ..., // optional
   authProvider: ..., 
 };
@@ -7035,7 +9356,7 @@ const createOrUpdateUserVars: CreateOrUpdateUserVariables = {
 // You can use the `await` keyword to wait for the promise to resolve.
 const { data } = await createOrUpdateUser(createOrUpdateUserVars);
 // Variables can be defined inline as well.
-const { data } = await createOrUpdateUser({ fullname: ..., gender: ..., avatar: ..., email: ..., phone: ..., shippingAddress: ..., roleId: ..., authProvider: ..., });
+const { data } = await createOrUpdateUser({ fullname: ..., gender: ..., avatar: ..., email: ..., phone: ..., address: ..., roleId: ..., authProvider: ..., });
 
 // You can also pass in a `DataConnect` instance to the action shortcut function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -7063,7 +9384,7 @@ const createOrUpdateUserVars: CreateOrUpdateUserVariables = {
   avatar: ..., // optional
   email: ..., 
   phone: ..., // optional
-  shippingAddress: ..., // optional
+  address: ..., // optional
   roleId: ..., // optional
   authProvider: ..., 
 };
@@ -7071,7 +9392,7 @@ const createOrUpdateUserVars: CreateOrUpdateUserVariables = {
 // Call the `createOrUpdateUserRef()` function to get a reference to the mutation.
 const ref = createOrUpdateUserRef(createOrUpdateUserVars);
 // Variables can be defined inline as well.
-const ref = createOrUpdateUserRef({ fullname: ..., gender: ..., avatar: ..., email: ..., phone: ..., shippingAddress: ..., roleId: ..., authProvider: ..., });
+const ref = createOrUpdateUserRef({ fullname: ..., gender: ..., avatar: ..., email: ..., phone: ..., address: ..., roleId: ..., authProvider: ..., });
 
 // You can also pass in a `DataConnect` instance to the `MutationRef` function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -7128,7 +9449,7 @@ export interface UpdateUserProfileVariables {
   gender?: string | null;
   avatar?: string | null;
   phone?: string | null;
-  shippingAddress?: string | null;
+  address?: string | null;
 }
 ```
 ### Return Type
@@ -7152,14 +9473,14 @@ const updateUserProfileVars: UpdateUserProfileVariables = {
   gender: ..., // optional
   avatar: ..., // optional
   phone: ..., // optional
-  shippingAddress: ..., // optional
+  address: ..., // optional
 };
 
 // Call the `updateUserProfile()` function to execute the mutation.
 // You can use the `await` keyword to wait for the promise to resolve.
 const { data } = await updateUserProfile(updateUserProfileVars);
 // Variables can be defined inline as well.
-const { data } = await updateUserProfile({ fullname: ..., gender: ..., avatar: ..., phone: ..., shippingAddress: ..., });
+const { data } = await updateUserProfile({ fullname: ..., gender: ..., avatar: ..., phone: ..., address: ..., });
 // Since all variables are optional for this mutation, you can omit the `UpdateUserProfileVariables` argument.
 const { data } = await updateUserProfile();
 
@@ -7188,13 +9509,13 @@ const updateUserProfileVars: UpdateUserProfileVariables = {
   gender: ..., // optional
   avatar: ..., // optional
   phone: ..., // optional
-  shippingAddress: ..., // optional
+  address: ..., // optional
 };
 
 // Call the `updateUserProfileRef()` function to get a reference to the mutation.
 const ref = updateUserProfileRef(updateUserProfileVars);
 // Variables can be defined inline as well.
-const ref = updateUserProfileRef({ fullname: ..., gender: ..., avatar: ..., phone: ..., shippingAddress: ..., });
+const ref = updateUserProfileRef({ fullname: ..., gender: ..., avatar: ..., phone: ..., address: ..., });
 // Since all variables are optional for this mutation, you can omit the `UpdateUserProfileVariables` argument.
 const ref = updateUserProfileRef();
 
@@ -7439,6 +9760,496 @@ executeMutation(ref).then((response) => {
 });
 ```
 
+## CreateStaff
+You can execute the `CreateStaff` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+createStaff(vars: CreateStaffVariables): MutationPromise<CreateStaffData, CreateStaffVariables>;
+
+interface CreateStaffRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: CreateStaffVariables): MutationRef<CreateStaffData, CreateStaffVariables>;
+}
+export const createStaffRef: CreateStaffRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
+```typescript
+createStaff(dc: DataConnect, vars: CreateStaffVariables): MutationPromise<CreateStaffData, CreateStaffVariables>;
+
+interface CreateStaffRef {
+  ...
+  (dc: DataConnect, vars: CreateStaffVariables): MutationRef<CreateStaffData, CreateStaffVariables>;
+}
+export const createStaffRef: CreateStaffRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the createStaffRef:
+```typescript
+const name = createStaffRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `CreateStaff` mutation requires an argument of type `CreateStaffVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface CreateStaffVariables {
+  id: string;
+  hireDate?: DateString | null;
+  slot?: number | null;
+  specification?: string[] | null;
+  certifications?: string[] | null;
+  position?: string | null;
+}
+```
+### Return Type
+Recall that executing the `CreateStaff` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `CreateStaffData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface CreateStaffData {
+  staff_insert: Staff_Key;
+}
+```
+### Using `CreateStaff`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, createStaff, CreateStaffVariables } from '@firebasegen/adnlab-connector';
+
+// The `CreateStaff` mutation requires an argument of type `CreateStaffVariables`:
+const createStaffVars: CreateStaffVariables = {
+  id: ..., 
+  hireDate: ..., // optional
+  slot: ..., // optional
+  specification: ..., // optional
+  certifications: ..., // optional
+  position: ..., // optional
+};
+
+// Call the `createStaff()` function to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await createStaff(createStaffVars);
+// Variables can be defined inline as well.
+const { data } = await createStaff({ id: ..., hireDate: ..., slot: ..., specification: ..., certifications: ..., position: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await createStaff(dataConnect, createStaffVars);
+
+console.log(data.staff_insert);
+
+// Or, you can use the `Promise` API.
+createStaff(createStaffVars).then((response) => {
+  const data = response.data;
+  console.log(data.staff_insert);
+});
+```
+
+### Using `CreateStaff`'s `MutationRef` function
+
+```typescript
+import { getDataConnect, executeMutation } from 'firebase/data-connect';
+import { connectorConfig, createStaffRef, CreateStaffVariables } from '@firebasegen/adnlab-connector';
+
+// The `CreateStaff` mutation requires an argument of type `CreateStaffVariables`:
+const createStaffVars: CreateStaffVariables = {
+  id: ..., 
+  hireDate: ..., // optional
+  slot: ..., // optional
+  specification: ..., // optional
+  certifications: ..., // optional
+  position: ..., // optional
+};
+
+// Call the `createStaffRef()` function to get a reference to the mutation.
+const ref = createStaffRef(createStaffVars);
+// Variables can be defined inline as well.
+const ref = createStaffRef({ id: ..., hireDate: ..., slot: ..., specification: ..., certifications: ..., position: ..., });
+
+// You can also pass in a `DataConnect` instance to the `MutationRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = createStaffRef(dataConnect, createStaffVars);
+
+// Call `executeMutation()` on the reference to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeMutation(ref);
+
+console.log(data.staff_insert);
+
+// Or, you can use the `Promise` API.
+executeMutation(ref).then((response) => {
+  const data = response.data;
+  console.log(data.staff_insert);
+});
+```
+
+## UpdateStaff
+You can execute the `UpdateStaff` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+updateStaff(vars: UpdateStaffVariables): MutationPromise<UpdateStaffData, UpdateStaffVariables>;
+
+interface UpdateStaffRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: UpdateStaffVariables): MutationRef<UpdateStaffData, UpdateStaffVariables>;
+}
+export const updateStaffRef: UpdateStaffRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
+```typescript
+updateStaff(dc: DataConnect, vars: UpdateStaffVariables): MutationPromise<UpdateStaffData, UpdateStaffVariables>;
+
+interface UpdateStaffRef {
+  ...
+  (dc: DataConnect, vars: UpdateStaffVariables): MutationRef<UpdateStaffData, UpdateStaffVariables>;
+}
+export const updateStaffRef: UpdateStaffRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the updateStaffRef:
+```typescript
+const name = updateStaffRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `UpdateStaff` mutation requires an argument of type `UpdateStaffVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface UpdateStaffVariables {
+  staffId: string;
+  hireDate?: DateString | null;
+  slot?: number | null;
+  specification?: string[] | null;
+  certifications?: string[] | null;
+  position?: string | null;
+}
+```
+### Return Type
+Recall that executing the `UpdateStaff` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `UpdateStaffData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface UpdateStaffData {
+  staff_update?: Staff_Key | null;
+}
+```
+### Using `UpdateStaff`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, updateStaff, UpdateStaffVariables } from '@firebasegen/adnlab-connector';
+
+// The `UpdateStaff` mutation requires an argument of type `UpdateStaffVariables`:
+const updateStaffVars: UpdateStaffVariables = {
+  staffId: ..., 
+  hireDate: ..., // optional
+  slot: ..., // optional
+  specification: ..., // optional
+  certifications: ..., // optional
+  position: ..., // optional
+};
+
+// Call the `updateStaff()` function to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await updateStaff(updateStaffVars);
+// Variables can be defined inline as well.
+const { data } = await updateStaff({ staffId: ..., hireDate: ..., slot: ..., specification: ..., certifications: ..., position: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await updateStaff(dataConnect, updateStaffVars);
+
+console.log(data.staff_update);
+
+// Or, you can use the `Promise` API.
+updateStaff(updateStaffVars).then((response) => {
+  const data = response.data;
+  console.log(data.staff_update);
+});
+```
+
+### Using `UpdateStaff`'s `MutationRef` function
+
+```typescript
+import { getDataConnect, executeMutation } from 'firebase/data-connect';
+import { connectorConfig, updateStaffRef, UpdateStaffVariables } from '@firebasegen/adnlab-connector';
+
+// The `UpdateStaff` mutation requires an argument of type `UpdateStaffVariables`:
+const updateStaffVars: UpdateStaffVariables = {
+  staffId: ..., 
+  hireDate: ..., // optional
+  slot: ..., // optional
+  specification: ..., // optional
+  certifications: ..., // optional
+  position: ..., // optional
+};
+
+// Call the `updateStaffRef()` function to get a reference to the mutation.
+const ref = updateStaffRef(updateStaffVars);
+// Variables can be defined inline as well.
+const ref = updateStaffRef({ staffId: ..., hireDate: ..., slot: ..., specification: ..., certifications: ..., position: ..., });
+
+// You can also pass in a `DataConnect` instance to the `MutationRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = updateStaffRef(dataConnect, updateStaffVars);
+
+// Call `executeMutation()` on the reference to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeMutation(ref);
+
+console.log(data.staff_update);
+
+// Or, you can use the `Promise` API.
+executeMutation(ref).then((response) => {
+  const data = response.data;
+  console.log(data.staff_update);
+});
+```
+
+## CreateManager
+You can execute the `CreateManager` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+createManager(vars: CreateManagerVariables): MutationPromise<CreateManagerData, CreateManagerVariables>;
+
+interface CreateManagerRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: CreateManagerVariables): MutationRef<CreateManagerData, CreateManagerVariables>;
+}
+export const createManagerRef: CreateManagerRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
+```typescript
+createManager(dc: DataConnect, vars: CreateManagerVariables): MutationPromise<CreateManagerData, CreateManagerVariables>;
+
+interface CreateManagerRef {
+  ...
+  (dc: DataConnect, vars: CreateManagerVariables): MutationRef<CreateManagerData, CreateManagerVariables>;
+}
+export const createManagerRef: CreateManagerRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the createManagerRef:
+```typescript
+const name = createManagerRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `CreateManager` mutation requires an argument of type `CreateManagerVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface CreateManagerVariables {
+  id: string;
+  hireDate?: DateString | null;
+  slot?: number | null;
+  specification?: string[] | null;
+  certifications?: string[] | null;
+}
+```
+### Return Type
+Recall that executing the `CreateManager` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `CreateManagerData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface CreateManagerData {
+  manager_insert: Manager_Key;
+}
+```
+### Using `CreateManager`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, createManager, CreateManagerVariables } from '@firebasegen/adnlab-connector';
+
+// The `CreateManager` mutation requires an argument of type `CreateManagerVariables`:
+const createManagerVars: CreateManagerVariables = {
+  id: ..., 
+  hireDate: ..., // optional
+  slot: ..., // optional
+  specification: ..., // optional
+  certifications: ..., // optional
+};
+
+// Call the `createManager()` function to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await createManager(createManagerVars);
+// Variables can be defined inline as well.
+const { data } = await createManager({ id: ..., hireDate: ..., slot: ..., specification: ..., certifications: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await createManager(dataConnect, createManagerVars);
+
+console.log(data.manager_insert);
+
+// Or, you can use the `Promise` API.
+createManager(createManagerVars).then((response) => {
+  const data = response.data;
+  console.log(data.manager_insert);
+});
+```
+
+### Using `CreateManager`'s `MutationRef` function
+
+```typescript
+import { getDataConnect, executeMutation } from 'firebase/data-connect';
+import { connectorConfig, createManagerRef, CreateManagerVariables } from '@firebasegen/adnlab-connector';
+
+// The `CreateManager` mutation requires an argument of type `CreateManagerVariables`:
+const createManagerVars: CreateManagerVariables = {
+  id: ..., 
+  hireDate: ..., // optional
+  slot: ..., // optional
+  specification: ..., // optional
+  certifications: ..., // optional
+};
+
+// Call the `createManagerRef()` function to get a reference to the mutation.
+const ref = createManagerRef(createManagerVars);
+// Variables can be defined inline as well.
+const ref = createManagerRef({ id: ..., hireDate: ..., slot: ..., specification: ..., certifications: ..., });
+
+// You can also pass in a `DataConnect` instance to the `MutationRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = createManagerRef(dataConnect, createManagerVars);
+
+// Call `executeMutation()` on the reference to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeMutation(ref);
+
+console.log(data.manager_insert);
+
+// Or, you can use the `Promise` API.
+executeMutation(ref).then((response) => {
+  const data = response.data;
+  console.log(data.manager_insert);
+});
+```
+
+## UpdateManager
+You can execute the `UpdateManager` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+updateManager(vars: UpdateManagerVariables): MutationPromise<UpdateManagerData, UpdateManagerVariables>;
+
+interface UpdateManagerRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: UpdateManagerVariables): MutationRef<UpdateManagerData, UpdateManagerVariables>;
+}
+export const updateManagerRef: UpdateManagerRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
+```typescript
+updateManager(dc: DataConnect, vars: UpdateManagerVariables): MutationPromise<UpdateManagerData, UpdateManagerVariables>;
+
+interface UpdateManagerRef {
+  ...
+  (dc: DataConnect, vars: UpdateManagerVariables): MutationRef<UpdateManagerData, UpdateManagerVariables>;
+}
+export const updateManagerRef: UpdateManagerRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the updateManagerRef:
+```typescript
+const name = updateManagerRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `UpdateManager` mutation requires an argument of type `UpdateManagerVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface UpdateManagerVariables {
+  managerId: string;
+  hireDate?: DateString | null;
+  slot?: number | null;
+  specification?: string[] | null;
+  certifications?: string[] | null;
+}
+```
+### Return Type
+Recall that executing the `UpdateManager` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `UpdateManagerData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface UpdateManagerData {
+  manager_update?: Manager_Key | null;
+}
+```
+### Using `UpdateManager`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, updateManager, UpdateManagerVariables } from '@firebasegen/adnlab-connector';
+
+// The `UpdateManager` mutation requires an argument of type `UpdateManagerVariables`:
+const updateManagerVars: UpdateManagerVariables = {
+  managerId: ..., 
+  hireDate: ..., // optional
+  slot: ..., // optional
+  specification: ..., // optional
+  certifications: ..., // optional
+};
+
+// Call the `updateManager()` function to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await updateManager(updateManagerVars);
+// Variables can be defined inline as well.
+const { data } = await updateManager({ managerId: ..., hireDate: ..., slot: ..., specification: ..., certifications: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await updateManager(dataConnect, updateManagerVars);
+
+console.log(data.manager_update);
+
+// Or, you can use the `Promise` API.
+updateManager(updateManagerVars).then((response) => {
+  const data = response.data;
+  console.log(data.manager_update);
+});
+```
+
+### Using `UpdateManager`'s `MutationRef` function
+
+```typescript
+import { getDataConnect, executeMutation } from 'firebase/data-connect';
+import { connectorConfig, updateManagerRef, UpdateManagerVariables } from '@firebasegen/adnlab-connector';
+
+// The `UpdateManager` mutation requires an argument of type `UpdateManagerVariables`:
+const updateManagerVars: UpdateManagerVariables = {
+  managerId: ..., 
+  hireDate: ..., // optional
+  slot: ..., // optional
+  specification: ..., // optional
+  certifications: ..., // optional
+};
+
+// Call the `updateManagerRef()` function to get a reference to the mutation.
+const ref = updateManagerRef(updateManagerVars);
+// Variables can be defined inline as well.
+const ref = updateManagerRef({ managerId: ..., hireDate: ..., slot: ..., specification: ..., certifications: ..., });
+
+// You can also pass in a `DataConnect` instance to the `MutationRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = updateManagerRef(dataConnect, updateManagerVars);
+
+// Call `executeMutation()` on the reference to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeMutation(ref);
+
+console.log(data.manager_update);
+
+// Or, you can use the `Promise` API.
+executeMutation(ref).then((response) => {
+  const data = response.data;
+  console.log(data.manager_update);
+});
+```
+
 ## CreateServiceCategory
 You can execute the `CreateServiceCategory` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
 ```typescript
@@ -7477,8 +10288,6 @@ export interface CreateServiceCategoryVariables {
   name: string;
   description?: string | null;
   hasLegalValue: boolean;
-  icon?: string | null;
-  color?: string | null;
 }
 ```
 ### Return Type
@@ -7502,15 +10311,13 @@ const createServiceCategoryVars: CreateServiceCategoryVariables = {
   name: ..., 
   description: ..., // optional
   hasLegalValue: ..., 
-  icon: ..., // optional
-  color: ..., // optional
 };
 
 // Call the `createServiceCategory()` function to execute the mutation.
 // You can use the `await` keyword to wait for the promise to resolve.
 const { data } = await createServiceCategory(createServiceCategoryVars);
 // Variables can be defined inline as well.
-const { data } = await createServiceCategory({ id: ..., name: ..., description: ..., hasLegalValue: ..., icon: ..., color: ..., });
+const { data } = await createServiceCategory({ id: ..., name: ..., description: ..., hasLegalValue: ..., });
 
 // You can also pass in a `DataConnect` instance to the action shortcut function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -7537,14 +10344,12 @@ const createServiceCategoryVars: CreateServiceCategoryVariables = {
   name: ..., 
   description: ..., // optional
   hasLegalValue: ..., 
-  icon: ..., // optional
-  color: ..., // optional
 };
 
 // Call the `createServiceCategoryRef()` function to get a reference to the mutation.
 const ref = createServiceCategoryRef(createServiceCategoryVars);
 // Variables can be defined inline as well.
-const ref = createServiceCategoryRef({ id: ..., name: ..., description: ..., hasLegalValue: ..., icon: ..., color: ..., });
+const ref = createServiceCategoryRef({ id: ..., name: ..., description: ..., hasLegalValue: ..., });
 
 // You can also pass in a `DataConnect` instance to the `MutationRef` function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -7601,8 +10406,6 @@ export interface UpdateServiceCategoryVariables {
   name?: string | null;
   description?: string | null;
   hasLegalValue?: boolean | null;
-  icon?: string | null;
-  color?: string | null;
 }
 ```
 ### Return Type
@@ -7626,15 +10429,13 @@ const updateServiceCategoryVars: UpdateServiceCategoryVariables = {
   name: ..., // optional
   description: ..., // optional
   hasLegalValue: ..., // optional
-  icon: ..., // optional
-  color: ..., // optional
 };
 
 // Call the `updateServiceCategory()` function to execute the mutation.
 // You can use the `await` keyword to wait for the promise to resolve.
 const { data } = await updateServiceCategory(updateServiceCategoryVars);
 // Variables can be defined inline as well.
-const { data } = await updateServiceCategory({ categoryId: ..., name: ..., description: ..., hasLegalValue: ..., icon: ..., color: ..., });
+const { data } = await updateServiceCategory({ categoryId: ..., name: ..., description: ..., hasLegalValue: ..., });
 
 // You can also pass in a `DataConnect` instance to the action shortcut function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -7661,14 +10462,12 @@ const updateServiceCategoryVars: UpdateServiceCategoryVariables = {
   name: ..., // optional
   description: ..., // optional
   hasLegalValue: ..., // optional
-  icon: ..., // optional
-  color: ..., // optional
 };
 
 // Call the `updateServiceCategoryRef()` function to get a reference to the mutation.
 const ref = updateServiceCategoryRef(updateServiceCategoryVars);
 // Variables can be defined inline as well.
-const ref = updateServiceCategoryRef({ categoryId: ..., name: ..., description: ..., hasLegalValue: ..., icon: ..., color: ..., });
+const ref = updateServiceCategoryRef({ categoryId: ..., name: ..., description: ..., hasLegalValue: ..., });
 
 // You can also pass in a `DataConnect` instance to the `MutationRef` function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -8223,7 +11022,6 @@ The `CreateServiceMethod` mutation requires an argument of type `CreateServiceMe
 
 ```typescript
 export interface CreateServiceMethodVariables {
-  id: string;
   serviceId: string;
   methodId: string;
 }
@@ -8245,7 +11043,6 @@ import { connectorConfig, createServiceMethod, CreateServiceMethodVariables } fr
 
 // The `CreateServiceMethod` mutation requires an argument of type `CreateServiceMethodVariables`:
 const createServiceMethodVars: CreateServiceMethodVariables = {
-  id: ..., 
   serviceId: ..., 
   methodId: ..., 
 };
@@ -8254,7 +11051,7 @@ const createServiceMethodVars: CreateServiceMethodVariables = {
 // You can use the `await` keyword to wait for the promise to resolve.
 const { data } = await createServiceMethod(createServiceMethodVars);
 // Variables can be defined inline as well.
-const { data } = await createServiceMethod({ id: ..., serviceId: ..., methodId: ..., });
+const { data } = await createServiceMethod({ serviceId: ..., methodId: ..., });
 
 // You can also pass in a `DataConnect` instance to the action shortcut function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -8277,7 +11074,6 @@ import { connectorConfig, createServiceMethodRef, CreateServiceMethodVariables }
 
 // The `CreateServiceMethod` mutation requires an argument of type `CreateServiceMethodVariables`:
 const createServiceMethodVars: CreateServiceMethodVariables = {
-  id: ..., 
   serviceId: ..., 
   methodId: ..., 
 };
@@ -8285,7 +11081,7 @@ const createServiceMethodVars: CreateServiceMethodVariables = {
 // Call the `createServiceMethodRef()` function to get a reference to the mutation.
 const ref = createServiceMethodRef(createServiceMethodVars);
 // Variables can be defined inline as well.
-const ref = createServiceMethodRef({ id: ..., serviceId: ..., methodId: ..., });
+const ref = createServiceMethodRef({ serviceId: ..., methodId: ..., });
 
 // You can also pass in a `DataConnect` instance to the `MutationRef` function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -8338,7 +11134,8 @@ The `DeleteServiceMethod` mutation requires an argument of type `DeleteServiceMe
 
 ```typescript
 export interface DeleteServiceMethodVariables {
-  serviceMethodId: string;
+  serviceId: string;
+  methodId: string;
 }
 ```
 ### Return Type
@@ -8358,14 +11155,15 @@ import { connectorConfig, deleteServiceMethod, DeleteServiceMethodVariables } fr
 
 // The `DeleteServiceMethod` mutation requires an argument of type `DeleteServiceMethodVariables`:
 const deleteServiceMethodVars: DeleteServiceMethodVariables = {
-  serviceMethodId: ..., 
+  serviceId: ..., 
+  methodId: ..., 
 };
 
 // Call the `deleteServiceMethod()` function to execute the mutation.
 // You can use the `await` keyword to wait for the promise to resolve.
 const { data } = await deleteServiceMethod(deleteServiceMethodVars);
 // Variables can be defined inline as well.
-const { data } = await deleteServiceMethod({ serviceMethodId: ..., });
+const { data } = await deleteServiceMethod({ serviceId: ..., methodId: ..., });
 
 // You can also pass in a `DataConnect` instance to the action shortcut function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -8388,13 +11186,14 @@ import { connectorConfig, deleteServiceMethodRef, DeleteServiceMethodVariables }
 
 // The `DeleteServiceMethod` mutation requires an argument of type `DeleteServiceMethodVariables`:
 const deleteServiceMethodVars: DeleteServiceMethodVariables = {
-  serviceMethodId: ..., 
+  serviceId: ..., 
+  methodId: ..., 
 };
 
 // Call the `deleteServiceMethodRef()` function to get a reference to the mutation.
 const ref = deleteServiceMethodRef(deleteServiceMethodVars);
 // Variables can be defined inline as well.
-const ref = deleteServiceMethodRef({ serviceMethodId: ..., });
+const ref = deleteServiceMethodRef({ serviceId: ..., methodId: ..., });
 
 // You can also pass in a `DataConnect` instance to the `MutationRef` function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -8805,7 +11604,8 @@ export interface CreateBookingVariables {
   userId: string;
   staffId?: string | null;
   timeSlotId?: string | null;
-  serviceMethodId: string;
+  serviceId: string;
+  methodId: string;
   totalAmount: number;
 }
 ```
@@ -8830,7 +11630,8 @@ const createBookingVars: CreateBookingVariables = {
   userId: ..., 
   staffId: ..., // optional
   timeSlotId: ..., // optional
-  serviceMethodId: ..., 
+  serviceId: ..., 
+  methodId: ..., 
   totalAmount: ..., 
 };
 
@@ -8838,7 +11639,7 @@ const createBookingVars: CreateBookingVariables = {
 // You can use the `await` keyword to wait for the promise to resolve.
 const { data } = await createBooking(createBookingVars);
 // Variables can be defined inline as well.
-const { data } = await createBooking({ id: ..., userId: ..., staffId: ..., timeSlotId: ..., serviceMethodId: ..., totalAmount: ..., });
+const { data } = await createBooking({ id: ..., userId: ..., staffId: ..., timeSlotId: ..., serviceId: ..., methodId: ..., totalAmount: ..., });
 
 // You can also pass in a `DataConnect` instance to the action shortcut function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -8865,14 +11666,15 @@ const createBookingVars: CreateBookingVariables = {
   userId: ..., 
   staffId: ..., // optional
   timeSlotId: ..., // optional
-  serviceMethodId: ..., 
+  serviceId: ..., 
+  methodId: ..., 
   totalAmount: ..., 
 };
 
 // Call the `createBookingRef()` function to get a reference to the mutation.
 const ref = createBookingRef(createBookingVars);
 // Variables can be defined inline as well.
-const ref = createBookingRef({ id: ..., userId: ..., staffId: ..., timeSlotId: ..., serviceMethodId: ..., totalAmount: ..., });
+const ref = createBookingRef({ id: ..., userId: ..., staffId: ..., timeSlotId: ..., serviceId: ..., methodId: ..., totalAmount: ..., });
 
 // You can also pass in a `DataConnect` instance to the `MutationRef` function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -8928,7 +11730,8 @@ export interface UpdateBookingVariables {
   bookingId: string;
   staffId?: string | null;
   timeSlotId?: string | null;
-  serviceMethodId?: string | null;
+  serviceId?: string | null;
+  methodId?: string | null;
   totalAmount?: number | null;
 }
 ```
@@ -8952,7 +11755,8 @@ const updateBookingVars: UpdateBookingVariables = {
   bookingId: ..., 
   staffId: ..., // optional
   timeSlotId: ..., // optional
-  serviceMethodId: ..., // optional
+  serviceId: ..., // optional
+  methodId: ..., // optional
   totalAmount: ..., // optional
 };
 
@@ -8960,7 +11764,7 @@ const updateBookingVars: UpdateBookingVariables = {
 // You can use the `await` keyword to wait for the promise to resolve.
 const { data } = await updateBooking(updateBookingVars);
 // Variables can be defined inline as well.
-const { data } = await updateBooking({ bookingId: ..., staffId: ..., timeSlotId: ..., serviceMethodId: ..., totalAmount: ..., });
+const { data } = await updateBooking({ bookingId: ..., staffId: ..., timeSlotId: ..., serviceId: ..., methodId: ..., totalAmount: ..., });
 
 // You can also pass in a `DataConnect` instance to the action shortcut function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -8986,14 +11790,15 @@ const updateBookingVars: UpdateBookingVariables = {
   bookingId: ..., 
   staffId: ..., // optional
   timeSlotId: ..., // optional
-  serviceMethodId: ..., // optional
+  serviceId: ..., // optional
+  methodId: ..., // optional
   totalAmount: ..., // optional
 };
 
 // Call the `updateBookingRef()` function to get a reference to the mutation.
 const ref = updateBookingRef(updateBookingVars);
 // Variables can be defined inline as well.
-const ref = updateBookingRef({ bookingId: ..., staffId: ..., timeSlotId: ..., serviceMethodId: ..., totalAmount: ..., });
+const ref = updateBookingRef({ bookingId: ..., staffId: ..., timeSlotId: ..., serviceId: ..., methodId: ..., totalAmount: ..., });
 
 // You can also pass in a `DataConnect` instance to the `MutationRef` function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -9357,6 +12162,366 @@ executeMutation(ref).then((response) => {
 });
 ```
 
+## CreateParticipant
+You can execute the `CreateParticipant` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+createParticipant(vars: CreateParticipantVariables): MutationPromise<CreateParticipantData, CreateParticipantVariables>;
+
+interface CreateParticipantRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: CreateParticipantVariables): MutationRef<CreateParticipantData, CreateParticipantVariables>;
+}
+export const createParticipantRef: CreateParticipantRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
+```typescript
+createParticipant(dc: DataConnect, vars: CreateParticipantVariables): MutationPromise<CreateParticipantData, CreateParticipantVariables>;
+
+interface CreateParticipantRef {
+  ...
+  (dc: DataConnect, vars: CreateParticipantVariables): MutationRef<CreateParticipantData, CreateParticipantVariables>;
+}
+export const createParticipantRef: CreateParticipantRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the createParticipantRef:
+```typescript
+const name = createParticipantRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `CreateParticipant` mutation requires an argument of type `CreateParticipantVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface CreateParticipantVariables {
+  id: string;
+  bookingId: string;
+  name: string;
+  age: number;
+  identification?: string | null;
+  gender: string;
+  relationship?: string | null;
+}
+```
+### Return Type
+Recall that executing the `CreateParticipant` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `CreateParticipantData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface CreateParticipantData {
+  participant_insert: Participant_Key;
+}
+```
+### Using `CreateParticipant`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, createParticipant, CreateParticipantVariables } from '@firebasegen/adnlab-connector';
+
+// The `CreateParticipant` mutation requires an argument of type `CreateParticipantVariables`:
+const createParticipantVars: CreateParticipantVariables = {
+  id: ..., 
+  bookingId: ..., 
+  name: ..., 
+  age: ..., 
+  identification: ..., // optional
+  gender: ..., 
+  relationship: ..., // optional
+};
+
+// Call the `createParticipant()` function to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await createParticipant(createParticipantVars);
+// Variables can be defined inline as well.
+const { data } = await createParticipant({ id: ..., bookingId: ..., name: ..., age: ..., identification: ..., gender: ..., relationship: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await createParticipant(dataConnect, createParticipantVars);
+
+console.log(data.participant_insert);
+
+// Or, you can use the `Promise` API.
+createParticipant(createParticipantVars).then((response) => {
+  const data = response.data;
+  console.log(data.participant_insert);
+});
+```
+
+### Using `CreateParticipant`'s `MutationRef` function
+
+```typescript
+import { getDataConnect, executeMutation } from 'firebase/data-connect';
+import { connectorConfig, createParticipantRef, CreateParticipantVariables } from '@firebasegen/adnlab-connector';
+
+// The `CreateParticipant` mutation requires an argument of type `CreateParticipantVariables`:
+const createParticipantVars: CreateParticipantVariables = {
+  id: ..., 
+  bookingId: ..., 
+  name: ..., 
+  age: ..., 
+  identification: ..., // optional
+  gender: ..., 
+  relationship: ..., // optional
+};
+
+// Call the `createParticipantRef()` function to get a reference to the mutation.
+const ref = createParticipantRef(createParticipantVars);
+// Variables can be defined inline as well.
+const ref = createParticipantRef({ id: ..., bookingId: ..., name: ..., age: ..., identification: ..., gender: ..., relationship: ..., });
+
+// You can also pass in a `DataConnect` instance to the `MutationRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = createParticipantRef(dataConnect, createParticipantVars);
+
+// Call `executeMutation()` on the reference to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeMutation(ref);
+
+console.log(data.participant_insert);
+
+// Or, you can use the `Promise` API.
+executeMutation(ref).then((response) => {
+  const data = response.data;
+  console.log(data.participant_insert);
+});
+```
+
+## UpdateParticipant
+You can execute the `UpdateParticipant` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+updateParticipant(vars: UpdateParticipantVariables): MutationPromise<UpdateParticipantData, UpdateParticipantVariables>;
+
+interface UpdateParticipantRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: UpdateParticipantVariables): MutationRef<UpdateParticipantData, UpdateParticipantVariables>;
+}
+export const updateParticipantRef: UpdateParticipantRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
+```typescript
+updateParticipant(dc: DataConnect, vars: UpdateParticipantVariables): MutationPromise<UpdateParticipantData, UpdateParticipantVariables>;
+
+interface UpdateParticipantRef {
+  ...
+  (dc: DataConnect, vars: UpdateParticipantVariables): MutationRef<UpdateParticipantData, UpdateParticipantVariables>;
+}
+export const updateParticipantRef: UpdateParticipantRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the updateParticipantRef:
+```typescript
+const name = updateParticipantRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `UpdateParticipant` mutation requires an argument of type `UpdateParticipantVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface UpdateParticipantVariables {
+  participantId: string;
+  name?: string | null;
+  age?: number | null;
+  identification?: string | null;
+  gender?: string | null;
+  relationship?: string | null;
+}
+```
+### Return Type
+Recall that executing the `UpdateParticipant` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `UpdateParticipantData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface UpdateParticipantData {
+  participant_update?: Participant_Key | null;
+}
+```
+### Using `UpdateParticipant`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, updateParticipant, UpdateParticipantVariables } from '@firebasegen/adnlab-connector';
+
+// The `UpdateParticipant` mutation requires an argument of type `UpdateParticipantVariables`:
+const updateParticipantVars: UpdateParticipantVariables = {
+  participantId: ..., 
+  name: ..., // optional
+  age: ..., // optional
+  identification: ..., // optional
+  gender: ..., // optional
+  relationship: ..., // optional
+};
+
+// Call the `updateParticipant()` function to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await updateParticipant(updateParticipantVars);
+// Variables can be defined inline as well.
+const { data } = await updateParticipant({ participantId: ..., name: ..., age: ..., identification: ..., gender: ..., relationship: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await updateParticipant(dataConnect, updateParticipantVars);
+
+console.log(data.participant_update);
+
+// Or, you can use the `Promise` API.
+updateParticipant(updateParticipantVars).then((response) => {
+  const data = response.data;
+  console.log(data.participant_update);
+});
+```
+
+### Using `UpdateParticipant`'s `MutationRef` function
+
+```typescript
+import { getDataConnect, executeMutation } from 'firebase/data-connect';
+import { connectorConfig, updateParticipantRef, UpdateParticipantVariables } from '@firebasegen/adnlab-connector';
+
+// The `UpdateParticipant` mutation requires an argument of type `UpdateParticipantVariables`:
+const updateParticipantVars: UpdateParticipantVariables = {
+  participantId: ..., 
+  name: ..., // optional
+  age: ..., // optional
+  identification: ..., // optional
+  gender: ..., // optional
+  relationship: ..., // optional
+};
+
+// Call the `updateParticipantRef()` function to get a reference to the mutation.
+const ref = updateParticipantRef(updateParticipantVars);
+// Variables can be defined inline as well.
+const ref = updateParticipantRef({ participantId: ..., name: ..., age: ..., identification: ..., gender: ..., relationship: ..., });
+
+// You can also pass in a `DataConnect` instance to the `MutationRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = updateParticipantRef(dataConnect, updateParticipantVars);
+
+// Call `executeMutation()` on the reference to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeMutation(ref);
+
+console.log(data.participant_update);
+
+// Or, you can use the `Promise` API.
+executeMutation(ref).then((response) => {
+  const data = response.data;
+  console.log(data.participant_update);
+});
+```
+
+## DeleteParticipant
+You can execute the `DeleteParticipant` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+deleteParticipant(vars: DeleteParticipantVariables): MutationPromise<DeleteParticipantData, DeleteParticipantVariables>;
+
+interface DeleteParticipantRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: DeleteParticipantVariables): MutationRef<DeleteParticipantData, DeleteParticipantVariables>;
+}
+export const deleteParticipantRef: DeleteParticipantRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
+```typescript
+deleteParticipant(dc: DataConnect, vars: DeleteParticipantVariables): MutationPromise<DeleteParticipantData, DeleteParticipantVariables>;
+
+interface DeleteParticipantRef {
+  ...
+  (dc: DataConnect, vars: DeleteParticipantVariables): MutationRef<DeleteParticipantData, DeleteParticipantVariables>;
+}
+export const deleteParticipantRef: DeleteParticipantRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the deleteParticipantRef:
+```typescript
+const name = deleteParticipantRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `DeleteParticipant` mutation requires an argument of type `DeleteParticipantVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface DeleteParticipantVariables {
+  participantId: string;
+}
+```
+### Return Type
+Recall that executing the `DeleteParticipant` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `DeleteParticipantData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface DeleteParticipantData {
+  participant_delete?: Participant_Key | null;
+}
+```
+### Using `DeleteParticipant`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, deleteParticipant, DeleteParticipantVariables } from '@firebasegen/adnlab-connector';
+
+// The `DeleteParticipant` mutation requires an argument of type `DeleteParticipantVariables`:
+const deleteParticipantVars: DeleteParticipantVariables = {
+  participantId: ..., 
+};
+
+// Call the `deleteParticipant()` function to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await deleteParticipant(deleteParticipantVars);
+// Variables can be defined inline as well.
+const { data } = await deleteParticipant({ participantId: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await deleteParticipant(dataConnect, deleteParticipantVars);
+
+console.log(data.participant_delete);
+
+// Or, you can use the `Promise` API.
+deleteParticipant(deleteParticipantVars).then((response) => {
+  const data = response.data;
+  console.log(data.participant_delete);
+});
+```
+
+### Using `DeleteParticipant`'s `MutationRef` function
+
+```typescript
+import { getDataConnect, executeMutation } from 'firebase/data-connect';
+import { connectorConfig, deleteParticipantRef, DeleteParticipantVariables } from '@firebasegen/adnlab-connector';
+
+// The `DeleteParticipant` mutation requires an argument of type `DeleteParticipantVariables`:
+const deleteParticipantVars: DeleteParticipantVariables = {
+  participantId: ..., 
+};
+
+// Call the `deleteParticipantRef()` function to get a reference to the mutation.
+const ref = deleteParticipantRef(deleteParticipantVars);
+// Variables can be defined inline as well.
+const ref = deleteParticipantRef({ participantId: ..., });
+
+// You can also pass in a `DataConnect` instance to the `MutationRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = deleteParticipantRef(dataConnect, deleteParticipantVars);
+
+// Call `executeMutation()` on the reference to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeMutation(ref);
+
+console.log(data.participant_delete);
+
+// Or, you can use the `Promise` API.
+executeMutation(ref).then((response) => {
+  const data = response.data;
+  console.log(data.participant_delete);
+});
+```
+
 ## CreateSample
 You can execute the `CreateSample` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
 ```typescript
@@ -9394,8 +12559,10 @@ export interface CreateSampleVariables {
   id: string;
   bookingId: string;
   staffId?: string | null;
+  participantId?: string | null;
   collectionDate?: DateString | null;
-  status?: string | null;
+  sampleQuality: string;
+  sampleConcentration?: number | null;
   notes?: string | null;
 }
 ```
@@ -9419,8 +12586,10 @@ const createSampleVars: CreateSampleVariables = {
   id: ..., 
   bookingId: ..., 
   staffId: ..., // optional
+  participantId: ..., // optional
   collectionDate: ..., // optional
-  status: ..., // optional
+  sampleQuality: ..., 
+  sampleConcentration: ..., // optional
   notes: ..., // optional
 };
 
@@ -9428,7 +12597,7 @@ const createSampleVars: CreateSampleVariables = {
 // You can use the `await` keyword to wait for the promise to resolve.
 const { data } = await createSample(createSampleVars);
 // Variables can be defined inline as well.
-const { data } = await createSample({ id: ..., bookingId: ..., staffId: ..., collectionDate: ..., status: ..., notes: ..., });
+const { data } = await createSample({ id: ..., bookingId: ..., staffId: ..., participantId: ..., collectionDate: ..., sampleQuality: ..., sampleConcentration: ..., notes: ..., });
 
 // You can also pass in a `DataConnect` instance to the action shortcut function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -9454,15 +12623,17 @@ const createSampleVars: CreateSampleVariables = {
   id: ..., 
   bookingId: ..., 
   staffId: ..., // optional
+  participantId: ..., // optional
   collectionDate: ..., // optional
-  status: ..., // optional
+  sampleQuality: ..., 
+  sampleConcentration: ..., // optional
   notes: ..., // optional
 };
 
 // Call the `createSampleRef()` function to get a reference to the mutation.
 const ref = createSampleRef(createSampleVars);
 // Variables can be defined inline as well.
-const ref = createSampleRef({ id: ..., bookingId: ..., staffId: ..., collectionDate: ..., status: ..., notes: ..., });
+const ref = createSampleRef({ id: ..., bookingId: ..., staffId: ..., participantId: ..., collectionDate: ..., sampleQuality: ..., sampleConcentration: ..., notes: ..., });
 
 // You can also pass in a `DataConnect` instance to the `MutationRef` function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -9481,113 +12652,119 @@ executeMutation(ref).then((response) => {
 });
 ```
 
-## UpdateSampleStatus
-You can execute the `UpdateSampleStatus` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+## UpdateSample
+You can execute the `UpdateSample` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
 ```typescript
-updateSampleStatus(vars: UpdateSampleStatusVariables): MutationPromise<UpdateSampleStatusData, UpdateSampleStatusVariables>;
+updateSample(vars: UpdateSampleVariables): MutationPromise<UpdateSampleData, UpdateSampleVariables>;
 
-interface UpdateSampleStatusRef {
+interface UpdateSampleRef {
   ...
   /* Allow users to create refs without passing in DataConnect */
-  (vars: UpdateSampleStatusVariables): MutationRef<UpdateSampleStatusData, UpdateSampleStatusVariables>;
+  (vars: UpdateSampleVariables): MutationRef<UpdateSampleData, UpdateSampleVariables>;
 }
-export const updateSampleStatusRef: UpdateSampleStatusRef;
+export const updateSampleRef: UpdateSampleRef;
 ```
 You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
 ```typescript
-updateSampleStatus(dc: DataConnect, vars: UpdateSampleStatusVariables): MutationPromise<UpdateSampleStatusData, UpdateSampleStatusVariables>;
+updateSample(dc: DataConnect, vars: UpdateSampleVariables): MutationPromise<UpdateSampleData, UpdateSampleVariables>;
 
-interface UpdateSampleStatusRef {
+interface UpdateSampleRef {
   ...
-  (dc: DataConnect, vars: UpdateSampleStatusVariables): MutationRef<UpdateSampleStatusData, UpdateSampleStatusVariables>;
+  (dc: DataConnect, vars: UpdateSampleVariables): MutationRef<UpdateSampleData, UpdateSampleVariables>;
 }
-export const updateSampleStatusRef: UpdateSampleStatusRef;
+export const updateSampleRef: UpdateSampleRef;
 ```
 
-If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the updateSampleStatusRef:
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the updateSampleRef:
 ```typescript
-const name = updateSampleStatusRef.operationName;
+const name = updateSampleRef.operationName;
 console.log(name);
 ```
 
 ### Variables
-The `UpdateSampleStatus` mutation requires an argument of type `UpdateSampleStatusVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+The `UpdateSample` mutation requires an argument of type `UpdateSampleVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
 
 ```typescript
-export interface UpdateSampleStatusVariables {
+export interface UpdateSampleVariables {
   sampleId: string;
-  status: string;
   staffId?: string | null;
+  participantId?: string | null;
   collectionDate?: DateString | null;
+  sampleQuality?: string | null;
+  sampleConcentration?: number | null;
   notes?: string | null;
 }
 ```
 ### Return Type
-Recall that executing the `UpdateSampleStatus` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+Recall that executing the `UpdateSample` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
 
-The `data` property is an object of type `UpdateSampleStatusData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+The `data` property is an object of type `UpdateSampleData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
 ```typescript
-export interface UpdateSampleStatusData {
+export interface UpdateSampleData {
   sample_update?: Sample_Key | null;
 }
 ```
-### Using `UpdateSampleStatus`'s action shortcut function
+### Using `UpdateSample`'s action shortcut function
 
 ```typescript
 import { getDataConnect } from 'firebase/data-connect';
-import { connectorConfig, updateSampleStatus, UpdateSampleStatusVariables } from '@firebasegen/adnlab-connector';
+import { connectorConfig, updateSample, UpdateSampleVariables } from '@firebasegen/adnlab-connector';
 
-// The `UpdateSampleStatus` mutation requires an argument of type `UpdateSampleStatusVariables`:
-const updateSampleStatusVars: UpdateSampleStatusVariables = {
+// The `UpdateSample` mutation requires an argument of type `UpdateSampleVariables`:
+const updateSampleVars: UpdateSampleVariables = {
   sampleId: ..., 
-  status: ..., 
   staffId: ..., // optional
+  participantId: ..., // optional
   collectionDate: ..., // optional
+  sampleQuality: ..., // optional
+  sampleConcentration: ..., // optional
   notes: ..., // optional
 };
 
-// Call the `updateSampleStatus()` function to execute the mutation.
+// Call the `updateSample()` function to execute the mutation.
 // You can use the `await` keyword to wait for the promise to resolve.
-const { data } = await updateSampleStatus(updateSampleStatusVars);
+const { data } = await updateSample(updateSampleVars);
 // Variables can be defined inline as well.
-const { data } = await updateSampleStatus({ sampleId: ..., status: ..., staffId: ..., collectionDate: ..., notes: ..., });
+const { data } = await updateSample({ sampleId: ..., staffId: ..., participantId: ..., collectionDate: ..., sampleQuality: ..., sampleConcentration: ..., notes: ..., });
 
 // You can also pass in a `DataConnect` instance to the action shortcut function.
 const dataConnect = getDataConnect(connectorConfig);
-const { data } = await updateSampleStatus(dataConnect, updateSampleStatusVars);
+const { data } = await updateSample(dataConnect, updateSampleVars);
 
 console.log(data.sample_update);
 
 // Or, you can use the `Promise` API.
-updateSampleStatus(updateSampleStatusVars).then((response) => {
+updateSample(updateSampleVars).then((response) => {
   const data = response.data;
   console.log(data.sample_update);
 });
 ```
 
-### Using `UpdateSampleStatus`'s `MutationRef` function
+### Using `UpdateSample`'s `MutationRef` function
 
 ```typescript
 import { getDataConnect, executeMutation } from 'firebase/data-connect';
-import { connectorConfig, updateSampleStatusRef, UpdateSampleStatusVariables } from '@firebasegen/adnlab-connector';
+import { connectorConfig, updateSampleRef, UpdateSampleVariables } from '@firebasegen/adnlab-connector';
 
-// The `UpdateSampleStatus` mutation requires an argument of type `UpdateSampleStatusVariables`:
-const updateSampleStatusVars: UpdateSampleStatusVariables = {
+// The `UpdateSample` mutation requires an argument of type `UpdateSampleVariables`:
+const updateSampleVars: UpdateSampleVariables = {
   sampleId: ..., 
-  status: ..., 
   staffId: ..., // optional
+  participantId: ..., // optional
   collectionDate: ..., // optional
+  sampleQuality: ..., // optional
+  sampleConcentration: ..., // optional
   notes: ..., // optional
 };
 
-// Call the `updateSampleStatusRef()` function to get a reference to the mutation.
-const ref = updateSampleStatusRef(updateSampleStatusVars);
+// Call the `updateSampleRef()` function to get a reference to the mutation.
+const ref = updateSampleRef(updateSampleVars);
 // Variables can be defined inline as well.
-const ref = updateSampleStatusRef({ sampleId: ..., status: ..., staffId: ..., collectionDate: ..., notes: ..., });
+const ref = updateSampleRef({ sampleId: ..., staffId: ..., participantId: ..., collectionDate: ..., sampleQuality: ..., sampleConcentration: ..., notes: ..., });
 
 // You can also pass in a `DataConnect` instance to the `MutationRef` function.
 const dataConnect = getDataConnect(connectorConfig);
-const ref = updateSampleStatusRef(dataConnect, updateSampleStatusVars);
+const ref = updateSampleRef(dataConnect, updateSampleVars);
 
 // Call `executeMutation()` on the reference to execute the mutation.
 // You can use the `await` keyword to wait for the promise to resolve.
@@ -9599,6 +12776,115 @@ console.log(data.sample_update);
 executeMutation(ref).then((response) => {
   const data = response.data;
   console.log(data.sample_update);
+});
+```
+
+## DeleteSample
+You can execute the `DeleteSample` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+deleteSample(vars: DeleteSampleVariables): MutationPromise<DeleteSampleData, DeleteSampleVariables>;
+
+interface DeleteSampleRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: DeleteSampleVariables): MutationRef<DeleteSampleData, DeleteSampleVariables>;
+}
+export const deleteSampleRef: DeleteSampleRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
+```typescript
+deleteSample(dc: DataConnect, vars: DeleteSampleVariables): MutationPromise<DeleteSampleData, DeleteSampleVariables>;
+
+interface DeleteSampleRef {
+  ...
+  (dc: DataConnect, vars: DeleteSampleVariables): MutationRef<DeleteSampleData, DeleteSampleVariables>;
+}
+export const deleteSampleRef: DeleteSampleRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the deleteSampleRef:
+```typescript
+const name = deleteSampleRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `DeleteSample` mutation requires an argument of type `DeleteSampleVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface DeleteSampleVariables {
+  sampleId: string;
+}
+```
+### Return Type
+Recall that executing the `DeleteSample` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `DeleteSampleData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface DeleteSampleData {
+  sample_delete?: Sample_Key | null;
+}
+```
+### Using `DeleteSample`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, deleteSample, DeleteSampleVariables } from '@firebasegen/adnlab-connector';
+
+// The `DeleteSample` mutation requires an argument of type `DeleteSampleVariables`:
+const deleteSampleVars: DeleteSampleVariables = {
+  sampleId: ..., 
+};
+
+// Call the `deleteSample()` function to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await deleteSample(deleteSampleVars);
+// Variables can be defined inline as well.
+const { data } = await deleteSample({ sampleId: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await deleteSample(dataConnect, deleteSampleVars);
+
+console.log(data.sample_delete);
+
+// Or, you can use the `Promise` API.
+deleteSample(deleteSampleVars).then((response) => {
+  const data = response.data;
+  console.log(data.sample_delete);
+});
+```
+
+### Using `DeleteSample`'s `MutationRef` function
+
+```typescript
+import { getDataConnect, executeMutation } from 'firebase/data-connect';
+import { connectorConfig, deleteSampleRef, DeleteSampleVariables } from '@firebasegen/adnlab-connector';
+
+// The `DeleteSample` mutation requires an argument of type `DeleteSampleVariables`:
+const deleteSampleVars: DeleteSampleVariables = {
+  sampleId: ..., 
+};
+
+// Call the `deleteSampleRef()` function to get a reference to the mutation.
+const ref = deleteSampleRef(deleteSampleVars);
+// Variables can be defined inline as well.
+const ref = deleteSampleRef({ sampleId: ..., });
+
+// You can also pass in a `DataConnect` instance to the `MutationRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = deleteSampleRef(dataConnect, deleteSampleVars);
+
+// Call `executeMutation()` on the reference to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeMutation(ref);
+
+console.log(data.sample_delete);
+
+// Or, you can use the `Promise` API.
+executeMutation(ref).then((response) => {
+  const data = response.data;
+  console.log(data.sample_delete);
 });
 ```
 
@@ -9639,10 +12925,15 @@ export interface CreateTestResultVariables {
   id: string;
   bookingId: string;
   sampleId: string;
-  staffId?: string | null;
+  managerId?: string | null;
+  testMethod: string;
+  positive: boolean;
+  accuracy: number;
+  testType: string;
   testDate?: DateString | null;
   reportDate?: DateString | null;
   resultData?: string | null;
+  resultNotes?: string | null;
   status?: string | null;
 }
 ```
@@ -9666,10 +12957,15 @@ const createTestResultVars: CreateTestResultVariables = {
   id: ..., 
   bookingId: ..., 
   sampleId: ..., 
-  staffId: ..., // optional
+  managerId: ..., // optional
+  testMethod: ..., 
+  positive: ..., 
+  accuracy: ..., 
+  testType: ..., 
   testDate: ..., // optional
   reportDate: ..., // optional
   resultData: ..., // optional
+  resultNotes: ..., // optional
   status: ..., // optional
 };
 
@@ -9677,7 +12973,7 @@ const createTestResultVars: CreateTestResultVariables = {
 // You can use the `await` keyword to wait for the promise to resolve.
 const { data } = await createTestResult(createTestResultVars);
 // Variables can be defined inline as well.
-const { data } = await createTestResult({ id: ..., bookingId: ..., sampleId: ..., staffId: ..., testDate: ..., reportDate: ..., resultData: ..., status: ..., });
+const { data } = await createTestResult({ id: ..., bookingId: ..., sampleId: ..., managerId: ..., testMethod: ..., positive: ..., accuracy: ..., testType: ..., testDate: ..., reportDate: ..., resultData: ..., resultNotes: ..., status: ..., });
 
 // You can also pass in a `DataConnect` instance to the action shortcut function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -9703,17 +12999,22 @@ const createTestResultVars: CreateTestResultVariables = {
   id: ..., 
   bookingId: ..., 
   sampleId: ..., 
-  staffId: ..., // optional
+  managerId: ..., // optional
+  testMethod: ..., 
+  positive: ..., 
+  accuracy: ..., 
+  testType: ..., 
   testDate: ..., // optional
   reportDate: ..., // optional
   resultData: ..., // optional
+  resultNotes: ..., // optional
   status: ..., // optional
 };
 
 // Call the `createTestResultRef()` function to get a reference to the mutation.
 const ref = createTestResultRef(createTestResultVars);
 // Variables can be defined inline as well.
-const ref = createTestResultRef({ id: ..., bookingId: ..., sampleId: ..., staffId: ..., testDate: ..., reportDate: ..., resultData: ..., status: ..., });
+const ref = createTestResultRef({ id: ..., bookingId: ..., sampleId: ..., managerId: ..., testMethod: ..., positive: ..., accuracy: ..., testType: ..., testDate: ..., reportDate: ..., resultData: ..., resultNotes: ..., status: ..., });
 
 // You can also pass in a `DataConnect` instance to the `MutationRef` function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -9767,10 +13068,15 @@ The `UpdateTestResult` mutation requires an argument of type `UpdateTestResultVa
 ```typescript
 export interface UpdateTestResultVariables {
   resultId: string;
-  resultData?: string | null;
-  status?: string | null;
-  reportDate?: DateString | null;
+  testMethod?: string | null;
+  positive?: boolean | null;
+  accuracy?: number | null;
+  testType?: string | null;
   testDate?: DateString | null;
+  reportDate?: DateString | null;
+  resultData?: string | null;
+  resultNotes?: string | null;
+  status?: string | null;
 }
 ```
 ### Return Type
@@ -9791,17 +13097,22 @@ import { connectorConfig, updateTestResult, UpdateTestResultVariables } from '@f
 // The `UpdateTestResult` mutation requires an argument of type `UpdateTestResultVariables`:
 const updateTestResultVars: UpdateTestResultVariables = {
   resultId: ..., 
-  resultData: ..., // optional
-  status: ..., // optional
-  reportDate: ..., // optional
+  testMethod: ..., // optional
+  positive: ..., // optional
+  accuracy: ..., // optional
+  testType: ..., // optional
   testDate: ..., // optional
+  reportDate: ..., // optional
+  resultData: ..., // optional
+  resultNotes: ..., // optional
+  status: ..., // optional
 };
 
 // Call the `updateTestResult()` function to execute the mutation.
 // You can use the `await` keyword to wait for the promise to resolve.
 const { data } = await updateTestResult(updateTestResultVars);
 // Variables can be defined inline as well.
-const { data } = await updateTestResult({ resultId: ..., resultData: ..., status: ..., reportDate: ..., testDate: ..., });
+const { data } = await updateTestResult({ resultId: ..., testMethod: ..., positive: ..., accuracy: ..., testType: ..., testDate: ..., reportDate: ..., resultData: ..., resultNotes: ..., status: ..., });
 
 // You can also pass in a `DataConnect` instance to the action shortcut function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -9825,16 +13136,21 @@ import { connectorConfig, updateTestResultRef, UpdateTestResultVariables } from 
 // The `UpdateTestResult` mutation requires an argument of type `UpdateTestResultVariables`:
 const updateTestResultVars: UpdateTestResultVariables = {
   resultId: ..., 
-  resultData: ..., // optional
-  status: ..., // optional
-  reportDate: ..., // optional
+  testMethod: ..., // optional
+  positive: ..., // optional
+  accuracy: ..., // optional
+  testType: ..., // optional
   testDate: ..., // optional
+  reportDate: ..., // optional
+  resultData: ..., // optional
+  resultNotes: ..., // optional
+  status: ..., // optional
 };
 
 // Call the `updateTestResultRef()` function to get a reference to the mutation.
 const ref = updateTestResultRef(updateTestResultVars);
 // Variables can be defined inline as well.
-const ref = updateTestResultRef({ resultId: ..., resultData: ..., status: ..., reportDate: ..., testDate: ..., });
+const ref = updateTestResultRef({ resultId: ..., testMethod: ..., positive: ..., accuracy: ..., testType: ..., testDate: ..., reportDate: ..., resultData: ..., resultNotes: ..., status: ..., });
 
 // You can also pass in a `DataConnect` instance to the `MutationRef` function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -9853,104 +13169,104 @@ executeMutation(ref).then((response) => {
 });
 ```
 
-## AssignTestResultStaff
-You can execute the `AssignTestResultStaff` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+## AssignTestResultManager
+You can execute the `AssignTestResultManager` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
 ```typescript
-assignTestResultStaff(vars: AssignTestResultStaffVariables): MutationPromise<AssignTestResultStaffData, AssignTestResultStaffVariables>;
+assignTestResultManager(vars: AssignTestResultManagerVariables): MutationPromise<AssignTestResultManagerData, AssignTestResultManagerVariables>;
 
-interface AssignTestResultStaffRef {
+interface AssignTestResultManagerRef {
   ...
   /* Allow users to create refs without passing in DataConnect */
-  (vars: AssignTestResultStaffVariables): MutationRef<AssignTestResultStaffData, AssignTestResultStaffVariables>;
+  (vars: AssignTestResultManagerVariables): MutationRef<AssignTestResultManagerData, AssignTestResultManagerVariables>;
 }
-export const assignTestResultStaffRef: AssignTestResultStaffRef;
+export const assignTestResultManagerRef: AssignTestResultManagerRef;
 ```
 You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
 ```typescript
-assignTestResultStaff(dc: DataConnect, vars: AssignTestResultStaffVariables): MutationPromise<AssignTestResultStaffData, AssignTestResultStaffVariables>;
+assignTestResultManager(dc: DataConnect, vars: AssignTestResultManagerVariables): MutationPromise<AssignTestResultManagerData, AssignTestResultManagerVariables>;
 
-interface AssignTestResultStaffRef {
+interface AssignTestResultManagerRef {
   ...
-  (dc: DataConnect, vars: AssignTestResultStaffVariables): MutationRef<AssignTestResultStaffData, AssignTestResultStaffVariables>;
+  (dc: DataConnect, vars: AssignTestResultManagerVariables): MutationRef<AssignTestResultManagerData, AssignTestResultManagerVariables>;
 }
-export const assignTestResultStaffRef: AssignTestResultStaffRef;
+export const assignTestResultManagerRef: AssignTestResultManagerRef;
 ```
 
-If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the assignTestResultStaffRef:
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the assignTestResultManagerRef:
 ```typescript
-const name = assignTestResultStaffRef.operationName;
+const name = assignTestResultManagerRef.operationName;
 console.log(name);
 ```
 
 ### Variables
-The `AssignTestResultStaff` mutation requires an argument of type `AssignTestResultStaffVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+The `AssignTestResultManager` mutation requires an argument of type `AssignTestResultManagerVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
 
 ```typescript
-export interface AssignTestResultStaffVariables {
+export interface AssignTestResultManagerVariables {
   resultId: string;
-  staffId: string;
+  managerId: string;
 }
 ```
 ### Return Type
-Recall that executing the `AssignTestResultStaff` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+Recall that executing the `AssignTestResultManager` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
 
-The `data` property is an object of type `AssignTestResultStaffData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+The `data` property is an object of type `AssignTestResultManagerData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
 ```typescript
-export interface AssignTestResultStaffData {
+export interface AssignTestResultManagerData {
   testResult_update?: TestResult_Key | null;
 }
 ```
-### Using `AssignTestResultStaff`'s action shortcut function
+### Using `AssignTestResultManager`'s action shortcut function
 
 ```typescript
 import { getDataConnect } from 'firebase/data-connect';
-import { connectorConfig, assignTestResultStaff, AssignTestResultStaffVariables } from '@firebasegen/adnlab-connector';
+import { connectorConfig, assignTestResultManager, AssignTestResultManagerVariables } from '@firebasegen/adnlab-connector';
 
-// The `AssignTestResultStaff` mutation requires an argument of type `AssignTestResultStaffVariables`:
-const assignTestResultStaffVars: AssignTestResultStaffVariables = {
+// The `AssignTestResultManager` mutation requires an argument of type `AssignTestResultManagerVariables`:
+const assignTestResultManagerVars: AssignTestResultManagerVariables = {
   resultId: ..., 
-  staffId: ..., 
+  managerId: ..., 
 };
 
-// Call the `assignTestResultStaff()` function to execute the mutation.
+// Call the `assignTestResultManager()` function to execute the mutation.
 // You can use the `await` keyword to wait for the promise to resolve.
-const { data } = await assignTestResultStaff(assignTestResultStaffVars);
+const { data } = await assignTestResultManager(assignTestResultManagerVars);
 // Variables can be defined inline as well.
-const { data } = await assignTestResultStaff({ resultId: ..., staffId: ..., });
+const { data } = await assignTestResultManager({ resultId: ..., managerId: ..., });
 
 // You can also pass in a `DataConnect` instance to the action shortcut function.
 const dataConnect = getDataConnect(connectorConfig);
-const { data } = await assignTestResultStaff(dataConnect, assignTestResultStaffVars);
+const { data } = await assignTestResultManager(dataConnect, assignTestResultManagerVars);
 
 console.log(data.testResult_update);
 
 // Or, you can use the `Promise` API.
-assignTestResultStaff(assignTestResultStaffVars).then((response) => {
+assignTestResultManager(assignTestResultManagerVars).then((response) => {
   const data = response.data;
   console.log(data.testResult_update);
 });
 ```
 
-### Using `AssignTestResultStaff`'s `MutationRef` function
+### Using `AssignTestResultManager`'s `MutationRef` function
 
 ```typescript
 import { getDataConnect, executeMutation } from 'firebase/data-connect';
-import { connectorConfig, assignTestResultStaffRef, AssignTestResultStaffVariables } from '@firebasegen/adnlab-connector';
+import { connectorConfig, assignTestResultManagerRef, AssignTestResultManagerVariables } from '@firebasegen/adnlab-connector';
 
-// The `AssignTestResultStaff` mutation requires an argument of type `AssignTestResultStaffVariables`:
-const assignTestResultStaffVars: AssignTestResultStaffVariables = {
+// The `AssignTestResultManager` mutation requires an argument of type `AssignTestResultManagerVariables`:
+const assignTestResultManagerVars: AssignTestResultManagerVariables = {
   resultId: ..., 
-  staffId: ..., 
+  managerId: ..., 
 };
 
-// Call the `assignTestResultStaffRef()` function to get a reference to the mutation.
-const ref = assignTestResultStaffRef(assignTestResultStaffVars);
+// Call the `assignTestResultManagerRef()` function to get a reference to the mutation.
+const ref = assignTestResultManagerRef(assignTestResultManagerVars);
 // Variables can be defined inline as well.
-const ref = assignTestResultStaffRef({ resultId: ..., staffId: ..., });
+const ref = assignTestResultManagerRef({ resultId: ..., managerId: ..., });
 
 // You can also pass in a `DataConnect` instance to the `MutationRef` function.
 const dataConnect = getDataConnect(connectorConfig);
-const ref = assignTestResultStaffRef(dataConnect, assignTestResultStaffVars);
+const ref = assignTestResultManagerRef(dataConnect, assignTestResultManagerVars);
 
 // Call `executeMutation()` on the reference to execute the mutation.
 // You can use the `await` keyword to wait for the promise to resolve.
@@ -9962,6 +13278,115 @@ console.log(data.testResult_update);
 executeMutation(ref).then((response) => {
   const data = response.data;
   console.log(data.testResult_update);
+});
+```
+
+## DeleteTestResult
+You can execute the `DeleteTestResult` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+deleteTestResult(vars: DeleteTestResultVariables): MutationPromise<DeleteTestResultData, DeleteTestResultVariables>;
+
+interface DeleteTestResultRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: DeleteTestResultVariables): MutationRef<DeleteTestResultData, DeleteTestResultVariables>;
+}
+export const deleteTestResultRef: DeleteTestResultRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
+```typescript
+deleteTestResult(dc: DataConnect, vars: DeleteTestResultVariables): MutationPromise<DeleteTestResultData, DeleteTestResultVariables>;
+
+interface DeleteTestResultRef {
+  ...
+  (dc: DataConnect, vars: DeleteTestResultVariables): MutationRef<DeleteTestResultData, DeleteTestResultVariables>;
+}
+export const deleteTestResultRef: DeleteTestResultRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the deleteTestResultRef:
+```typescript
+const name = deleteTestResultRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `DeleteTestResult` mutation requires an argument of type `DeleteTestResultVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface DeleteTestResultVariables {
+  resultId: string;
+}
+```
+### Return Type
+Recall that executing the `DeleteTestResult` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `DeleteTestResultData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface DeleteTestResultData {
+  testResult_delete?: TestResult_Key | null;
+}
+```
+### Using `DeleteTestResult`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, deleteTestResult, DeleteTestResultVariables } from '@firebasegen/adnlab-connector';
+
+// The `DeleteTestResult` mutation requires an argument of type `DeleteTestResultVariables`:
+const deleteTestResultVars: DeleteTestResultVariables = {
+  resultId: ..., 
+};
+
+// Call the `deleteTestResult()` function to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await deleteTestResult(deleteTestResultVars);
+// Variables can be defined inline as well.
+const { data } = await deleteTestResult({ resultId: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await deleteTestResult(dataConnect, deleteTestResultVars);
+
+console.log(data.testResult_delete);
+
+// Or, you can use the `Promise` API.
+deleteTestResult(deleteTestResultVars).then((response) => {
+  const data = response.data;
+  console.log(data.testResult_delete);
+});
+```
+
+### Using `DeleteTestResult`'s `MutationRef` function
+
+```typescript
+import { getDataConnect, executeMutation } from 'firebase/data-connect';
+import { connectorConfig, deleteTestResultRef, DeleteTestResultVariables } from '@firebasegen/adnlab-connector';
+
+// The `DeleteTestResult` mutation requires an argument of type `DeleteTestResultVariables`:
+const deleteTestResultVars: DeleteTestResultVariables = {
+  resultId: ..., 
+};
+
+// Call the `deleteTestResultRef()` function to get a reference to the mutation.
+const ref = deleteTestResultRef(deleteTestResultVars);
+// Variables can be defined inline as well.
+const ref = deleteTestResultRef({ resultId: ..., });
+
+// You can also pass in a `DataConnect` instance to the `MutationRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = deleteTestResultRef(dataConnect, deleteTestResultVars);
+
+// Call `executeMutation()` on the reference to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeMutation(ref);
+
+console.log(data.testResult_delete);
+
+// Or, you can use the `Promise` API.
+executeMutation(ref).then((response) => {
+  const data = response.data;
+  console.log(data.testResult_delete);
 });
 ```
 
@@ -10005,6 +13430,8 @@ export interface CreatePaymentVariables {
   paymentMethod: string;
   status?: string | null;
   paymentDate?: DateString | null;
+  refundDetail?: string | null;
+  otherDetails?: string[] | null;
 }
 ```
 ### Return Type
@@ -10030,13 +13457,15 @@ const createPaymentVars: CreatePaymentVariables = {
   paymentMethod: ..., 
   status: ..., // optional
   paymentDate: ..., // optional
+  refundDetail: ..., // optional
+  otherDetails: ..., // optional
 };
 
 // Call the `createPayment()` function to execute the mutation.
 // You can use the `await` keyword to wait for the promise to resolve.
 const { data } = await createPayment(createPaymentVars);
 // Variables can be defined inline as well.
-const { data } = await createPayment({ id: ..., bookingId: ..., amount: ..., paymentMethod: ..., status: ..., paymentDate: ..., });
+const { data } = await createPayment({ id: ..., bookingId: ..., amount: ..., paymentMethod: ..., status: ..., paymentDate: ..., refundDetail: ..., otherDetails: ..., });
 
 // You can also pass in a `DataConnect` instance to the action shortcut function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -10065,12 +13494,14 @@ const createPaymentVars: CreatePaymentVariables = {
   paymentMethod: ..., 
   status: ..., // optional
   paymentDate: ..., // optional
+  refundDetail: ..., // optional
+  otherDetails: ..., // optional
 };
 
 // Call the `createPaymentRef()` function to get a reference to the mutation.
 const ref = createPaymentRef(createPaymentVars);
 // Variables can be defined inline as well.
-const ref = createPaymentRef({ id: ..., bookingId: ..., amount: ..., paymentMethod: ..., status: ..., paymentDate: ..., });
+const ref = createPaymentRef({ id: ..., bookingId: ..., amount: ..., paymentMethod: ..., status: ..., paymentDate: ..., refundDetail: ..., otherDetails: ..., });
 
 // You can also pass in a `DataConnect` instance to the `MutationRef` function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -10204,104 +13635,216 @@ executeMutation(ref).then((response) => {
 });
 ```
 
-## AddRefundDetail
-You can execute the `AddRefundDetail` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+## AddPaymentDetails
+You can execute the `AddPaymentDetails` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
 ```typescript
-addRefundDetail(vars: AddRefundDetailVariables): MutationPromise<AddRefundDetailData, AddRefundDetailVariables>;
+addPaymentDetails(vars: AddPaymentDetailsVariables): MutationPromise<AddPaymentDetailsData, AddPaymentDetailsVariables>;
 
-interface AddRefundDetailRef {
+interface AddPaymentDetailsRef {
   ...
   /* Allow users to create refs without passing in DataConnect */
-  (vars: AddRefundDetailVariables): MutationRef<AddRefundDetailData, AddRefundDetailVariables>;
+  (vars: AddPaymentDetailsVariables): MutationRef<AddPaymentDetailsData, AddPaymentDetailsVariables>;
 }
-export const addRefundDetailRef: AddRefundDetailRef;
+export const addPaymentDetailsRef: AddPaymentDetailsRef;
 ```
 You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
 ```typescript
-addRefundDetail(dc: DataConnect, vars: AddRefundDetailVariables): MutationPromise<AddRefundDetailData, AddRefundDetailVariables>;
+addPaymentDetails(dc: DataConnect, vars: AddPaymentDetailsVariables): MutationPromise<AddPaymentDetailsData, AddPaymentDetailsVariables>;
 
-interface AddRefundDetailRef {
+interface AddPaymentDetailsRef {
   ...
-  (dc: DataConnect, vars: AddRefundDetailVariables): MutationRef<AddRefundDetailData, AddRefundDetailVariables>;
+  (dc: DataConnect, vars: AddPaymentDetailsVariables): MutationRef<AddPaymentDetailsData, AddPaymentDetailsVariables>;
 }
-export const addRefundDetailRef: AddRefundDetailRef;
+export const addPaymentDetailsRef: AddPaymentDetailsRef;
 ```
 
-If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the addRefundDetailRef:
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the addPaymentDetailsRef:
 ```typescript
-const name = addRefundDetailRef.operationName;
+const name = addPaymentDetailsRef.operationName;
 console.log(name);
 ```
 
 ### Variables
-The `AddRefundDetail` mutation requires an argument of type `AddRefundDetailVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+The `AddPaymentDetails` mutation requires an argument of type `AddPaymentDetailsVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
 
 ```typescript
-export interface AddRefundDetailVariables {
+export interface AddPaymentDetailsVariables {
   paymentId: string;
-  refundDetails: string[];
+  otherDetails?: string[] | null;
 }
 ```
 ### Return Type
-Recall that executing the `AddRefundDetail` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+Recall that executing the `AddPaymentDetails` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
 
-The `data` property is an object of type `AddRefundDetailData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+The `data` property is an object of type `AddPaymentDetailsData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
 ```typescript
-export interface AddRefundDetailData {
+export interface AddPaymentDetailsData {
   payment_update?: Payment_Key | null;
 }
 ```
-### Using `AddRefundDetail`'s action shortcut function
+### Using `AddPaymentDetails`'s action shortcut function
 
 ```typescript
 import { getDataConnect } from 'firebase/data-connect';
-import { connectorConfig, addRefundDetail, AddRefundDetailVariables } from '@firebasegen/adnlab-connector';
+import { connectorConfig, addPaymentDetails, AddPaymentDetailsVariables } from '@firebasegen/adnlab-connector';
 
-// The `AddRefundDetail` mutation requires an argument of type `AddRefundDetailVariables`:
-const addRefundDetailVars: AddRefundDetailVariables = {
+// The `AddPaymentDetails` mutation requires an argument of type `AddPaymentDetailsVariables`:
+const addPaymentDetailsVars: AddPaymentDetailsVariables = {
   paymentId: ..., 
-  refundDetails: ..., 
+  otherDetails: ..., // optional
 };
 
-// Call the `addRefundDetail()` function to execute the mutation.
+// Call the `addPaymentDetails()` function to execute the mutation.
 // You can use the `await` keyword to wait for the promise to resolve.
-const { data } = await addRefundDetail(addRefundDetailVars);
+const { data } = await addPaymentDetails(addPaymentDetailsVars);
 // Variables can be defined inline as well.
-const { data } = await addRefundDetail({ paymentId: ..., refundDetails: ..., });
+const { data } = await addPaymentDetails({ paymentId: ..., otherDetails: ..., });
 
 // You can also pass in a `DataConnect` instance to the action shortcut function.
 const dataConnect = getDataConnect(connectorConfig);
-const { data } = await addRefundDetail(dataConnect, addRefundDetailVars);
+const { data } = await addPaymentDetails(dataConnect, addPaymentDetailsVars);
 
 console.log(data.payment_update);
 
 // Or, you can use the `Promise` API.
-addRefundDetail(addRefundDetailVars).then((response) => {
+addPaymentDetails(addPaymentDetailsVars).then((response) => {
   const data = response.data;
   console.log(data.payment_update);
 });
 ```
 
-### Using `AddRefundDetail`'s `MutationRef` function
+### Using `AddPaymentDetails`'s `MutationRef` function
 
 ```typescript
 import { getDataConnect, executeMutation } from 'firebase/data-connect';
-import { connectorConfig, addRefundDetailRef, AddRefundDetailVariables } from '@firebasegen/adnlab-connector';
+import { connectorConfig, addPaymentDetailsRef, AddPaymentDetailsVariables } from '@firebasegen/adnlab-connector';
 
-// The `AddRefundDetail` mutation requires an argument of type `AddRefundDetailVariables`:
-const addRefundDetailVars: AddRefundDetailVariables = {
+// The `AddPaymentDetails` mutation requires an argument of type `AddPaymentDetailsVariables`:
+const addPaymentDetailsVars: AddPaymentDetailsVariables = {
   paymentId: ..., 
-  refundDetails: ..., 
+  otherDetails: ..., // optional
 };
 
-// Call the `addRefundDetailRef()` function to get a reference to the mutation.
-const ref = addRefundDetailRef(addRefundDetailVars);
+// Call the `addPaymentDetailsRef()` function to get a reference to the mutation.
+const ref = addPaymentDetailsRef(addPaymentDetailsVars);
 // Variables can be defined inline as well.
-const ref = addRefundDetailRef({ paymentId: ..., refundDetails: ..., });
+const ref = addPaymentDetailsRef({ paymentId: ..., otherDetails: ..., });
 
 // You can also pass in a `DataConnect` instance to the `MutationRef` function.
 const dataConnect = getDataConnect(connectorConfig);
-const ref = addRefundDetailRef(dataConnect, addRefundDetailVars);
+const ref = addPaymentDetailsRef(dataConnect, addPaymentDetailsVars);
+
+// Call `executeMutation()` on the reference to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeMutation(ref);
+
+console.log(data.payment_update);
+
+// Or, you can use the `Promise` API.
+executeMutation(ref).then((response) => {
+  const data = response.data;
+  console.log(data.payment_update);
+});
+```
+
+## UpdateRefundDetail
+You can execute the `UpdateRefundDetail` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+updateRefundDetail(vars: UpdateRefundDetailVariables): MutationPromise<UpdateRefundDetailData, UpdateRefundDetailVariables>;
+
+interface UpdateRefundDetailRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: UpdateRefundDetailVariables): MutationRef<UpdateRefundDetailData, UpdateRefundDetailVariables>;
+}
+export const updateRefundDetailRef: UpdateRefundDetailRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
+```typescript
+updateRefundDetail(dc: DataConnect, vars: UpdateRefundDetailVariables): MutationPromise<UpdateRefundDetailData, UpdateRefundDetailVariables>;
+
+interface UpdateRefundDetailRef {
+  ...
+  (dc: DataConnect, vars: UpdateRefundDetailVariables): MutationRef<UpdateRefundDetailData, UpdateRefundDetailVariables>;
+}
+export const updateRefundDetailRef: UpdateRefundDetailRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the updateRefundDetailRef:
+```typescript
+const name = updateRefundDetailRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `UpdateRefundDetail` mutation requires an argument of type `UpdateRefundDetailVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface UpdateRefundDetailVariables {
+  paymentId: string;
+  refundDetail: string;
+}
+```
+### Return Type
+Recall that executing the `UpdateRefundDetail` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `UpdateRefundDetailData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface UpdateRefundDetailData {
+  payment_update?: Payment_Key | null;
+}
+```
+### Using `UpdateRefundDetail`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, updateRefundDetail, UpdateRefundDetailVariables } from '@firebasegen/adnlab-connector';
+
+// The `UpdateRefundDetail` mutation requires an argument of type `UpdateRefundDetailVariables`:
+const updateRefundDetailVars: UpdateRefundDetailVariables = {
+  paymentId: ..., 
+  refundDetail: ..., 
+};
+
+// Call the `updateRefundDetail()` function to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await updateRefundDetail(updateRefundDetailVars);
+// Variables can be defined inline as well.
+const { data } = await updateRefundDetail({ paymentId: ..., refundDetail: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await updateRefundDetail(dataConnect, updateRefundDetailVars);
+
+console.log(data.payment_update);
+
+// Or, you can use the `Promise` API.
+updateRefundDetail(updateRefundDetailVars).then((response) => {
+  const data = response.data;
+  console.log(data.payment_update);
+});
+```
+
+### Using `UpdateRefundDetail`'s `MutationRef` function
+
+```typescript
+import { getDataConnect, executeMutation } from 'firebase/data-connect';
+import { connectorConfig, updateRefundDetailRef, UpdateRefundDetailVariables } from '@firebasegen/adnlab-connector';
+
+// The `UpdateRefundDetail` mutation requires an argument of type `UpdateRefundDetailVariables`:
+const updateRefundDetailVars: UpdateRefundDetailVariables = {
+  paymentId: ..., 
+  refundDetail: ..., 
+};
+
+// Call the `updateRefundDetailRef()` function to get a reference to the mutation.
+const ref = updateRefundDetailRef(updateRefundDetailVars);
+// Variables can be defined inline as well.
+const ref = updateRefundDetailRef({ paymentId: ..., refundDetail: ..., });
+
+// You can also pass in a `DataConnect` instance to the `MutationRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = updateRefundDetailRef(dataConnect, updateRefundDetailVars);
 
 // Call `executeMutation()` on the reference to execute the mutation.
 // You can use the `await` keyword to wait for the promise to resolve.
@@ -10585,6 +14128,7 @@ The `CreateBlog` mutation requires an argument of type `CreateBlogVariables`, wh
 export interface CreateBlogVariables {
   id: string;
   userId: string;
+  title: string;
   content: string;
   imageUrl?: string | null;
 }
@@ -10608,6 +14152,7 @@ import { connectorConfig, createBlog, CreateBlogVariables } from '@firebasegen/a
 const createBlogVars: CreateBlogVariables = {
   id: ..., 
   userId: ..., 
+  title: ..., 
   content: ..., 
   imageUrl: ..., // optional
 };
@@ -10616,7 +14161,7 @@ const createBlogVars: CreateBlogVariables = {
 // You can use the `await` keyword to wait for the promise to resolve.
 const { data } = await createBlog(createBlogVars);
 // Variables can be defined inline as well.
-const { data } = await createBlog({ id: ..., userId: ..., content: ..., imageUrl: ..., });
+const { data } = await createBlog({ id: ..., userId: ..., title: ..., content: ..., imageUrl: ..., });
 
 // You can also pass in a `DataConnect` instance to the action shortcut function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -10641,6 +14186,7 @@ import { connectorConfig, createBlogRef, CreateBlogVariables } from '@firebasege
 const createBlogVars: CreateBlogVariables = {
   id: ..., 
   userId: ..., 
+  title: ..., 
   content: ..., 
   imageUrl: ..., // optional
 };
@@ -10648,7 +14194,7 @@ const createBlogVars: CreateBlogVariables = {
 // Call the `createBlogRef()` function to get a reference to the mutation.
 const ref = createBlogRef(createBlogVars);
 // Variables can be defined inline as well.
-const ref = createBlogRef({ id: ..., userId: ..., content: ..., imageUrl: ..., });
+const ref = createBlogRef({ id: ..., userId: ..., title: ..., content: ..., imageUrl: ..., });
 
 // You can also pass in a `DataConnect` instance to the `MutationRef` function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -10702,6 +14248,7 @@ The `UpdateBlog` mutation requires an argument of type `UpdateBlogVariables`, wh
 ```typescript
 export interface UpdateBlogVariables {
   blogId: string;
+  title?: string | null;
   content?: string | null;
   imageUrl?: string | null;
 }
@@ -10724,6 +14271,7 @@ import { connectorConfig, updateBlog, UpdateBlogVariables } from '@firebasegen/a
 // The `UpdateBlog` mutation requires an argument of type `UpdateBlogVariables`:
 const updateBlogVars: UpdateBlogVariables = {
   blogId: ..., 
+  title: ..., // optional
   content: ..., // optional
   imageUrl: ..., // optional
 };
@@ -10732,7 +14280,7 @@ const updateBlogVars: UpdateBlogVariables = {
 // You can use the `await` keyword to wait for the promise to resolve.
 const { data } = await updateBlog(updateBlogVars);
 // Variables can be defined inline as well.
-const { data } = await updateBlog({ blogId: ..., content: ..., imageUrl: ..., });
+const { data } = await updateBlog({ blogId: ..., title: ..., content: ..., imageUrl: ..., });
 
 // You can also pass in a `DataConnect` instance to the action shortcut function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -10756,6 +14304,7 @@ import { connectorConfig, updateBlogRef, UpdateBlogVariables } from '@firebasege
 // The `UpdateBlog` mutation requires an argument of type `UpdateBlogVariables`:
 const updateBlogVars: UpdateBlogVariables = {
   blogId: ..., 
+  title: ..., // optional
   content: ..., // optional
   imageUrl: ..., // optional
 };
@@ -10763,7 +14312,7 @@ const updateBlogVars: UpdateBlogVariables = {
 // Call the `updateBlogRef()` function to get a reference to the mutation.
 const ref = updateBlogRef(updateBlogVars);
 // Variables can be defined inline as well.
-const ref = updateBlogRef({ blogId: ..., content: ..., imageUrl: ..., });
+const ref = updateBlogRef({ blogId: ..., title: ..., content: ..., imageUrl: ..., });
 
 // You can also pass in a `DataConnect` instance to the `MutationRef` function.
 const dataConnect = getDataConnect(connectorConfig);
@@ -11339,6 +14888,769 @@ console.log(data.notification_delete);
 executeMutation(ref).then((response) => {
   const data = response.data;
   console.log(data.notification_delete);
+});
+```
+
+## DeleteServiceCategory
+You can execute the `DeleteServiceCategory` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+deleteServiceCategory(vars: DeleteServiceCategoryVariables): MutationPromise<DeleteServiceCategoryData, DeleteServiceCategoryVariables>;
+
+interface DeleteServiceCategoryRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: DeleteServiceCategoryVariables): MutationRef<DeleteServiceCategoryData, DeleteServiceCategoryVariables>;
+}
+export const deleteServiceCategoryRef: DeleteServiceCategoryRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
+```typescript
+deleteServiceCategory(dc: DataConnect, vars: DeleteServiceCategoryVariables): MutationPromise<DeleteServiceCategoryData, DeleteServiceCategoryVariables>;
+
+interface DeleteServiceCategoryRef {
+  ...
+  (dc: DataConnect, vars: DeleteServiceCategoryVariables): MutationRef<DeleteServiceCategoryData, DeleteServiceCategoryVariables>;
+}
+export const deleteServiceCategoryRef: DeleteServiceCategoryRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the deleteServiceCategoryRef:
+```typescript
+const name = deleteServiceCategoryRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `DeleteServiceCategory` mutation requires an argument of type `DeleteServiceCategoryVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface DeleteServiceCategoryVariables {
+  categoryId: string;
+}
+```
+### Return Type
+Recall that executing the `DeleteServiceCategory` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `DeleteServiceCategoryData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface DeleteServiceCategoryData {
+  serviceCategory_delete?: ServiceCategory_Key | null;
+}
+```
+### Using `DeleteServiceCategory`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, deleteServiceCategory, DeleteServiceCategoryVariables } from '@firebasegen/adnlab-connector';
+
+// The `DeleteServiceCategory` mutation requires an argument of type `DeleteServiceCategoryVariables`:
+const deleteServiceCategoryVars: DeleteServiceCategoryVariables = {
+  categoryId: ..., 
+};
+
+// Call the `deleteServiceCategory()` function to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await deleteServiceCategory(deleteServiceCategoryVars);
+// Variables can be defined inline as well.
+const { data } = await deleteServiceCategory({ categoryId: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await deleteServiceCategory(dataConnect, deleteServiceCategoryVars);
+
+console.log(data.serviceCategory_delete);
+
+// Or, you can use the `Promise` API.
+deleteServiceCategory(deleteServiceCategoryVars).then((response) => {
+  const data = response.data;
+  console.log(data.serviceCategory_delete);
+});
+```
+
+### Using `DeleteServiceCategory`'s `MutationRef` function
+
+```typescript
+import { getDataConnect, executeMutation } from 'firebase/data-connect';
+import { connectorConfig, deleteServiceCategoryRef, DeleteServiceCategoryVariables } from '@firebasegen/adnlab-connector';
+
+// The `DeleteServiceCategory` mutation requires an argument of type `DeleteServiceCategoryVariables`:
+const deleteServiceCategoryVars: DeleteServiceCategoryVariables = {
+  categoryId: ..., 
+};
+
+// Call the `deleteServiceCategoryRef()` function to get a reference to the mutation.
+const ref = deleteServiceCategoryRef(deleteServiceCategoryVars);
+// Variables can be defined inline as well.
+const ref = deleteServiceCategoryRef({ categoryId: ..., });
+
+// You can also pass in a `DataConnect` instance to the `MutationRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = deleteServiceCategoryRef(dataConnect, deleteServiceCategoryVars);
+
+// Call `executeMutation()` on the reference to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeMutation(ref);
+
+console.log(data.serviceCategory_delete);
+
+// Or, you can use the `Promise` API.
+executeMutation(ref).then((response) => {
+  const data = response.data;
+  console.log(data.serviceCategory_delete);
+});
+```
+
+## DeleteMethod
+You can execute the `DeleteMethod` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+deleteMethod(vars: DeleteMethodVariables): MutationPromise<DeleteMethodData, DeleteMethodVariables>;
+
+interface DeleteMethodRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: DeleteMethodVariables): MutationRef<DeleteMethodData, DeleteMethodVariables>;
+}
+export const deleteMethodRef: DeleteMethodRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
+```typescript
+deleteMethod(dc: DataConnect, vars: DeleteMethodVariables): MutationPromise<DeleteMethodData, DeleteMethodVariables>;
+
+interface DeleteMethodRef {
+  ...
+  (dc: DataConnect, vars: DeleteMethodVariables): MutationRef<DeleteMethodData, DeleteMethodVariables>;
+}
+export const deleteMethodRef: DeleteMethodRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the deleteMethodRef:
+```typescript
+const name = deleteMethodRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `DeleteMethod` mutation requires an argument of type `DeleteMethodVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface DeleteMethodVariables {
+  methodId: string;
+}
+```
+### Return Type
+Recall that executing the `DeleteMethod` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `DeleteMethodData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface DeleteMethodData {
+  method_delete?: Method_Key | null;
+}
+```
+### Using `DeleteMethod`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, deleteMethod, DeleteMethodVariables } from '@firebasegen/adnlab-connector';
+
+// The `DeleteMethod` mutation requires an argument of type `DeleteMethodVariables`:
+const deleteMethodVars: DeleteMethodVariables = {
+  methodId: ..., 
+};
+
+// Call the `deleteMethod()` function to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await deleteMethod(deleteMethodVars);
+// Variables can be defined inline as well.
+const { data } = await deleteMethod({ methodId: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await deleteMethod(dataConnect, deleteMethodVars);
+
+console.log(data.method_delete);
+
+// Or, you can use the `Promise` API.
+deleteMethod(deleteMethodVars).then((response) => {
+  const data = response.data;
+  console.log(data.method_delete);
+});
+```
+
+### Using `DeleteMethod`'s `MutationRef` function
+
+```typescript
+import { getDataConnect, executeMutation } from 'firebase/data-connect';
+import { connectorConfig, deleteMethodRef, DeleteMethodVariables } from '@firebasegen/adnlab-connector';
+
+// The `DeleteMethod` mutation requires an argument of type `DeleteMethodVariables`:
+const deleteMethodVars: DeleteMethodVariables = {
+  methodId: ..., 
+};
+
+// Call the `deleteMethodRef()` function to get a reference to the mutation.
+const ref = deleteMethodRef(deleteMethodVars);
+// Variables can be defined inline as well.
+const ref = deleteMethodRef({ methodId: ..., });
+
+// You can also pass in a `DataConnect` instance to the `MutationRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = deleteMethodRef(dataConnect, deleteMethodVars);
+
+// Call `executeMutation()` on the reference to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeMutation(ref);
+
+console.log(data.method_delete);
+
+// Or, you can use the `Promise` API.
+executeMutation(ref).then((response) => {
+  const data = response.data;
+  console.log(data.method_delete);
+});
+```
+
+## DeleteService
+You can execute the `DeleteService` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+deleteService(vars: DeleteServiceVariables): MutationPromise<DeleteServiceData, DeleteServiceVariables>;
+
+interface DeleteServiceRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: DeleteServiceVariables): MutationRef<DeleteServiceData, DeleteServiceVariables>;
+}
+export const deleteServiceRef: DeleteServiceRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
+```typescript
+deleteService(dc: DataConnect, vars: DeleteServiceVariables): MutationPromise<DeleteServiceData, DeleteServiceVariables>;
+
+interface DeleteServiceRef {
+  ...
+  (dc: DataConnect, vars: DeleteServiceVariables): MutationRef<DeleteServiceData, DeleteServiceVariables>;
+}
+export const deleteServiceRef: DeleteServiceRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the deleteServiceRef:
+```typescript
+const name = deleteServiceRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `DeleteService` mutation requires an argument of type `DeleteServiceVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface DeleteServiceVariables {
+  serviceId: string;
+}
+```
+### Return Type
+Recall that executing the `DeleteService` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `DeleteServiceData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface DeleteServiceData {
+  service_delete?: Service_Key | null;
+}
+```
+### Using `DeleteService`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, deleteService, DeleteServiceVariables } from '@firebasegen/adnlab-connector';
+
+// The `DeleteService` mutation requires an argument of type `DeleteServiceVariables`:
+const deleteServiceVars: DeleteServiceVariables = {
+  serviceId: ..., 
+};
+
+// Call the `deleteService()` function to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await deleteService(deleteServiceVars);
+// Variables can be defined inline as well.
+const { data } = await deleteService({ serviceId: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await deleteService(dataConnect, deleteServiceVars);
+
+console.log(data.service_delete);
+
+// Or, you can use the `Promise` API.
+deleteService(deleteServiceVars).then((response) => {
+  const data = response.data;
+  console.log(data.service_delete);
+});
+```
+
+### Using `DeleteService`'s `MutationRef` function
+
+```typescript
+import { getDataConnect, executeMutation } from 'firebase/data-connect';
+import { connectorConfig, deleteServiceRef, DeleteServiceVariables } from '@firebasegen/adnlab-connector';
+
+// The `DeleteService` mutation requires an argument of type `DeleteServiceVariables`:
+const deleteServiceVars: DeleteServiceVariables = {
+  serviceId: ..., 
+};
+
+// Call the `deleteServiceRef()` function to get a reference to the mutation.
+const ref = deleteServiceRef(deleteServiceVars);
+// Variables can be defined inline as well.
+const ref = deleteServiceRef({ serviceId: ..., });
+
+// You can also pass in a `DataConnect` instance to the `MutationRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = deleteServiceRef(dataConnect, deleteServiceVars);
+
+// Call `executeMutation()` on the reference to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeMutation(ref);
+
+console.log(data.service_delete);
+
+// Or, you can use the `Promise` API.
+executeMutation(ref).then((response) => {
+  const data = response.data;
+  console.log(data.service_delete);
+});
+```
+
+## DeleteTimeSlot
+You can execute the `DeleteTimeSlot` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+deleteTimeSlot(vars: DeleteTimeSlotVariables): MutationPromise<DeleteTimeSlotData, DeleteTimeSlotVariables>;
+
+interface DeleteTimeSlotRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: DeleteTimeSlotVariables): MutationRef<DeleteTimeSlotData, DeleteTimeSlotVariables>;
+}
+export const deleteTimeSlotRef: DeleteTimeSlotRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
+```typescript
+deleteTimeSlot(dc: DataConnect, vars: DeleteTimeSlotVariables): MutationPromise<DeleteTimeSlotData, DeleteTimeSlotVariables>;
+
+interface DeleteTimeSlotRef {
+  ...
+  (dc: DataConnect, vars: DeleteTimeSlotVariables): MutationRef<DeleteTimeSlotData, DeleteTimeSlotVariables>;
+}
+export const deleteTimeSlotRef: DeleteTimeSlotRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the deleteTimeSlotRef:
+```typescript
+const name = deleteTimeSlotRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `DeleteTimeSlot` mutation requires an argument of type `DeleteTimeSlotVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface DeleteTimeSlotVariables {
+  timeSlotId: string;
+}
+```
+### Return Type
+Recall that executing the `DeleteTimeSlot` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `DeleteTimeSlotData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface DeleteTimeSlotData {
+  timeSlot_delete?: TimeSlot_Key | null;
+}
+```
+### Using `DeleteTimeSlot`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, deleteTimeSlot, DeleteTimeSlotVariables } from '@firebasegen/adnlab-connector';
+
+// The `DeleteTimeSlot` mutation requires an argument of type `DeleteTimeSlotVariables`:
+const deleteTimeSlotVars: DeleteTimeSlotVariables = {
+  timeSlotId: ..., 
+};
+
+// Call the `deleteTimeSlot()` function to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await deleteTimeSlot(deleteTimeSlotVars);
+// Variables can be defined inline as well.
+const { data } = await deleteTimeSlot({ timeSlotId: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await deleteTimeSlot(dataConnect, deleteTimeSlotVars);
+
+console.log(data.timeSlot_delete);
+
+// Or, you can use the `Promise` API.
+deleteTimeSlot(deleteTimeSlotVars).then((response) => {
+  const data = response.data;
+  console.log(data.timeSlot_delete);
+});
+```
+
+### Using `DeleteTimeSlot`'s `MutationRef` function
+
+```typescript
+import { getDataConnect, executeMutation } from 'firebase/data-connect';
+import { connectorConfig, deleteTimeSlotRef, DeleteTimeSlotVariables } from '@firebasegen/adnlab-connector';
+
+// The `DeleteTimeSlot` mutation requires an argument of type `DeleteTimeSlotVariables`:
+const deleteTimeSlotVars: DeleteTimeSlotVariables = {
+  timeSlotId: ..., 
+};
+
+// Call the `deleteTimeSlotRef()` function to get a reference to the mutation.
+const ref = deleteTimeSlotRef(deleteTimeSlotVars);
+// Variables can be defined inline as well.
+const ref = deleteTimeSlotRef({ timeSlotId: ..., });
+
+// You can also pass in a `DataConnect` instance to the `MutationRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = deleteTimeSlotRef(dataConnect, deleteTimeSlotVars);
+
+// Call `executeMutation()` on the reference to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeMutation(ref);
+
+console.log(data.timeSlot_delete);
+
+// Or, you can use the `Promise` API.
+executeMutation(ref).then((response) => {
+  const data = response.data;
+  console.log(data.timeSlot_delete);
+});
+```
+
+## DeleteBooking
+You can execute the `DeleteBooking` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+deleteBooking(vars: DeleteBookingVariables): MutationPromise<DeleteBookingData, DeleteBookingVariables>;
+
+interface DeleteBookingRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: DeleteBookingVariables): MutationRef<DeleteBookingData, DeleteBookingVariables>;
+}
+export const deleteBookingRef: DeleteBookingRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
+```typescript
+deleteBooking(dc: DataConnect, vars: DeleteBookingVariables): MutationPromise<DeleteBookingData, DeleteBookingVariables>;
+
+interface DeleteBookingRef {
+  ...
+  (dc: DataConnect, vars: DeleteBookingVariables): MutationRef<DeleteBookingData, DeleteBookingVariables>;
+}
+export const deleteBookingRef: DeleteBookingRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the deleteBookingRef:
+```typescript
+const name = deleteBookingRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `DeleteBooking` mutation requires an argument of type `DeleteBookingVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface DeleteBookingVariables {
+  bookingId: string;
+}
+```
+### Return Type
+Recall that executing the `DeleteBooking` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `DeleteBookingData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface DeleteBookingData {
+  booking_delete?: Booking_Key | null;
+}
+```
+### Using `DeleteBooking`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, deleteBooking, DeleteBookingVariables } from '@firebasegen/adnlab-connector';
+
+// The `DeleteBooking` mutation requires an argument of type `DeleteBookingVariables`:
+const deleteBookingVars: DeleteBookingVariables = {
+  bookingId: ..., 
+};
+
+// Call the `deleteBooking()` function to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await deleteBooking(deleteBookingVars);
+// Variables can be defined inline as well.
+const { data } = await deleteBooking({ bookingId: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await deleteBooking(dataConnect, deleteBookingVars);
+
+console.log(data.booking_delete);
+
+// Or, you can use the `Promise` API.
+deleteBooking(deleteBookingVars).then((response) => {
+  const data = response.data;
+  console.log(data.booking_delete);
+});
+```
+
+### Using `DeleteBooking`'s `MutationRef` function
+
+```typescript
+import { getDataConnect, executeMutation } from 'firebase/data-connect';
+import { connectorConfig, deleteBookingRef, DeleteBookingVariables } from '@firebasegen/adnlab-connector';
+
+// The `DeleteBooking` mutation requires an argument of type `DeleteBookingVariables`:
+const deleteBookingVars: DeleteBookingVariables = {
+  bookingId: ..., 
+};
+
+// Call the `deleteBookingRef()` function to get a reference to the mutation.
+const ref = deleteBookingRef(deleteBookingVars);
+// Variables can be defined inline as well.
+const ref = deleteBookingRef({ bookingId: ..., });
+
+// You can also pass in a `DataConnect` instance to the `MutationRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = deleteBookingRef(dataConnect, deleteBookingVars);
+
+// Call `executeMutation()` on the reference to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeMutation(ref);
+
+console.log(data.booking_delete);
+
+// Or, you can use the `Promise` API.
+executeMutation(ref).then((response) => {
+  const data = response.data;
+  console.log(data.booking_delete);
+});
+```
+
+## DeleteStaff
+You can execute the `DeleteStaff` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+deleteStaff(vars: DeleteStaffVariables): MutationPromise<DeleteStaffData, DeleteStaffVariables>;
+
+interface DeleteStaffRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: DeleteStaffVariables): MutationRef<DeleteStaffData, DeleteStaffVariables>;
+}
+export const deleteStaffRef: DeleteStaffRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
+```typescript
+deleteStaff(dc: DataConnect, vars: DeleteStaffVariables): MutationPromise<DeleteStaffData, DeleteStaffVariables>;
+
+interface DeleteStaffRef {
+  ...
+  (dc: DataConnect, vars: DeleteStaffVariables): MutationRef<DeleteStaffData, DeleteStaffVariables>;
+}
+export const deleteStaffRef: DeleteStaffRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the deleteStaffRef:
+```typescript
+const name = deleteStaffRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `DeleteStaff` mutation requires an argument of type `DeleteStaffVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface DeleteStaffVariables {
+  staffId: string;
+}
+```
+### Return Type
+Recall that executing the `DeleteStaff` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `DeleteStaffData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface DeleteStaffData {
+  staff_delete?: Staff_Key | null;
+}
+```
+### Using `DeleteStaff`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, deleteStaff, DeleteStaffVariables } from '@firebasegen/adnlab-connector';
+
+// The `DeleteStaff` mutation requires an argument of type `DeleteStaffVariables`:
+const deleteStaffVars: DeleteStaffVariables = {
+  staffId: ..., 
+};
+
+// Call the `deleteStaff()` function to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await deleteStaff(deleteStaffVars);
+// Variables can be defined inline as well.
+const { data } = await deleteStaff({ staffId: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await deleteStaff(dataConnect, deleteStaffVars);
+
+console.log(data.staff_delete);
+
+// Or, you can use the `Promise` API.
+deleteStaff(deleteStaffVars).then((response) => {
+  const data = response.data;
+  console.log(data.staff_delete);
+});
+```
+
+### Using `DeleteStaff`'s `MutationRef` function
+
+```typescript
+import { getDataConnect, executeMutation } from 'firebase/data-connect';
+import { connectorConfig, deleteStaffRef, DeleteStaffVariables } from '@firebasegen/adnlab-connector';
+
+// The `DeleteStaff` mutation requires an argument of type `DeleteStaffVariables`:
+const deleteStaffVars: DeleteStaffVariables = {
+  staffId: ..., 
+};
+
+// Call the `deleteStaffRef()` function to get a reference to the mutation.
+const ref = deleteStaffRef(deleteStaffVars);
+// Variables can be defined inline as well.
+const ref = deleteStaffRef({ staffId: ..., });
+
+// You can also pass in a `DataConnect` instance to the `MutationRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = deleteStaffRef(dataConnect, deleteStaffVars);
+
+// Call `executeMutation()` on the reference to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeMutation(ref);
+
+console.log(data.staff_delete);
+
+// Or, you can use the `Promise` API.
+executeMutation(ref).then((response) => {
+  const data = response.data;
+  console.log(data.staff_delete);
+});
+```
+
+## DeleteManager
+You can execute the `DeleteManager` mutation using the following action shortcut function, or by calling `executeMutation()` after calling the following `MutationRef` function, both of which are defined in [dataconnect/index.d.ts](./index.d.ts):
+```typescript
+deleteManager(vars: DeleteManagerVariables): MutationPromise<DeleteManagerData, DeleteManagerVariables>;
+
+interface DeleteManagerRef {
+  ...
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: DeleteManagerVariables): MutationRef<DeleteManagerData, DeleteManagerVariables>;
+}
+export const deleteManagerRef: DeleteManagerRef;
+```
+You can also pass in a `DataConnect` instance to the action shortcut function or `MutationRef` function.
+```typescript
+deleteManager(dc: DataConnect, vars: DeleteManagerVariables): MutationPromise<DeleteManagerData, DeleteManagerVariables>;
+
+interface DeleteManagerRef {
+  ...
+  (dc: DataConnect, vars: DeleteManagerVariables): MutationRef<DeleteManagerData, DeleteManagerVariables>;
+}
+export const deleteManagerRef: DeleteManagerRef;
+```
+
+If you need the name of the operation without creating a ref, you can retrieve the operation name by calling the `operationName` property on the deleteManagerRef:
+```typescript
+const name = deleteManagerRef.operationName;
+console.log(name);
+```
+
+### Variables
+The `DeleteManager` mutation requires an argument of type `DeleteManagerVariables`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+
+```typescript
+export interface DeleteManagerVariables {
+  managerId: string;
+}
+```
+### Return Type
+Recall that executing the `DeleteManager` mutation returns a `MutationPromise` that resolves to an object with a `data` property.
+
+The `data` property is an object of type `DeleteManagerData`, which is defined in [dataconnect/index.d.ts](./index.d.ts). It has the following fields:
+```typescript
+export interface DeleteManagerData {
+  manager_delete?: Manager_Key | null;
+}
+```
+### Using `DeleteManager`'s action shortcut function
+
+```typescript
+import { getDataConnect } from 'firebase/data-connect';
+import { connectorConfig, deleteManager, DeleteManagerVariables } from '@firebasegen/adnlab-connector';
+
+// The `DeleteManager` mutation requires an argument of type `DeleteManagerVariables`:
+const deleteManagerVars: DeleteManagerVariables = {
+  managerId: ..., 
+};
+
+// Call the `deleteManager()` function to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await deleteManager(deleteManagerVars);
+// Variables can be defined inline as well.
+const { data } = await deleteManager({ managerId: ..., });
+
+// You can also pass in a `DataConnect` instance to the action shortcut function.
+const dataConnect = getDataConnect(connectorConfig);
+const { data } = await deleteManager(dataConnect, deleteManagerVars);
+
+console.log(data.manager_delete);
+
+// Or, you can use the `Promise` API.
+deleteManager(deleteManagerVars).then((response) => {
+  const data = response.data;
+  console.log(data.manager_delete);
+});
+```
+
+### Using `DeleteManager`'s `MutationRef` function
+
+```typescript
+import { getDataConnect, executeMutation } from 'firebase/data-connect';
+import { connectorConfig, deleteManagerRef, DeleteManagerVariables } from '@firebasegen/adnlab-connector';
+
+// The `DeleteManager` mutation requires an argument of type `DeleteManagerVariables`:
+const deleteManagerVars: DeleteManagerVariables = {
+  managerId: ..., 
+};
+
+// Call the `deleteManagerRef()` function to get a reference to the mutation.
+const ref = deleteManagerRef(deleteManagerVars);
+// Variables can be defined inline as well.
+const ref = deleteManagerRef({ managerId: ..., });
+
+// You can also pass in a `DataConnect` instance to the `MutationRef` function.
+const dataConnect = getDataConnect(connectorConfig);
+const ref = deleteManagerRef(dataConnect, deleteManagerVars);
+
+// Call `executeMutation()` on the reference to execute the mutation.
+// You can use the `await` keyword to wait for the promise to resolve.
+const { data } = await executeMutation(ref);
+
+console.log(data.manager_delete);
+
+// Or, you can use the `Promise` API.
+executeMutation(ref).then((response) => {
+  const data = response.data;
+  console.log(data.manager_delete);
 });
 ```
 

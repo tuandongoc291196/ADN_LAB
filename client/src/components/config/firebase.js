@@ -117,7 +117,7 @@ const signInWithGoogle = async () => {
           gender: "",
           avatar: user.photoURL || "",
           phone: "",
-          shippingAddress: "",
+          address: "",
           roleId: "0"
         });
       }
@@ -131,7 +131,6 @@ const signInWithGoogle = async () => {
     const { data: userData } = await getUser(dataConnect);
     localStorage.setItem("user_id", user.uid);
     localStorage.setItem("userData", JSON.stringify(userData.user));
-
     return { uid: user.uid, displayName: user.displayName };
   } catch (err) {
     console.error(err);
@@ -149,7 +148,10 @@ const logInWithEmailAndPassword = async (email, password) => {
     
     localStorage.setItem("user_id", user.uid);
     localStorage.setItem("userData", JSON.stringify(userData.user));
-    
+    await updateUserAccountStatus(dataConnect, {
+      userId: user.uid,
+      accountStatus: "active"
+    });
     return res;
   } catch (err) {
     console.error(err);
@@ -173,7 +175,7 @@ const registerWithEmailAndPassword = async (name, phone, email, password) => {
       gender: "",
       avatar: "",
       phone: phone,
-      shippingAddress: "",
+      address: "",
       roleId: "0"
     });
     
@@ -181,7 +183,11 @@ const registerWithEmailAndPassword = async (name, phone, email, password) => {
     const { data: userData } = await getUser(dataConnect);
     
     localStorage.setItem("user_id", user.uid);
-    localStorage.setItem("userData", JSON.stringify(userData.user));    
+    localStorage.setItem("userData", JSON.stringify(userData.user));
+    await updateUserAccountStatus(dataConnect, {
+      userId: user.uid,
+      accountStatus: "active"
+    });
     return res;
   } catch (err) {
     console.error(err);
@@ -202,10 +208,10 @@ const sendPasswordReset = async (email) => {
 
 const logout = async () => {
   const userId = localStorage.getItem("user_id");  
-  updateUserAccountStatus(dataConnect, {
-    userId: userId,
-    accountStatus: "inactive"
-  });
+  await updateUserAccountStatus(dataConnect, {
+      userId: userId,
+      accountStatus: "inactive"
+    });
   
   // Cleanup user online status
   await cleanupUserStatus(userId);
