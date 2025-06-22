@@ -44,6 +44,25 @@ export interface AssignTestResultManagerVariables {
   managerId: string;
 }
 
+export interface AssignTestResultStaffAndManagerData {
+  testResult_update?: TestResult_Key | null;
+}
+
+export interface AssignTestResultStaffAndManagerVariables {
+  resultId: string;
+  staffId: string;
+  managerId: string;
+}
+
+export interface AssignTestResultStaffData {
+  testResult_update?: TestResult_Key | null;
+}
+
+export interface AssignTestResultStaffVariables {
+  resultId: string;
+  staffId: string;
+}
+
 export interface Blog_Key {
   id: string;
   __typename?: 'Blog_Key';
@@ -136,6 +155,7 @@ export interface CreateOrUpdateUserData {
 }
 
 export interface CreateOrUpdateUserVariables {
+  id: string;
   fullname: string;
   gender?: string | null;
   avatar?: string | null;
@@ -280,7 +300,8 @@ export interface CreateTestResultVariables {
   id: string;
   bookingId: string;
   sampleId: string;
-  managerId?: string | null;
+  staffId: string;
+  managerId: string;
   testMethod: string;
   positive: boolean;
   accuracy: number;
@@ -479,7 +500,7 @@ export interface GetAllSamplesVariables {
   offset?: number | null;
 }
 
-export interface GetAvailableManagersData {
+export interface GetAvailableManagersForAssignmentData {
   staffs: ({
     id: string;
     user: {
@@ -487,14 +508,14 @@ export interface GetAvailableManagersData {
       fullname: string;
       email: string;
     } & User_Key;
-      slot?: number | null;
-      specification?: string[] | null;
-      certifications?: string[] | null;
       position: {
         id: string;
         name: string;
         description?: string | null;
       } & Position_Key;
+        slot?: number | null;
+        specification?: string[] | null;
+        certifications?: string[] | null;
         createdAt: TimestampString;
   } & Staff_Key)[];
 }
@@ -514,6 +535,26 @@ export interface GetAvailableStaffData {
         name: string;
         description?: string | null;
       } & Position_Key;
+        createdAt: TimestampString;
+  } & Staff_Key)[];
+}
+
+export interface GetAvailableStaffForTestingData {
+  staffs: ({
+    id: string;
+    user: {
+      id: string;
+      fullname: string;
+      email: string;
+    } & User_Key;
+      position: {
+        id: string;
+        name: string;
+        description?: string | null;
+      } & Position_Key;
+        slot?: number | null;
+        specification?: string[] | null;
+        certifications?: string[] | null;
         createdAt: TimestampString;
   } & Staff_Key)[];
 }
@@ -745,7 +786,7 @@ export interface GetBookingTestResultsData {
           title: string;
         };
       };
-        manager: {
+        staff: {
           user: {
             fullname: string;
           };
@@ -753,15 +794,23 @@ export interface GetBookingTestResultsData {
               name: string;
             };
         };
-          testMethod: string;
-          positive: boolean;
-          accuracy: number;
-          testType: string;
-          testDate?: DateString | null;
-          reportDate?: DateString | null;
-          status: string;
-          createdAt: TimestampString;
-          updatedAt?: TimestampString | null;
+          manager: {
+            user: {
+              fullname: string;
+            };
+              position: {
+                name: string;
+              };
+          };
+            testMethod: string;
+            positive: boolean;
+            accuracy: number;
+            testType: string;
+            testDate?: DateString | null;
+            reportDate?: DateString | null;
+            status: string;
+            createdAt: TimestampString;
+            updatedAt?: TimestampString | null;
   } & TestResult_Key)[];
 }
 
@@ -830,7 +879,7 @@ export interface GetManagerTestResultsData {
           name: string;
         };
       };
-        manager: {
+        staff: {
           user: {
             fullname: string;
           };
@@ -838,14 +887,22 @@ export interface GetManagerTestResultsData {
               name: string;
             };
         };
-          testMethod: string;
-          positive: boolean;
-          accuracy: number;
-          testType: string;
-          testDate?: DateString | null;
-          reportDate?: DateString | null;
-          status: string;
-          createdAt: TimestampString;
+          manager: {
+            user: {
+              fullname: string;
+            };
+              position: {
+                name: string;
+              };
+          };
+            testMethod: string;
+            positive: boolean;
+            accuracy: number;
+            testType: string;
+            testDate?: DateString | null;
+            reportDate?: DateString | null;
+            status: string;
+            createdAt: TimestampString;
   } & TestResult_Key)[];
 }
 
@@ -960,6 +1017,10 @@ export interface GetMyBlogsData {
   } & Blog_Key)[];
 }
 
+export interface GetMyBlogsVariables {
+  userId: string;
+}
+
 export interface GetMyBookingsData {
   bookings: ({
     id: string;
@@ -993,6 +1054,10 @@ export interface GetMyBookingsData {
   } & Booking_Key)[];
 }
 
+export interface GetMyBookingsVariables {
+  userId: string;
+}
+
 export interface GetMyNotificationsData {
   notifications: ({
     id: string;
@@ -1007,6 +1072,10 @@ export interface GetMyNotificationsData {
       type: string;
       createdAt: TimestampString;
   } & Notification_Key)[];
+}
+
+export interface GetMyNotificationsVariables {
+  userId: string;
 }
 
 export interface GetNotificationByIdData {
@@ -1187,13 +1256,29 @@ export interface GetPositiveTestResultsData {
           name: string;
         };
       };
-        testMethod: string;
-        accuracy: number;
-        testType: string;
-        testDate?: DateString | null;
-        reportDate?: DateString | null;
-        status: string;
-        createdAt: TimestampString;
+        staff: {
+          user: {
+            fullname: string;
+          };
+            position: {
+              name: string;
+            };
+        };
+          manager: {
+            user: {
+              fullname: string;
+            };
+              position: {
+                name: string;
+              };
+          };
+            testMethod: string;
+            accuracy: number;
+            testType: string;
+            testDate?: DateString | null;
+            reportDate?: DateString | null;
+            status: string;
+            createdAt: TimestampString;
   } & TestResult_Key)[];
 }
 
@@ -1768,6 +1853,44 @@ export interface GetStaffMembersData {
   } & Staff_Key)[];
 }
 
+export interface GetStaffPerformanceByPositionData {
+  positions: ({
+    id: string;
+    name: string;
+    description?: string | null;
+  } & Position_Key)[];
+    staffs: ({
+      id: string;
+      user: {
+        fullname: string;
+      };
+        position: {
+          id: string;
+          name: string;
+        } & Position_Key;
+          slot?: number | null;
+    } & Staff_Key)[];
+      bookings: ({
+        staffId: string;
+        staff: {
+          position: {
+            name: string;
+          };
+        };
+          createdAt: TimestampString;
+      })[];
+        testResults: ({
+          staffId: string;
+          staff: {
+            position: {
+              name: string;
+            };
+          };
+            status: string;
+            createdAt: TimestampString;
+        })[];
+}
+
 export interface GetStaffSamplesData {
   samples: ({
     id: string;
@@ -1796,6 +1919,53 @@ export interface GetStaffSamplesData {
 }
 
 export interface GetStaffSamplesVariables {
+  staffId: string;
+}
+
+export interface GetStaffTestResultsData {
+  testResults: ({
+    id: string;
+    booking: {
+      user: {
+        fullname: string;
+      };
+        service: {
+          title: string;
+        };
+    };
+      sample: {
+        participant?: {
+          name: string;
+        };
+      };
+        staff: {
+          user: {
+            fullname: string;
+          };
+            position: {
+              name: string;
+            };
+        };
+          manager: {
+            user: {
+              fullname: string;
+            };
+              position: {
+                name: string;
+              };
+          };
+            testMethod: string;
+            positive: boolean;
+            accuracy: number;
+            testType: string;
+            testDate?: DateString | null;
+            reportDate?: DateString | null;
+            status: string;
+            createdAt: TimestampString;
+  } & TestResult_Key)[];
+}
+
+export interface GetStaffTestResultsVariables {
   staffId: string;
 }
 
@@ -1848,7 +2018,7 @@ export interface GetTestResultByIdData {
           gender: string;
         };
       } & Sample_Key;
-        manager: {
+        staff: {
           user: {
             fullname: string;
           };
@@ -1856,22 +2026,51 @@ export interface GetTestResultByIdData {
               name: string;
             };
         };
-          testMethod: string;
-          positive: boolean;
-          accuracy: number;
-          testType: string;
-          testDate?: DateString | null;
-          reportDate?: DateString | null;
-          resultData?: string | null;
-          resultNotes?: string | null;
-          status: string;
-          createdAt: TimestampString;
-          updatedAt?: TimestampString | null;
+          manager: {
+            user: {
+              fullname: string;
+            };
+              position: {
+                name: string;
+              };
+          };
+            testMethod: string;
+            positive: boolean;
+            accuracy: number;
+            testType: string;
+            testDate?: DateString | null;
+            reportDate?: DateString | null;
+            resultData?: string | null;
+            resultNotes?: string | null;
+            status: string;
+            createdAt: TimestampString;
+            updatedAt?: TimestampString | null;
   } & TestResult_Key;
 }
 
 export interface GetTestResultByIdVariables {
   resultId: string;
+}
+
+export interface GetTestResultStatsByPositionData {
+  testResults: ({
+    staffId: string;
+    staff: {
+      position: {
+        name: string;
+      };
+    };
+      managerId: string;
+      manager: {
+        position: {
+          name: string;
+        };
+      };
+        status: string;
+        positive: boolean;
+        testType: string;
+        createdAt: TimestampString;
+  })[];
 }
 
 export interface GetTestResultsByStatusData {
@@ -1890,7 +2089,7 @@ export interface GetTestResultsByStatusData {
           name: string;
         };
       };
-        manager: {
+        staff: {
           user: {
             fullname: string;
           };
@@ -1898,14 +2097,22 @@ export interface GetTestResultsByStatusData {
               name: string;
             };
         };
-          testMethod: string;
-          positive: boolean;
-          accuracy: number;
-          testType: string;
-          testDate?: DateString | null;
-          reportDate?: DateString | null;
-          status: string;
-          createdAt: TimestampString;
+          manager: {
+            user: {
+              fullname: string;
+            };
+              position: {
+                name: string;
+              };
+          };
+            testMethod: string;
+            positive: boolean;
+            accuracy: number;
+            testType: string;
+            testDate?: DateString | null;
+            reportDate?: DateString | null;
+            status: string;
+            createdAt: TimestampString;
   } & TestResult_Key)[];
 }
 
@@ -1924,12 +2131,28 @@ export interface GetTestResultsByTypeData {
           title: string;
         };
     };
-      testMethod: string;
-      positive: boolean;
-      accuracy: number;
-      testDate?: DateString | null;
-      status: string;
-      createdAt: TimestampString;
+      staff: {
+        user: {
+          fullname: string;
+        };
+          position: {
+            name: string;
+          };
+      };
+        manager: {
+          user: {
+            fullname: string;
+          };
+            position: {
+              name: string;
+            };
+        };
+          testMethod: string;
+          positive: boolean;
+          accuracy: number;
+          testDate?: DateString | null;
+          status: string;
+          createdAt: TimestampString;
   } & TestResult_Key)[];
 }
 
@@ -2034,6 +2257,32 @@ export interface GetUserBookingsVariables {
   userId: string;
 }
 
+export interface GetUserByEmailData {
+  users: ({
+    id: string;
+    fullname: string;
+    gender?: string | null;
+    avatar?: string | null;
+    email: string;
+    accountStatus: string;
+    authProvider: string;
+    phone?: string | null;
+    address?: string | null;
+    roleId: string;
+    role: {
+      id: string;
+      name: string;
+      description?: string | null;
+    } & Role_Key;
+      createdAt: TimestampString;
+      lastLogin?: TimestampString | null;
+  } & User_Key)[];
+}
+
+export interface GetUserByEmailVariables {
+  email: string;
+}
+
 export interface GetUserByIdData {
   user?: {
     id: string;
@@ -2127,18 +2376,38 @@ export interface GetUserTestResultsData {
         title: string;
       };
     };
-      testMethod: string;
-      positive: boolean;
-      accuracy: number;
-      testType: string;
-      testDate?: DateString | null;
-      reportDate?: DateString | null;
-      status: string;
-      createdAt: TimestampString;
+      staff: {
+        user: {
+          fullname: string;
+        };
+          position: {
+            name: string;
+          };
+      };
+        manager: {
+          user: {
+            fullname: string;
+          };
+            position: {
+              name: string;
+            };
+        };
+          testMethod: string;
+          positive: boolean;
+          accuracy: number;
+          testType: string;
+          testDate?: DateString | null;
+          reportDate?: DateString | null;
+          status: string;
+          createdAt: TimestampString;
   } & TestResult_Key)[];
 }
 
 export interface GetUserTestResultsVariables {
+  userId: string;
+}
+
+export interface GetUserVariables {
   userId: string;
 }
 
@@ -2478,6 +2747,7 @@ export interface UpdateUserProfileData {
 }
 
 export interface UpdateUserProfileVariables {
+  userId: string;
   fullname?: string | null;
   gender?: string | null;
   avatar?: string | null;
@@ -2498,6 +2768,1002 @@ export interface User_Key {
   id: string;
   __typename?: 'User_Key';
 }
+
+interface GetRolesRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetRolesData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetRolesData, undefined>;
+  operationName: string;
+}
+export const getRolesRef: GetRolesRef;
+
+export function getRoles(): QueryPromise<GetRolesData, undefined>;
+export function getRoles(dc: DataConnect): QueryPromise<GetRolesData, undefined>;
+
+interface GetRoleByIdRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetRoleByIdVariables): QueryRef<GetRoleByIdData, GetRoleByIdVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetRoleByIdVariables): QueryRef<GetRoleByIdData, GetRoleByIdVariables>;
+  operationName: string;
+}
+export const getRoleByIdRef: GetRoleByIdRef;
+
+export function getRoleById(vars: GetRoleByIdVariables): QueryPromise<GetRoleByIdData, GetRoleByIdVariables>;
+export function getRoleById(dc: DataConnect, vars: GetRoleByIdVariables): QueryPromise<GetRoleByIdData, GetRoleByIdVariables>;
+
+interface GetRoleByNameRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetRoleByNameVariables): QueryRef<GetRoleByNameData, GetRoleByNameVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetRoleByNameVariables): QueryRef<GetRoleByNameData, GetRoleByNameVariables>;
+  operationName: string;
+}
+export const getRoleByNameRef: GetRoleByNameRef;
+
+export function getRoleByName(vars: GetRoleByNameVariables): QueryPromise<GetRoleByNameData, GetRoleByNameVariables>;
+export function getRoleByName(dc: DataConnect, vars: GetRoleByNameVariables): QueryPromise<GetRoleByNameData, GetRoleByNameVariables>;
+
+interface GetUserRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetUserVariables): QueryRef<GetUserData, GetUserVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetUserVariables): QueryRef<GetUserData, GetUserVariables>;
+  operationName: string;
+}
+export const getUserRef: GetUserRef;
+
+export function getUser(vars: GetUserVariables): QueryPromise<GetUserData, GetUserVariables>;
+export function getUser(dc: DataConnect, vars: GetUserVariables): QueryPromise<GetUserData, GetUserVariables>;
+
+interface GetUserByEmailRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetUserByEmailVariables): QueryRef<GetUserByEmailData, GetUserByEmailVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetUserByEmailVariables): QueryRef<GetUserByEmailData, GetUserByEmailVariables>;
+  operationName: string;
+}
+export const getUserByEmailRef: GetUserByEmailRef;
+
+export function getUserByEmail(vars: GetUserByEmailVariables): QueryPromise<GetUserByEmailData, GetUserByEmailVariables>;
+export function getUserByEmail(dc: DataConnect, vars: GetUserByEmailVariables): QueryPromise<GetUserByEmailData, GetUserByEmailVariables>;
+
+interface GetUserByIdRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetUserByIdVariables): QueryRef<GetUserByIdData, GetUserByIdVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetUserByIdVariables): QueryRef<GetUserByIdData, GetUserByIdVariables>;
+  operationName: string;
+}
+export const getUserByIdRef: GetUserByIdRef;
+
+export function getUserById(vars: GetUserByIdVariables): QueryPromise<GetUserByIdData, GetUserByIdVariables>;
+export function getUserById(dc: DataConnect, vars: GetUserByIdVariables): QueryPromise<GetUserByIdData, GetUserByIdVariables>;
+
+interface GetUsersRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars?: GetUsersVariables): QueryRef<GetUsersData, GetUsersVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars?: GetUsersVariables): QueryRef<GetUsersData, GetUsersVariables>;
+  operationName: string;
+}
+export const getUsersRef: GetUsersRef;
+
+export function getUsers(vars?: GetUsersVariables): QueryPromise<GetUsersData, GetUsersVariables>;
+export function getUsers(dc: DataConnect, vars?: GetUsersVariables): QueryPromise<GetUsersData, GetUsersVariables>;
+
+interface GetUsersByRoleRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetUsersByRoleVariables): QueryRef<GetUsersByRoleData, GetUsersByRoleVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetUsersByRoleVariables): QueryRef<GetUsersByRoleData, GetUsersByRoleVariables>;
+  operationName: string;
+}
+export const getUsersByRoleRef: GetUsersByRoleRef;
+
+export function getUsersByRole(vars: GetUsersByRoleVariables): QueryPromise<GetUsersByRoleData, GetUsersByRoleVariables>;
+export function getUsersByRole(dc: DataConnect, vars: GetUsersByRoleVariables): QueryPromise<GetUsersByRoleData, GetUsersByRoleVariables>;
+
+interface GetStaffMembersRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetStaffMembersData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetStaffMembersData, undefined>;
+  operationName: string;
+}
+export const getStaffMembersRef: GetStaffMembersRef;
+
+export function getStaffMembers(): QueryPromise<GetStaffMembersData, undefined>;
+export function getStaffMembers(dc: DataConnect): QueryPromise<GetStaffMembersData, undefined>;
+
+interface GetStaffByIdRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetStaffByIdVariables): QueryRef<GetStaffByIdData, GetStaffByIdVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetStaffByIdVariables): QueryRef<GetStaffByIdData, GetStaffByIdVariables>;
+  operationName: string;
+}
+export const getStaffByIdRef: GetStaffByIdRef;
+
+export function getStaffById(vars: GetStaffByIdVariables): QueryPromise<GetStaffByIdData, GetStaffByIdVariables>;
+export function getStaffById(dc: DataConnect, vars: GetStaffByIdVariables): QueryPromise<GetStaffByIdData, GetStaffByIdVariables>;
+
+interface GetPositionsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetPositionsData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetPositionsData, undefined>;
+  operationName: string;
+}
+export const getPositionsRef: GetPositionsRef;
+
+export function getPositions(): QueryPromise<GetPositionsData, undefined>;
+export function getPositions(dc: DataConnect): QueryPromise<GetPositionsData, undefined>;
+
+interface GetPositionByIdRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetPositionByIdVariables): QueryRef<GetPositionByIdData, GetPositionByIdVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetPositionByIdVariables): QueryRef<GetPositionByIdData, GetPositionByIdVariables>;
+  operationName: string;
+}
+export const getPositionByIdRef: GetPositionByIdRef;
+
+export function getPositionById(vars: GetPositionByIdVariables): QueryPromise<GetPositionByIdData, GetPositionByIdVariables>;
+export function getPositionById(dc: DataConnect, vars: GetPositionByIdVariables): QueryPromise<GetPositionByIdData, GetPositionByIdVariables>;
+
+interface GetStaffByPositionRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetStaffByPositionVariables): QueryRef<GetStaffByPositionData, GetStaffByPositionVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetStaffByPositionVariables): QueryRef<GetStaffByPositionData, GetStaffByPositionVariables>;
+  operationName: string;
+}
+export const getStaffByPositionRef: GetStaffByPositionRef;
+
+export function getStaffByPosition(vars: GetStaffByPositionVariables): QueryPromise<GetStaffByPositionData, GetStaffByPositionVariables>;
+export function getStaffByPosition(dc: DataConnect, vars: GetStaffByPositionVariables): QueryPromise<GetStaffByPositionData, GetStaffByPositionVariables>;
+
+interface GetManagersRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetManagersData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetManagersData, undefined>;
+  operationName: string;
+}
+export const getManagersRef: GetManagersRef;
+
+export function getManagers(): QueryPromise<GetManagersData, undefined>;
+export function getManagers(dc: DataConnect): QueryPromise<GetManagersData, undefined>;
+
+interface GetStaffCountByPositionRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetStaffCountByPositionData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetStaffCountByPositionData, undefined>;
+  operationName: string;
+}
+export const getStaffCountByPositionRef: GetStaffCountByPositionRef;
+
+export function getStaffCountByPosition(): QueryPromise<GetStaffCountByPositionData, undefined>;
+export function getStaffCountByPosition(dc: DataConnect): QueryPromise<GetStaffCountByPositionData, undefined>;
+
+interface GetStaffByPositionIdRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetStaffByPositionIdVariables): QueryRef<GetStaffByPositionIdData, GetStaffByPositionIdVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetStaffByPositionIdVariables): QueryRef<GetStaffByPositionIdData, GetStaffByPositionIdVariables>;
+  operationName: string;
+}
+export const getStaffByPositionIdRef: GetStaffByPositionIdRef;
+
+export function getStaffByPositionId(vars: GetStaffByPositionIdVariables): QueryPromise<GetStaffByPositionIdData, GetStaffByPositionIdVariables>;
+export function getStaffByPositionId(dc: DataConnect, vars: GetStaffByPositionIdVariables): QueryPromise<GetStaffByPositionIdData, GetStaffByPositionIdVariables>;
+
+interface GetPositionWithStaffCountRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetPositionWithStaffCountVariables): QueryRef<GetPositionWithStaffCountData, GetPositionWithStaffCountVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetPositionWithStaffCountVariables): QueryRef<GetPositionWithStaffCountData, GetPositionWithStaffCountVariables>;
+  operationName: string;
+}
+export const getPositionWithStaffCountRef: GetPositionWithStaffCountRef;
+
+export function getPositionWithStaffCount(vars: GetPositionWithStaffCountVariables): QueryPromise<GetPositionWithStaffCountData, GetPositionWithStaffCountVariables>;
+export function getPositionWithStaffCount(dc: DataConnect, vars: GetPositionWithStaffCountVariables): QueryPromise<GetPositionWithStaffCountData, GetPositionWithStaffCountVariables>;
+
+interface GetServiceCategoriesRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetServiceCategoriesData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetServiceCategoriesData, undefined>;
+  operationName: string;
+}
+export const getServiceCategoriesRef: GetServiceCategoriesRef;
+
+export function getServiceCategories(): QueryPromise<GetServiceCategoriesData, undefined>;
+export function getServiceCategories(dc: DataConnect): QueryPromise<GetServiceCategoriesData, undefined>;
+
+interface GetServiceCategoryByIdRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetServiceCategoryByIdVariables): QueryRef<GetServiceCategoryByIdData, GetServiceCategoryByIdVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetServiceCategoryByIdVariables): QueryRef<GetServiceCategoryByIdData, GetServiceCategoryByIdVariables>;
+  operationName: string;
+}
+export const getServiceCategoryByIdRef: GetServiceCategoryByIdRef;
+
+export function getServiceCategoryById(vars: GetServiceCategoryByIdVariables): QueryPromise<GetServiceCategoryByIdData, GetServiceCategoryByIdVariables>;
+export function getServiceCategoryById(dc: DataConnect, vars: GetServiceCategoryByIdVariables): QueryPromise<GetServiceCategoryByIdData, GetServiceCategoryByIdVariables>;
+
+interface GetMethodsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetMethodsData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetMethodsData, undefined>;
+  operationName: string;
+}
+export const getMethodsRef: GetMethodsRef;
+
+export function getMethods(): QueryPromise<GetMethodsData, undefined>;
+export function getMethods(dc: DataConnect): QueryPromise<GetMethodsData, undefined>;
+
+interface GetMethodByIdRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetMethodByIdVariables): QueryRef<GetMethodByIdData, GetMethodByIdVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetMethodByIdVariables): QueryRef<GetMethodByIdData, GetMethodByIdVariables>;
+  operationName: string;
+}
+export const getMethodByIdRef: GetMethodByIdRef;
+
+export function getMethodById(vars: GetMethodByIdVariables): QueryPromise<GetMethodByIdData, GetMethodByIdVariables>;
+export function getMethodById(dc: DataConnect, vars: GetMethodByIdVariables): QueryPromise<GetMethodByIdData, GetMethodByIdVariables>;
+
+interface GetServicesRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetServicesData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetServicesData, undefined>;
+  operationName: string;
+}
+export const getServicesRef: GetServicesRef;
+
+export function getServices(): QueryPromise<GetServicesData, undefined>;
+export function getServices(dc: DataConnect): QueryPromise<GetServicesData, undefined>;
+
+interface GetServiceByIdRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetServiceByIdVariables): QueryRef<GetServiceByIdData, GetServiceByIdVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetServiceByIdVariables): QueryRef<GetServiceByIdData, GetServiceByIdVariables>;
+  operationName: string;
+}
+export const getServiceByIdRef: GetServiceByIdRef;
+
+export function getServiceById(vars: GetServiceByIdVariables): QueryPromise<GetServiceByIdData, GetServiceByIdVariables>;
+export function getServiceById(dc: DataConnect, vars: GetServiceByIdVariables): QueryPromise<GetServiceByIdData, GetServiceByIdVariables>;
+
+interface GetServicesByCategoryRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetServicesByCategoryVariables): QueryRef<GetServicesByCategoryData, GetServicesByCategoryVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetServicesByCategoryVariables): QueryRef<GetServicesByCategoryData, GetServicesByCategoryVariables>;
+  operationName: string;
+}
+export const getServicesByCategoryRef: GetServicesByCategoryRef;
+
+export function getServicesByCategory(vars: GetServicesByCategoryVariables): QueryPromise<GetServicesByCategoryData, GetServicesByCategoryVariables>;
+export function getServicesByCategory(dc: DataConnect, vars: GetServicesByCategoryVariables): QueryPromise<GetServicesByCategoryData, GetServicesByCategoryVariables>;
+
+interface GetFeaturedServicesRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetFeaturedServicesData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetFeaturedServicesData, undefined>;
+  operationName: string;
+}
+export const getFeaturedServicesRef: GetFeaturedServicesRef;
+
+export function getFeaturedServices(): QueryPromise<GetFeaturedServicesData, undefined>;
+export function getFeaturedServices(dc: DataConnect): QueryPromise<GetFeaturedServicesData, undefined>;
+
+interface GetServiceMethodsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetServiceMethodsVariables): QueryRef<GetServiceMethodsData, GetServiceMethodsVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetServiceMethodsVariables): QueryRef<GetServiceMethodsData, GetServiceMethodsVariables>;
+  operationName: string;
+}
+export const getServiceMethodsRef: GetServiceMethodsRef;
+
+export function getServiceMethods(vars: GetServiceMethodsVariables): QueryPromise<GetServiceMethodsData, GetServiceMethodsVariables>;
+export function getServiceMethods(dc: DataConnect, vars: GetServiceMethodsVariables): QueryPromise<GetServiceMethodsData, GetServiceMethodsVariables>;
+
+interface GetMethodsForServiceRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetMethodsForServiceVariables): QueryRef<GetMethodsForServiceData, GetMethodsForServiceVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetMethodsForServiceVariables): QueryRef<GetMethodsForServiceData, GetMethodsForServiceVariables>;
+  operationName: string;
+}
+export const getMethodsForServiceRef: GetMethodsForServiceRef;
+
+export function getMethodsForService(vars: GetMethodsForServiceVariables): QueryPromise<GetMethodsForServiceData, GetMethodsForServiceVariables>;
+export function getMethodsForService(dc: DataConnect, vars: GetMethodsForServiceVariables): QueryPromise<GetMethodsForServiceData, GetMethodsForServiceVariables>;
+
+interface GetServicesForMethodRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetServicesForMethodVariables): QueryRef<GetServicesForMethodData, GetServicesForMethodVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetServicesForMethodVariables): QueryRef<GetServicesForMethodData, GetServicesForMethodVariables>;
+  operationName: string;
+}
+export const getServicesForMethodRef: GetServicesForMethodRef;
+
+export function getServicesForMethod(vars: GetServicesForMethodVariables): QueryPromise<GetServicesForMethodData, GetServicesForMethodVariables>;
+export function getServicesForMethod(dc: DataConnect, vars: GetServicesForMethodVariables): QueryPromise<GetServicesForMethodData, GetServicesForMethodVariables>;
+
+interface GetServiceMethodRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetServiceMethodVariables): QueryRef<GetServiceMethodData, GetServiceMethodVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetServiceMethodVariables): QueryRef<GetServiceMethodData, GetServiceMethodVariables>;
+  operationName: string;
+}
+export const getServiceMethodRef: GetServiceMethodRef;
+
+export function getServiceMethod(vars: GetServiceMethodVariables): QueryPromise<GetServiceMethodData, GetServiceMethodVariables>;
+export function getServiceMethod(dc: DataConnect, vars: GetServiceMethodVariables): QueryPromise<GetServiceMethodData, GetServiceMethodVariables>;
+
+interface GetServiceWithMethodsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetServiceWithMethodsVariables): QueryRef<GetServiceWithMethodsData, GetServiceWithMethodsVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetServiceWithMethodsVariables): QueryRef<GetServiceWithMethodsData, GetServiceWithMethodsVariables>;
+  operationName: string;
+}
+export const getServiceWithMethodsRef: GetServiceWithMethodsRef;
+
+export function getServiceWithMethods(vars: GetServiceWithMethodsVariables): QueryPromise<GetServiceWithMethodsData, GetServiceWithMethodsVariables>;
+export function getServiceWithMethods(dc: DataConnect, vars: GetServiceWithMethodsVariables): QueryPromise<GetServiceWithMethodsData, GetServiceWithMethodsVariables>;
+
+interface GetTimeSlotsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetTimeSlotsVariables): QueryRef<GetTimeSlotsData, GetTimeSlotsVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetTimeSlotsVariables): QueryRef<GetTimeSlotsData, GetTimeSlotsVariables>;
+  operationName: string;
+}
+export const getTimeSlotsRef: GetTimeSlotsRef;
+
+export function getTimeSlots(vars: GetTimeSlotsVariables): QueryPromise<GetTimeSlotsData, GetTimeSlotsVariables>;
+export function getTimeSlots(dc: DataConnect, vars: GetTimeSlotsVariables): QueryPromise<GetTimeSlotsData, GetTimeSlotsVariables>;
+
+interface GetTimeSlotByIdRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetTimeSlotByIdVariables): QueryRef<GetTimeSlotByIdData, GetTimeSlotByIdVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetTimeSlotByIdVariables): QueryRef<GetTimeSlotByIdData, GetTimeSlotByIdVariables>;
+  operationName: string;
+}
+export const getTimeSlotByIdRef: GetTimeSlotByIdRef;
+
+export function getTimeSlotById(vars: GetTimeSlotByIdVariables): QueryPromise<GetTimeSlotByIdData, GetTimeSlotByIdVariables>;
+export function getTimeSlotById(dc: DataConnect, vars: GetTimeSlotByIdVariables): QueryPromise<GetTimeSlotByIdData, GetTimeSlotByIdVariables>;
+
+interface GetTimeSlotsInRangeRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetTimeSlotsInRangeVariables): QueryRef<GetTimeSlotsInRangeData, GetTimeSlotsInRangeVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetTimeSlotsInRangeVariables): QueryRef<GetTimeSlotsInRangeData, GetTimeSlotsInRangeVariables>;
+  operationName: string;
+}
+export const getTimeSlotsInRangeRef: GetTimeSlotsInRangeRef;
+
+export function getTimeSlotsInRange(vars: GetTimeSlotsInRangeVariables): QueryPromise<GetTimeSlotsInRangeData, GetTimeSlotsInRangeVariables>;
+export function getTimeSlotsInRange(dc: DataConnect, vars: GetTimeSlotsInRangeVariables): QueryPromise<GetTimeSlotsInRangeData, GetTimeSlotsInRangeVariables>;
+
+interface GetUserBookingsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetUserBookingsVariables): QueryRef<GetUserBookingsData, GetUserBookingsVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetUserBookingsVariables): QueryRef<GetUserBookingsData, GetUserBookingsVariables>;
+  operationName: string;
+}
+export const getUserBookingsRef: GetUserBookingsRef;
+
+export function getUserBookings(vars: GetUserBookingsVariables): QueryPromise<GetUserBookingsData, GetUserBookingsVariables>;
+export function getUserBookings(dc: DataConnect, vars: GetUserBookingsVariables): QueryPromise<GetUserBookingsData, GetUserBookingsVariables>;
+
+interface GetMyBookingsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetMyBookingsVariables): QueryRef<GetMyBookingsData, GetMyBookingsVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetMyBookingsVariables): QueryRef<GetMyBookingsData, GetMyBookingsVariables>;
+  operationName: string;
+}
+export const getMyBookingsRef: GetMyBookingsRef;
+
+export function getMyBookings(vars: GetMyBookingsVariables): QueryPromise<GetMyBookingsData, GetMyBookingsVariables>;
+export function getMyBookings(dc: DataConnect, vars: GetMyBookingsVariables): QueryPromise<GetMyBookingsData, GetMyBookingsVariables>;
+
+interface GetBookingByIdRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetBookingByIdVariables): QueryRef<GetBookingByIdData, GetBookingByIdVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetBookingByIdVariables): QueryRef<GetBookingByIdData, GetBookingByIdVariables>;
+  operationName: string;
+}
+export const getBookingByIdRef: GetBookingByIdRef;
+
+export function getBookingById(vars: GetBookingByIdVariables): QueryPromise<GetBookingByIdData, GetBookingByIdVariables>;
+export function getBookingById(dc: DataConnect, vars: GetBookingByIdVariables): QueryPromise<GetBookingByIdData, GetBookingByIdVariables>;
+
+interface GetBookingHistoryRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetBookingHistoryVariables): QueryRef<GetBookingHistoryData, GetBookingHistoryVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetBookingHistoryVariables): QueryRef<GetBookingHistoryData, GetBookingHistoryVariables>;
+  operationName: string;
+}
+export const getBookingHistoryRef: GetBookingHistoryRef;
+
+export function getBookingHistory(vars: GetBookingHistoryVariables): QueryPromise<GetBookingHistoryData, GetBookingHistoryVariables>;
+export function getBookingHistory(dc: DataConnect, vars: GetBookingHistoryVariables): QueryPromise<GetBookingHistoryData, GetBookingHistoryVariables>;
+
+interface GetStaffBookingsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetStaffBookingsVariables): QueryRef<GetStaffBookingsData, GetStaffBookingsVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetStaffBookingsVariables): QueryRef<GetStaffBookingsData, GetStaffBookingsVariables>;
+  operationName: string;
+}
+export const getStaffBookingsRef: GetStaffBookingsRef;
+
+export function getStaffBookings(vars: GetStaffBookingsVariables): QueryPromise<GetStaffBookingsData, GetStaffBookingsVariables>;
+export function getStaffBookings(dc: DataConnect, vars: GetStaffBookingsVariables): QueryPromise<GetStaffBookingsData, GetStaffBookingsVariables>;
+
+interface GetBookingParticipantsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetBookingParticipantsVariables): QueryRef<GetBookingParticipantsData, GetBookingParticipantsVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetBookingParticipantsVariables): QueryRef<GetBookingParticipantsData, GetBookingParticipantsVariables>;
+  operationName: string;
+}
+export const getBookingParticipantsRef: GetBookingParticipantsRef;
+
+export function getBookingParticipants(vars: GetBookingParticipantsVariables): QueryPromise<GetBookingParticipantsData, GetBookingParticipantsVariables>;
+export function getBookingParticipants(dc: DataConnect, vars: GetBookingParticipantsVariables): QueryPromise<GetBookingParticipantsData, GetBookingParticipantsVariables>;
+
+interface GetParticipantByIdRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetParticipantByIdVariables): QueryRef<GetParticipantByIdData, GetParticipantByIdVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetParticipantByIdVariables): QueryRef<GetParticipantByIdData, GetParticipantByIdVariables>;
+  operationName: string;
+}
+export const getParticipantByIdRef: GetParticipantByIdRef;
+
+export function getParticipantById(vars: GetParticipantByIdVariables): QueryPromise<GetParticipantByIdData, GetParticipantByIdVariables>;
+export function getParticipantById(dc: DataConnect, vars: GetParticipantByIdVariables): QueryPromise<GetParticipantByIdData, GetParticipantByIdVariables>;
+
+interface GetBookingSamplesRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetBookingSamplesVariables): QueryRef<GetBookingSamplesData, GetBookingSamplesVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetBookingSamplesVariables): QueryRef<GetBookingSamplesData, GetBookingSamplesVariables>;
+  operationName: string;
+}
+export const getBookingSamplesRef: GetBookingSamplesRef;
+
+export function getBookingSamples(vars: GetBookingSamplesVariables): QueryPromise<GetBookingSamplesData, GetBookingSamplesVariables>;
+export function getBookingSamples(dc: DataConnect, vars: GetBookingSamplesVariables): QueryPromise<GetBookingSamplesData, GetBookingSamplesVariables>;
+
+interface GetSamplesByQualityRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetSamplesByQualityVariables): QueryRef<GetSamplesByQualityData, GetSamplesByQualityVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetSamplesByQualityVariables): QueryRef<GetSamplesByQualityData, GetSamplesByQualityVariables>;
+  operationName: string;
+}
+export const getSamplesByQualityRef: GetSamplesByQualityRef;
+
+export function getSamplesByQuality(vars: GetSamplesByQualityVariables): QueryPromise<GetSamplesByQualityData, GetSamplesByQualityVariables>;
+export function getSamplesByQuality(dc: DataConnect, vars: GetSamplesByQualityVariables): QueryPromise<GetSamplesByQualityData, GetSamplesByQualityVariables>;
+
+interface GetSampleByIdRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetSampleByIdVariables): QueryRef<GetSampleByIdData, GetSampleByIdVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetSampleByIdVariables): QueryRef<GetSampleByIdData, GetSampleByIdVariables>;
+  operationName: string;
+}
+export const getSampleByIdRef: GetSampleByIdRef;
+
+export function getSampleById(vars: GetSampleByIdVariables): QueryPromise<GetSampleByIdData, GetSampleByIdVariables>;
+export function getSampleById(dc: DataConnect, vars: GetSampleByIdVariables): QueryPromise<GetSampleByIdData, GetSampleByIdVariables>;
+
+interface GetStaffSamplesRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetStaffSamplesVariables): QueryRef<GetStaffSamplesData, GetStaffSamplesVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetStaffSamplesVariables): QueryRef<GetStaffSamplesData, GetStaffSamplesVariables>;
+  operationName: string;
+}
+export const getStaffSamplesRef: GetStaffSamplesRef;
+
+export function getStaffSamples(vars: GetStaffSamplesVariables): QueryPromise<GetStaffSamplesData, GetStaffSamplesVariables>;
+export function getStaffSamples(dc: DataConnect, vars: GetStaffSamplesVariables): QueryPromise<GetStaffSamplesData, GetStaffSamplesVariables>;
+
+interface GetParticipantSamplesRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetParticipantSamplesVariables): QueryRef<GetParticipantSamplesData, GetParticipantSamplesVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetParticipantSamplesVariables): QueryRef<GetParticipantSamplesData, GetParticipantSamplesVariables>;
+  operationName: string;
+}
+export const getParticipantSamplesRef: GetParticipantSamplesRef;
+
+export function getParticipantSamples(vars: GetParticipantSamplesVariables): QueryPromise<GetParticipantSamplesData, GetParticipantSamplesVariables>;
+export function getParticipantSamples(dc: DataConnect, vars: GetParticipantSamplesVariables): QueryPromise<GetParticipantSamplesData, GetParticipantSamplesVariables>;
+
+interface GetAllSamplesRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars?: GetAllSamplesVariables): QueryRef<GetAllSamplesData, GetAllSamplesVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars?: GetAllSamplesVariables): QueryRef<GetAllSamplesData, GetAllSamplesVariables>;
+  operationName: string;
+}
+export const getAllSamplesRef: GetAllSamplesRef;
+
+export function getAllSamples(vars?: GetAllSamplesVariables): QueryPromise<GetAllSamplesData, GetAllSamplesVariables>;
+export function getAllSamples(dc: DataConnect, vars?: GetAllSamplesVariables): QueryPromise<GetAllSamplesData, GetAllSamplesVariables>;
+
+interface GetBookingTestResultsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetBookingTestResultsVariables): QueryRef<GetBookingTestResultsData, GetBookingTestResultsVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetBookingTestResultsVariables): QueryRef<GetBookingTestResultsData, GetBookingTestResultsVariables>;
+  operationName: string;
+}
+export const getBookingTestResultsRef: GetBookingTestResultsRef;
+
+export function getBookingTestResults(vars: GetBookingTestResultsVariables): QueryPromise<GetBookingTestResultsData, GetBookingTestResultsVariables>;
+export function getBookingTestResults(dc: DataConnect, vars: GetBookingTestResultsVariables): QueryPromise<GetBookingTestResultsData, GetBookingTestResultsVariables>;
+
+interface GetTestResultByIdRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetTestResultByIdVariables): QueryRef<GetTestResultByIdData, GetTestResultByIdVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetTestResultByIdVariables): QueryRef<GetTestResultByIdData, GetTestResultByIdVariables>;
+  operationName: string;
+}
+export const getTestResultByIdRef: GetTestResultByIdRef;
+
+export function getTestResultById(vars: GetTestResultByIdVariables): QueryPromise<GetTestResultByIdData, GetTestResultByIdVariables>;
+export function getTestResultById(dc: DataConnect, vars: GetTestResultByIdVariables): QueryPromise<GetTestResultByIdData, GetTestResultByIdVariables>;
+
+interface GetTestResultsByStatusRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetTestResultsByStatusVariables): QueryRef<GetTestResultsByStatusData, GetTestResultsByStatusVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetTestResultsByStatusVariables): QueryRef<GetTestResultsByStatusData, GetTestResultsByStatusVariables>;
+  operationName: string;
+}
+export const getTestResultsByStatusRef: GetTestResultsByStatusRef;
+
+export function getTestResultsByStatus(vars: GetTestResultsByStatusVariables): QueryPromise<GetTestResultsByStatusData, GetTestResultsByStatusVariables>;
+export function getTestResultsByStatus(dc: DataConnect, vars: GetTestResultsByStatusVariables): QueryPromise<GetTestResultsByStatusData, GetTestResultsByStatusVariables>;
+
+interface GetUserTestResultsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetUserTestResultsVariables): QueryRef<GetUserTestResultsData, GetUserTestResultsVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetUserTestResultsVariables): QueryRef<GetUserTestResultsData, GetUserTestResultsVariables>;
+  operationName: string;
+}
+export const getUserTestResultsRef: GetUserTestResultsRef;
+
+export function getUserTestResults(vars: GetUserTestResultsVariables): QueryPromise<GetUserTestResultsData, GetUserTestResultsVariables>;
+export function getUserTestResults(dc: DataConnect, vars: GetUserTestResultsVariables): QueryPromise<GetUserTestResultsData, GetUserTestResultsVariables>;
+
+interface GetManagerTestResultsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetManagerTestResultsVariables): QueryRef<GetManagerTestResultsData, GetManagerTestResultsVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetManagerTestResultsVariables): QueryRef<GetManagerTestResultsData, GetManagerTestResultsVariables>;
+  operationName: string;
+}
+export const getManagerTestResultsRef: GetManagerTestResultsRef;
+
+export function getManagerTestResults(vars: GetManagerTestResultsVariables): QueryPromise<GetManagerTestResultsData, GetManagerTestResultsVariables>;
+export function getManagerTestResults(dc: DataConnect, vars: GetManagerTestResultsVariables): QueryPromise<GetManagerTestResultsData, GetManagerTestResultsVariables>;
+
+interface GetStaffTestResultsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetStaffTestResultsVariables): QueryRef<GetStaffTestResultsData, GetStaffTestResultsVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetStaffTestResultsVariables): QueryRef<GetStaffTestResultsData, GetStaffTestResultsVariables>;
+  operationName: string;
+}
+export const getStaffTestResultsRef: GetStaffTestResultsRef;
+
+export function getStaffTestResults(vars: GetStaffTestResultsVariables): QueryPromise<GetStaffTestResultsData, GetStaffTestResultsVariables>;
+export function getStaffTestResults(dc: DataConnect, vars: GetStaffTestResultsVariables): QueryPromise<GetStaffTestResultsData, GetStaffTestResultsVariables>;
+
+interface GetTestResultsByTypeRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetTestResultsByTypeVariables): QueryRef<GetTestResultsByTypeData, GetTestResultsByTypeVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetTestResultsByTypeVariables): QueryRef<GetTestResultsByTypeData, GetTestResultsByTypeVariables>;
+  operationName: string;
+}
+export const getTestResultsByTypeRef: GetTestResultsByTypeRef;
+
+export function getTestResultsByType(vars: GetTestResultsByTypeVariables): QueryPromise<GetTestResultsByTypeData, GetTestResultsByTypeVariables>;
+export function getTestResultsByType(dc: DataConnect, vars: GetTestResultsByTypeVariables): QueryPromise<GetTestResultsByTypeData, GetTestResultsByTypeVariables>;
+
+interface GetPositiveTestResultsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetPositiveTestResultsData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetPositiveTestResultsData, undefined>;
+  operationName: string;
+}
+export const getPositiveTestResultsRef: GetPositiveTestResultsRef;
+
+export function getPositiveTestResults(): QueryPromise<GetPositiveTestResultsData, undefined>;
+export function getPositiveTestResults(dc: DataConnect): QueryPromise<GetPositiveTestResultsData, undefined>;
+
+interface GetBookingPaymentRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetBookingPaymentVariables): QueryRef<GetBookingPaymentData, GetBookingPaymentVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetBookingPaymentVariables): QueryRef<GetBookingPaymentData, GetBookingPaymentVariables>;
+  operationName: string;
+}
+export const getBookingPaymentRef: GetBookingPaymentRef;
+
+export function getBookingPayment(vars: GetBookingPaymentVariables): QueryPromise<GetBookingPaymentData, GetBookingPaymentVariables>;
+export function getBookingPayment(dc: DataConnect, vars: GetBookingPaymentVariables): QueryPromise<GetBookingPaymentData, GetBookingPaymentVariables>;
+
+interface GetPaymentByIdRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetPaymentByIdVariables): QueryRef<GetPaymentByIdData, GetPaymentByIdVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetPaymentByIdVariables): QueryRef<GetPaymentByIdData, GetPaymentByIdVariables>;
+  operationName: string;
+}
+export const getPaymentByIdRef: GetPaymentByIdRef;
+
+export function getPaymentById(vars: GetPaymentByIdVariables): QueryPromise<GetPaymentByIdData, GetPaymentByIdVariables>;
+export function getPaymentById(dc: DataConnect, vars: GetPaymentByIdVariables): QueryPromise<GetPaymentByIdData, GetPaymentByIdVariables>;
+
+interface GetPaymentsByStatusRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetPaymentsByStatusVariables): QueryRef<GetPaymentsByStatusData, GetPaymentsByStatusVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetPaymentsByStatusVariables): QueryRef<GetPaymentsByStatusData, GetPaymentsByStatusVariables>;
+  operationName: string;
+}
+export const getPaymentsByStatusRef: GetPaymentsByStatusRef;
+
+export function getPaymentsByStatus(vars: GetPaymentsByStatusVariables): QueryPromise<GetPaymentsByStatusData, GetPaymentsByStatusVariables>;
+export function getPaymentsByStatus(dc: DataConnect, vars: GetPaymentsByStatusVariables): QueryPromise<GetPaymentsByStatusData, GetPaymentsByStatusVariables>;
+
+interface GetUserPaymentsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetUserPaymentsVariables): QueryRef<GetUserPaymentsData, GetUserPaymentsVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetUserPaymentsVariables): QueryRef<GetUserPaymentsData, GetUserPaymentsVariables>;
+  operationName: string;
+}
+export const getUserPaymentsRef: GetUserPaymentsRef;
+
+export function getUserPayments(vars: GetUserPaymentsVariables): QueryPromise<GetUserPaymentsData, GetUserPaymentsVariables>;
+export function getUserPayments(dc: DataConnect, vars: GetUserPaymentsVariables): QueryPromise<GetUserPaymentsData, GetUserPaymentsVariables>;
+
+interface GetBookingFeedbackRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetBookingFeedbackVariables): QueryRef<GetBookingFeedbackData, GetBookingFeedbackVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetBookingFeedbackVariables): QueryRef<GetBookingFeedbackData, GetBookingFeedbackVariables>;
+  operationName: string;
+}
+export const getBookingFeedbackRef: GetBookingFeedbackRef;
+
+export function getBookingFeedback(vars: GetBookingFeedbackVariables): QueryPromise<GetBookingFeedbackData, GetBookingFeedbackVariables>;
+export function getBookingFeedback(dc: DataConnect, vars: GetBookingFeedbackVariables): QueryPromise<GetBookingFeedbackData, GetBookingFeedbackVariables>;
+
+interface GetAllFeedbackRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars?: GetAllFeedbackVariables): QueryRef<GetAllFeedbackData, GetAllFeedbackVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars?: GetAllFeedbackVariables): QueryRef<GetAllFeedbackData, GetAllFeedbackVariables>;
+  operationName: string;
+}
+export const getAllFeedbackRef: GetAllFeedbackRef;
+
+export function getAllFeedback(vars?: GetAllFeedbackVariables): QueryPromise<GetAllFeedbackData, GetAllFeedbackVariables>;
+export function getAllFeedback(dc: DataConnect, vars?: GetAllFeedbackVariables): QueryPromise<GetAllFeedbackData, GetAllFeedbackVariables>;
+
+interface GetFeedbackByRatingRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetFeedbackByRatingVariables): QueryRef<GetFeedbackByRatingData, GetFeedbackByRatingVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetFeedbackByRatingVariables): QueryRef<GetFeedbackByRatingData, GetFeedbackByRatingVariables>;
+  operationName: string;
+}
+export const getFeedbackByRatingRef: GetFeedbackByRatingRef;
+
+export function getFeedbackByRating(vars: GetFeedbackByRatingVariables): QueryPromise<GetFeedbackByRatingData, GetFeedbackByRatingVariables>;
+export function getFeedbackByRating(dc: DataConnect, vars: GetFeedbackByRatingVariables): QueryPromise<GetFeedbackByRatingData, GetFeedbackByRatingVariables>;
+
+interface GetBlogsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars?: GetBlogsVariables): QueryRef<GetBlogsData, GetBlogsVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars?: GetBlogsVariables): QueryRef<GetBlogsData, GetBlogsVariables>;
+  operationName: string;
+}
+export const getBlogsRef: GetBlogsRef;
+
+export function getBlogs(vars?: GetBlogsVariables): QueryPromise<GetBlogsData, GetBlogsVariables>;
+export function getBlogs(dc: DataConnect, vars?: GetBlogsVariables): QueryPromise<GetBlogsData, GetBlogsVariables>;
+
+interface GetBlogByIdRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetBlogByIdVariables): QueryRef<GetBlogByIdData, GetBlogByIdVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetBlogByIdVariables): QueryRef<GetBlogByIdData, GetBlogByIdVariables>;
+  operationName: string;
+}
+export const getBlogByIdRef: GetBlogByIdRef;
+
+export function getBlogById(vars: GetBlogByIdVariables): QueryPromise<GetBlogByIdData, GetBlogByIdVariables>;
+export function getBlogById(dc: DataConnect, vars: GetBlogByIdVariables): QueryPromise<GetBlogByIdData, GetBlogByIdVariables>;
+
+interface GetBlogsByUserRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetBlogsByUserVariables): QueryRef<GetBlogsByUserData, GetBlogsByUserVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetBlogsByUserVariables): QueryRef<GetBlogsByUserData, GetBlogsByUserVariables>;
+  operationName: string;
+}
+export const getBlogsByUserRef: GetBlogsByUserRef;
+
+export function getBlogsByUser(vars: GetBlogsByUserVariables): QueryPromise<GetBlogsByUserData, GetBlogsByUserVariables>;
+export function getBlogsByUser(dc: DataConnect, vars: GetBlogsByUserVariables): QueryPromise<GetBlogsByUserData, GetBlogsByUserVariables>;
+
+interface GetMyBlogsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetMyBlogsVariables): QueryRef<GetMyBlogsData, GetMyBlogsVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetMyBlogsVariables): QueryRef<GetMyBlogsData, GetMyBlogsVariables>;
+  operationName: string;
+}
+export const getMyBlogsRef: GetMyBlogsRef;
+
+export function getMyBlogs(vars: GetMyBlogsVariables): QueryPromise<GetMyBlogsData, GetMyBlogsVariables>;
+export function getMyBlogs(dc: DataConnect, vars: GetMyBlogsVariables): QueryPromise<GetMyBlogsData, GetMyBlogsVariables>;
+
+interface GetUserNotificationsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetUserNotificationsVariables): QueryRef<GetUserNotificationsData, GetUserNotificationsVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetUserNotificationsVariables): QueryRef<GetUserNotificationsData, GetUserNotificationsVariables>;
+  operationName: string;
+}
+export const getUserNotificationsRef: GetUserNotificationsRef;
+
+export function getUserNotifications(vars: GetUserNotificationsVariables): QueryPromise<GetUserNotificationsData, GetUserNotificationsVariables>;
+export function getUserNotifications(dc: DataConnect, vars: GetUserNotificationsVariables): QueryPromise<GetUserNotificationsData, GetUserNotificationsVariables>;
+
+interface GetMyNotificationsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetMyNotificationsVariables): QueryRef<GetMyNotificationsData, GetMyNotificationsVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetMyNotificationsVariables): QueryRef<GetMyNotificationsData, GetMyNotificationsVariables>;
+  operationName: string;
+}
+export const getMyNotificationsRef: GetMyNotificationsRef;
+
+export function getMyNotifications(vars: GetMyNotificationsVariables): QueryPromise<GetMyNotificationsData, GetMyNotificationsVariables>;
+export function getMyNotifications(dc: DataConnect, vars: GetMyNotificationsVariables): QueryPromise<GetMyNotificationsData, GetMyNotificationsVariables>;
+
+interface GetUnreadNotificationsCountRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetUnreadNotificationsCountVariables): QueryRef<GetUnreadNotificationsCountData, GetUnreadNotificationsCountVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetUnreadNotificationsCountVariables): QueryRef<GetUnreadNotificationsCountData, GetUnreadNotificationsCountVariables>;
+  operationName: string;
+}
+export const getUnreadNotificationsCountRef: GetUnreadNotificationsCountRef;
+
+export function getUnreadNotificationsCount(vars: GetUnreadNotificationsCountVariables): QueryPromise<GetUnreadNotificationsCountData, GetUnreadNotificationsCountVariables>;
+export function getUnreadNotificationsCount(dc: DataConnect, vars: GetUnreadNotificationsCountVariables): QueryPromise<GetUnreadNotificationsCountData, GetUnreadNotificationsCountVariables>;
+
+interface GetNotificationByIdRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetNotificationByIdVariables): QueryRef<GetNotificationByIdData, GetNotificationByIdVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetNotificationByIdVariables): QueryRef<GetNotificationByIdData, GetNotificationByIdVariables>;
+  operationName: string;
+}
+export const getNotificationByIdRef: GetNotificationByIdRef;
+
+export function getNotificationById(vars: GetNotificationByIdVariables): QueryPromise<GetNotificationByIdData, GetNotificationByIdVariables>;
+export function getNotificationById(dc: DataConnect, vars: GetNotificationByIdVariables): QueryPromise<GetNotificationByIdData, GetNotificationByIdVariables>;
+
+interface GetBookingStatsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetBookingStatsData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetBookingStatsData, undefined>;
+  operationName: string;
+}
+export const getBookingStatsRef: GetBookingStatsRef;
+
+export function getBookingStats(): QueryPromise<GetBookingStatsData, undefined>;
+export function getBookingStats(dc: DataConnect): QueryPromise<GetBookingStatsData, undefined>;
+
+interface GetServicePopularityRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetServicePopularityData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetServicePopularityData, undefined>;
+  operationName: string;
+}
+export const getServicePopularityRef: GetServicePopularityRef;
+
+export function getServicePopularity(): QueryPromise<GetServicePopularityData, undefined>;
+export function getServicePopularity(dc: DataConnect): QueryPromise<GetServicePopularityData, undefined>;
+
+interface GetStaffBySpecificationRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetStaffBySpecificationVariables): QueryRef<GetStaffBySpecificationData, GetStaffBySpecificationVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetStaffBySpecificationVariables): QueryRef<GetStaffBySpecificationData, GetStaffBySpecificationVariables>;
+  operationName: string;
+}
+export const getStaffBySpecificationRef: GetStaffBySpecificationRef;
+
+export function getStaffBySpecification(vars: GetStaffBySpecificationVariables): QueryPromise<GetStaffBySpecificationData, GetStaffBySpecificationVariables>;
+export function getStaffBySpecification(dc: DataConnect, vars: GetStaffBySpecificationVariables): QueryPromise<GetStaffBySpecificationData, GetStaffBySpecificationVariables>;
+
+interface GetAvailableStaffRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetAvailableStaffData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetAvailableStaffData, undefined>;
+  operationName: string;
+}
+export const getAvailableStaffRef: GetAvailableStaffRef;
+
+export function getAvailableStaff(): QueryPromise<GetAvailableStaffData, undefined>;
+export function getAvailableStaff(dc: DataConnect): QueryPromise<GetAvailableStaffData, undefined>;
+
+interface GetManagersBySpecificationRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetManagersBySpecificationVariables): QueryRef<GetManagersBySpecificationData, GetManagersBySpecificationVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetManagersBySpecificationVariables): QueryRef<GetManagersBySpecificationData, GetManagersBySpecificationVariables>;
+  operationName: string;
+}
+export const getManagersBySpecificationRef: GetManagersBySpecificationRef;
+
+export function getManagersBySpecification(vars: GetManagersBySpecificationVariables): QueryPromise<GetManagersBySpecificationData, GetManagersBySpecificationVariables>;
+export function getManagersBySpecification(dc: DataConnect, vars: GetManagersBySpecificationVariables): QueryPromise<GetManagersBySpecificationData, GetManagersBySpecificationVariables>;
+
+interface GetRevenueByCategoryRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetRevenueByCategoryData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetRevenueByCategoryData, undefined>;
+  operationName: string;
+}
+export const getRevenueByCategoryRef: GetRevenueByCategoryRef;
+
+export function getRevenueByCategory(): QueryPromise<GetRevenueByCategoryData, undefined>;
+export function getRevenueByCategory(dc: DataConnect): QueryPromise<GetRevenueByCategoryData, undefined>;
+
+interface GetStaffWorkloadRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetStaffWorkloadData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetStaffWorkloadData, undefined>;
+  operationName: string;
+}
+export const getStaffWorkloadRef: GetStaffWorkloadRef;
+
+export function getStaffWorkload(): QueryPromise<GetStaffWorkloadData, undefined>;
+export function getStaffWorkload(dc: DataConnect): QueryPromise<GetStaffWorkloadData, undefined>;
+
+interface GetTestCompletionStatsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetTestCompletionStatsData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetTestCompletionStatsData, undefined>;
+  operationName: string;
+}
+export const getTestCompletionStatsRef: GetTestCompletionStatsRef;
+
+export function getTestCompletionStats(): QueryPromise<GetTestCompletionStatsData, undefined>;
+export function getTestCompletionStats(dc: DataConnect): QueryPromise<GetTestCompletionStatsData, undefined>;
+
+interface GetCustomerSatisfactionStatsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetCustomerSatisfactionStatsData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetCustomerSatisfactionStatsData, undefined>;
+  operationName: string;
+}
+export const getCustomerSatisfactionStatsRef: GetCustomerSatisfactionStatsRef;
+
+export function getCustomerSatisfactionStats(): QueryPromise<GetCustomerSatisfactionStatsData, undefined>;
+export function getCustomerSatisfactionStats(dc: DataConnect): QueryPromise<GetCustomerSatisfactionStatsData, undefined>;
+
+interface GetAvailableManagersForAssignmentRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetAvailableManagersForAssignmentData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetAvailableManagersForAssignmentData, undefined>;
+  operationName: string;
+}
+export const getAvailableManagersForAssignmentRef: GetAvailableManagersForAssignmentRef;
+
+export function getAvailableManagersForAssignment(): QueryPromise<GetAvailableManagersForAssignmentData, undefined>;
+export function getAvailableManagersForAssignment(dc: DataConnect): QueryPromise<GetAvailableManagersForAssignmentData, undefined>;
+
+interface GetAvailableStaffForTestingRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetAvailableStaffForTestingData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetAvailableStaffForTestingData, undefined>;
+  operationName: string;
+}
+export const getAvailableStaffForTestingRef: GetAvailableStaffForTestingRef;
+
+export function getAvailableStaffForTesting(): QueryPromise<GetAvailableStaffForTestingData, undefined>;
+export function getAvailableStaffForTesting(dc: DataConnect): QueryPromise<GetAvailableStaffForTestingData, undefined>;
+
+interface GetStaffByPositionsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetStaffByPositionsVariables): QueryRef<GetStaffByPositionsData, GetStaffByPositionsVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetStaffByPositionsVariables): QueryRef<GetStaffByPositionsData, GetStaffByPositionsVariables>;
+  operationName: string;
+}
+export const getStaffByPositionsRef: GetStaffByPositionsRef;
+
+export function getStaffByPositions(vars: GetStaffByPositionsVariables): QueryPromise<GetStaffByPositionsData, GetStaffByPositionsVariables>;
+export function getStaffByPositions(dc: DataConnect, vars: GetStaffByPositionsVariables): QueryPromise<GetStaffByPositionsData, GetStaffByPositionsVariables>;
+
+interface GetStaffPerformanceByPositionRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetStaffPerformanceByPositionData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetStaffPerformanceByPositionData, undefined>;
+  operationName: string;
+}
+export const getStaffPerformanceByPositionRef: GetStaffPerformanceByPositionRef;
+
+export function getStaffPerformanceByPosition(): QueryPromise<GetStaffPerformanceByPositionData, undefined>;
+export function getStaffPerformanceByPosition(dc: DataConnect): QueryPromise<GetStaffPerformanceByPositionData, undefined>;
+
+interface GetTestResultStatsByPositionRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetTestResultStatsByPositionData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetTestResultStatsByPositionData, undefined>;
+  operationName: string;
+}
+export const getTestResultStatsByPositionRef: GetTestResultStatsByPositionRef;
+
+export function getTestResultStatsByPosition(): QueryPromise<GetTestResultStatsByPositionData, undefined>;
+export function getTestResultStatsByPosition(dc: DataConnect): QueryPromise<GetTestResultStatsByPositionData, undefined>;
 
 interface CreateRoleRef {
   /* Allow users to create refs without passing in DataConnect */
@@ -2549,15 +3815,15 @@ export function createOrUpdateUser(dc: DataConnect, vars: CreateOrUpdateUserVari
 
 interface UpdateUserProfileRef {
   /* Allow users to create refs without passing in DataConnect */
-  (vars?: UpdateUserProfileVariables): MutationRef<UpdateUserProfileData, UpdateUserProfileVariables>;
+  (vars: UpdateUserProfileVariables): MutationRef<UpdateUserProfileData, UpdateUserProfileVariables>;
   /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars?: UpdateUserProfileVariables): MutationRef<UpdateUserProfileData, UpdateUserProfileVariables>;
+  (dc: DataConnect, vars: UpdateUserProfileVariables): MutationRef<UpdateUserProfileData, UpdateUserProfileVariables>;
   operationName: string;
 }
 export const updateUserProfileRef: UpdateUserProfileRef;
 
-export function updateUserProfile(vars?: UpdateUserProfileVariables): MutationPromise<UpdateUserProfileData, UpdateUserProfileVariables>;
-export function updateUserProfile(dc: DataConnect, vars?: UpdateUserProfileVariables): MutationPromise<UpdateUserProfileData, UpdateUserProfileVariables>;
+export function updateUserProfile(vars: UpdateUserProfileVariables): MutationPromise<UpdateUserProfileData, UpdateUserProfileVariables>;
+export function updateUserProfile(dc: DataConnect, vars: UpdateUserProfileVariables): MutationPromise<UpdateUserProfileData, UpdateUserProfileVariables>;
 
 interface UpdateUserRoleRef {
   /* Allow users to create refs without passing in DataConnect */
@@ -2955,6 +4221,18 @@ export const updateTestResultRef: UpdateTestResultRef;
 export function updateTestResult(vars: UpdateTestResultVariables): MutationPromise<UpdateTestResultData, UpdateTestResultVariables>;
 export function updateTestResult(dc: DataConnect, vars: UpdateTestResultVariables): MutationPromise<UpdateTestResultData, UpdateTestResultVariables>;
 
+interface AssignTestResultStaffRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: AssignTestResultStaffVariables): MutationRef<AssignTestResultStaffData, AssignTestResultStaffVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: AssignTestResultStaffVariables): MutationRef<AssignTestResultStaffData, AssignTestResultStaffVariables>;
+  operationName: string;
+}
+export const assignTestResultStaffRef: AssignTestResultStaffRef;
+
+export function assignTestResultStaff(vars: AssignTestResultStaffVariables): MutationPromise<AssignTestResultStaffData, AssignTestResultStaffVariables>;
+export function assignTestResultStaff(dc: DataConnect, vars: AssignTestResultStaffVariables): MutationPromise<AssignTestResultStaffData, AssignTestResultStaffVariables>;
+
 interface AssignTestResultManagerRef {
   /* Allow users to create refs without passing in DataConnect */
   (vars: AssignTestResultManagerVariables): MutationRef<AssignTestResultManagerData, AssignTestResultManagerVariables>;
@@ -2966,6 +4244,18 @@ export const assignTestResultManagerRef: AssignTestResultManagerRef;
 
 export function assignTestResultManager(vars: AssignTestResultManagerVariables): MutationPromise<AssignTestResultManagerData, AssignTestResultManagerVariables>;
 export function assignTestResultManager(dc: DataConnect, vars: AssignTestResultManagerVariables): MutationPromise<AssignTestResultManagerData, AssignTestResultManagerVariables>;
+
+interface AssignTestResultStaffAndManagerRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: AssignTestResultStaffAndManagerVariables): MutationRef<AssignTestResultStaffAndManagerData, AssignTestResultStaffAndManagerVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: AssignTestResultStaffAndManagerVariables): MutationRef<AssignTestResultStaffAndManagerData, AssignTestResultStaffAndManagerVariables>;
+  operationName: string;
+}
+export const assignTestResultStaffAndManagerRef: AssignTestResultStaffAndManagerRef;
+
+export function assignTestResultStaffAndManager(vars: AssignTestResultStaffAndManagerVariables): MutationPromise<AssignTestResultStaffAndManagerData, AssignTestResultStaffAndManagerVariables>;
+export function assignTestResultStaffAndManager(dc: DataConnect, vars: AssignTestResultStaffAndManagerVariables): MutationPromise<AssignTestResultStaffAndManagerData, AssignTestResultStaffAndManagerVariables>;
 
 interface DeleteTestResultRef {
   /* Allow users to create refs without passing in DataConnect */
@@ -3206,940 +4496,4 @@ export const deleteStaffRef: DeleteStaffRef;
 
 export function deleteStaff(vars: DeleteStaffVariables): MutationPromise<DeleteStaffData, DeleteStaffVariables>;
 export function deleteStaff(dc: DataConnect, vars: DeleteStaffVariables): MutationPromise<DeleteStaffData, DeleteStaffVariables>;
-
-interface GetRolesRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetRolesData, undefined>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetRolesData, undefined>;
-  operationName: string;
-}
-export const getRolesRef: GetRolesRef;
-
-export function getRoles(): QueryPromise<GetRolesData, undefined>;
-export function getRoles(dc: DataConnect): QueryPromise<GetRolesData, undefined>;
-
-interface GetRoleByIdRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetRoleByIdVariables): QueryRef<GetRoleByIdData, GetRoleByIdVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetRoleByIdVariables): QueryRef<GetRoleByIdData, GetRoleByIdVariables>;
-  operationName: string;
-}
-export const getRoleByIdRef: GetRoleByIdRef;
-
-export function getRoleById(vars: GetRoleByIdVariables): QueryPromise<GetRoleByIdData, GetRoleByIdVariables>;
-export function getRoleById(dc: DataConnect, vars: GetRoleByIdVariables): QueryPromise<GetRoleByIdData, GetRoleByIdVariables>;
-
-interface GetRoleByNameRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetRoleByNameVariables): QueryRef<GetRoleByNameData, GetRoleByNameVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetRoleByNameVariables): QueryRef<GetRoleByNameData, GetRoleByNameVariables>;
-  operationName: string;
-}
-export const getRoleByNameRef: GetRoleByNameRef;
-
-export function getRoleByName(vars: GetRoleByNameVariables): QueryPromise<GetRoleByNameData, GetRoleByNameVariables>;
-export function getRoleByName(dc: DataConnect, vars: GetRoleByNameVariables): QueryPromise<GetRoleByNameData, GetRoleByNameVariables>;
-
-interface GetUserRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetUserData, undefined>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetUserData, undefined>;
-  operationName: string;
-}
-export const getUserRef: GetUserRef;
-
-export function getUser(): QueryPromise<GetUserData, undefined>;
-export function getUser(dc: DataConnect): QueryPromise<GetUserData, undefined>;
-
-interface GetUserByIdRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetUserByIdVariables): QueryRef<GetUserByIdData, GetUserByIdVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetUserByIdVariables): QueryRef<GetUserByIdData, GetUserByIdVariables>;
-  operationName: string;
-}
-export const getUserByIdRef: GetUserByIdRef;
-
-export function getUserById(vars: GetUserByIdVariables): QueryPromise<GetUserByIdData, GetUserByIdVariables>;
-export function getUserById(dc: DataConnect, vars: GetUserByIdVariables): QueryPromise<GetUserByIdData, GetUserByIdVariables>;
-
-interface GetUsersRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars?: GetUsersVariables): QueryRef<GetUsersData, GetUsersVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars?: GetUsersVariables): QueryRef<GetUsersData, GetUsersVariables>;
-  operationName: string;
-}
-export const getUsersRef: GetUsersRef;
-
-export function getUsers(vars?: GetUsersVariables): QueryPromise<GetUsersData, GetUsersVariables>;
-export function getUsers(dc: DataConnect, vars?: GetUsersVariables): QueryPromise<GetUsersData, GetUsersVariables>;
-
-interface GetUsersByRoleRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetUsersByRoleVariables): QueryRef<GetUsersByRoleData, GetUsersByRoleVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetUsersByRoleVariables): QueryRef<GetUsersByRoleData, GetUsersByRoleVariables>;
-  operationName: string;
-}
-export const getUsersByRoleRef: GetUsersByRoleRef;
-
-export function getUsersByRole(vars: GetUsersByRoleVariables): QueryPromise<GetUsersByRoleData, GetUsersByRoleVariables>;
-export function getUsersByRole(dc: DataConnect, vars: GetUsersByRoleVariables): QueryPromise<GetUsersByRoleData, GetUsersByRoleVariables>;
-
-interface GetStaffMembersRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetStaffMembersData, undefined>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetStaffMembersData, undefined>;
-  operationName: string;
-}
-export const getStaffMembersRef: GetStaffMembersRef;
-
-export function getStaffMembers(): QueryPromise<GetStaffMembersData, undefined>;
-export function getStaffMembers(dc: DataConnect): QueryPromise<GetStaffMembersData, undefined>;
-
-interface GetStaffByIdRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetStaffByIdVariables): QueryRef<GetStaffByIdData, GetStaffByIdVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetStaffByIdVariables): QueryRef<GetStaffByIdData, GetStaffByIdVariables>;
-  operationName: string;
-}
-export const getStaffByIdRef: GetStaffByIdRef;
-
-export function getStaffById(vars: GetStaffByIdVariables): QueryPromise<GetStaffByIdData, GetStaffByIdVariables>;
-export function getStaffById(dc: DataConnect, vars: GetStaffByIdVariables): QueryPromise<GetStaffByIdData, GetStaffByIdVariables>;
-
-interface GetPositionsRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetPositionsData, undefined>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetPositionsData, undefined>;
-  operationName: string;
-}
-export const getPositionsRef: GetPositionsRef;
-
-export function getPositions(): QueryPromise<GetPositionsData, undefined>;
-export function getPositions(dc: DataConnect): QueryPromise<GetPositionsData, undefined>;
-
-interface GetPositionByIdRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetPositionByIdVariables): QueryRef<GetPositionByIdData, GetPositionByIdVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetPositionByIdVariables): QueryRef<GetPositionByIdData, GetPositionByIdVariables>;
-  operationName: string;
-}
-export const getPositionByIdRef: GetPositionByIdRef;
-
-export function getPositionById(vars: GetPositionByIdVariables): QueryPromise<GetPositionByIdData, GetPositionByIdVariables>;
-export function getPositionById(dc: DataConnect, vars: GetPositionByIdVariables): QueryPromise<GetPositionByIdData, GetPositionByIdVariables>;
-
-interface GetStaffByPositionRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetStaffByPositionVariables): QueryRef<GetStaffByPositionData, GetStaffByPositionVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetStaffByPositionVariables): QueryRef<GetStaffByPositionData, GetStaffByPositionVariables>;
-  operationName: string;
-}
-export const getStaffByPositionRef: GetStaffByPositionRef;
-
-export function getStaffByPosition(vars: GetStaffByPositionVariables): QueryPromise<GetStaffByPositionData, GetStaffByPositionVariables>;
-export function getStaffByPosition(dc: DataConnect, vars: GetStaffByPositionVariables): QueryPromise<GetStaffByPositionData, GetStaffByPositionVariables>;
-
-interface GetManagersRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetManagersData, undefined>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetManagersData, undefined>;
-  operationName: string;
-}
-export const getManagersRef: GetManagersRef;
-
-export function getManagers(): QueryPromise<GetManagersData, undefined>;
-export function getManagers(dc: DataConnect): QueryPromise<GetManagersData, undefined>;
-
-interface GetStaffCountByPositionRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetStaffCountByPositionData, undefined>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetStaffCountByPositionData, undefined>;
-  operationName: string;
-}
-export const getStaffCountByPositionRef: GetStaffCountByPositionRef;
-
-export function getStaffCountByPosition(): QueryPromise<GetStaffCountByPositionData, undefined>;
-export function getStaffCountByPosition(dc: DataConnect): QueryPromise<GetStaffCountByPositionData, undefined>;
-
-interface GetStaffByPositionIdRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetStaffByPositionIdVariables): QueryRef<GetStaffByPositionIdData, GetStaffByPositionIdVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetStaffByPositionIdVariables): QueryRef<GetStaffByPositionIdData, GetStaffByPositionIdVariables>;
-  operationName: string;
-}
-export const getStaffByPositionIdRef: GetStaffByPositionIdRef;
-
-export function getStaffByPositionId(vars: GetStaffByPositionIdVariables): QueryPromise<GetStaffByPositionIdData, GetStaffByPositionIdVariables>;
-export function getStaffByPositionId(dc: DataConnect, vars: GetStaffByPositionIdVariables): QueryPromise<GetStaffByPositionIdData, GetStaffByPositionIdVariables>;
-
-interface GetPositionWithStaffCountRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetPositionWithStaffCountVariables): QueryRef<GetPositionWithStaffCountData, GetPositionWithStaffCountVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetPositionWithStaffCountVariables): QueryRef<GetPositionWithStaffCountData, GetPositionWithStaffCountVariables>;
-  operationName: string;
-}
-export const getPositionWithStaffCountRef: GetPositionWithStaffCountRef;
-
-export function getPositionWithStaffCount(vars: GetPositionWithStaffCountVariables): QueryPromise<GetPositionWithStaffCountData, GetPositionWithStaffCountVariables>;
-export function getPositionWithStaffCount(dc: DataConnect, vars: GetPositionWithStaffCountVariables): QueryPromise<GetPositionWithStaffCountData, GetPositionWithStaffCountVariables>;
-
-interface GetServiceCategoriesRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetServiceCategoriesData, undefined>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetServiceCategoriesData, undefined>;
-  operationName: string;
-}
-export const getServiceCategoriesRef: GetServiceCategoriesRef;
-
-export function getServiceCategories(): QueryPromise<GetServiceCategoriesData, undefined>;
-export function getServiceCategories(dc: DataConnect): QueryPromise<GetServiceCategoriesData, undefined>;
-
-interface GetServiceCategoryByIdRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetServiceCategoryByIdVariables): QueryRef<GetServiceCategoryByIdData, GetServiceCategoryByIdVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetServiceCategoryByIdVariables): QueryRef<GetServiceCategoryByIdData, GetServiceCategoryByIdVariables>;
-  operationName: string;
-}
-export const getServiceCategoryByIdRef: GetServiceCategoryByIdRef;
-
-export function getServiceCategoryById(vars: GetServiceCategoryByIdVariables): QueryPromise<GetServiceCategoryByIdData, GetServiceCategoryByIdVariables>;
-export function getServiceCategoryById(dc: DataConnect, vars: GetServiceCategoryByIdVariables): QueryPromise<GetServiceCategoryByIdData, GetServiceCategoryByIdVariables>;
-
-interface GetMethodsRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetMethodsData, undefined>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetMethodsData, undefined>;
-  operationName: string;
-}
-export const getMethodsRef: GetMethodsRef;
-
-export function getMethods(): QueryPromise<GetMethodsData, undefined>;
-export function getMethods(dc: DataConnect): QueryPromise<GetMethodsData, undefined>;
-
-interface GetMethodByIdRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetMethodByIdVariables): QueryRef<GetMethodByIdData, GetMethodByIdVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetMethodByIdVariables): QueryRef<GetMethodByIdData, GetMethodByIdVariables>;
-  operationName: string;
-}
-export const getMethodByIdRef: GetMethodByIdRef;
-
-export function getMethodById(vars: GetMethodByIdVariables): QueryPromise<GetMethodByIdData, GetMethodByIdVariables>;
-export function getMethodById(dc: DataConnect, vars: GetMethodByIdVariables): QueryPromise<GetMethodByIdData, GetMethodByIdVariables>;
-
-interface GetServicesRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetServicesData, undefined>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetServicesData, undefined>;
-  operationName: string;
-}
-export const getServicesRef: GetServicesRef;
-
-export function getServices(): QueryPromise<GetServicesData, undefined>;
-export function getServices(dc: DataConnect): QueryPromise<GetServicesData, undefined>;
-
-interface GetServiceByIdRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetServiceByIdVariables): QueryRef<GetServiceByIdData, GetServiceByIdVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetServiceByIdVariables): QueryRef<GetServiceByIdData, GetServiceByIdVariables>;
-  operationName: string;
-}
-export const getServiceByIdRef: GetServiceByIdRef;
-
-export function getServiceById(vars: GetServiceByIdVariables): QueryPromise<GetServiceByIdData, GetServiceByIdVariables>;
-export function getServiceById(dc: DataConnect, vars: GetServiceByIdVariables): QueryPromise<GetServiceByIdData, GetServiceByIdVariables>;
-
-interface GetServicesByCategoryRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetServicesByCategoryVariables): QueryRef<GetServicesByCategoryData, GetServicesByCategoryVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetServicesByCategoryVariables): QueryRef<GetServicesByCategoryData, GetServicesByCategoryVariables>;
-  operationName: string;
-}
-export const getServicesByCategoryRef: GetServicesByCategoryRef;
-
-export function getServicesByCategory(vars: GetServicesByCategoryVariables): QueryPromise<GetServicesByCategoryData, GetServicesByCategoryVariables>;
-export function getServicesByCategory(dc: DataConnect, vars: GetServicesByCategoryVariables): QueryPromise<GetServicesByCategoryData, GetServicesByCategoryVariables>;
-
-interface GetFeaturedServicesRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetFeaturedServicesData, undefined>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetFeaturedServicesData, undefined>;
-  operationName: string;
-}
-export const getFeaturedServicesRef: GetFeaturedServicesRef;
-
-export function getFeaturedServices(): QueryPromise<GetFeaturedServicesData, undefined>;
-export function getFeaturedServices(dc: DataConnect): QueryPromise<GetFeaturedServicesData, undefined>;
-
-interface GetServiceMethodsRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetServiceMethodsVariables): QueryRef<GetServiceMethodsData, GetServiceMethodsVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetServiceMethodsVariables): QueryRef<GetServiceMethodsData, GetServiceMethodsVariables>;
-  operationName: string;
-}
-export const getServiceMethodsRef: GetServiceMethodsRef;
-
-export function getServiceMethods(vars: GetServiceMethodsVariables): QueryPromise<GetServiceMethodsData, GetServiceMethodsVariables>;
-export function getServiceMethods(dc: DataConnect, vars: GetServiceMethodsVariables): QueryPromise<GetServiceMethodsData, GetServiceMethodsVariables>;
-
-interface GetMethodsForServiceRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetMethodsForServiceVariables): QueryRef<GetMethodsForServiceData, GetMethodsForServiceVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetMethodsForServiceVariables): QueryRef<GetMethodsForServiceData, GetMethodsForServiceVariables>;
-  operationName: string;
-}
-export const getMethodsForServiceRef: GetMethodsForServiceRef;
-
-export function getMethodsForService(vars: GetMethodsForServiceVariables): QueryPromise<GetMethodsForServiceData, GetMethodsForServiceVariables>;
-export function getMethodsForService(dc: DataConnect, vars: GetMethodsForServiceVariables): QueryPromise<GetMethodsForServiceData, GetMethodsForServiceVariables>;
-
-interface GetServicesForMethodRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetServicesForMethodVariables): QueryRef<GetServicesForMethodData, GetServicesForMethodVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetServicesForMethodVariables): QueryRef<GetServicesForMethodData, GetServicesForMethodVariables>;
-  operationName: string;
-}
-export const getServicesForMethodRef: GetServicesForMethodRef;
-
-export function getServicesForMethod(vars: GetServicesForMethodVariables): QueryPromise<GetServicesForMethodData, GetServicesForMethodVariables>;
-export function getServicesForMethod(dc: DataConnect, vars: GetServicesForMethodVariables): QueryPromise<GetServicesForMethodData, GetServicesForMethodVariables>;
-
-interface GetServiceMethodRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetServiceMethodVariables): QueryRef<GetServiceMethodData, GetServiceMethodVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetServiceMethodVariables): QueryRef<GetServiceMethodData, GetServiceMethodVariables>;
-  operationName: string;
-}
-export const getServiceMethodRef: GetServiceMethodRef;
-
-export function getServiceMethod(vars: GetServiceMethodVariables): QueryPromise<GetServiceMethodData, GetServiceMethodVariables>;
-export function getServiceMethod(dc: DataConnect, vars: GetServiceMethodVariables): QueryPromise<GetServiceMethodData, GetServiceMethodVariables>;
-
-interface GetServiceWithMethodsRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetServiceWithMethodsVariables): QueryRef<GetServiceWithMethodsData, GetServiceWithMethodsVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetServiceWithMethodsVariables): QueryRef<GetServiceWithMethodsData, GetServiceWithMethodsVariables>;
-  operationName: string;
-}
-export const getServiceWithMethodsRef: GetServiceWithMethodsRef;
-
-export function getServiceWithMethods(vars: GetServiceWithMethodsVariables): QueryPromise<GetServiceWithMethodsData, GetServiceWithMethodsVariables>;
-export function getServiceWithMethods(dc: DataConnect, vars: GetServiceWithMethodsVariables): QueryPromise<GetServiceWithMethodsData, GetServiceWithMethodsVariables>;
-
-interface GetTimeSlotsRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetTimeSlotsVariables): QueryRef<GetTimeSlotsData, GetTimeSlotsVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetTimeSlotsVariables): QueryRef<GetTimeSlotsData, GetTimeSlotsVariables>;
-  operationName: string;
-}
-export const getTimeSlotsRef: GetTimeSlotsRef;
-
-export function getTimeSlots(vars: GetTimeSlotsVariables): QueryPromise<GetTimeSlotsData, GetTimeSlotsVariables>;
-export function getTimeSlots(dc: DataConnect, vars: GetTimeSlotsVariables): QueryPromise<GetTimeSlotsData, GetTimeSlotsVariables>;
-
-interface GetTimeSlotByIdRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetTimeSlotByIdVariables): QueryRef<GetTimeSlotByIdData, GetTimeSlotByIdVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetTimeSlotByIdVariables): QueryRef<GetTimeSlotByIdData, GetTimeSlotByIdVariables>;
-  operationName: string;
-}
-export const getTimeSlotByIdRef: GetTimeSlotByIdRef;
-
-export function getTimeSlotById(vars: GetTimeSlotByIdVariables): QueryPromise<GetTimeSlotByIdData, GetTimeSlotByIdVariables>;
-export function getTimeSlotById(dc: DataConnect, vars: GetTimeSlotByIdVariables): QueryPromise<GetTimeSlotByIdData, GetTimeSlotByIdVariables>;
-
-interface GetTimeSlotsInRangeRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetTimeSlotsInRangeVariables): QueryRef<GetTimeSlotsInRangeData, GetTimeSlotsInRangeVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetTimeSlotsInRangeVariables): QueryRef<GetTimeSlotsInRangeData, GetTimeSlotsInRangeVariables>;
-  operationName: string;
-}
-export const getTimeSlotsInRangeRef: GetTimeSlotsInRangeRef;
-
-export function getTimeSlotsInRange(vars: GetTimeSlotsInRangeVariables): QueryPromise<GetTimeSlotsInRangeData, GetTimeSlotsInRangeVariables>;
-export function getTimeSlotsInRange(dc: DataConnect, vars: GetTimeSlotsInRangeVariables): QueryPromise<GetTimeSlotsInRangeData, GetTimeSlotsInRangeVariables>;
-
-interface GetUserBookingsRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetUserBookingsVariables): QueryRef<GetUserBookingsData, GetUserBookingsVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetUserBookingsVariables): QueryRef<GetUserBookingsData, GetUserBookingsVariables>;
-  operationName: string;
-}
-export const getUserBookingsRef: GetUserBookingsRef;
-
-export function getUserBookings(vars: GetUserBookingsVariables): QueryPromise<GetUserBookingsData, GetUserBookingsVariables>;
-export function getUserBookings(dc: DataConnect, vars: GetUserBookingsVariables): QueryPromise<GetUserBookingsData, GetUserBookingsVariables>;
-
-interface GetMyBookingsRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetMyBookingsData, undefined>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetMyBookingsData, undefined>;
-  operationName: string;
-}
-export const getMyBookingsRef: GetMyBookingsRef;
-
-export function getMyBookings(): QueryPromise<GetMyBookingsData, undefined>;
-export function getMyBookings(dc: DataConnect): QueryPromise<GetMyBookingsData, undefined>;
-
-interface GetBookingByIdRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetBookingByIdVariables): QueryRef<GetBookingByIdData, GetBookingByIdVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetBookingByIdVariables): QueryRef<GetBookingByIdData, GetBookingByIdVariables>;
-  operationName: string;
-}
-export const getBookingByIdRef: GetBookingByIdRef;
-
-export function getBookingById(vars: GetBookingByIdVariables): QueryPromise<GetBookingByIdData, GetBookingByIdVariables>;
-export function getBookingById(dc: DataConnect, vars: GetBookingByIdVariables): QueryPromise<GetBookingByIdData, GetBookingByIdVariables>;
-
-interface GetBookingHistoryRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetBookingHistoryVariables): QueryRef<GetBookingHistoryData, GetBookingHistoryVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetBookingHistoryVariables): QueryRef<GetBookingHistoryData, GetBookingHistoryVariables>;
-  operationName: string;
-}
-export const getBookingHistoryRef: GetBookingHistoryRef;
-
-export function getBookingHistory(vars: GetBookingHistoryVariables): QueryPromise<GetBookingHistoryData, GetBookingHistoryVariables>;
-export function getBookingHistory(dc: DataConnect, vars: GetBookingHistoryVariables): QueryPromise<GetBookingHistoryData, GetBookingHistoryVariables>;
-
-interface GetStaffBookingsRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetStaffBookingsVariables): QueryRef<GetStaffBookingsData, GetStaffBookingsVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetStaffBookingsVariables): QueryRef<GetStaffBookingsData, GetStaffBookingsVariables>;
-  operationName: string;
-}
-export const getStaffBookingsRef: GetStaffBookingsRef;
-
-export function getStaffBookings(vars: GetStaffBookingsVariables): QueryPromise<GetStaffBookingsData, GetStaffBookingsVariables>;
-export function getStaffBookings(dc: DataConnect, vars: GetStaffBookingsVariables): QueryPromise<GetStaffBookingsData, GetStaffBookingsVariables>;
-
-interface GetBookingParticipantsRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetBookingParticipantsVariables): QueryRef<GetBookingParticipantsData, GetBookingParticipantsVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetBookingParticipantsVariables): QueryRef<GetBookingParticipantsData, GetBookingParticipantsVariables>;
-  operationName: string;
-}
-export const getBookingParticipantsRef: GetBookingParticipantsRef;
-
-export function getBookingParticipants(vars: GetBookingParticipantsVariables): QueryPromise<GetBookingParticipantsData, GetBookingParticipantsVariables>;
-export function getBookingParticipants(dc: DataConnect, vars: GetBookingParticipantsVariables): QueryPromise<GetBookingParticipantsData, GetBookingParticipantsVariables>;
-
-interface GetParticipantByIdRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetParticipantByIdVariables): QueryRef<GetParticipantByIdData, GetParticipantByIdVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetParticipantByIdVariables): QueryRef<GetParticipantByIdData, GetParticipantByIdVariables>;
-  operationName: string;
-}
-export const getParticipantByIdRef: GetParticipantByIdRef;
-
-export function getParticipantById(vars: GetParticipantByIdVariables): QueryPromise<GetParticipantByIdData, GetParticipantByIdVariables>;
-export function getParticipantById(dc: DataConnect, vars: GetParticipantByIdVariables): QueryPromise<GetParticipantByIdData, GetParticipantByIdVariables>;
-
-interface GetBookingSamplesRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetBookingSamplesVariables): QueryRef<GetBookingSamplesData, GetBookingSamplesVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetBookingSamplesVariables): QueryRef<GetBookingSamplesData, GetBookingSamplesVariables>;
-  operationName: string;
-}
-export const getBookingSamplesRef: GetBookingSamplesRef;
-
-export function getBookingSamples(vars: GetBookingSamplesVariables): QueryPromise<GetBookingSamplesData, GetBookingSamplesVariables>;
-export function getBookingSamples(dc: DataConnect, vars: GetBookingSamplesVariables): QueryPromise<GetBookingSamplesData, GetBookingSamplesVariables>;
-
-interface GetSamplesByQualityRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetSamplesByQualityVariables): QueryRef<GetSamplesByQualityData, GetSamplesByQualityVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetSamplesByQualityVariables): QueryRef<GetSamplesByQualityData, GetSamplesByQualityVariables>;
-  operationName: string;
-}
-export const getSamplesByQualityRef: GetSamplesByQualityRef;
-
-export function getSamplesByQuality(vars: GetSamplesByQualityVariables): QueryPromise<GetSamplesByQualityData, GetSamplesByQualityVariables>;
-export function getSamplesByQuality(dc: DataConnect, vars: GetSamplesByQualityVariables): QueryPromise<GetSamplesByQualityData, GetSamplesByQualityVariables>;
-
-interface GetSampleByIdRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetSampleByIdVariables): QueryRef<GetSampleByIdData, GetSampleByIdVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetSampleByIdVariables): QueryRef<GetSampleByIdData, GetSampleByIdVariables>;
-  operationName: string;
-}
-export const getSampleByIdRef: GetSampleByIdRef;
-
-export function getSampleById(vars: GetSampleByIdVariables): QueryPromise<GetSampleByIdData, GetSampleByIdVariables>;
-export function getSampleById(dc: DataConnect, vars: GetSampleByIdVariables): QueryPromise<GetSampleByIdData, GetSampleByIdVariables>;
-
-interface GetStaffSamplesRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetStaffSamplesVariables): QueryRef<GetStaffSamplesData, GetStaffSamplesVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetStaffSamplesVariables): QueryRef<GetStaffSamplesData, GetStaffSamplesVariables>;
-  operationName: string;
-}
-export const getStaffSamplesRef: GetStaffSamplesRef;
-
-export function getStaffSamples(vars: GetStaffSamplesVariables): QueryPromise<GetStaffSamplesData, GetStaffSamplesVariables>;
-export function getStaffSamples(dc: DataConnect, vars: GetStaffSamplesVariables): QueryPromise<GetStaffSamplesData, GetStaffSamplesVariables>;
-
-interface GetParticipantSamplesRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetParticipantSamplesVariables): QueryRef<GetParticipantSamplesData, GetParticipantSamplesVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetParticipantSamplesVariables): QueryRef<GetParticipantSamplesData, GetParticipantSamplesVariables>;
-  operationName: string;
-}
-export const getParticipantSamplesRef: GetParticipantSamplesRef;
-
-export function getParticipantSamples(vars: GetParticipantSamplesVariables): QueryPromise<GetParticipantSamplesData, GetParticipantSamplesVariables>;
-export function getParticipantSamples(dc: DataConnect, vars: GetParticipantSamplesVariables): QueryPromise<GetParticipantSamplesData, GetParticipantSamplesVariables>;
-
-interface GetAllSamplesRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars?: GetAllSamplesVariables): QueryRef<GetAllSamplesData, GetAllSamplesVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars?: GetAllSamplesVariables): QueryRef<GetAllSamplesData, GetAllSamplesVariables>;
-  operationName: string;
-}
-export const getAllSamplesRef: GetAllSamplesRef;
-
-export function getAllSamples(vars?: GetAllSamplesVariables): QueryPromise<GetAllSamplesData, GetAllSamplesVariables>;
-export function getAllSamples(dc: DataConnect, vars?: GetAllSamplesVariables): QueryPromise<GetAllSamplesData, GetAllSamplesVariables>;
-
-interface GetBookingTestResultsRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetBookingTestResultsVariables): QueryRef<GetBookingTestResultsData, GetBookingTestResultsVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetBookingTestResultsVariables): QueryRef<GetBookingTestResultsData, GetBookingTestResultsVariables>;
-  operationName: string;
-}
-export const getBookingTestResultsRef: GetBookingTestResultsRef;
-
-export function getBookingTestResults(vars: GetBookingTestResultsVariables): QueryPromise<GetBookingTestResultsData, GetBookingTestResultsVariables>;
-export function getBookingTestResults(dc: DataConnect, vars: GetBookingTestResultsVariables): QueryPromise<GetBookingTestResultsData, GetBookingTestResultsVariables>;
-
-interface GetTestResultByIdRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetTestResultByIdVariables): QueryRef<GetTestResultByIdData, GetTestResultByIdVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetTestResultByIdVariables): QueryRef<GetTestResultByIdData, GetTestResultByIdVariables>;
-  operationName: string;
-}
-export const getTestResultByIdRef: GetTestResultByIdRef;
-
-export function getTestResultById(vars: GetTestResultByIdVariables): QueryPromise<GetTestResultByIdData, GetTestResultByIdVariables>;
-export function getTestResultById(dc: DataConnect, vars: GetTestResultByIdVariables): QueryPromise<GetTestResultByIdData, GetTestResultByIdVariables>;
-
-interface GetTestResultsByStatusRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetTestResultsByStatusVariables): QueryRef<GetTestResultsByStatusData, GetTestResultsByStatusVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetTestResultsByStatusVariables): QueryRef<GetTestResultsByStatusData, GetTestResultsByStatusVariables>;
-  operationName: string;
-}
-export const getTestResultsByStatusRef: GetTestResultsByStatusRef;
-
-export function getTestResultsByStatus(vars: GetTestResultsByStatusVariables): QueryPromise<GetTestResultsByStatusData, GetTestResultsByStatusVariables>;
-export function getTestResultsByStatus(dc: DataConnect, vars: GetTestResultsByStatusVariables): QueryPromise<GetTestResultsByStatusData, GetTestResultsByStatusVariables>;
-
-interface GetUserTestResultsRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetUserTestResultsVariables): QueryRef<GetUserTestResultsData, GetUserTestResultsVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetUserTestResultsVariables): QueryRef<GetUserTestResultsData, GetUserTestResultsVariables>;
-  operationName: string;
-}
-export const getUserTestResultsRef: GetUserTestResultsRef;
-
-export function getUserTestResults(vars: GetUserTestResultsVariables): QueryPromise<GetUserTestResultsData, GetUserTestResultsVariables>;
-export function getUserTestResults(dc: DataConnect, vars: GetUserTestResultsVariables): QueryPromise<GetUserTestResultsData, GetUserTestResultsVariables>;
-
-interface GetManagerTestResultsRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetManagerTestResultsVariables): QueryRef<GetManagerTestResultsData, GetManagerTestResultsVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetManagerTestResultsVariables): QueryRef<GetManagerTestResultsData, GetManagerTestResultsVariables>;
-  operationName: string;
-}
-export const getManagerTestResultsRef: GetManagerTestResultsRef;
-
-export function getManagerTestResults(vars: GetManagerTestResultsVariables): QueryPromise<GetManagerTestResultsData, GetManagerTestResultsVariables>;
-export function getManagerTestResults(dc: DataConnect, vars: GetManagerTestResultsVariables): QueryPromise<GetManagerTestResultsData, GetManagerTestResultsVariables>;
-
-interface GetTestResultsByTypeRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetTestResultsByTypeVariables): QueryRef<GetTestResultsByTypeData, GetTestResultsByTypeVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetTestResultsByTypeVariables): QueryRef<GetTestResultsByTypeData, GetTestResultsByTypeVariables>;
-  operationName: string;
-}
-export const getTestResultsByTypeRef: GetTestResultsByTypeRef;
-
-export function getTestResultsByType(vars: GetTestResultsByTypeVariables): QueryPromise<GetTestResultsByTypeData, GetTestResultsByTypeVariables>;
-export function getTestResultsByType(dc: DataConnect, vars: GetTestResultsByTypeVariables): QueryPromise<GetTestResultsByTypeData, GetTestResultsByTypeVariables>;
-
-interface GetPositiveTestResultsRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetPositiveTestResultsData, undefined>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetPositiveTestResultsData, undefined>;
-  operationName: string;
-}
-export const getPositiveTestResultsRef: GetPositiveTestResultsRef;
-
-export function getPositiveTestResults(): QueryPromise<GetPositiveTestResultsData, undefined>;
-export function getPositiveTestResults(dc: DataConnect): QueryPromise<GetPositiveTestResultsData, undefined>;
-
-interface GetBookingPaymentRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetBookingPaymentVariables): QueryRef<GetBookingPaymentData, GetBookingPaymentVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetBookingPaymentVariables): QueryRef<GetBookingPaymentData, GetBookingPaymentVariables>;
-  operationName: string;
-}
-export const getBookingPaymentRef: GetBookingPaymentRef;
-
-export function getBookingPayment(vars: GetBookingPaymentVariables): QueryPromise<GetBookingPaymentData, GetBookingPaymentVariables>;
-export function getBookingPayment(dc: DataConnect, vars: GetBookingPaymentVariables): QueryPromise<GetBookingPaymentData, GetBookingPaymentVariables>;
-
-interface GetPaymentByIdRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetPaymentByIdVariables): QueryRef<GetPaymentByIdData, GetPaymentByIdVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetPaymentByIdVariables): QueryRef<GetPaymentByIdData, GetPaymentByIdVariables>;
-  operationName: string;
-}
-export const getPaymentByIdRef: GetPaymentByIdRef;
-
-export function getPaymentById(vars: GetPaymentByIdVariables): QueryPromise<GetPaymentByIdData, GetPaymentByIdVariables>;
-export function getPaymentById(dc: DataConnect, vars: GetPaymentByIdVariables): QueryPromise<GetPaymentByIdData, GetPaymentByIdVariables>;
-
-interface GetPaymentsByStatusRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetPaymentsByStatusVariables): QueryRef<GetPaymentsByStatusData, GetPaymentsByStatusVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetPaymentsByStatusVariables): QueryRef<GetPaymentsByStatusData, GetPaymentsByStatusVariables>;
-  operationName: string;
-}
-export const getPaymentsByStatusRef: GetPaymentsByStatusRef;
-
-export function getPaymentsByStatus(vars: GetPaymentsByStatusVariables): QueryPromise<GetPaymentsByStatusData, GetPaymentsByStatusVariables>;
-export function getPaymentsByStatus(dc: DataConnect, vars: GetPaymentsByStatusVariables): QueryPromise<GetPaymentsByStatusData, GetPaymentsByStatusVariables>;
-
-interface GetUserPaymentsRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetUserPaymentsVariables): QueryRef<GetUserPaymentsData, GetUserPaymentsVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetUserPaymentsVariables): QueryRef<GetUserPaymentsData, GetUserPaymentsVariables>;
-  operationName: string;
-}
-export const getUserPaymentsRef: GetUserPaymentsRef;
-
-export function getUserPayments(vars: GetUserPaymentsVariables): QueryPromise<GetUserPaymentsData, GetUserPaymentsVariables>;
-export function getUserPayments(dc: DataConnect, vars: GetUserPaymentsVariables): QueryPromise<GetUserPaymentsData, GetUserPaymentsVariables>;
-
-interface GetBookingFeedbackRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetBookingFeedbackVariables): QueryRef<GetBookingFeedbackData, GetBookingFeedbackVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetBookingFeedbackVariables): QueryRef<GetBookingFeedbackData, GetBookingFeedbackVariables>;
-  operationName: string;
-}
-export const getBookingFeedbackRef: GetBookingFeedbackRef;
-
-export function getBookingFeedback(vars: GetBookingFeedbackVariables): QueryPromise<GetBookingFeedbackData, GetBookingFeedbackVariables>;
-export function getBookingFeedback(dc: DataConnect, vars: GetBookingFeedbackVariables): QueryPromise<GetBookingFeedbackData, GetBookingFeedbackVariables>;
-
-interface GetAllFeedbackRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars?: GetAllFeedbackVariables): QueryRef<GetAllFeedbackData, GetAllFeedbackVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars?: GetAllFeedbackVariables): QueryRef<GetAllFeedbackData, GetAllFeedbackVariables>;
-  operationName: string;
-}
-export const getAllFeedbackRef: GetAllFeedbackRef;
-
-export function getAllFeedback(vars?: GetAllFeedbackVariables): QueryPromise<GetAllFeedbackData, GetAllFeedbackVariables>;
-export function getAllFeedback(dc: DataConnect, vars?: GetAllFeedbackVariables): QueryPromise<GetAllFeedbackData, GetAllFeedbackVariables>;
-
-interface GetFeedbackByRatingRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetFeedbackByRatingVariables): QueryRef<GetFeedbackByRatingData, GetFeedbackByRatingVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetFeedbackByRatingVariables): QueryRef<GetFeedbackByRatingData, GetFeedbackByRatingVariables>;
-  operationName: string;
-}
-export const getFeedbackByRatingRef: GetFeedbackByRatingRef;
-
-export function getFeedbackByRating(vars: GetFeedbackByRatingVariables): QueryPromise<GetFeedbackByRatingData, GetFeedbackByRatingVariables>;
-export function getFeedbackByRating(dc: DataConnect, vars: GetFeedbackByRatingVariables): QueryPromise<GetFeedbackByRatingData, GetFeedbackByRatingVariables>;
-
-interface GetBlogsRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars?: GetBlogsVariables): QueryRef<GetBlogsData, GetBlogsVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars?: GetBlogsVariables): QueryRef<GetBlogsData, GetBlogsVariables>;
-  operationName: string;
-}
-export const getBlogsRef: GetBlogsRef;
-
-export function getBlogs(vars?: GetBlogsVariables): QueryPromise<GetBlogsData, GetBlogsVariables>;
-export function getBlogs(dc: DataConnect, vars?: GetBlogsVariables): QueryPromise<GetBlogsData, GetBlogsVariables>;
-
-interface GetBlogByIdRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetBlogByIdVariables): QueryRef<GetBlogByIdData, GetBlogByIdVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetBlogByIdVariables): QueryRef<GetBlogByIdData, GetBlogByIdVariables>;
-  operationName: string;
-}
-export const getBlogByIdRef: GetBlogByIdRef;
-
-export function getBlogById(vars: GetBlogByIdVariables): QueryPromise<GetBlogByIdData, GetBlogByIdVariables>;
-export function getBlogById(dc: DataConnect, vars: GetBlogByIdVariables): QueryPromise<GetBlogByIdData, GetBlogByIdVariables>;
-
-interface GetBlogsByUserRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetBlogsByUserVariables): QueryRef<GetBlogsByUserData, GetBlogsByUserVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetBlogsByUserVariables): QueryRef<GetBlogsByUserData, GetBlogsByUserVariables>;
-  operationName: string;
-}
-export const getBlogsByUserRef: GetBlogsByUserRef;
-
-export function getBlogsByUser(vars: GetBlogsByUserVariables): QueryPromise<GetBlogsByUserData, GetBlogsByUserVariables>;
-export function getBlogsByUser(dc: DataConnect, vars: GetBlogsByUserVariables): QueryPromise<GetBlogsByUserData, GetBlogsByUserVariables>;
-
-interface GetMyBlogsRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetMyBlogsData, undefined>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetMyBlogsData, undefined>;
-  operationName: string;
-}
-export const getMyBlogsRef: GetMyBlogsRef;
-
-export function getMyBlogs(): QueryPromise<GetMyBlogsData, undefined>;
-export function getMyBlogs(dc: DataConnect): QueryPromise<GetMyBlogsData, undefined>;
-
-interface GetUserNotificationsRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetUserNotificationsVariables): QueryRef<GetUserNotificationsData, GetUserNotificationsVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetUserNotificationsVariables): QueryRef<GetUserNotificationsData, GetUserNotificationsVariables>;
-  operationName: string;
-}
-export const getUserNotificationsRef: GetUserNotificationsRef;
-
-export function getUserNotifications(vars: GetUserNotificationsVariables): QueryPromise<GetUserNotificationsData, GetUserNotificationsVariables>;
-export function getUserNotifications(dc: DataConnect, vars: GetUserNotificationsVariables): QueryPromise<GetUserNotificationsData, GetUserNotificationsVariables>;
-
-interface GetMyNotificationsRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetMyNotificationsData, undefined>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetMyNotificationsData, undefined>;
-  operationName: string;
-}
-export const getMyNotificationsRef: GetMyNotificationsRef;
-
-export function getMyNotifications(): QueryPromise<GetMyNotificationsData, undefined>;
-export function getMyNotifications(dc: DataConnect): QueryPromise<GetMyNotificationsData, undefined>;
-
-interface GetUnreadNotificationsCountRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetUnreadNotificationsCountVariables): QueryRef<GetUnreadNotificationsCountData, GetUnreadNotificationsCountVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetUnreadNotificationsCountVariables): QueryRef<GetUnreadNotificationsCountData, GetUnreadNotificationsCountVariables>;
-  operationName: string;
-}
-export const getUnreadNotificationsCountRef: GetUnreadNotificationsCountRef;
-
-export function getUnreadNotificationsCount(vars: GetUnreadNotificationsCountVariables): QueryPromise<GetUnreadNotificationsCountData, GetUnreadNotificationsCountVariables>;
-export function getUnreadNotificationsCount(dc: DataConnect, vars: GetUnreadNotificationsCountVariables): QueryPromise<GetUnreadNotificationsCountData, GetUnreadNotificationsCountVariables>;
-
-interface GetNotificationByIdRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetNotificationByIdVariables): QueryRef<GetNotificationByIdData, GetNotificationByIdVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetNotificationByIdVariables): QueryRef<GetNotificationByIdData, GetNotificationByIdVariables>;
-  operationName: string;
-}
-export const getNotificationByIdRef: GetNotificationByIdRef;
-
-export function getNotificationById(vars: GetNotificationByIdVariables): QueryPromise<GetNotificationByIdData, GetNotificationByIdVariables>;
-export function getNotificationById(dc: DataConnect, vars: GetNotificationByIdVariables): QueryPromise<GetNotificationByIdData, GetNotificationByIdVariables>;
-
-interface GetBookingStatsRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetBookingStatsData, undefined>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetBookingStatsData, undefined>;
-  operationName: string;
-}
-export const getBookingStatsRef: GetBookingStatsRef;
-
-export function getBookingStats(): QueryPromise<GetBookingStatsData, undefined>;
-export function getBookingStats(dc: DataConnect): QueryPromise<GetBookingStatsData, undefined>;
-
-interface GetServicePopularityRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetServicePopularityData, undefined>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetServicePopularityData, undefined>;
-  operationName: string;
-}
-export const getServicePopularityRef: GetServicePopularityRef;
-
-export function getServicePopularity(): QueryPromise<GetServicePopularityData, undefined>;
-export function getServicePopularity(dc: DataConnect): QueryPromise<GetServicePopularityData, undefined>;
-
-interface GetStaffBySpecificationRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetStaffBySpecificationVariables): QueryRef<GetStaffBySpecificationData, GetStaffBySpecificationVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetStaffBySpecificationVariables): QueryRef<GetStaffBySpecificationData, GetStaffBySpecificationVariables>;
-  operationName: string;
-}
-export const getStaffBySpecificationRef: GetStaffBySpecificationRef;
-
-export function getStaffBySpecification(vars: GetStaffBySpecificationVariables): QueryPromise<GetStaffBySpecificationData, GetStaffBySpecificationVariables>;
-export function getStaffBySpecification(dc: DataConnect, vars: GetStaffBySpecificationVariables): QueryPromise<GetStaffBySpecificationData, GetStaffBySpecificationVariables>;
-
-interface GetAvailableStaffRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetAvailableStaffData, undefined>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetAvailableStaffData, undefined>;
-  operationName: string;
-}
-export const getAvailableStaffRef: GetAvailableStaffRef;
-
-export function getAvailableStaff(): QueryPromise<GetAvailableStaffData, undefined>;
-export function getAvailableStaff(dc: DataConnect): QueryPromise<GetAvailableStaffData, undefined>;
-
-interface GetManagersBySpecificationRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetManagersBySpecificationVariables): QueryRef<GetManagersBySpecificationData, GetManagersBySpecificationVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetManagersBySpecificationVariables): QueryRef<GetManagersBySpecificationData, GetManagersBySpecificationVariables>;
-  operationName: string;
-}
-export const getManagersBySpecificationRef: GetManagersBySpecificationRef;
-
-export function getManagersBySpecification(vars: GetManagersBySpecificationVariables): QueryPromise<GetManagersBySpecificationData, GetManagersBySpecificationVariables>;
-export function getManagersBySpecification(dc: DataConnect, vars: GetManagersBySpecificationVariables): QueryPromise<GetManagersBySpecificationData, GetManagersBySpecificationVariables>;
-
-interface GetRevenueByCategoryRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetRevenueByCategoryData, undefined>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetRevenueByCategoryData, undefined>;
-  operationName: string;
-}
-export const getRevenueByCategoryRef: GetRevenueByCategoryRef;
-
-export function getRevenueByCategory(): QueryPromise<GetRevenueByCategoryData, undefined>;
-export function getRevenueByCategory(dc: DataConnect): QueryPromise<GetRevenueByCategoryData, undefined>;
-
-interface GetStaffWorkloadRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetStaffWorkloadData, undefined>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetStaffWorkloadData, undefined>;
-  operationName: string;
-}
-export const getStaffWorkloadRef: GetStaffWorkloadRef;
-
-export function getStaffWorkload(): QueryPromise<GetStaffWorkloadData, undefined>;
-export function getStaffWorkload(dc: DataConnect): QueryPromise<GetStaffWorkloadData, undefined>;
-
-interface GetTestCompletionStatsRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetTestCompletionStatsData, undefined>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetTestCompletionStatsData, undefined>;
-  operationName: string;
-}
-export const getTestCompletionStatsRef: GetTestCompletionStatsRef;
-
-export function getTestCompletionStats(): QueryPromise<GetTestCompletionStatsData, undefined>;
-export function getTestCompletionStats(dc: DataConnect): QueryPromise<GetTestCompletionStatsData, undefined>;
-
-interface GetCustomerSatisfactionStatsRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetCustomerSatisfactionStatsData, undefined>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetCustomerSatisfactionStatsData, undefined>;
-  operationName: string;
-}
-export const getCustomerSatisfactionStatsRef: GetCustomerSatisfactionStatsRef;
-
-export function getCustomerSatisfactionStats(): QueryPromise<GetCustomerSatisfactionStatsData, undefined>;
-export function getCustomerSatisfactionStats(dc: DataConnect): QueryPromise<GetCustomerSatisfactionStatsData, undefined>;
-
-interface GetAvailableManagersRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetAvailableManagersData, undefined>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetAvailableManagersData, undefined>;
-  operationName: string;
-}
-export const getAvailableManagersRef: GetAvailableManagersRef;
-
-export function getAvailableManagers(): QueryPromise<GetAvailableManagersData, undefined>;
-export function getAvailableManagers(dc: DataConnect): QueryPromise<GetAvailableManagersData, undefined>;
-
-interface GetStaffByPositionsRef {
-  /* Allow users to create refs without passing in DataConnect */
-  (vars: GetStaffByPositionsVariables): QueryRef<GetStaffByPositionsData, GetStaffByPositionsVariables>;
-  /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetStaffByPositionsVariables): QueryRef<GetStaffByPositionsData, GetStaffByPositionsVariables>;
-  operationName: string;
-}
-export const getStaffByPositionsRef: GetStaffByPositionsRef;
-
-export function getStaffByPositions(vars: GetStaffByPositionsVariables): QueryPromise<GetStaffByPositionsData, GetStaffByPositionsVariables>;
-export function getStaffByPositions(dc: DataConnect, vars: GetStaffByPositionsVariables): QueryPromise<GetStaffByPositionsData, GetStaffByPositionsVariables>;
 

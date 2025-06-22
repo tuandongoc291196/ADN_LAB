@@ -104,13 +104,14 @@ const signInWithGoogle = async () => {
     const res = await signInWithPopup(auth, googleProvider);
     const user = res.user;
     try {
-      const { data: userData } = await getUser(dataConnect);
+      const { data: userData } = await getUser(dataConnect, { userId: user.uid });
       console.log("Checking if user exists in database:", userData);
       if (userData?.user) {
         console.log("User found in database");
       } else {
         console.log("User not found in database, creating new record");
         await createOrUpdateUser(dataConnect, {
+          id : user.uid,
           fullname: user.displayName || "",
           email: user.email,
           authProvider: "google",
@@ -128,7 +129,7 @@ const signInWithGoogle = async () => {
       userId: user.uid,
       accountStatus: "active"
     });
-    const { data: userData } = await getUser(dataConnect);
+    const { data: userData } = await getUser(dataConnect, { userId: user.uid });
     localStorage.setItem("user_id", user.uid);
     localStorage.setItem("userData", JSON.stringify(userData.user));
     return { uid: user.uid, displayName: user.displayName };
@@ -144,7 +145,7 @@ const logInWithEmailAndPassword = async (email, password) => {
     const res = await signInWithEmailAndPassword(auth, email, password);
     const user = res.user;
 
-    const { data: userData } = await getUser(dataConnect);
+    const { data: userData } = await getUser(dataConnect, { userId: user.uid });
     
     localStorage.setItem("user_id", user.uid);
     localStorage.setItem("userData", JSON.stringify(userData.user));
@@ -170,6 +171,7 @@ const registerWithEmailAndPassword = async (name, phone, email, password) => {
     const roleInfo = getRoleFromEmail(email);
     
     await createOrUpdateUser(dataConnect, {
+      id : user.uid,
       fullname: name,
       email: email,
       authProvider: "email",
@@ -181,7 +183,7 @@ const registerWithEmailAndPassword = async (name, phone, email, password) => {
     });
     
     // Get user data and store in localStorage
-    const { data: userData } = await getUser(dataConnect);
+    const { data: userData } = await getUser(dataConnect, { userId: user.uid });
     
     localStorage.setItem("user_id", user.uid);
     localStorage.setItem("userData", JSON.stringify(userData.user));
@@ -532,14 +534,14 @@ function invalidateUserCache(userId) {
 // User profile management with Data Connect
 async function updateProfile(profileData) {
   try {
+    const currentUserId = localStorage.getItem("user_id");
     await updateUserProfile(dataConnect, profileData);
     
     // Get updated user data
-    const { data: userData } = await getUser(dataConnect);
+    const { data: userData } = await getUser(dataConnect, { userId: currentUserId });
     localStorage.setItem("userData", JSON.stringify(userData.user));
     
     // Invalidate cache for the updated user
-    const currentUserId = localStorage.getItem("user_id");
     if (currentUserId) {
       invalidateUserCache(currentUserId);
     }

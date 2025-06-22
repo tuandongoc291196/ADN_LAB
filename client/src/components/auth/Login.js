@@ -45,7 +45,7 @@ const Login = ({ setUser }) => {
       
       if (user) {
         try {
-          const { data: userData } = await getUser(dataConnect);
+          const { data: userData } = await getUser(dataConnect, { userId: user.uid });
           
           if (userData && userData.user) {
             const userInfo = userData.user;           
