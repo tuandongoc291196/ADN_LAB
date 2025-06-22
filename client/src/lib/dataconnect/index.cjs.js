@@ -115,28 +115,64 @@ exports.updateStaff = function updateStaff(dcOrVars, vars) {
   return executeMutation(updateStaffRef(dcOrVars, vars));
 };
 
-const createManagerRef = (dcOrVars, vars) => {
+const assignStaffToPositionRef = (dcOrVars, vars) => {
   const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
   dcInstance._useGeneratedSdk();
-  return mutationRef(dcInstance, 'CreateManager', inputVars);
+  return mutationRef(dcInstance, 'AssignStaffToPosition', inputVars);
 }
-createManagerRef.operationName = 'CreateManager';
-exports.createManagerRef = createManagerRef;
+assignStaffToPositionRef.operationName = 'AssignStaffToPosition';
+exports.assignStaffToPositionRef = assignStaffToPositionRef;
 
-exports.createManager = function createManager(dcOrVars, vars) {
-  return executeMutation(createManagerRef(dcOrVars, vars));
+exports.assignStaffToPosition = function assignStaffToPosition(dcOrVars, vars) {
+  return executeMutation(assignStaffToPositionRef(dcOrVars, vars));
 };
 
-const updateManagerRef = (dcOrVars, vars) => {
+const createStaffWithPositionRef = (dcOrVars, vars) => {
   const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
   dcInstance._useGeneratedSdk();
-  return mutationRef(dcInstance, 'UpdateManager', inputVars);
+  return mutationRef(dcInstance, 'CreateStaffWithPosition', inputVars);
 }
-updateManagerRef.operationName = 'UpdateManager';
-exports.updateManagerRef = updateManagerRef;
+createStaffWithPositionRef.operationName = 'CreateStaffWithPosition';
+exports.createStaffWithPositionRef = createStaffWithPositionRef;
 
-exports.updateManager = function updateManager(dcOrVars, vars) {
-  return executeMutation(updateManagerRef(dcOrVars, vars));
+exports.createStaffWithPosition = function createStaffWithPosition(dcOrVars, vars) {
+  return executeMutation(createStaffWithPositionRef(dcOrVars, vars));
+};
+
+const createPositionRef = (dcOrVars, vars) => {
+  const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
+  dcInstance._useGeneratedSdk();
+  return mutationRef(dcInstance, 'CreatePosition', inputVars);
+}
+createPositionRef.operationName = 'CreatePosition';
+exports.createPositionRef = createPositionRef;
+
+exports.createPosition = function createPosition(dcOrVars, vars) {
+  return executeMutation(createPositionRef(dcOrVars, vars));
+};
+
+const updatePositionRef = (dcOrVars, vars) => {
+  const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
+  dcInstance._useGeneratedSdk();
+  return mutationRef(dcInstance, 'UpdatePosition', inputVars);
+}
+updatePositionRef.operationName = 'UpdatePosition';
+exports.updatePositionRef = updatePositionRef;
+
+exports.updatePosition = function updatePosition(dcOrVars, vars) {
+  return executeMutation(updatePositionRef(dcOrVars, vars));
+};
+
+const deletePositionRef = (dcOrVars, vars) => {
+  const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
+  dcInstance._useGeneratedSdk();
+  return mutationRef(dcInstance, 'DeletePosition', inputVars);
+}
+deletePositionRef.operationName = 'DeletePosition';
+exports.deletePositionRef = deletePositionRef;
+
+exports.deletePosition = function deletePosition(dcOrVars, vars) {
+  return executeMutation(deletePositionRef(dcOrVars, vars));
 };
 
 const createServiceCategoryRef = (dcOrVars, vars) => {
@@ -679,18 +715,6 @@ exports.deleteStaff = function deleteStaff(dcOrVars, vars) {
   return executeMutation(deleteStaffRef(dcOrVars, vars));
 };
 
-const deleteManagerRef = (dcOrVars, vars) => {
-  const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
-  dcInstance._useGeneratedSdk();
-  return mutationRef(dcInstance, 'DeleteManager', inputVars);
-}
-deleteManagerRef.operationName = 'DeleteManager';
-exports.deleteManagerRef = deleteManagerRef;
-
-exports.deleteManager = function deleteManager(dcOrVars, vars) {
-  return executeMutation(deleteManagerRef(dcOrVars, vars));
-};
-
 const getRolesRef = (dc) => {
   const { dc: dcInstance} = validateArgs(connectorConfig, dc, undefined);
   dcInstance._useGeneratedSdk();
@@ -799,6 +823,42 @@ exports.getStaffById = function getStaffById(dcOrVars, vars) {
   return executeQuery(getStaffByIdRef(dcOrVars, vars));
 };
 
+const getPositionsRef = (dc) => {
+  const { dc: dcInstance} = validateArgs(connectorConfig, dc, undefined);
+  dcInstance._useGeneratedSdk();
+  return queryRef(dcInstance, 'GetPositions');
+}
+getPositionsRef.operationName = 'GetPositions';
+exports.getPositionsRef = getPositionsRef;
+
+exports.getPositions = function getPositions(dc) {
+  return executeQuery(getPositionsRef(dc));
+};
+
+const getPositionByIdRef = (dcOrVars, vars) => {
+  const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
+  dcInstance._useGeneratedSdk();
+  return queryRef(dcInstance, 'GetPositionById', inputVars);
+}
+getPositionByIdRef.operationName = 'GetPositionById';
+exports.getPositionByIdRef = getPositionByIdRef;
+
+exports.getPositionById = function getPositionById(dcOrVars, vars) {
+  return executeQuery(getPositionByIdRef(dcOrVars, vars));
+};
+
+const getStaffByPositionRef = (dcOrVars, vars) => {
+  const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
+  dcInstance._useGeneratedSdk();
+  return queryRef(dcInstance, 'GetStaffByPosition', inputVars);
+}
+getStaffByPositionRef.operationName = 'GetStaffByPosition';
+exports.getStaffByPositionRef = getStaffByPositionRef;
+
+exports.getStaffByPosition = function getStaffByPosition(dcOrVars, vars) {
+  return executeQuery(getStaffByPositionRef(dcOrVars, vars));
+};
+
 const getManagersRef = (dc) => {
   const { dc: dcInstance} = validateArgs(connectorConfig, dc, undefined);
   dcInstance._useGeneratedSdk();
@@ -811,16 +871,40 @@ exports.getManagers = function getManagers(dc) {
   return executeQuery(getManagersRef(dc));
 };
 
-const getManagerByIdRef = (dcOrVars, vars) => {
+const getStaffCountByPositionRef = (dc) => {
+  const { dc: dcInstance} = validateArgs(connectorConfig, dc, undefined);
+  dcInstance._useGeneratedSdk();
+  return queryRef(dcInstance, 'GetStaffCountByPosition');
+}
+getStaffCountByPositionRef.operationName = 'GetStaffCountByPosition';
+exports.getStaffCountByPositionRef = getStaffCountByPositionRef;
+
+exports.getStaffCountByPosition = function getStaffCountByPosition(dc) {
+  return executeQuery(getStaffCountByPositionRef(dc));
+};
+
+const getStaffByPositionIdRef = (dcOrVars, vars) => {
   const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
   dcInstance._useGeneratedSdk();
-  return queryRef(dcInstance, 'GetManagerById', inputVars);
+  return queryRef(dcInstance, 'GetStaffByPositionId', inputVars);
 }
-getManagerByIdRef.operationName = 'GetManagerById';
-exports.getManagerByIdRef = getManagerByIdRef;
+getStaffByPositionIdRef.operationName = 'GetStaffByPositionId';
+exports.getStaffByPositionIdRef = getStaffByPositionIdRef;
 
-exports.getManagerById = function getManagerById(dcOrVars, vars) {
-  return executeQuery(getManagerByIdRef(dcOrVars, vars));
+exports.getStaffByPositionId = function getStaffByPositionId(dcOrVars, vars) {
+  return executeQuery(getStaffByPositionIdRef(dcOrVars, vars));
+};
+
+const getPositionWithStaffCountRef = (dcOrVars, vars) => {
+  const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
+  dcInstance._useGeneratedSdk();
+  return queryRef(dcInstance, 'GetPositionWithStaffCount', inputVars);
+}
+getPositionWithStaffCountRef.operationName = 'GetPositionWithStaffCount';
+exports.getPositionWithStaffCountRef = getPositionWithStaffCountRef;
+
+exports.getPositionWithStaffCount = function getPositionWithStaffCount(dcOrVars, vars) {
+  return executeQuery(getPositionWithStaffCountRef(dcOrVars, vars));
 };
 
 const getServiceCategoriesRef = (dc) => {
@@ -1459,18 +1543,6 @@ exports.getServicePopularity = function getServicePopularity(dc) {
   return executeQuery(getServicePopularityRef(dc));
 };
 
-const getMonthlyRevenueRef = (dcOrVars, vars) => {
-  const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
-  dcInstance._useGeneratedSdk();
-  return queryRef(dcInstance, 'GetMonthlyRevenue', inputVars);
-}
-getMonthlyRevenueRef.operationName = 'GetMonthlyRevenue';
-exports.getMonthlyRevenueRef = getMonthlyRevenueRef;
-
-exports.getMonthlyRevenue = function getMonthlyRevenue(dcOrVars, vars) {
-  return executeQuery(getMonthlyRevenueRef(dcOrVars, vars));
-};
-
 const getStaffBySpecificationRef = (dcOrVars, vars) => {
   const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
   dcInstance._useGeneratedSdk();
@@ -1505,18 +1577,6 @@ exports.getManagersBySpecificationRef = getManagersBySpecificationRef;
 
 exports.getManagersBySpecification = function getManagersBySpecification(dcOrVars, vars) {
   return executeQuery(getManagersBySpecificationRef(dcOrVars, vars));
-};
-
-const getBookingCountByDateRangeRef = (dcOrVars, vars) => {
-  const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
-  dcInstance._useGeneratedSdk();
-  return queryRef(dcInstance, 'GetBookingCountByDateRange', inputVars);
-}
-getBookingCountByDateRangeRef.operationName = 'GetBookingCountByDateRange';
-exports.getBookingCountByDateRangeRef = getBookingCountByDateRangeRef;
-
-exports.getBookingCountByDateRange = function getBookingCountByDateRange(dcOrVars, vars) {
-  return executeQuery(getBookingCountByDateRangeRef(dcOrVars, vars));
 };
 
 const getRevenueByCategoryRef = (dc) => {
@@ -1565,4 +1625,28 @@ exports.getCustomerSatisfactionStatsRef = getCustomerSatisfactionStatsRef;
 
 exports.getCustomerSatisfactionStats = function getCustomerSatisfactionStats(dc) {
   return executeQuery(getCustomerSatisfactionStatsRef(dc));
+};
+
+const getAvailableManagersRef = (dc) => {
+  const { dc: dcInstance} = validateArgs(connectorConfig, dc, undefined);
+  dcInstance._useGeneratedSdk();
+  return queryRef(dcInstance, 'GetAvailableManagers');
+}
+getAvailableManagersRef.operationName = 'GetAvailableManagers';
+exports.getAvailableManagersRef = getAvailableManagersRef;
+
+exports.getAvailableManagers = function getAvailableManagers(dc) {
+  return executeQuery(getAvailableManagersRef(dc));
+};
+
+const getStaffByPositionsRef = (dcOrVars, vars) => {
+  const { dc: dcInstance, vars: inputVars} = validateArgs(connectorConfig, dcOrVars, vars, true);
+  dcInstance._useGeneratedSdk();
+  return queryRef(dcInstance, 'GetStaffByPositions', inputVars);
+}
+getStaffByPositionsRef.operationName = 'GetStaffByPositions';
+exports.getStaffByPositionsRef = getStaffByPositionsRef;
+
+exports.getStaffByPositions = function getStaffByPositions(dcOrVars, vars) {
+  return executeQuery(getStaffByPositionsRef(dcOrVars, vars));
 };

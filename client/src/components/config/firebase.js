@@ -124,7 +124,7 @@ const signInWithGoogle = async () => {
     } catch (getUserError) {
       console.log("User error");
     }    
-    await updateUserAccountStatus(dataConnect, {
+    updateUserAccountStatus(dataConnect, {
       userId: user.uid,
       accountStatus: "active"
     });
@@ -148,10 +148,11 @@ const logInWithEmailAndPassword = async (email, password) => {
     
     localStorage.setItem("user_id", user.uid);
     localStorage.setItem("userData", JSON.stringify(userData.user));
-    await updateUserAccountStatus(dataConnect, {
+    const response = updateUserAccountStatus(dataConnect, {
       userId: user.uid,
       accountStatus: "active"
     });
+    console.log("User account status updated:", response);
     return res;
   } catch (err) {
     console.error(err);
@@ -184,7 +185,7 @@ const registerWithEmailAndPassword = async (name, phone, email, password) => {
     
     localStorage.setItem("user_id", user.uid);
     localStorage.setItem("userData", JSON.stringify(userData.user));
-    await updateUserAccountStatus(dataConnect, {
+    updateUserAccountStatus(dataConnect, {
       userId: user.uid,
       accountStatus: "active"
     });
@@ -208,7 +209,7 @@ const sendPasswordReset = async (email) => {
 
 const logout = async () => {
   const userId = localStorage.getItem("user_id");  
-  await updateUserAccountStatus(dataConnect, {
+  updateUserAccountStatus(dataConnect, {
       userId: userId,
       accountStatus: "inactive"
     });
@@ -596,7 +597,7 @@ async function updateUserRole(userId, roleId) {
 
 async function updateAccountStatus(userId, accountStatus) {
   try {
-    await updateUserAccountStatus(dataConnect, {
+    updateUserAccountStatus(dataConnect, {
       userId,
       accountStatus
     });
