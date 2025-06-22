@@ -16,11 +16,9 @@ const getAllMethods = async (req, res) => {
         }
     `;
 
-    console.log("Executing GraphQL query:", GET_ALL_METHODS_QUERY);
     const response = await dataConnect.executeGraphql(GET_ALL_METHODS_QUERY);
     const responseData = response.data.methods || [];
     if (!responseData || responseData.length === 0) {
-      console.log("No methods found");
       return res.status(404).json({
         statusCode: 404,
         status: "error",
@@ -58,7 +56,6 @@ const getOneMethod = async (req, res) => {
     }
 
     if (!(await checkMethodExists(methodId))) {
-      console.log(await checkMethodExists(methodId));
       return res.status(404).json({
         statusCode: 404,
         status: "error",
@@ -105,35 +102,40 @@ const getOneMethod = async (req, res) => {
 };
 
 const checkMethodExists = async (methodId) => { 
-    if (!methodId) {
-      throw new Error("methodId is required");
-    }
-
-    const variables = {methodId};
-    const GET_METHOD_QUERY = `
-        query GetMethodById($methodId: String!) @auth(level: USER) {
-            method(key: {id: $methodId}) {
-                id
-                name
-                description
-                price
-                createdAt
-                updatedAt
-            }
+    try {
+        if (!methodId) {
+          throw new Error("methodId is required");
         }
-    `;
-    
-    console.log("Executing GraphQL query:", GET_METHOD_QUERY, "with variables:", variables);
-    const response = await dataConnect.executeGraphql(GET_METHOD_QUERY, {
-      variables: variables,
-    });
-    
-    respondData = response.data.method;
-    console.log("Response data:", respondData);
 
-    if (!respondData) {
-        return false;
-    } else return true;
+        const variables = {methodId};
+        const GET_METHOD_QUERY = `
+            query GetMethodById($methodId: String!) @auth(level: USER) {
+                method(key: {id: $methodId}) {
+                    id
+                    name
+                    description
+                    price
+                    createdAt
+                    updatedAt
+                }
+            }
+        `;
+        
+        console.log("Executing GraphQL query:", GET_METHOD_QUERY, "with variables:", variables);
+        const response = await dataConnect.executeGraphql(GET_METHOD_QUERY, {
+          variables: variables,
+        });
+        
+        respondData = response.data.method;
+        console.log("Response data:", respondData);
+
+        if (!respondData) {
+            return false;
+        } else return true;
+    } catch (error) {
+        console.error("Error checking method existence:", error);
+        throw new Error("Failed to check method existence");
+    }
 }
 
 module.exports = {

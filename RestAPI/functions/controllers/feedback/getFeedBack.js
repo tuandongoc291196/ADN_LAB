@@ -30,8 +30,6 @@ const getFeedbackByRating = async (req, res) => {
 
       const variables = { rating: parseInt(rating) };
 
-      console.log("Executing GraphQL query:", GET_FEEDBACK_BY_RATING_QUERY, "with variables:", variables);
-
       const response = await dataConnect.executeGraphql(GET_FEEDBACK_BY_RATING_QUERY, { variables });
 
       const feedbacks = response.data?.feedbacks || [];
@@ -78,8 +76,6 @@ const getFeedbackByRating = async (req, res) => {
         offset: offset ? parseInt(offset) : null,
       };
 
-      console.log("Executing GraphQL query:", GET_ALL_FEEDBACK_QUERY, "with variables:", variables);
-
       const response = await dataConnect.executeGraphql(GET_ALL_FEEDBACK_QUERY, { variables });
 
       const feedbacks = response.data?.feedbacks || [];
@@ -125,8 +121,6 @@ const getFeedbackByRating = async (req, res) => {
       `;
 
       const variables = { bookingId };
-
-      console.log("Executing GraphQL query:", GET_BOOKING_FEEDBACK_QUERY, "with variables:", variables);
 
       const response = await dataConnect.executeGraphql(GET_BOOKING_FEEDBACK_QUERY, { variables });
 

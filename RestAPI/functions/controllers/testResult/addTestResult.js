@@ -33,7 +33,7 @@ const createTestResult = async (req, res) => {
       return res.status(400).json({
         statusCode: 400,
         status: "error",
-        message: "Service ID is required",
+        message: "serviceId is required",
       });
     }
 

@@ -1,4 +1,5 @@
 const { dataConnect } = require("../../config/firebase.js");
+const { checkRoleExists } = require("../roles/getRoles.js");
 
 const getAllUsers = async (req, res) => {
   try {
@@ -44,10 +45,7 @@ const getOneUser = async (req, res) => {
       });
     }
 
-    console.log("Checking if user exists before update, userId:", userId);
-    const existingUser = await checkUserExists(userId);
-    console.log("User existence check result:", existingUser);
-    if (!existingUser) {
+    if (!(await checkUserExists(userId))) {
       return res.status(404).json({
         statusCode: 404,
         status: "error",
@@ -86,6 +84,10 @@ const getOneUser = async (req, res) => {
 
 const checkUserExists = async (userId) => {
   try {
+    if (!userId) {
+      throw new Error("userId is required");
+    }
+
     const GET_ONE_USER_QUERY = `
       query GetUserById($userId: String!) @auth(level: USER) {
         user(key: {id: $userId}) {
@@ -103,11 +105,19 @@ const checkUserExists = async (userId) => {
       }
     `;
 
-    const variables = {userId};
+    const variables = {
+      userId: userId
+    };
     console.log("Executing GraphQL query:", GET_ONE_USER_QUERY, "with variables:", variables);
-    const response = await dataConnect.executeGraphql(GET_ONE_USER_QUERY, { variables });
+    const response = await dataConnect.executeGraphql(GET_ONE_USER_QUERY, { 
+      variables: variables 
+    });
     
-    return response.data?.user || null;
+    response.data = response.data.user;
+    if (!response.data) {
+      console.log(`User with ID ${userId} does not exist`);
+      return false;
+    } else return true;
   } catch (error) {
     console.error("Error checking user existence:", error);
     throw error;
@@ -183,10 +193,83 @@ const getStaffWithLowestSlotCount = async () => {
   }
 };
 
+const getUsersByRole = async (req, res) => {
+  try {
+    const { roleId } = req.body;
+    if (!roleId) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "roleId is required",
+      });
+    }
+
+    if (!(await checkRoleExists(roleId))) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "Role not found",
+        error: "Role with the provided ID does not exist",
+      });
+    }
+
+    const variables = {
+      roleId: roleId,
+    };
+
+    const GET_USERS_BY_ROLE_QUERY = `
+      query GetUsersByRole($roleId: String!) @auth(level: USER) {
+        users(where: {roleId: {eq: $roleId}}) {
+          id
+          fullname
+          gender
+          avatar
+          email
+          accountStatus
+          role {
+            name
+          }
+          createdAt
+        }
+      }
+    `;
+
+    console.log("Executing GraphQL query:", GET_USERS_BY_ROLE_QUERY, "with variables:", variables);
+    const response = await dataConnect.executeGraphql(GET_USERS_BY_ROLE_QUERY, {
+      variables: variables,
+    });
+    const responseData = response.data.users;
+    console.log(responseData);
+    if (!responseData || responseData.length === 0) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "No users found for the specified role",
+      });
+    }
+
+    res.status(200).json({
+      statusCode: 200,
+      status: "success",
+      message: "Users retrieved successfully",
+      data: responseData,
+    });
+  } catch (error) {
+    console.error("Error fetching users by role:", error);
+    res.status(500).json({
+      statusCode: 500,
+      status: "error",
+      message: "Failed to retrieve users by role",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getOneUser,
   checkUserExists,
   countUsersByRole,
-  getStaffWithLowestSlotCount
+  getStaffWithLowestSlotCount,
+  getUsersByRole
 };

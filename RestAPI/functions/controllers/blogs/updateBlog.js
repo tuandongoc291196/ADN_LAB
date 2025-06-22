@@ -35,8 +35,6 @@ const updateBlog = async (req, res) => {
       imageUrl: imageUrl || null,
     };
 
-    console.log("Executing GraphQL mutation:", UPDATE_BLOG_MUTATION, "with variables:", variables);
-
     const response = await dataConnect.executeGraphql(UPDATE_BLOG_MUTATION, {
       variables,
     });

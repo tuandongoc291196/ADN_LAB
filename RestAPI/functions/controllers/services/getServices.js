@@ -2,44 +2,47 @@ const { dataConnect } = require("../../config/firebase.js");
 const { checkCatergoryExists } = require("../categories/getCategories.js");
 
 const checkServiceExists = async (serviceId) => {
-    if (!serviceId) {
-        throw new Error("serviceId is required");
-    }
-
-    const variables = { serviceId: serviceId };
-    const GET_SERVICE_QUERY = `
-        query GetServiceById($serviceId: String!) @auth(level: USER) {
-            service(key: {id: $serviceId}) {
-                id
-                title
-                description
-                fullDescription
-                price
-                duration
-                categoryId
-                category {
-                id
-                name
-                description
-                hasLegalValue
-                }
-                icon
-                featured
-                createdAt
-                updatedAt
-            }
+    try {
+        if (!serviceId) {
+            throw new Error("serviceId is required");
         }
-  `;
 
-    console.log("Executing GraphQL query to check service existence:", GET_SERVICE_QUERY, "with id:", serviceId);
-    const response = await dataConnect.executeGraphql(GET_SERVICE_QUERY, { 
-        variables: variables 
-    });
-    const responseData = response.data.service;
-    console.log("Response data:", responseData);
-    if (!responseData) {
-        return false;
-    } else return true;
+        const variables = { serviceId: serviceId };
+        const GET_SERVICE_QUERY = `
+            query GetServiceById($serviceId: String!) @auth(level: USER) {
+                service(key: {id: $serviceId}) {
+                    id
+                    title
+                    description
+                    fullDescription
+                    price
+                    duration
+                    categoryId
+                    category {
+                    id
+                    name
+                    description
+                    hasLegalValue
+                    }
+                    icon
+                    featured
+                    createdAt
+                    updatedAt
+                }
+            }
+      `;
+
+        const response = await dataConnect.executeGraphql(GET_SERVICE_QUERY, { 
+            variables: variables 
+        });
+        const responseData = response.data.service;
+        if (!responseData) {
+            return false;
+        } else return true;
+    } catch (error) {
+        console.error("Error checking service existence:", error);
+        throw new Error("Failed to check service existence");
+    }
 };
 
 const getOneService = async (req, res) => {
@@ -50,7 +53,7 @@ const getOneService = async (req, res) => {
             return res.status(400).json({
                 statusCode: 400,
                 status: "error",
-                message: "Service ID is required",
+                message: "serviceId is required",
             });
         }
 
@@ -90,13 +93,11 @@ const getOneService = async (req, res) => {
             }
         `;
 
-        console.log("Executing GraphQL query:", GET_SERVICE_QUERY, "with variables:", variables);
         const response = await dataConnect.executeGraphql(GET_SERVICE_QUERY, { 
             variables 
         });
 
         const responseData = response.data.service;
-        console.log("Response data:", responseData);
 
         res.status(200).json({
             statusCode: 200,
@@ -141,12 +142,10 @@ const getAllServices = async (req, res) => {
                 }
         `;
 
-        console.log("Executing GraphQL query:", GET_SERVICES_QUERY);
         const response = await dataConnect.executeGraphql(GET_SERVICES_QUERY);
 
         const responseData = response.data.services || [];
         if (!responseData || responseData.length === 0) {
-            console.log("No services found");
             return res.status(404).json({
                 statusCode: 404,
                 status: "error",
@@ -178,7 +177,7 @@ const getServiceByCategoryId = async (req, res) => {
             return res.status(400).json({
                 statusCode: 400,
                 status: "error",
-                message: "Category ID is required",
+                message: "categoryId is required",
             });
         }
 
@@ -214,11 +213,10 @@ const getServiceByCategoryId = async (req, res) => {
                 }
             }
         `;
-        console.log("Executing GraphQL query:", GET_SERVICES_BY_CATEGORY_QUERY, "with variables:", variables);
         const response = await dataConnect.executeGraphql(GET_SERVICES_BY_CATEGORY_QUERY, {
             variables: variables,
         });
-        const responseData = response.data.services || [];
+        const responseData = response.data.services;
         if (!responseData || responseData.length === 0) {
             return res.status(404).json({
                 statusCode: 404,

@@ -123,7 +123,6 @@ const addBooking = async (req, res) => {
         error: "Booking with the provided ID already exists",
       });
     }
-    console.log("Booking does not exist, proceeding with creation for ID:", id);
 
     const CREATE_BOOKING_MUTATION = `
       mutation CreateBooking($id: String!, $userId: String!, $staffId: String, $timeSlotId: String, $serviceId: String!, $collectionMethod: String!, $price: Float!, $quantity: Int!, $notes: String, $totalAmount: Float!) @auth(level: USER) {
@@ -132,7 +131,6 @@ const addBooking = async (req, res) => {
     `;
 
     const staffId = await getStaffWithLowestSlotCount();
-    console.log("Selected staff ID with lowest slot count:", staffId);
 
     const bookingVariables = {
       id : id,
@@ -155,7 +153,6 @@ const addBooking = async (req, res) => {
         message: "User not found",
       });
     }
-    console.log("User exists with ID:", userId);
 
     const existingStaff = await checkUserExists(bookingVariables.staffId);
     if (!existingStaff) {
@@ -165,9 +162,7 @@ const addBooking = async (req, res) => {
         message: "Staff not found",
       });
     }
-    console.log("Staff exists with ID:", staffId);
 
-    console.log("Checking if service exists with ID:", bookingVariables.serviceId);
     const existingService = await checkServiceExists(bookingVariables.serviceId);
     if (!existingService) {
       return res.status(404).json({
@@ -176,21 +171,16 @@ const addBooking = async (req, res) => {
         message: "Service not found",
       });
     }
-    console.log("Service exists with ID:", serviceId);
 
     const updateTimeSlotResponse = await addTimeSlot(slotDate, startTime, endTime);
-    console.log("Time slot updated successfully:", updateTimeSlotResponse);
 
-    console.log("Executing GraphQL mutation:", CREATE_BOOKING_MUTATION, "with variables:", bookingVariables);
     const response = await dataConnect.executeGraphql(CREATE_BOOKING_MUTATION, {
       variables: bookingVariables,
     });
 
     const responseData = response.data;
-    console.log("Response booking data:", responseData);
 
     const updateStaffResponse = await updateStaffSlotCount(staffId, "increase");
-    console.log("Staff slot count updated successfully:", updateStaffResponse);
 
     return res.status(201).json({
       statusCode: 201,

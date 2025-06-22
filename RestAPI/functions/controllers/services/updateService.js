@@ -3,7 +3,7 @@ const { checkCatergoryExists } = require("../categories/getCategories.js");
 const { checkServiceExists } = require("./getServices.js");
 const { getServiceMethods } = require("../methodService/getMethodServices.js");
 const { addServiceMethod } = require("../methodService/addMethodService.js");
-const { deleteMethodService } = require("../methodService/deleteMethodService.js");
+const { deleteOneMethodService } = require("../methodService/deleteMethodService.js");
 const { checkMethodExists } = require("../methods/getMethods.js");
 
 const updateService = async (req, res) => {
@@ -25,7 +25,7 @@ const updateService = async (req, res) => {
             return res.status(400).json({
                 statusCode: 400,
                 status: "error",
-                message: "Service ID is required",
+                message: "serviceId is required",
             });
         }
 
@@ -81,7 +81,6 @@ const updateService = async (req, res) => {
             }
         `;
 
-        console.log("Executing GraphQL mutation:", UPDATE_SERVICE_MUTATION, "with variables:", variables);
         const response = await dataConnect.executeGraphql(UPDATE_SERVICE_MUTATION, { variables });
         const responseData = response.data.service_update || {};
 
@@ -96,12 +95,10 @@ const updateService = async (req, res) => {
                 
                 for (const methodId of methodsToAdd) {
                     await addServiceMethod(serviceId, methodId);
-                    console.log(`Added method ${methodId} to service ${serviceId}`);
                 }
                 
                 for (const methodId of methodsToRemove) {
-                    await deleteMethodService(serviceId, methodId);
-                    console.log(`Removed method ${methodId} from service ${serviceId}`);
+                    await deleteOneMethodService(serviceId, methodId);
                 }
             } catch (error) {
                 console.error("Error updating service methods:", error);

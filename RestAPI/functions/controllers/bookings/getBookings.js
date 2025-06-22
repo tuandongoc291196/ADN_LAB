@@ -35,11 +35,9 @@ const getAllBookings = async (req, res) => {
       }
     `;
 
-    console.log("Executing GraphQL query:", GET_MY_BOOKINGS_QUERY);
     const response = await dataConnect.executeGraphql(GET_MY_BOOKINGS_QUERY);
 
     const responseData = response.data;
-    console.log("Response data:", responseData);
 
     if (!responseData.bookings || responseData.bookings.length === 0) {
       return res.status(404).json({
@@ -79,9 +77,7 @@ const getOneBooking = async (req, res) => {
       });
     }
 
-    console.log("Checking if booking exists before retrieval, bookingId:", bookingId);
     const existingBooking = await checkBookingExists(bookingId);
-    console.log("Booking existence check result:", existingBooking);
     
     if (!existingBooking) {
       return res.status(404).json({
@@ -142,7 +138,6 @@ const getOneBooking = async (req, res) => {
       }
     `;
     
-    console.log("Executing GraphQL query:", GET_BOOKING_BY_ID_QUERY, "with variables:", variables);
     const response = await dataConnect.executeGraphql(GET_BOOKING_BY_ID_QUERY, {
       variables: variables,
     });
@@ -179,9 +174,7 @@ const checkBookingExists = async (bookingId) => {
     `;
 
     const variables = { bookingId };
-    console.log("Executing GraphQL query:", CHECK_BOOKING_EXISTS_QUERY, "with variables:", variables);
     const response = await dataConnect.executeGraphql(CHECK_BOOKING_EXISTS_QUERY, { variables });
-    console.log("Booking existence check response:", response.data.booking);
     return response.data.booking;
   } catch (error) {
     console.error("Error checking booking existence:", error);

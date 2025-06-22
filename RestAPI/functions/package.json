@@ -24,7 +24,8 @@
     "moment": "^2.29.4",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
-    "vnpay": "^0.5.0"
+    "vnpay": "^0.5.0",
+    "yamljs": "^0.3.0"
   },
   "devDependencies": {
     "firebase-functions-test": "^3.1.0"

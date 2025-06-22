@@ -23,8 +23,6 @@ const deleteBlog = async (req, res) => {
       blogId,
     };
 
-    console.log("Executing GraphQL mutation:", DELETE_BLOG_MUTATION, "with variables:", variables);
-
     const response = await dataConnect.executeGraphql(DELETE_BLOG_MUTATION, {
       variables,
     });

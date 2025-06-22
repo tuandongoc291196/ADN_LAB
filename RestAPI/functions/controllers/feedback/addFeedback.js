@@ -47,8 +47,6 @@ const createFeedback = async (req, res) => {
       comment: comment || null,
     };
 
-    console.log("Executing GraphQL mutation:", CREATE_FEEDBACK_MUTATION, "with variables:", variables);
-
     const response = await dataConnect.executeGraphql(CREATE_FEEDBACK_MUTATION, {
       variables,
     });

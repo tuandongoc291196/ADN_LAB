@@ -13,15 +13,11 @@ const deleteRole = async (req, res) => {
       });
     }
 
-    console.log("Checking if role exists before deletion, roleId:", roleId);
-    const existingRole = await checkRoleExists(roleId);
-    console.log("Role existence check result:", existingRole);
-    if (!existingRole) {
+    if(!(await checkRoleExists(roleId))) {
       return res.status(404).json({
         statusCode: 404,
         status: "error",
-        message: "Role not found",
-        error: "Role with the provided ID does not exist",
+        message: "Role does not exist",
       });
     }
 
@@ -41,7 +37,7 @@ const deleteRole = async (req, res) => {
       variables : variables,
     });
 
-    const responseData = response.data;
+    const responseData = response.data.role_delete;
 
     res.status(200).json({
       statusCode: 200,

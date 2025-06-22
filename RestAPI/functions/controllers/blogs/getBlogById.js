@@ -36,8 +36,6 @@ const getBlogById = async (req, res) => {
       blogId,
     };
 
-    console.log("Executing GraphQL query:", GET_BLOG_BY_ID_QUERY, "with variables:", variables);
-
     const response = await dataConnect.executeGraphql(GET_BLOG_BY_ID_QUERY, {
       variables,
     });

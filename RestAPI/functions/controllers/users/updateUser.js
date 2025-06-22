@@ -1,9 +1,12 @@
 const { dataConnect } = require("../../config/firebase.js");
 const { checkUserExists } = require('./getUsers.js');
+const {checkRoleExists} = require('../roles/getRoles.js');
+const { checkPositionExists } = require('../staffPositions/getPosition.js');
+const {addUserToStaff} = require('./addUser.js');
 
-const updateUserRole = async (req, res) => {
+const updateUserRoleToStaff = async (req, res) => {
   try {
-    const { userId, roleId } = req.body;
+    const { userId, roleId} = req.body;
 
     if (!userId) {
       return res.status(400).json({
@@ -20,10 +23,7 @@ const updateUserRole = async (req, res) => {
       });
     }
 
-    console.log("Checking if user exists before updating role, userId:", userId);
-    const existingUser = await checkUserExists(userId);
-    console.log("User existence check result:", existingUser);
-    if (!existingUser) {
+   if (!(await checkUserExists(userId))) {
       return res.status(404).json({
         statusCode: 404,
         status: "error",
@@ -32,10 +32,28 @@ const updateUserRole = async (req, res) => {
       });
     }
 
+    if (!(await checkRoleExists(roleId))) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "Role not found",
+        error: "Role with the provided ID does not exist",
+      });
+    }
+
+    if (!(await checkPositionExists(roleId))) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "Position not found",
+        error: "Position with the provided ID does not exist",
+      });
+    }
+    
     const UPDATE_USER_ROLE_MUTATION = `
         mutation UpdateUserRole($userId: String!, $roleId: String!) @auth(level: USER) {
             user_update(key: {id: $userId}, data: {roleId: $roleId})
-            }
+        }
     `;
 
     const variables = {
@@ -44,11 +62,25 @@ const updateUserRole = async (req, res) => {
     };
 
     console.log("Executing GraphQL mutation to update user role:", UPDATE_USER_ROLE_MUTATION);
-    const response = await dataConnect.executeGraphql(UPDATE_USER_ROLE_MUTATION, {
+    const responseRole = await dataConnect.executeGraphql(UPDATE_USER_ROLE_MUTATION, {
       variables: variables,
     });
+    const responseDataRole = responseRole.data.user_update;
 
-    const responseData = response.data || [];
+    const responseDataStaff = await addUserToStaff(userId, roleId);
+    if (!responseDataStaff) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "Failed to add user to staff",
+        error: "There was an issue adding the user to staff. Please check your data and try again.",
+      });
+    }
+
+    const responseData = {
+      user: responseDataRole,
+      staff: responseDataStaff,
+    };
 
     res.status(200).json({
       statusCode: 200,
@@ -104,6 +136,104 @@ const updateUserRole = async (req, res) => {
   }
 }
 
+const updateUserRoleToAdmin = async (req, res) => {
+  try {
+    const { userId, roleId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "userId is required",
+      });
+    }
+
+    if (!roleId) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "roleId is required",
+      });
+    } 
+    if (!(await checkUserExists(userId))) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "User not found",
+        error: "User with the provided ID does not exist",
+      });
+    } 
+
+    if (!(await checkRoleExists(roleId))) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "Role not found",
+        error: "Role with the provided ID does not exist",
+      });
+    }
+
+    const UPDATE_USER_ROLE_MUTATION = `
+        mutation UpdateUserRole($userId: String!, $roleId: String!) @auth(level: USER) {
+            user_update(key: {id: $userId}, data: {roleId: $roleId})
+        }
+    `;
+
+    const variables = {
+      userId: userId,
+      roleId: roleId,
+    };
+
+    console.log("Executing GraphQL mutation to update user role:", UPDATE_USER_ROLE_MUTATION);
+    const response = await dataConnect.executeGraphql(UPDATE_USER_ROLE_MUTATION, {
+      variables: variables,
+    });
+    const responseData = response.data.user_update;
+    if (!responseData) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "Failed to update user role to admin",
+        error: "There was an issue updating the user role. Please check your data and try again.",
+      });
+    }
+    res.status(200).json({
+      statusCode: 200,
+      status: "success",
+      message: "User role updated to admin successfully",
+      data: responseData,
+    });
+
+  } catch (error) {
+    console.error("Error updating user role to admin:", error);
+    
+    if (error.message && error.message.includes('SQL query error')) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "Database operation failed",
+        error: "There was an issue with the database operation. Please check your data and try again.",
+      });
+    }
+
+    if (error.codePrefix === 'data-connect' && error.errorInfo) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "Database operation failed",
+        error: error.message,
+      });
+    }
+
+    res.status(500).json({
+      statusCode: 500,
+      status: "error",
+      message: "Failed to update user role to admin",
+      error: error.message,
+    });
+  }
+}
+
 const updateUser = async (req, res) => {
   try {
     const { 
@@ -112,7 +242,7 @@ const updateUser = async (req, res) => {
       gender,
       avatar,
       phone,
-      shippingAddress
+      address
     } = req.body;
 
     if (!userId) {
@@ -167,22 +297,22 @@ const updateUser = async (req, res) => {
       });
     }
 
-    if (!shippingAddress) {
+    if (!address) {
       return res.status(400).json({
         statusCode: 400,
         status: "error",
-        message: "shippingAddress is required",
+        message: "address is required",
       });
     }
 
     const UPDATE_USER_MUTATION = `
-      mutation UpdateUser($userId: String!, $fullname: String, $gender: String, $avatar: String, $phone: String, $shippingAddress: String) @auth(level: USER) {
+      mutation UpdateUser($userId: String!, $fullname: String, $gender: String, $avatar: String, $phone: String, $address: String) @auth(level: USER) {
         user_update(key: {id: $userId}, data: {
           fullname: $fullname,
           gender: $gender,
           avatar: $avatar,
           phone: $phone,
-          shippingAddress: $shippingAddress
+          address: $address
         })
       }
     `;
@@ -193,7 +323,7 @@ const updateUser = async (req, res) => {
       gender: gender || "",
       avatar: avatar || "",
       phone: phone || "",
-      shippingAddress: shippingAddress || "",
+      address: address || "",
     };
 
     console.log("Executing GraphQL mutation:", UPDATE_USER_MUTATION, "with variables:", variables);
@@ -249,14 +379,7 @@ const updateStaffSlotCount = async (userId, operation) => {
     if (!operation || (operation !== 'increase' && operation !== 'decrease')) {
       throw new Error("Operation must be 'increase' or 'decrease'");
     }
-
-    console.log("Checking if user exists before updating role, userId:", userId);
-    const existingUser = await checkUserExists(userId);
-    console.log("User existence check result:", existingUser);
-    if (!existingUser) {
-      throw new Error("User not found");
-    }
-    
+        
     const GET_USER_QUERY = `
       query GetUser($id: String!) @auth(level: USER) {
         user(key: { id: $id }) {
@@ -318,7 +441,8 @@ const updateStaffSlotCount = async (userId, operation) => {
 
 
 module.exports = {
-  updateUserRole,
+  updateUserRoleToStaff,
   updateUser,
-  updateStaffSlotCount
+  updateStaffSlotCount,
+  updateUserRoleToAdmin
 };

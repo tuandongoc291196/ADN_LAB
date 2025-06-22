@@ -1,5 +1,11 @@
 # Mutations for ADN Lab Firebase Data Connect - Complete DNA Testing Platform
 # Chat functionality remains in Firestore
+#
+# SCHEMA UPDATES:
+# - Removed separate Manager table mutations
+# - Added Position table mutations
+# - Staff mutations now use positionId instead of position string
+# - TestResult managerId references Staff table (managers are staff with manager positions)
 
 # ====== ROLE MUTATIONS ======
 
@@ -41,24 +47,25 @@ mutation DeleteRole($roleId: String!) @auth(level: USER) {
 
 # Create or update user profile
 mutation CreateOrUpdateUser(
+  $id: String!
   $fullname: String!
   $gender: String
   $avatar: String
   $email: String!
   $phone: String
-  $shippingAddress: String
+  $address: String
   $roleId: String
   $authProvider: String!
 ) @auth(level: USER) {
   user_upsert(
     data: {
-      id_expr: "auth.uid"
+      id: $id
       fullname: $fullname
       gender: $gender
       avatar: $avatar
       email: $email
       phone: $phone
-      shippingAddress: $shippingAddress
+      address: $address
       roleId: $roleId
       authProvider: $authProvider
       lastLogin_expr: "request.time"
@@ -68,20 +75,21 @@ mutation CreateOrUpdateUser(
 
 # Update user profile
 mutation UpdateUserProfile(
+  $userId: String!
   $fullname: String
   $gender: String
   $avatar: String
   $phone: String
-  $shippingAddress: String
+  $address: String
 ) @auth(level: USER) {
   user_update(
-    key: { id_expr: "auth.uid" }
+    key: { id: $userId }
     data: {
       fullname: $fullname
       gender: $gender
       avatar: $avatar
       phone: $phone
-      shippingAddress: $shippingAddress
+      address: $address
     }
   )
 }
@@ -110,6 +118,118 @@ mutation UpdateUserAccountStatus(
       accountStatus: $accountStatus
     }
   )
+}
+
+# ====== STAFF MUTATIONS ======
+
+# Create staff profile
+mutation CreateStaff(
+  $id: String!
+  $hireDate: Date
+  $slot: Int
+  $specification: [String!]
+  $certifications: [String!]
+  $positionId: String!
+) @auth(level: USER) {
+  staff_insert(data: {
+    id: $id
+    hireDate: $hireDate
+    slot: $slot
+    specification: $specification
+    certifications: $certifications
+    positionId: $positionId
+  })
+}
+
+# Update staff profile
+mutation UpdateStaff(
+  $staffId: String!
+  $hireDate: Date
+  $slot: Int
+  $specification: [String!]
+  $certifications: [String!]
+  $positionId: String
+) @auth(level: USER) {
+  staff_update(
+    key: { id: $staffId }
+    data: {
+      hireDate: $hireDate
+      slot: $slot
+      specification: $specification
+      certifications: $certifications
+      positionId: $positionId
+      updatedAt_expr: "request.time"
+    }
+  )
+}
+
+# Assign staff to position
+mutation AssignStaffToPosition(
+  $staffId: String!
+  $positionId: String!
+) @auth(level: USER) {
+  staff_update(
+    key: { id: $staffId }
+    data: {
+      positionId: $positionId
+      updatedAt_expr: "request.time"
+    }
+  )
+}
+
+# Create staff with position (comprehensive)
+mutation CreateStaffWithPosition(
+  $id: String!
+  $hireDate: Date
+  $slot: Int
+  $specification: [String!]
+  $certifications: [String!]
+  $positionId: String!
+) @auth(level: USER) {
+  staff_insert(data: {
+    id: $id
+    hireDate: $hireDate
+    slot: $slot
+    specification: $specification
+    certifications: $certifications
+    positionId: $positionId
+  })
+}
+
+# ====== POSITION MUTATIONS ======
+
+# Create position
+mutation CreatePosition(
+  $id: String!
+  $name: String!
+  $description: String
+) @auth(level: USER) {
+  position_insert(data: {
+    id: $id
+    name: $name
+    description: $description
+  })
+}
+
+# Update position
+mutation UpdatePosition(
+  $positionId: String!
+  $name: String
+  $description: String
+) @auth(level: USER) {
+  position_update(
+    key: { id: $positionId }
+    data: {
+      name: $name
+      description: $description
+      updatedAt_expr: "request.time"
+    }
+  )
+}
+
+# Delete position
+mutation DeletePosition($positionId: String!) @auth(level: USER) {
+  position_delete(key: { id: $positionId })
 }
 
 # ====== SERVICE MUTATIONS ======
@@ -398,6 +518,56 @@ mutation UpdateBookingHistory(
   )
 }
 
+# ====== PARTICIPANT MUTATIONS ======
+
+# Create participant
+mutation CreateParticipant(
+  $id: String!
+  $bookingId: String!
+  $name: String!
+  $age: Int!
+  $identification: String
+  $gender: String!
+  $relationship: String
+) @auth(level: USER) {
+  participant_insert(data: {
+    id: $id
+    bookingId: $bookingId
+    name: $name
+    age: $age
+    identification: $identification
+    gender: $gender
+    relationship: $relationship
+  })
+}
+
+# Update participant
+mutation UpdateParticipant(
+  $participantId: String!
+  $name: String
+  $age: Int
+  $identification: String
+  $gender: String
+  $relationship: String
+) @auth(level: USER) {
+  participant_update(
+    key: { id: $participantId }
+    data: {
+      name: $name
+      age: $age
+      identification: $identification
+      gender: $gender
+      relationship: $relationship
+      updatedAt_expr: "request.time"
+    }
+  )
+}
+
+# Delete participant
+mutation DeleteParticipant($participantId: String!) @auth(level: USER) {
+  participant_delete(key: { id: $participantId })
+}
+
 # ====== SAMPLE MUTATIONS ======
 
 # Create sample
@@ -405,38 +575,51 @@ mutation CreateSample(
   $id: String!
   $bookingId: String!
   $staffId: String
+  $participantId: String
   $collectionDate: Date
-  $status: String
+  $sampleQuality: String!
+  $sampleConcentration: Float
   $notes: String
 ) @auth(level: USER) {
   sample_insert(data: {
     id: $id
     bookingId: $bookingId
     staffId: $staffId
+    participantId: $participantId
     collectionDate: $collectionDate
-    status: $status
+    sampleQuality: $sampleQuality
+    sampleConcentration: $sampleConcentration
     notes: $notes
   })
 }
 
-# Update sample status
-mutation UpdateSampleStatus(
+# Update sample
+mutation UpdateSample(
   $sampleId: String!
-  $status: String!
   $staffId: String
+  $participantId: String
   $collectionDate: Date
+  $sampleQuality: String
+  $sampleConcentration: Float
   $notes: String
 ) @auth(level: USER) {
   sample_update(
     key: { id: $sampleId }
     data: {
-      status: $status
       staffId: $staffId
+      participantId: $participantId
       collectionDate: $collectionDate
+      sampleQuality: $sampleQuality
+      sampleConcentration: $sampleConcentration
       notes: $notes
       updatedAt_expr: "request.time"
     }
   )
+}
+
+# Delete sample
+mutation DeleteSample($sampleId: String!) @auth(level: USER) {
+  sample_delete(key: { id: $sampleId })
 }
 
 # ====== TEST RESULT MUTATIONS ======
@@ -446,10 +629,16 @@ mutation CreateTestResult(
   $id: String!
   $bookingId: String!
   $sampleId: String!
-  $staffId: String
+  $staffId: String!
+  $managerId: String!
+  $testMethod: String!
+  $positive: Boolean!
+  $accuracy: Float!
+  $testType: String!
   $testDate: Date
   $reportDate: Date
   $resultData: String
+  $resultNotes: String
   $status: String
 ) @auth(level: USER) {
   testResult_insert(data: {
@@ -457,9 +646,15 @@ mutation CreateTestResult(
     bookingId: $bookingId
     sampleId: $sampleId
     staffId: $staffId
+    managerId: $managerId
+    testMethod: $testMethod
+    positive: $positive
+    accuracy: $accuracy
+    testType: $testType
     testDate: $testDate
     reportDate: $reportDate
     resultData: $resultData
+    resultNotes: $resultNotes
     status: $status
   })
 }
@@ -467,18 +662,28 @@ mutation CreateTestResult(
 # Update test result
 mutation UpdateTestResult(
   $resultId: String!
-  $resultData: String
-  $status: String
-  $reportDate: Date
+  $testMethod: String
+  $positive: Boolean
+  $accuracy: Float
+  $testType: String
   $testDate: Date
+  $reportDate: Date
+  $resultData: String
+  $resultNotes: String
+  $status: String
 ) @auth(level: USER) {
   testResult_update(
     key: { id: $resultId }
     data: {
-      resultData: $resultData
-      status: $status
-      reportDate: $reportDate
+      testMethod: $testMethod
+      positive: $positive
+      accuracy: $accuracy
+      testType: $testType
       testDate: $testDate
+      reportDate: $reportDate
+      resultData: $resultData
+      resultNotes: $resultNotes
+      status: $status
       updatedAt_expr: "request.time"
     }
   )
@@ -496,6 +701,41 @@ mutation AssignTestResultStaff(
       updatedAt_expr: "request.time"
     }
   )
+}
+
+# Assign manager (staff) to test result
+mutation AssignTestResultManager(
+  $resultId: String!
+  $managerId: String!
+) @auth(level: USER) {
+  testResult_update(
+    key: { id: $resultId }
+    data: {
+      managerId: $managerId
+      updatedAt_expr: "request.time"
+    }
+  )
+}
+
+# Assign both staff and manager to test result
+mutation AssignTestResultStaffAndManager(
+  $resultId: String!
+  $staffId: String!
+  $managerId: String!
+) @auth(level: USER) {
+  testResult_update(
+    key: { id: $resultId }
+    data: {
+      staffId: $staffId
+      managerId: $managerId
+      updatedAt_expr: "request.time"
+    }
+  )
+}
+
+# Delete test result
+mutation DeleteTestResult($resultId: String!) @auth(level: USER) {
+  testResult_delete(key: { id: $resultId })
 }
 
 # ====== PAYMENT MUTATIONS ======
@@ -605,12 +845,14 @@ mutation UpdateFeedback(
 mutation CreateBlog(
   $id: String!
   $userId: String!
+  $title: String!
   $content: String!
   $imageUrl: String
 ) @auth(level: USER) {
   blog_insert(data: {
     id: $id
     userId: $userId
+    title: $title
     content: $content
     imageUrl: $imageUrl
   })
@@ -619,14 +861,17 @@ mutation CreateBlog(
 # Update blog post
 mutation UpdateBlog(
   $blogId: String!
+  $title: String
   $content: String
   $imageUrl: String
 ) @auth(level: USER) {
   blog_update(
     key: { id: $blogId }
     data: {
+      title: $title
       content: $content
       imageUrl: $imageUrl
+      updatedAt_expr: "request.time"
     }
   )
 }
@@ -684,4 +929,36 @@ mutation MarkAllNotificationsRead($userId: String!) @auth(level: USER) {
 # Delete notification
 mutation DeleteNotification($notificationId: String!) @auth(level: USER) {
   notification_delete(key: { id: $notificationId })
+}
+
+# ====== CLEANUP MUTATIONS ======
+
+# Delete service category (admin only)
+mutation DeleteServiceCategory($categoryId: String!) @auth(level: USER) {
+  serviceCategory_delete(key: { id: $categoryId })
+}
+
+# Delete method (admin only)
+mutation DeleteMethod($methodId: String!) @auth(level: USER) {
+  method_delete(key: { id: $methodId })
+}
+
+# Delete service (admin only)
+mutation DeleteService($serviceId: String!) @auth(level: USER) {
+  service_delete(key: { id: $serviceId })
+}
+
+# Delete time slot (admin only)
+mutation DeleteTimeSlot($timeSlotId: String!) @auth(level: USER) {
+  timeSlot_delete(key: { id: $timeSlotId })
+}
+
+# Delete booking (admin only)
+mutation DeleteBooking($bookingId: String!) @auth(level: USER) {
+  booking_delete(key: { id: $bookingId })
+}
+
+# Delete staff profile (admin only)
+mutation DeleteStaff($staffId: String!) @auth(level: USER) {
+  staff_delete(key: { id: $staffId })
 }

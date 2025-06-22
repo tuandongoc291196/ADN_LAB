@@ -103,7 +103,6 @@ const addService = async (req, res) => {
         };
 
         if (!(await checkCatergoryExists(categoryId))) {
-            console.log("Category", categoryId);
             return res.status(400).json({
                 statusCode: 400,
                 status: "error",
@@ -135,12 +134,10 @@ const addService = async (req, res) => {
             }
         `;
 
-        console.log("Executing GraphQL mutation:", ADD_SERVICE_MUTATION, "with variables:", variables);
         const response = await dataConnect.executeGraphql(ADD_SERVICE_MUTATION, { variables });
         const responseData = response.data.service_insert || {};
 
         for (const methodId of methods) {
-            console.log("ServiceId:", variables.id);
             await addServiceMethod(variables.id, methodId);
         }
 
