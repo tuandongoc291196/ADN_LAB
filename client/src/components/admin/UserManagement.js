@@ -4,73 +4,13 @@ import {
   Alert, InputGroup, Dropdown, Pagination, Toast, ToastContainer,
   Tab, Tabs, ProgressBar
 } from 'react-bootstrap';
+import { getAllUsers, getAllRoles } from '../../services/api';
 
 const UserManagement = ({ user }) => {
   const [activeTab, setActiveTab] = useState('users');
-  const [users, setUsers] = useState([
-    {
-      id: 1,
-      name: 'Nguyễn Văn A',
-      email: 'nguyenvana@email.com',
-      phone: '0901234567',
-      role: 'customer',
-      status: 'active',
-      joinDate: '2024-01-15',
-      lastLogin: '2024-11-20T10:30:00',
-      totalTests: 3,
-      totalSpent: 2500000,
-      location: 'TP. Hồ Chí Minh',
-      avatar: null,
-      verified: true
-    },
-    {
-      id: 2,
-      name: 'Trần Thị B',
-      email: 'tranthib@email.com',
-      phone: '0907654321',
-      role: 'customer',
-      status: 'active',
-      joinDate: '2024-02-20',
-      lastLogin: '2024-11-19T15:45:00',
-      totalTests: 7,
-      totalSpent: 5800000,
-      location: 'Hà Nội',
-      avatar: null,
-      verified: true
-    },
-    {
-      id: 3,
-      name: 'Dr. Lê Văn C',
-      email: 'levanc@adnlab.vn',
-      phone: '0912345678',
-      role: 'staff',
-      status: 'active',
-      joinDate: '2023-06-10',
-      lastLogin: '2024-11-20T09:15:00',
-      totalTests: 0,
-      totalSpent: 0,
-      location: 'TP. Hồ Chí Minh',
-      avatar: null,
-      verified: true,
-      department: 'Lab Analysis'
-    },
-    {
-      id: 4,
-      name: 'Phạm Thị D',
-      email: 'phamthid@email.com',
-      phone: '0934567890',
-      role: 'customer',
-      status: 'suspended',
-      joinDate: '2024-03-05',
-      lastLogin: '2024-10-15T14:20:00',
-      totalTests: 1,
-      totalSpent: 850000,
-      location: 'Đà Nẵng',
-      avatar: null,
-      verified: false
-    }
-  ]);
-
+  const [roles, setRoles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [activities, setActivities] = useState([
     {
       id: 1,
@@ -123,14 +63,28 @@ const UserManagement = ({ user }) => {
     verified: false
   });
 
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const userRes = await getAllUsers();
+        setRoles(userRes || []);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
   // Filter users
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.phone.includes(searchTerm);
-    const matchesRole = filterRole === 'all' || user.role === filterRole;
-    const matchesStatus = filterStatus === 'all' || user.status === filterStatus;
-    
+  const filteredUsers = roles.filter(user => {
+    const matchesSearch = (user.fullname || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (user.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (user.phone || '').includes(searchTerm);
+    const matchesRole = filterRole === 'all' || (user.role?.name === filterRole);
+    const matchesStatus = filterStatus === 'all' || user.accountStatus === filterStatus;
     return matchesSearch && matchesRole && matchesStatus;
   });
 
@@ -155,14 +109,16 @@ const UserManagement = ({ user }) => {
     }
   };
 
-  const getRoleBadge = (role) => {
-    switch (role) {
+  const getRoleBadge = (roleName) => {
+    switch (roleName) {
       case 'admin':
         return <Badge bg="danger">Quản trị viên</Badge>;
       case 'staff':
         return <Badge bg="info">Nhân viên</Badge>;
       case 'customer':
         return <Badge bg="primary">Khách hàng</Badge>;
+      case 'manager':
+        return <Badge bg="primary">Quản lý</Badge>;
       default:
         return <Badge bg="light">Không xác định</Badge>;
     }
@@ -173,11 +129,11 @@ const UserManagement = ({ user }) => {
     setEditingUser(userItem);
     if (userItem) {
       setFormData({
-        name: userItem.name,
+        name: userItem.fullname,
         email: userItem.email,
         phone: userItem.phone,
-        role: userItem.role,
-        status: userItem.status,
+        role: userItem.role?.name,
+        status: userItem.accountStatus,
         location: userItem.location,
         department: userItem.department || '',
         verified: userItem.verified
@@ -200,7 +156,7 @@ const UserManagement = ({ user }) => {
   const handleSaveUser = () => {
     if (editingUser) {
       // Update existing user
-      setUsers(users.map(u => 
+      setRoles(roles.map(u => 
         u.id === editingUser.id 
           ? { ...u, ...formData }
           : u
@@ -211,13 +167,13 @@ const UserManagement = ({ user }) => {
       const newUser = {
         ...formData,
         id: Date.now(),
-        joinDate: new Date().toISOString().split('T')[0],
+        createdAt: new Date().toISOString(),
         lastLogin: null,
         totalTests: 0,
         totalSpent: 0,
         avatar: null
       };
-      setUsers([newUser, ...users]);
+      setRoles([newUser, ...roles]);
       setToastMessage('Người dùng mới đã được tạo thành công!');
     }
     
@@ -226,9 +182,9 @@ const UserManagement = ({ user }) => {
   };
 
   const handleStatusChange = (id, newStatus) => {
-    setUsers(users.map(u => 
+    setRoles(roles.map(u => 
       u.id === id 
-        ? { ...u, status: newStatus }
+        ? { ...u, accountStatus: newStatus }
         : u
     ));
     setToastMessage(`Trạng thái người dùng đã được cập nhật!`);
@@ -237,7 +193,7 @@ const UserManagement = ({ user }) => {
 
   const handleDeleteUser = (id) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa người dùng này?')) {
-      setUsers(users.filter(u => u.id !== id));
+      setRoles(roles.filter(u => u.id !== id));
       setToastMessage('Người dùng đã được xóa thành công!');
       setShowToast(true);
     }
@@ -254,6 +210,9 @@ const UserManagement = ({ user }) => {
     if (!timestamp) return 'Chưa đăng nhập';
     return new Date(timestamp).toLocaleString('vi-VN');
   };
+
+  if (loading) return <div className="text-center py-5"><span>Đang tải dữ liệu người dùng...</span></div>;
+  if (error) return <Alert variant="danger">Lỗi: {error}</Alert>;
 
   return (
     <div>
@@ -278,7 +237,7 @@ const UserManagement = ({ user }) => {
           <Card className="border-0 shadow-sm text-center">
             <Card.Body>
               <i className="bi bi-people text-primary fs-1 mb-2"></i>
-              <h3 className="mb-0">{users.length}</h3>
+              <h3 className="mb-0">{roles.length}</h3>
               <small className="text-muted">Tổng người dùng</small>
             </Card.Body>
           </Card>
@@ -287,7 +246,7 @@ const UserManagement = ({ user }) => {
           <Card className="border-0 shadow-sm text-center">
             <Card.Body>
               <i className="bi bi-person-check text-success fs-1 mb-2"></i>
-              <h3 className="mb-0">{users.filter(u => u.status === 'active').length}</h3>
+              <h3 className="mb-0">{roles.filter(u => u.accountStatus === 'active').length}</h3>
               <small className="text-muted">Đang hoạt động</small>
             </Card.Body>
           </Card>
@@ -296,7 +255,7 @@ const UserManagement = ({ user }) => {
           <Card className="border-0 shadow-sm text-center">
             <Card.Body>
               <i className="bi bi-person-badge text-info fs-1 mb-2"></i>
-              <h3 className="mb-0">{users.filter(u => u.role === 'staff').length}</h3>
+              <h3 className="mb-0">{roles.filter(u => u.role?.name === 'staff').length}</h3>
               <small className="text-muted">Nhân viên</small>
             </Card.Body>
           </Card>
@@ -305,7 +264,7 @@ const UserManagement = ({ user }) => {
           <Card className="border-0 shadow-sm text-center">
             <Card.Body>
               <i className="bi bi-shield-check text-warning fs-1 mb-2"></i>
-              <h3 className="mb-0">{users.filter(u => u.verified).length}</h3>
+              <h3 className="mb-0">{roles.filter(u => u.verified).length}</h3>
               <small className="text-muted">Đã xác thực</small>
             </Card.Body>
           </Card>
@@ -359,9 +318,9 @@ const UserManagement = ({ user }) => {
                     onChange={(e) => setFilterRole(e.target.value)}
                   >
                     <option value="all">Tất cả vai trò</option>
-                    <option value="admin">Quản trị viên</option>
-                    <option value="staff">Nhân viên</option>
-                    <option value="customer">Khách hàng</option>
+                    {roles.map(role => (
+                      <option key={role.id} value={role.name}>{role.name}</option>
+                    ))}
                   </Form.Select>
                 </Col>
                 <Col md={3} className="mb-2">
@@ -413,20 +372,20 @@ const UserManagement = ({ user }) => {
                             ) : (
                               <div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
                                    style={{ width: '40px', height: '40px' }}>
-                                {userItem.name.charAt(0).toUpperCase()}
+                                {userItem.fullname.charAt(0).toUpperCase()}
                               </div>
                             )}
                           </div>
                           <div>
-                            <div className="fw-medium">{userItem.name}</div>
+                            <div className="fw-medium">{userItem.fullname}</div>
                             <small className="text-muted">{userItem.email}</small>
                             <br />
                             <small className="text-muted">{userItem.phone}</small>
                           </div>
                         </div>
                       </td>
-                      <td>{getRoleBadge(userItem.role)}</td>
-                      <td>{getStatusBadge(userItem.status)}</td>
+                      <td>{getRoleBadge(userItem.role?.name)}</td>
+                      <td>{getStatusBadge(userItem.accountStatus)}</td>
                       <td>
                         {userItem.verified ? (
                           <Badge bg="success">
@@ -463,10 +422,10 @@ const UserManagement = ({ user }) => {
                             </Dropdown.Item>
                             <Dropdown.Divider />
                             <Dropdown.Item 
-                              onClick={() => handleStatusChange(userItem.id, userItem.status === 'active' ? 'suspended' : 'active')}
+                              onClick={() => handleStatusChange(userItem.id, userItem.accountStatus === 'active' ? 'suspended' : 'active')}
                             >
                               <i className="bi bi-person-x me-2"></i>
-                              {userItem.status === 'active' ? 'Tạm khóa' : 'Kích hoạt'}
+                              {userItem.accountStatus === 'active' ? 'Tạm khóa' : 'Kích hoạt'}
                             </Dropdown.Item>
                             <Dropdown.Item 
                               className="text-danger"
@@ -555,7 +514,7 @@ const UserManagement = ({ user }) => {
             <div>
               <Row>
                 <Col md={6}>
-                  <strong>Họ tên:</strong> {editingUser?.name}
+                  <strong>Họ tên:</strong> {editingUser?.fullname}
                 </Col>
                 <Col md={6}>
                   <strong>Email:</strong> {editingUser?.email}
@@ -567,13 +526,13 @@ const UserManagement = ({ user }) => {
                   <strong>Số điện thoại:</strong> {editingUser?.phone}
                 </Col>
                 <Col md={6}>
-                  <strong>Vai trò:</strong> {getRoleBadge(editingUser?.role)}
+                  <strong>Vai trò:</strong> {getRoleBadge(editingUser?.role?.name)}
                 </Col>
               </Row>
               <hr />
               <Row>
                 <Col md={6}>
-                  <strong>Trạng thái:</strong> {getStatusBadge(editingUser?.status)}
+                  <strong>Trạng thái:</strong> {getStatusBadge(editingUser?.accountStatus)}
                 </Col>
                 <Col md={6}>
                   <strong>Xác thực:</strong> {editingUser?.verified ? 'Đã xác thực' : 'Chưa xác thực'}
@@ -582,7 +541,7 @@ const UserManagement = ({ user }) => {
               <hr />
               <Row>
                 <Col md={6}>
-                  <strong>Ngày tham gia:</strong> {new Date(editingUser?.joinDate).toLocaleDateString('vi-VN')}
+                  <strong>Ngày tham gia:</strong> {new Date(editingUser?.createdAt).toLocaleDateString('vi-VN')}
                 </Col>
                 <Col md={6}>
                   <strong>Đăng nhập cuối:</strong> {formatLastLogin(editingUser?.lastLogin)}
