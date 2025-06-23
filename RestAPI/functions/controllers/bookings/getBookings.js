@@ -1,4 +1,5 @@
 const { dataConnect } = require("../../config/firebase.js");
+const { checkBookingExists } = require("./bookingUtils.js");
 
 // Get all bookings for the current user
 const getAllBookings = async (req, res) => {
@@ -161,35 +162,7 @@ const getOneBooking = async (req, res) => {
   }
 };
 
-const checkBookingExists = async (bookingId) => {
-  try {
-    const CHECK_BOOKING_EXISTS_QUERY = `
-      query GetBookingById($bookingId: String!) @auth(level: USER) {
-        booking(key: { id: $bookingId }) {
-          id
-          status
-          createdAt
-        }
-      }
-    `;
-
-    const variables = { bookingId };
-    const response = await dataConnect.executeGraphql(CHECK_BOOKING_EXISTS_QUERY, { variables });
-    return response.data.booking;
-  } catch (error) {
-    console.error("Error checking booking existence:", error);
-    throw error;
-  }
-};
-
-
-// Get boooking by UserID/StaffID
-
-// Check for user's booking (1 user/ 1 booking/ 1 slot)
-
-// Change relation between service and methods (one service table, one servicemethod table, one method table)
 module.exports = {
   getAllBookings,
   getOneBooking,
-  checkBookingExists
 };

@@ -1,49 +1,7 @@
 const { dataConnect } = require("../../config/firebase.js");
-const { checkCatergoryExists } = require("../categories/getCategories.js");
-
-const checkServiceExists = async (serviceId) => {
-    try {
-        if (!serviceId) {
-            throw new Error("serviceId is required");
-        }
-
-        const variables = { serviceId: serviceId };
-        const GET_SERVICE_QUERY = `
-            query GetServiceById($serviceId: String!) @auth(level: USER) {
-                service(key: {id: $serviceId}) {
-                    id
-                    title
-                    description
-                    fullDescription
-                    price
-                    duration
-                    categoryId
-                    category {
-                    id
-                    name
-                    description
-                    hasLegalValue
-                    }
-                    icon
-                    featured
-                    createdAt
-                    updatedAt
-                }
-            }
-      `;
-
-        const response = await dataConnect.executeGraphql(GET_SERVICE_QUERY, { 
-            variables: variables 
-        });
-        const responseData = response.data.service;
-        if (!responseData) {
-            return false;
-        } else return true;
-    } catch (error) {
-        console.error("Error checking service existence:", error);
-        throw new Error("Failed to check service existence");
-    }
-};
+const { checkCatergoryExists } = require("../categories/categoryUtils.js");
+const {getServiceMethods} = require("../methodService/methodServiceUtils.js");
+const { checkServiceExists } = require("./serviceUtils.js");
 
 const getOneService = async (req, res) => {
     try {
@@ -97,8 +55,12 @@ const getOneService = async (req, res) => {
             variables 
         });
 
-        const responseData = response.data.service;
-
+        const responseServiceData = response.data.service;
+        const responseMethodData = await getServiceMethods(serviceId);
+        const responseData = {
+            service: responseServiceData,
+            methods: responseMethodData,
+        }
         res.status(200).json({
             statusCode: 200,
             status: "success",
@@ -244,6 +206,5 @@ const getServiceByCategoryId = async (req, res) => {
 module.exports = {
     getOneService,
     getAllServices,
-    checkServiceExists,
     getServiceByCategoryId,
 };

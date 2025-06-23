@@ -1,4 +1,5 @@
 const { dataConnect } = require("../../config/firebase.js");
+const { checkRoleExists } = require("./roleUtils.js");
 
 const addRole = async (req, res) => {
   try {
@@ -25,6 +26,14 @@ const addRole = async (req, res) => {
         statusCode: 400,
         status: "error",
         message: "description is required",
+      });
+    }
+    
+    if (await checkRoleExists(id)) {
+      return res.status(409).json({
+        statusCode: 409,
+        status: "error",
+        message: "Role with this ID already exists",
       });
     }
 

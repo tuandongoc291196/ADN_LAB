@@ -1,7 +1,7 @@
 const { dataConnect } = require("../../config/firebase.js");
-const {checkTimeSlotExists} = require("./getTimeSlot.js");
+const {checkTimeSlotExists} = require("./timeSlotUtils.js");
 const {updateTimeSlot} = require("./updateTimeSlot.js");
-const {isSlotAvailable} = require("../timeSlots/getTimeSlot.js");
+const {isSlotAvailable} = require("../timeSlots/timeSlotUtils.js");
 
 const addTimeSlot = async (slotDate, startTime, endTime) => {
   try {

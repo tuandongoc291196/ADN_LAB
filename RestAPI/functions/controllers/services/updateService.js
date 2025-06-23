@@ -1,10 +1,10 @@
 const { dataConnect } = require("../../config/firebase.js");
-const { checkCatergoryExists } = require("../categories/getCategories.js");
-const { checkServiceExists } = require("./getServices.js");
-const { getServiceMethods } = require("../methodService/getMethodServices.js");
+const { checkCatergoryExists } = require("../categories/categoryUtils.js");
+const { checkServiceExists } = require("./serviceUtils.js");
+const { getServiceMethods } = require("../methodService/methodServiceUtils.js");
 const { addServiceMethod } = require("../methodService/addMethodService.js");
 const { deleteOneMethodService } = require("../methodService/deleteMethodService.js");
-const { checkMethodExists } = require("../methods/getMethods.js");
+const { checkMethodExists } = require("../methods/methodUtils.js");
 
 const updateService = async (req, res) => {
     try {

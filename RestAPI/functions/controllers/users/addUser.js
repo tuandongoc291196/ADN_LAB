@@ -1,5 +1,5 @@
 const { admin, dataConnect } = require("../../config/firebase.js"); 
-const {checkRoleExists} = require("../roles/getRoles.js");
+const {checkRoleExists} = require("../roles/roleUtils.js");
 
 const addUser = async (req, res) => {
   try {

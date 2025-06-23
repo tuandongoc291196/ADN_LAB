@@ -1,5 +1,5 @@
 const { dataConnect } = require("../../config/firebase.js");
-const { checkRoleExists } = require('../roles/getRoles.js');
+const { checkRoleExists } = require('./roleUtils.js');
 
 const deleteRole = async (req, res) => {
   try {

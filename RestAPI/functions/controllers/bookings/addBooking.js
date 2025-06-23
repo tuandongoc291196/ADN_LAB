@@ -3,13 +3,13 @@ const {randomAlphanumericWithLength} = require("../utils/utilities.js");
 
 const {addTimeSlot} = require("../timeSlots/addTimeSlot.js");
 
-const {checkServiceExists} = require("../services/getServicesAndMethods.js");
+const {checkServiceExists} = require("../services/serviceUtils.js");
 
-const {getStaffWithLowestSlotCount} = require("../users/getUsers.js");
-const {checkUserExists} = require("../users/getUsers.js");
+const {getStaffWithLowestSlotCount} = require("../users/userUtils.js");
+const {checkUserExists} = require("../users/userUtils.js");
 const {updateStaffSlotCount} = require("../users/updateUser.js");
 
-const {checkBookingExists} = require("./getBookings.js");
+const {checkBookingExists} = require("./bookingUtils.js");
 const addBooking = async (req, res) => {
   try {
     const {

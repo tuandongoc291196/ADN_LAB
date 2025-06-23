@@ -1,7 +1,7 @@
 const { dataConnect } = require("../../config/firebase.js");
-const { checkUserExists } = require('./getUsers.js');
-const {checkRoleExists} = require('../roles/getRoles.js');
-const { checkPositionExists } = require('../staffPositions/getPosition.js');
+const { checkUserExists } = require('./userUtils.js');
+const {checkRoleExists} = require('../roles/roleUtils.js');
+const { checkPositionExists } = require('../staffPositions/positionUtils.js');
 const {addUserToStaff} = require('./addUser.js');
 
 const updateUserRoleToStaff = async (req, res) => {

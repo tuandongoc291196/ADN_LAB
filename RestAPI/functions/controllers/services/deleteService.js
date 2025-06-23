@@ -1,5 +1,5 @@
 const { dataConnect } = require("../../config/firebase.js");
-const { checkServiceExists } = require("./getServices.js");
+const { checkServiceExists } = require("./serviceUtils.js");
 
 const {deleteMethodServices} = require("../methodService/deleteMethodService.js");
 
