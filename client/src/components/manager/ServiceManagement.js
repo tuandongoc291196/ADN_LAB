@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Row, Col, Badge, Spinner, Alert, InputGroup, Card } from 'react-bootstrap';
 import { Plus, Pencil, Eye, EyeSlash, CheckCircle, XCircle, Star, StarFill, Search, SortDown, SortUp } from 'react-bootstrap-icons';
-import { getAllServicesAndMethods } from '../../services/api';
+import { getAllServices, getAllMethods } from '../../services/api';
 import { COLLECTION_METHODS } from '../data/services-data';
 
 function ServiceManagement() {
@@ -43,38 +43,33 @@ function ServiceManagement() {
     const fetchServices = async () => {
       setLoading(true);
       try {
-        const data = await getAllServicesAndMethods();
-        const { dnaServices, serviceCollectionMethods } = data;
+        const [servicesData, methodsData] = await Promise.all([
+          getAllServices(),
+          getAllMethods() 
+        ]);
+
+        const methodsMap = methodsData.reduce((acc, method) => {
+          acc[method.methodId] = method;
+          return acc;
+        }, {});
         
-        // Map services với methods
-        const servicesWithMethods = dnaServices.map(service => {
-          // Lấy các methods của service này
-          const serviceMethods = serviceCollectionMethods.filter(
-            method => method.serviceId === service.id
-          );
+        const servicesWithMethods = servicesData.map(service => {
+          // This part needs adjustment based on how methods are linked to services in your new API structure.
+          // Assuming service object has a `methodIds` array. If not, this logic needs to be changed.
+          const serviceMethods = service.methodIds ? service.methodIds.map(id => methodsMap[id]).filter(Boolean) : [];
 
           return {
             ...service,
-            // Parse các trường JSON string thành array
             participants: typeof service.participants === 'string' 
               ? service.participants.split(',').map(p => p.trim())
-              : service.participants,
+              : (service.participants || []),
             requiredDocuments: typeof service.requiredDocuments === 'string'
               ? service.requiredDocuments.split(',').map(d => d.trim())
-              : service.requiredDocuments,
+              : (service.requiredDocuments || []),
             procedures: typeof service.procedures === 'string'
               ? service.procedures.split('→').map(p => p.trim())
-              : service.procedures,
-            // Thêm thông tin methods
-            collectionMethods: serviceMethods.map(method => ({
-              id: method.methodId,
-              title: method.methodTitle,
-              description: method.methodDescription,
-              icon: method.methodIcon,
-              color: method.methodColor,
-              note: method.methodNote,
-              process: method.methodProcess
-            }))
+              : (service.procedures || []),
+            collectionMethods: serviceMethods
           };
         });
 
