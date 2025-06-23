@@ -21,6 +21,8 @@ const {updateRole} = require('./controllers/roles/updateRole');
 const {deleteRole} = require('./controllers/roles/deleteRole');
 const {addRole} = require('./controllers/roles/addRole');
 
+const {addBooking} = require('./controllers/bookings/addBooking');
+
 const {addPayment} = require('./controllers/payments/addPayment');
 
 const app = express();
@@ -69,6 +71,8 @@ app.post('/roles', getOneRole);
 app.put('/roles', updateRole);
 app.delete('/roles', deleteRole);
 app.post('/roles/add', addRole);
+
+app.post('/bookings/add', addBooking);
 
 app.post('/payments', addPayment);
 

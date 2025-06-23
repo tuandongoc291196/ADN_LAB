@@ -21,7 +21,6 @@ const getUnavailableTimeSlots = async (req, res) => {
           slotDate
           startTime
           endTime
-          maxCapacity
           currentBookings
           notes
         }
@@ -91,10 +90,8 @@ const getOneTimeSlot = async (req, res) => {
           slotDate
           startTime
           endTime
-          maxCapacity
           currentBookings
           notes
-          available
         }
       }
     `;

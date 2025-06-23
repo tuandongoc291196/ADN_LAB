@@ -16,8 +16,8 @@ const addTimeSlot = async (slotDate, startTime, endTime) => {
     }
 
     const CREATE_TIME_SLOT_MUTATION = `
-      mutation CreateTimeSlot($id: String!, $slotDate: Date!, $startTime: String!, $endTime: String!, $maxCapacity: Int!, $notes: String) @auth(level: USER) {
-        timeSlot_insert(data: {id: $id, slotDate: $slotDate, startTime: $startTime, endTime: $endTime, maxCapacity: $maxCapacity, notes: $notes, currentBookings: 1, available: true})
+      mutation CreateTimeSlot($id: String!, $slotDate: Date!, $startTime: String!, $endTime: String!, $notes: String) @auth(level: USER) {
+        timeSlot_insert(data: {id: $id, slotDate: $slotDate, startTime: $startTime, endTime: $endTime, notes: $notes})
       }
     `;
 
@@ -26,7 +26,6 @@ const addTimeSlot = async (slotDate, startTime, endTime) => {
       slotDate,
       startTime,
       endTime,
-      maxCapacity : 4,
       notes: "",
     };
 

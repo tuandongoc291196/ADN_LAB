@@ -370,36 +370,36 @@ const updateUser = async (req, res) => {
   }
 };
 
-const updateStaffSlotCount = async (userId, operation) => {
+const updateStaffSlotCount = async (staffId, operation) => {
   try {
-    if (!userId) {
-      throw new Error("User ID is required");
+    if (!staffId) {
+      throw new Error("Staff ID is required");
     }
 
     if (!operation || (operation !== 'increase' && operation !== 'decrease')) {
       throw new Error("Operation must be 'increase' or 'decrease'");
     }
         
-    const GET_USER_QUERY = `
-      query GetUser($id: String!) @auth(level: USER) {
-        user(key: { id: $id }) {
+    const GET_STAFF_QUERY = `
+      query GetStaff($staffId: String!) @auth(level: USER) {
+        staff(key: { id: $staffId }) {
           id
-          dailySlotCount
-          maxDailySlots
+          slot
         }
       }
     `;
 
-    const getResponse = await dataConnect.executeGraphql(GET_USER_QUERY, {
-      variables: { id: userId },
+    const getResponse = await dataConnect.executeGraphql(GET_STAFF_QUERY, {
+      variables: { staffId: staffId },
     });
 
-    if (!getResponse.data?.user) {
-      throw new Error("User not found");
+    if (!getResponse.data?.staff) {
+      throw new Error("Staff record not found");
     }
 
-    const currentSlotCount = getResponse.data.user.dailySlotCount || 0;
-    const maxDailySlots = getResponse.data.user.maxDailySlots || 4;
+    const staffRecord = getResponse.data.staff;
+    const currentSlotCount = staffRecord.slot || 0;
+    const maxDailySlots = 4; // Default max slots
     const isIncrease = operation === 'increase';
     
     let newSlotCount;
@@ -409,32 +409,32 @@ const updateStaffSlotCount = async (userId, operation) => {
       newSlotCount = Math.max(0, currentSlotCount - 1);
     }
 
-    const UPDATE_DAILY_SLOT_COUNT_MUTATION = `
-      mutation UpdateDailySlotCount($userId: String!, $dailySlotCount: Int!) @auth(level: USER) {
-        user_update(key: {id: $userId}, data: {dailySlotCount: $dailySlotCount})
+    const UPDATE_STAFF_SLOT_MUTATION = `
+      mutation UpdateStaffSlot($staffId: String!, $slot: Int!) @auth(level: USER) {
+        staff_update(key: {id: $staffId}, data: {slot: $slot})
       }
     `;
 
     const variables = {
-      userId: userId,
-      dailySlotCount: newSlotCount,
+      staffId: staffRecord.id,
+      slot: newSlotCount,
     };
 
-    console.log("Executing GraphQL mutation:", UPDATE_DAILY_SLOT_COUNT_MUTATION, "with variables:", variables);
-    const response = await dataConnect.executeGraphql(UPDATE_DAILY_SLOT_COUNT_MUTATION, {
+    console.log("Executing GraphQL mutation:", UPDATE_STAFF_SLOT_MUTATION, "with variables:", variables);
+    const response = await dataConnect.executeGraphql(UPDATE_STAFF_SLOT_MUTATION, {
       variables: variables,
     });
 
     return {
       success: true,
       data: response.data,
-      message: `Daily slot count ${operation}d successfully`,
+      message: `Staff slot count ${operation}d successfully`,
       previousSlotCount: currentSlotCount,
       newSlotCount: newSlotCount,
       maxDailySlots: maxDailySlots
     };
   } catch (error) {
-    console.error(`Error ${operation}ing daily slot count:`, error);
+    console.error(`Error ${operation}ing staff slot count:`, error);
     throw error;
   }
 };

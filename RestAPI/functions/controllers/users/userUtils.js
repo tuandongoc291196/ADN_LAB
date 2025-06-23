@@ -71,35 +71,35 @@ const countUsersByRole = async (roleId) => {
   }
 };
 
-const getStaffWithLowestSlotCount = async () => {
+const getStaffWithLowestSlotCount = async (positionId) => {
   try {
     const GET_STAFF_WITH_LOWEST_SLOT_COUNT_QUERY = `
-      query GetStaffWithLowestSlotCount @auth(level: USER) {
-        users(
-          where: {roleId: {eq: "1"}}
-          orderBy: {dailySlotCount: ASC}
-          limit: 1
-        ) {
+      query GetStaffWithLowestSlot($positionId: String!) @auth(level: USER) {
+        staffs(where: {positionId: {eq: $positionId}}, orderBy: {slot: ASC}, limit: 1) {
           id
-          fullname
-          email
-          dailySlotCount
-          maxDailySlots
-          role {
+          slot
+          user {
             id
-            name
+            fullname
+            email
+            phone
           }
         }
       }
     `;
 
-    console.log("Executing GraphQL query:", GET_STAFF_WITH_LOWEST_SLOT_COUNT_QUERY);
-    const response = await dataConnect.executeGraphql(GET_STAFF_WITH_LOWEST_SLOT_COUNT_QUERY);
+    const variables = { 
+      positionId: positionId 
+    };
+    console.log("Executing GraphQL query:", GET_STAFF_WITH_LOWEST_SLOT_COUNT_QUERY, "with variables:", variables);
+    const response = await dataConnect.executeGraphql(GET_STAFF_WITH_LOWEST_SLOT_COUNT_QUERY, {
+      variables: variables
+    });
 
-    const staff = response.data.users?.[0];
+    const staff = response.data.staffs?.[0];
     
     if (!staff) {
-      console.log("No staff members found with roleId '1'");
+      console.log("No staff members found with roleId " + positionId);
       return null;
     }
 

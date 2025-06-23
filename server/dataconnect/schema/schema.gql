@@ -28,7 +28,7 @@ type Staff @table {
   id: String! @col(name: "staff_id")
   user: User! @ref(fields: "id")
   hireDate: Date
-  slot: Int
+  slot: Int! @default(value: 0)
   specification: [String] @default(value: [])
   certifications: [String] @default(value: [])
   positionId: String!

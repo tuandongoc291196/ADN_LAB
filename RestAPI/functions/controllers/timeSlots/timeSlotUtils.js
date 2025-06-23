@@ -15,10 +15,8 @@ const checkTimeSlotExists = async (timeSlotId) => {
           slotDate
           startTime
           endTime
-          maxCapacity
           currentBookings
           notes
-          available
         }
       }
     `;
@@ -52,8 +50,6 @@ const isSlotAvailable = async (timeSlotId) => {
           currentBookings: { lt: $maxBookings } 
         }) {
           id
-          available
-          maxCapacity
           currentBookings
         }
       }

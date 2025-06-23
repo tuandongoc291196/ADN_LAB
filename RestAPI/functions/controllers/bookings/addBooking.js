@@ -1,15 +1,12 @@
 const { dataConnect } = require("../../config/firebase.js");
-const {randomAlphanumericWithLength} = require("../utils/utilities.js");
-
 const {addTimeSlot} = require("../timeSlots/addTimeSlot.js");
-
 const {checkServiceExists} = require("../services/serviceUtils.js");
-
 const {getStaffWithLowestSlotCount} = require("../users/userUtils.js");
 const {checkUserExists} = require("../users/userUtils.js");
 const {updateStaffSlotCount} = require("../users/updateUser.js");
-
+const {checkMethodExists} = require("../methods/methodUtils.js");
 const {checkBookingExists} = require("./bookingUtils.js");
+
 const addBooking = async (req, res) => {
   try {
     const {
@@ -17,12 +14,10 @@ const addBooking = async (req, res) => {
         slotDate,
         startTime,
         endTime,
-        collectionMethod,
-        price,
+        methodId,
         serviceId,
-        quantity,
-        notes,
-        totalAmount
+        totalAmount,
+        participants,
     } = req.body;
 
     if (!userId) {
@@ -57,27 +52,19 @@ const addBooking = async (req, res) => {
       });
     }
 
-    if (!collectionMethod) {
+    if (!methodId) {
       return res.status(400).json({
         statusCode: 400,
         status: "error",
-        message: "collectionMethod is required",
+        message: "methodId is required",
       });
     }
 
-    if (price === undefined || price === null) {
+    if (!serviceId) {
       return res.status(400).json({
         statusCode: 400,
         status: "error",
-        message: "price is required",
-      });
-    }
-
-    if (quantity === undefined || quantity === null) {
-      return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "quantity is required",
+        message: "serviceId is required",
       });
     }
 
@@ -89,22 +76,6 @@ const addBooking = async (req, res) => {
       });
     }
 
-    if (typeof price !== 'number' || price < 0) {
-      return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "price must be a non-negative number",
-      });
-    }
-
-    if (typeof quantity !== 'number' || quantity <= 0 || !Number.isInteger(quantity)) {
-      return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "quantity must be a positive integer",
-      });
-    }
-
     if (typeof totalAmount !== 'number' || totalAmount < 0) {
       return res.status(400).json({
         statusCode: 400,
@@ -113,40 +84,42 @@ const addBooking = async (req, res) => {
       });
     }
 
-    const id = randomAlphanumericWithLength(10);
-    const checkedBooking = await checkBookingExists(id);
-    if (checkedBooking) {
+    if (!participants || !Array.isArray(participants) || participants.length === 0) {
       return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "Booking with this ID already exists",
-        error: "Booking with the provided ID already exists",
+          statusCode: 400,
+          status: "error",
+          message: "participants array is required and must not be empty",
       });
     }
 
     const CREATE_BOOKING_MUTATION = `
-      mutation CreateBooking($id: String!, $userId: String!, $staffId: String, $timeSlotId: String, $serviceId: String!, $collectionMethod: String!, $price: Float!, $quantity: Int!, $notes: String, $totalAmount: Float!) @auth(level: USER) {
-        booking_insert(data: {id: $id, userId: $userId, staffId: $staffId, timeSlotId: $timeSlotId, serviceId: $serviceId, collectionMethod: $collectionMethod, price: $price, quantity: $quantity, notes: $notes, totalAmount: $totalAmount, status: "pending"})
+      mutation CreateBooking($id: String!, $userId: String!, $staffId: String!, $timeSlotId: String, $serviceId: String!, $methodId: String!, $totalAmount: Float!) @auth(level: USER) {
+        booking_insert(data: {id: $id, userId: $userId, staffId: $staffId, timeSlotId: $timeSlotId, serviceId: $serviceId, methodId: $methodId, totalAmount: $totalAmount})
       }
     `;
 
-    const staffId = await getStaffWithLowestSlotCount();
+    const staffId = await getStaffWithLowestSlotCount("1");
+    const timeSlotId = `${slotDate}_${startTime}_${endTime}`;
 
     const bookingVariables = {
-      id : id,
+      id : `${userId}_${timeSlotId}`,
       userId,
       staffId: staffId,
-      timeSlotId: `${slotDate}_${startTime}_${endTime}`,
+      timeSlotId: timeSlotId,
       serviceId,
-      collectionMethod,
-      price,
-      quantity,
-      notes,
+      methodId,
       totalAmount
     };
 
-    const existingUser = await checkUserExists(bookingVariables.userId);
-    if (!existingUser) {
+    if (await checkBookingExists(bookingVariables.id)) {
+      return res.status(409).json({
+        statusCode: 409,
+        status: "error",
+        message: "Booking with this ID already exists",
+      });
+    }
+
+    if (!(await checkUserExists(userId))) {
       return res.status(404).json({
         statusCode: 404,
         status: "error",
@@ -154,17 +127,7 @@ const addBooking = async (req, res) => {
       });
     }
 
-    const existingStaff = await checkUserExists(bookingVariables.staffId);
-    if (!existingStaff) {
-      return res.status(404).json({
-        statusCode: 404,
-        status: "error",
-        message: "Staff not found",
-      });
-    }
-
-    const existingService = await checkServiceExists(bookingVariables.serviceId);
-    if (!existingService) {
+    if (!(await checkServiceExists(serviceId))) {
       return res.status(404).json({
         statusCode: 404,
         status: "error",
@@ -172,6 +135,14 @@ const addBooking = async (req, res) => {
       });
     }
 
+    if (!(await checkMethodExists(methodId))) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "Method not found",
+      });
+    }
+    
     const updateTimeSlotResponse = await addTimeSlot(slotDate, startTime, endTime);
 
     const response = await dataConnect.executeGraphql(CREATE_BOOKING_MUTATION, {
@@ -181,7 +152,6 @@ const addBooking = async (req, res) => {
     const responseData = response.data;
 
     const updateStaffResponse = await updateStaffSlotCount(staffId, "increase");
-
     return res.status(201).json({
       statusCode: 201,
       status: "success",
@@ -191,7 +161,6 @@ const addBooking = async (req, res) => {
   } catch (error) {
     console.error("Error creating booking:", error);
     
-    // Handle duplicate key constraint violation
     if (error.message && error.message.includes('duplicate key value violates unique constraint')) {
       return res.status(409).json({
         statusCode: 409,
@@ -201,7 +170,6 @@ const addBooking = async (req, res) => {
       });
     }
 
-    // Handle data-connect specific errors
     if (error.codePrefix === 'data-connect' && error.errorInfo) {
       return res.status(400).json({
         statusCode: 400,
@@ -211,7 +179,6 @@ const addBooking = async (req, res) => {
       });
     }
 
-    // Handle validation errors
     if (error.message && error.message.includes('validation')) {
       return res.status(400).json({
         statusCode: 400,
@@ -221,7 +188,6 @@ const addBooking = async (req, res) => {
       });
     }
 
-    // Generic server error
     res.status(500).json({
       statusCode: 500,
       status: "error",

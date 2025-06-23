@@ -8,30 +8,26 @@ const getAllBookings = async (req, res) => {
       query GetMyBookings @auth(level: USER) {
         bookings(orderBy: { createdAt: DESC }) {
           id
-          status
-          collectionMethod
+          userId
+          staffId
+          timeSlotId
+          serviceId
+          methodId
           totalAmount
-          price
-          quantity
-          notes
-          service {
-            id
-            title
-            description
-            category
-            serviceType
-            duration
-          }
-          timeSlot {
-            slotDate
-            startTime
-            endTime
-          }
-          staff {
-            fullname
-          }
           createdAt
           updatedAt
+          service {
+            id
+          }
+          timeSlot {
+            id
+          }
+          staff {
+            id
+          }
+          method {
+            id
+          }
         }
       }
     `;
@@ -97,44 +93,29 @@ const getOneBooking = async (req, res) => {
       query GetBookingById($bookingId: String!) @auth(level: USER) {
         booking(key: { id: $bookingId }) {
           id
-          user {
-            id
-            fullname
-            email
-            phone
-            shippingAddress
-          }
-          staff {
-            id
-            fullname
-          }
-          service {
-            id
-            title
-            description
-            fullDescription
-            price
-            duration
-            category
-            serviceType
-            hasLegalValue
-            participants
-            requiredDocuments
-            procedures
-          }
-          timeSlot {
-            slotDate
-            startTime
-            endTime
-          }
-          status
-          collectionMethod
-          price
-          quantity
-          notes
+          userId
+          staffId
+          timeSlotId
+          serviceId
+          methodId
           totalAmount
           createdAt
           updatedAt
+          user {
+            id
+          }
+          staff {
+            id
+          }
+          service {
+            id
+          }
+          timeSlot {
+            id
+          }
+          method {
+            id
+          }
         }
       }
     `;
