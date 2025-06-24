@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { getStaffListByRole } from '../../services/api';
 
 const StaffManagement = () => {
   const navigate = useNavigate();
@@ -12,59 +13,20 @@ const StaffManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDepartment, setFilterDepartment] = useState('all');
 
-  // Mock data for staff
-  const mockStaff = [
-    {
-      id: 1,
-      name: 'Trần Thị B',
-      email: 'tranthib@email.com',
-      phone: '0123456789',
-      department: 'Phòng xét nghiệm',
-      position: 'Kỹ thuật viên',
-      status: 'active',
-      joinDate: '2023-01-15',
-      performance: {
-        completedTests: 150,
-        accuracy: 99.5,
-        customerRating: 4.8
-      }
-    },
-    {
-      id: 2,
-      name: 'Nguyễn Văn E',
-      email: 'nguyenvane@email.com',
-      phone: '0987654321',
-      department: 'Phòng lấy mẫu',
-      position: 'Nhân viên lấy mẫu',
-      status: 'active',
-      joinDate: '2023-03-20',
-      performance: {
-        completedTests: 200,
-        accuracy: 98.9,
-        customerRating: 4.7
-      }
-    },
-    {
-      id: 3,
-      name: 'Lê Văn F',
-      email: 'levanf@email.com',
-      phone: '0369852147',
-      department: 'Phòng xét nghiệm',
-      position: 'Kỹ thuật viên',
-      status: 'inactive',
-      joinDate: '2023-06-10',
-      performance: {
-        completedTests: 80,
-        accuracy: 99.2,
-        customerRating: 4.6
-      }
-    }
-  ];
-
   useEffect(() => {
-    // Simulate API call
-    setStaff(mockStaff);
-    setLoading(false);
+    const fetchStaff = async () => {
+      setLoading(true);
+      try {
+        const staffList = await getStaffListByRole('1');
+        console.log(staffList);
+        setStaff(staffList || []);
+      } catch (err) {
+        // Có thể toast lỗi hoặc setError
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStaff();
   }, []);
 
   const handleStatusChange = (staffId, newStatus) => {

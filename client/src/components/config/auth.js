@@ -17,7 +17,7 @@ const AuthProvider = (props) => {
       // Set the user ID in localStorage for Data Connect queries
       localStorage.setItem("user_id", uid);
       
-      const { data: userData } = await getUser(dataConnect);
+      const { data: userData } = await getUser(dataConnect, { userId: uid });
       
       if (userData?.user) {
         return userData.user;

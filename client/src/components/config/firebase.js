@@ -104,34 +104,34 @@ const signInWithGoogle = async () => {
     const res = await signInWithPopup(auth, googleProvider);
     const user = res.user;
     try {
-      const { data: userData } = await getUser(dataConnect);
+      const { data: userData } = await getUser(dataConnect, { userId: user.uid });
       console.log("Checking if user exists in database:", userData);
       if (userData?.user) {
         console.log("User found in database");
       } else {
         console.log("User not found in database, creating new record");
         await createOrUpdateUser(dataConnect, {
+          id : user.uid,
           fullname: user.displayName || "",
           email: user.email,
           authProvider: "google",
           gender: "",
           avatar: user.photoURL || "",
           phone: "",
-          shippingAddress: "",
+          address: "",
           roleId: "0"
         });
       }
     } catch (getUserError) {
       console.log("User error");
     }    
-    await updateUserAccountStatus(dataConnect, {
+    updateUserAccountStatus(dataConnect, {
       userId: user.uid,
       accountStatus: "active"
     });
-    const { data: userData } = await getUser(dataConnect);
+    const { data: userData } = await getUser(dataConnect, { userId: user.uid });
     localStorage.setItem("user_id", user.uid);
     localStorage.setItem("userData", JSON.stringify(userData.user));
-
     return { uid: user.uid, displayName: user.displayName };
   } catch (err) {
     console.error(err);
@@ -145,11 +145,15 @@ const logInWithEmailAndPassword = async (email, password) => {
     const res = await signInWithEmailAndPassword(auth, email, password);
     const user = res.user;
 
-    const { data: userData } = await getUser(dataConnect);
+    const { data: userData } = await getUser(dataConnect, { userId: user.uid });
     
     localStorage.setItem("user_id", user.uid);
     localStorage.setItem("userData", JSON.stringify(userData.user));
-    
+    const response = updateUserAccountStatus(dataConnect, {
+      userId: user.uid,
+      accountStatus: "active"
+    });
+    console.log("User account status updated:", response);
     return res;
   } catch (err) {
     console.error(err);
@@ -167,21 +171,26 @@ const registerWithEmailAndPassword = async (name, phone, email, password) => {
     const roleInfo = getRoleFromEmail(email);
     
     await createOrUpdateUser(dataConnect, {
+      id : user.uid,
       fullname: name,
       email: email,
       authProvider: "email",
       gender: "",
       avatar: "",
       phone: phone,
-      shippingAddress: "",
+      address: "",
       roleId: "0"
     });
     
     // Get user data and store in localStorage
-    const { data: userData } = await getUser(dataConnect);
+    const { data: userData } = await getUser(dataConnect, { userId: user.uid });
     
     localStorage.setItem("user_id", user.uid);
-    localStorage.setItem("userData", JSON.stringify(userData.user));    
+    localStorage.setItem("userData", JSON.stringify(userData.user));
+    updateUserAccountStatus(dataConnect, {
+      userId: user.uid,
+      accountStatus: "active"
+    });
     return res;
   } catch (err) {
     console.error(err);
@@ -203,9 +212,9 @@ const sendPasswordReset = async (email) => {
 const logout = async () => {
   const userId = localStorage.getItem("user_id");  
   updateUserAccountStatus(dataConnect, {
-    userId: userId,
-    accountStatus: "inactive"
-  });
+      userId: userId,
+      accountStatus: "inactive"
+    });
   
   // Cleanup user online status
   await cleanupUserStatus(userId);
@@ -525,14 +534,14 @@ function invalidateUserCache(userId) {
 // User profile management with Data Connect
 async function updateProfile(profileData) {
   try {
+    const currentUserId = localStorage.getItem("user_id");
     await updateUserProfile(dataConnect, profileData);
     
     // Get updated user data
-    const { data: userData } = await getUser(dataConnect);
+    const { data: userData } = await getUser(dataConnect, { userId: currentUserId });
     localStorage.setItem("userData", JSON.stringify(userData.user));
     
     // Invalidate cache for the updated user
-    const currentUserId = localStorage.getItem("user_id");
     if (currentUserId) {
       invalidateUserCache(currentUserId);
     }
@@ -590,7 +599,7 @@ async function updateUserRole(userId, roleId) {
 
 async function updateAccountStatus(userId, accountStatus) {
   try {
-    await updateUserAccountStatus(dataConnect, {
+    updateUserAccountStatus(dataConnect, {
       userId,
       accountStatus
     });

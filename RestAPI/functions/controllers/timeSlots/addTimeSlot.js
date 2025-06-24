@@ -1,7 +1,7 @@
 const { dataConnect } = require("../../config/firebase.js");
-const {checkTimeSlotExists} = require("./getTimeSlot.js");
+const {checkTimeSlotExists} = require("./timeSlotUtils.js");
 const {updateTimeSlot} = require("./updateTimeSlot.js");
-const {isSlotAvailable} = require("../timeSlots/getTimeSlot.js");
+const {isSlotAvailable} = require("../timeSlots/timeSlotUtils.js");
 
 const addTimeSlot = async (slotDate, startTime, endTime) => {
   try {
@@ -16,8 +16,8 @@ const addTimeSlot = async (slotDate, startTime, endTime) => {
     }
 
     const CREATE_TIME_SLOT_MUTATION = `
-      mutation CreateTimeSlot($id: String!, $slotDate: Date!, $startTime: String!, $endTime: String!, $maxCapacity: Int!, $notes: String) @auth(level: USER) {
-        timeSlot_insert(data: {id: $id, slotDate: $slotDate, startTime: $startTime, endTime: $endTime, maxCapacity: $maxCapacity, notes: $notes, currentBookings: 1, available: true})
+      mutation CreateTimeSlot($id: String!, $slotDate: Date!, $startTime: String!, $endTime: String!, $notes: String) @auth(level: USER) {
+        timeSlot_insert(data: {id: $id, slotDate: $slotDate, startTime: $startTime, endTime: $endTime, notes: $notes})
       }
     `;
 
@@ -26,7 +26,6 @@ const addTimeSlot = async (slotDate, startTime, endTime) => {
       slotDate,
       startTime,
       endTime,
-      maxCapacity : 4,
       notes: "",
     };
 

@@ -8,13 +8,13 @@ export type Int64String = string;
 export type DateString = string;
 
 
-export interface AddRefundDetailData {
+export interface AddPaymentDetailsData {
   payment_update?: Payment_Key | null;
 }
 
-export interface AddRefundDetailVariables {
+export interface AddPaymentDetailsVariables {
   paymentId: string;
-  refundDetails: string[];
+  otherDetails?: string[] | null;
 }
 
 export interface AssignBookingStaffData {
@@ -24,6 +24,34 @@ export interface AssignBookingStaffData {
 export interface AssignBookingStaffVariables {
   bookingId: string;
   staffId: string;
+}
+
+export interface AssignStaffToPositionData {
+  staff_update?: Staff_Key | null;
+}
+
+export interface AssignStaffToPositionVariables {
+  staffId: string;
+  positionId: string;
+}
+
+export interface AssignTestResultManagerData {
+  testResult_update?: TestResult_Key | null;
+}
+
+export interface AssignTestResultManagerVariables {
+  resultId: string;
+  managerId: string;
+}
+
+export interface AssignTestResultStaffAndManagerData {
+  testResult_update?: TestResult_Key | null;
+}
+
+export interface AssignTestResultStaffAndManagerVariables {
+  resultId: string;
+  staffId: string;
+  managerId: string;
 }
 
 export interface AssignTestResultStaffData {
@@ -57,6 +85,7 @@ export interface CreateBlogData {
 export interface CreateBlogVariables {
   id: string;
   userId: string;
+  title: string;
   content: string;
   imageUrl?: string | null;
 }
@@ -81,7 +110,8 @@ export interface CreateBookingVariables {
   userId: string;
   staffId?: string | null;
   timeSlotId?: string | null;
-  serviceMethodId: string;
+  serviceId: string;
+  methodId: string;
   totalAmount: number;
 }
 
@@ -125,14 +155,29 @@ export interface CreateOrUpdateUserData {
 }
 
 export interface CreateOrUpdateUserVariables {
+  id: string;
   fullname: string;
   gender?: string | null;
   avatar?: string | null;
   email: string;
   phone?: string | null;
-  shippingAddress?: string | null;
+  address?: string | null;
   roleId?: string | null;
   authProvider: string;
+}
+
+export interface CreateParticipantData {
+  participant_insert: Participant_Key;
+}
+
+export interface CreateParticipantVariables {
+  id: string;
+  bookingId: string;
+  name: string;
+  age: number;
+  identification?: string | null;
+  gender: string;
+  relationship?: string | null;
 }
 
 export interface CreatePaymentData {
@@ -146,6 +191,18 @@ export interface CreatePaymentVariables {
   paymentMethod: string;
   status?: string | null;
   paymentDate?: DateString | null;
+  refundDetail?: string | null;
+  otherDetails?: string[] | null;
+}
+
+export interface CreatePositionData {
+  position_insert: Position_Key;
+}
+
+export interface CreatePositionVariables {
+  id: string;
+  name: string;
+  description?: string | null;
 }
 
 export interface CreateRoleData {
@@ -166,8 +223,10 @@ export interface CreateSampleVariables {
   id: string;
   bookingId: string;
   staffId?: string | null;
+  participantId?: string | null;
   collectionDate?: DateString | null;
-  status?: string | null;
+  sampleQuality: string;
+  sampleConcentration?: number | null;
   notes?: string | null;
 }
 
@@ -180,8 +239,6 @@ export interface CreateServiceCategoryVariables {
   name: string;
   description?: string | null;
   hasLegalValue: boolean;
-  icon?: string | null;
-  color?: string | null;
 }
 
 export interface CreateServiceData {
@@ -193,7 +250,6 @@ export interface CreateServiceMethodData {
 }
 
 export interface CreateServiceMethodVariables {
-  id: string;
   serviceId: string;
   methodId: string;
 }
@@ -210,6 +266,32 @@ export interface CreateServiceVariables {
   featured: boolean;
 }
 
+export interface CreateStaffData {
+  staff_insert: Staff_Key;
+}
+
+export interface CreateStaffVariables {
+  id: string;
+  hireDate?: DateString | null;
+  slot?: number | null;
+  specification?: string[] | null;
+  certifications?: string[] | null;
+  positionId: string;
+}
+
+export interface CreateStaffWithPositionData {
+  staff_insert: Staff_Key;
+}
+
+export interface CreateStaffWithPositionVariables {
+  id: string;
+  hireDate?: DateString | null;
+  slot?: number | null;
+  specification?: string[] | null;
+  certifications?: string[] | null;
+  positionId: string;
+}
+
 export interface CreateTestResultData {
   testResult_insert: TestResult_Key;
 }
@@ -218,10 +300,16 @@ export interface CreateTestResultVariables {
   id: string;
   bookingId: string;
   sampleId: string;
-  staffId?: string | null;
+  staffId: string;
+  managerId: string;
+  testMethod: string;
+  positive: boolean;
+  accuracy: number;
+  testType: string;
   testDate?: DateString | null;
   reportDate?: DateString | null;
   resultData?: string | null;
+  resultNotes?: string | null;
   status?: string | null;
 }
 
@@ -245,12 +333,44 @@ export interface DeleteBlogVariables {
   blogId: string;
 }
 
+export interface DeleteBookingData {
+  booking_delete?: Booking_Key | null;
+}
+
+export interface DeleteBookingVariables {
+  bookingId: string;
+}
+
+export interface DeleteMethodData {
+  method_delete?: Method_Key | null;
+}
+
+export interface DeleteMethodVariables {
+  methodId: string;
+}
+
 export interface DeleteNotificationData {
   notification_delete?: Notification_Key | null;
 }
 
 export interface DeleteNotificationVariables {
   notificationId: string;
+}
+
+export interface DeleteParticipantData {
+  participant_delete?: Participant_Key | null;
+}
+
+export interface DeleteParticipantVariables {
+  participantId: string;
+}
+
+export interface DeletePositionData {
+  position_delete?: Position_Key | null;
+}
+
+export interface DeletePositionVariables {
+  positionId: string;
 }
 
 export interface DeleteRoleData {
@@ -261,12 +381,61 @@ export interface DeleteRoleVariables {
   roleId: string;
 }
 
+export interface DeleteSampleData {
+  sample_delete?: Sample_Key | null;
+}
+
+export interface DeleteSampleVariables {
+  sampleId: string;
+}
+
+export interface DeleteServiceCategoryData {
+  serviceCategory_delete?: ServiceCategory_Key | null;
+}
+
+export interface DeleteServiceCategoryVariables {
+  categoryId: string;
+}
+
+export interface DeleteServiceData {
+  service_delete?: Service_Key | null;
+}
+
 export interface DeleteServiceMethodData {
   serviceMethod_delete?: ServiceMethod_Key | null;
 }
 
 export interface DeleteServiceMethodVariables {
-  serviceMethodId: string;
+  serviceId: string;
+  methodId: string;
+}
+
+export interface DeleteServiceVariables {
+  serviceId: string;
+}
+
+export interface DeleteStaffData {
+  staff_delete?: Staff_Key | null;
+}
+
+export interface DeleteStaffVariables {
+  staffId: string;
+}
+
+export interface DeleteTestResultData {
+  testResult_delete?: TestResult_Key | null;
+}
+
+export interface DeleteTestResultVariables {
+  resultId: string;
+}
+
+export interface DeleteTimeSlotData {
+  timeSlot_delete?: TimeSlot_Key | null;
+}
+
+export interface DeleteTimeSlotVariables {
+  timeSlotId: string;
 }
 
 export interface Feedback_Key {
@@ -293,6 +462,103 @@ export interface GetAllFeedbackVariables {
   offset?: number | null;
 }
 
+export interface GetAllSamplesData {
+  samples: ({
+    id: string;
+    booking: {
+      id: string;
+      user: {
+        fullname: string;
+      };
+        service: {
+          title: string;
+          category: {
+            name: string;
+          };
+        };
+    } & Booking_Key;
+      staff?: {
+        user: {
+          fullname: string;
+        };
+      };
+        participant?: {
+          name: string;
+          age: number;
+          gender: string;
+        };
+          collectionDate?: DateString | null;
+          sampleQuality: string;
+          sampleConcentration?: number | null;
+          notes?: string | null;
+          createdAt: TimestampString;
+  } & Sample_Key)[];
+}
+
+export interface GetAllSamplesVariables {
+  limit?: number | null;
+  offset?: number | null;
+}
+
+export interface GetAvailableManagersForAssignmentData {
+  staffs: ({
+    id: string;
+    user: {
+      id: string;
+      fullname: string;
+      email: string;
+    } & User_Key;
+      position: {
+        id: string;
+        name: string;
+        description?: string | null;
+      } & Position_Key;
+        slot?: number | null;
+        specification?: string[] | null;
+        certifications?: string[] | null;
+        createdAt: TimestampString;
+  } & Staff_Key)[];
+}
+
+export interface GetAvailableStaffData {
+  staffs: ({
+    id: string;
+    user: {
+      fullname: string;
+      email: string;
+    };
+      slot?: number | null;
+      specification?: string[] | null;
+      positionId: string;
+      position: {
+        id: string;
+        name: string;
+        description?: string | null;
+      } & Position_Key;
+        createdAt: TimestampString;
+  } & Staff_Key)[];
+}
+
+export interface GetAvailableStaffForTestingData {
+  staffs: ({
+    id: string;
+    user: {
+      id: string;
+      fullname: string;
+      email: string;
+    } & User_Key;
+      position: {
+        id: string;
+        name: string;
+        description?: string | null;
+      } & Position_Key;
+        slot?: number | null;
+        specification?: string[] | null;
+        certifications?: string[] | null;
+        createdAt: TimestampString;
+  } & Staff_Key)[];
+}
+
 export interface GetBlogByIdData {
   blog?: {
     id: string;
@@ -304,9 +570,11 @@ export interface GetBlogByIdData {
         name: string;
       };
     } & User_Key;
+      title: string;
       content: string;
       imageUrl?: string | null;
       createdAt: TimestampString;
+      updatedAt?: TimestampString | null;
   } & Blog_Key;
 }
 
@@ -317,9 +585,11 @@ export interface GetBlogByIdVariables {
 export interface GetBlogsByUserData {
   blogs: ({
     id: string;
+    title: string;
     content: string;
     imageUrl?: string | null;
     createdAt: TimestampString;
+    updatedAt?: TimestampString | null;
   } & Blog_Key)[];
 }
 
@@ -335,9 +605,11 @@ export interface GetBlogsData {
       fullname: string;
       avatar?: string | null;
     } & User_Key;
+      title: string;
       content: string;
       imageUrl?: string | null;
       createdAt: TimestampString;
+      updatedAt?: TimestampString | null;
   } & Blog_Key)[];
 }
 
@@ -354,44 +626,41 @@ export interface GetBookingByIdData {
       fullname: string;
       email: string;
       phone?: string | null;
-      shippingAddress?: string | null;
+      address?: string | null;
     } & User_Key;
-      staff?: {
+      staff: {
         id: string;
-        fullname: string;
-      } & User_Key;
-        serviceMethod: {
+        user: {
+          fullname: string;
+        };
+      } & Staff_Key;
+        service: {
           id: string;
-          service: {
+          title: string;
+          description: string;
+          fullDescription?: string | null;
+          price: number;
+          duration: string;
+          category: {
             id: string;
-            title: string;
-            description: string;
-            fullDescription?: string | null;
+            name: string;
+            description?: string | null;
+            hasLegalValue: boolean;
+          } & ServiceCategory_Key;
+        } & Service_Key;
+          method: {
+            id: string;
+            name: string;
+            description?: string | null;
             price: number;
-            duration: string;
-            category: {
-              id: string;
-              name: string;
-              description?: string | null;
-              hasLegalValue: boolean;
-            } & ServiceCategory_Key;
-          } & Service_Key;
-            method: {
-              id: string;
-              name: string;
-              description?: string | null;
-              price: number;
-            } & Method_Key;
-        } & ServiceMethod_Key;
-          timeSlot?: {
-            slotDate: DateString;
-            startTime: string;
-            endTime: string;
-          };
-            totalAmount: number;
-            bookingCreatedAt: TimestampString;
-            createdAt: TimestampString;
-            updatedAt?: TimestampString | null;
+          } & Method_Key;
+            timeSlot?: {
+              slotDate: DateString;
+              startTime: string;
+              endTime: string;
+            };
+              totalAmount: number;
+              createdAt: TimestampString;
   } & Booking_Key;
 }
 
@@ -426,6 +695,23 @@ export interface GetBookingHistoryVariables {
   bookingId: string;
 }
 
+export interface GetBookingParticipantsData {
+  participants: ({
+    id: string;
+    name: string;
+    age: number;
+    identification?: string | null;
+    gender: string;
+    relationship?: string | null;
+    createdAt: TimestampString;
+    updatedAt?: TimestampString | null;
+  } & Participant_Key)[];
+}
+
+export interface GetBookingParticipantsVariables {
+  bookingId: string;
+}
+
 export interface GetBookingPaymentData {
   payments: ({
     id: string;
@@ -433,7 +719,8 @@ export interface GetBookingPaymentData {
     paymentMethod: string;
     status: string;
     paymentDate?: DateString | null;
-    refundDetail?: string[] | null;
+    refundDetail?: string | null;
+    otherDetails?: string[] | null;
     createdAt: TimestampString;
     updatedAt?: TimestampString | null;
   } & Payment_Key)[];
@@ -447,23 +734,29 @@ export interface GetBookingSamplesData {
   samples: ({
     id: string;
     booking: {
-      serviceMethod: {
-        service: {
-          title: string;
-          category: {
-            name: string;
-          };
+      service: {
+        title: string;
+        category: {
+          name: string;
         };
       };
     };
       staff?: {
-        fullname: string;
+        user: {
+          fullname: string;
+        };
       };
-        collectionDate?: DateString | null;
-        status: string;
-        notes?: string | null;
-        createdAt: TimestampString;
-        updatedAt?: TimestampString | null;
+        participant?: {
+          name: string;
+          age: number;
+          gender: string;
+        };
+          collectionDate?: DateString | null;
+          sampleQuality: string;
+          sampleConcentration?: number | null;
+          notes?: string | null;
+          createdAt: TimestampString;
+          updatedAt?: TimestampString | null;
   } & Sample_Key)[];
 }
 
@@ -484,27 +777,52 @@ export interface GetBookingTestResultsData {
     id: string;
     sample: {
       id: string;
+      participant?: {
+        name: string;
+      };
     } & Sample_Key;
       booking: {
-        serviceMethod: {
-          service: {
-            title: string;
-          };
+        service: {
+          title: string;
         };
       };
-        staff?: {
-          fullname: string;
+        staff: {
+          user: {
+            fullname: string;
+          };
+            position: {
+              name: string;
+            };
         };
-          testDate?: DateString | null;
-          reportDate?: DateString | null;
-          status: string;
-          createdAt: TimestampString;
-          updatedAt?: TimestampString | null;
+          manager: {
+            user: {
+              fullname: string;
+            };
+              position: {
+                name: string;
+              };
+          };
+            testMethod: string;
+            positive: boolean;
+            accuracy: number;
+            testType: string;
+            testDate?: DateString | null;
+            reportDate?: DateString | null;
+            status: string;
+            createdAt: TimestampString;
+            updatedAt?: TimestampString | null;
   } & TestResult_Key)[];
 }
 
 export interface GetBookingTestResultsVariables {
   bookingId: string;
+}
+
+export interface GetCustomerSatisfactionStatsData {
+  feedbacks: ({
+    rating: number;
+    createdAt: TimestampString;
+  })[];
 }
 
 export interface GetFeaturedServicesData {
@@ -545,6 +863,105 @@ export interface GetFeedbackByRatingVariables {
   rating: number;
 }
 
+export interface GetManagerTestResultsData {
+  testResults: ({
+    id: string;
+    booking: {
+      user: {
+        fullname: string;
+      };
+        service: {
+          title: string;
+        };
+    };
+      sample: {
+        participant?: {
+          name: string;
+        };
+      };
+        staff: {
+          user: {
+            fullname: string;
+          };
+            position: {
+              name: string;
+            };
+        };
+          manager: {
+            user: {
+              fullname: string;
+            };
+              position: {
+                name: string;
+              };
+          };
+            testMethod: string;
+            positive: boolean;
+            accuracy: number;
+            testType: string;
+            testDate?: DateString | null;
+            reportDate?: DateString | null;
+            status: string;
+            createdAt: TimestampString;
+  } & TestResult_Key)[];
+}
+
+export interface GetManagerTestResultsVariables {
+  managerId: string;
+}
+
+export interface GetManagersBySpecificationData {
+  staffs: ({
+    id: string;
+    user: {
+      fullname: string;
+      email: string;
+      phone?: string | null;
+    };
+      hireDate?: DateString | null;
+      slot?: number | null;
+      specification?: string[] | null;
+      certifications?: string[] | null;
+      positionId: string;
+      position: {
+        id: string;
+        name: string;
+        description?: string | null;
+      } & Position_Key;
+        createdAt: TimestampString;
+  } & Staff_Key)[];
+}
+
+export interface GetManagersBySpecificationVariables {
+  specification: string;
+}
+
+export interface GetManagersData {
+  staffs: ({
+    id: string;
+    user: {
+      id: string;
+      fullname: string;
+      gender?: string | null;
+      avatar?: string | null;
+      email: string;
+      accountStatus: string;
+    } & User_Key;
+      hireDate?: DateString | null;
+      slot?: number | null;
+      specification?: string[] | null;
+      certifications?: string[] | null;
+      positionId: string;
+      position: {
+        id: string;
+        name: string;
+        description?: string | null;
+      } & Position_Key;
+        createdAt: TimestampString;
+        updatedAt?: TimestampString | null;
+  } & Staff_Key)[];
+}
+
 export interface GetMethodByIdData {
   method?: {
     id: string;
@@ -573,7 +990,8 @@ export interface GetMethodsData {
 
 export interface GetMethodsForServiceData {
   serviceMethods: ({
-    id: string;
+    serviceId: string;
+    methodId: string;
     method: {
       id: string;
       name: string;
@@ -588,68 +1006,65 @@ export interface GetMethodsForServiceVariables {
   serviceId: string;
 }
 
-export interface GetMonthlyRevenueData {
-  payments: ({
-    amount: number;
-    paymentDate?: DateString | null;
-  })[];
-}
-
-export interface GetMonthlyRevenueVariables {
-  startDate: DateString;
-  endDate: DateString;
-}
-
 export interface GetMyBlogsData {
   blogs: ({
     id: string;
+    title: string;
     content: string;
     imageUrl?: string | null;
     createdAt: TimestampString;
+    updatedAt?: TimestampString | null;
   } & Blog_Key)[];
+}
+
+export interface GetMyBlogsVariables {
+  userId: string;
 }
 
 export interface GetMyBookingsData {
   bookings: ({
     id: string;
     totalAmount: number;
-    serviceMethod: {
+    service: {
       id: string;
-      service: {
-        id: string;
-        title: string;
-        description: string;
-        duration: string;
-        category: {
-          name: string;
-        };
-      } & Service_Key;
-        method: {
-          id: string;
-          name: string;
-          description?: string | null;
-          price: number;
-        } & Method_Key;
-    } & ServiceMethod_Key;
-      timeSlot?: {
-        slotDate: DateString;
-        startTime: string;
-        endTime: string;
+      title: string;
+      description: string;
+      duration: string;
+      category: {
+        name: string;
       };
-        staff?: {
-          fullname: string;
+    } & Service_Key;
+      method: {
+        id: string;
+        name: string;
+        description?: string | null;
+        price: number;
+      } & Method_Key;
+        timeSlot?: {
+          slotDate: DateString;
+          startTime: string;
+          endTime: string;
         };
-          bookingCreatedAt: TimestampString;
-          createdAt: TimestampString;
-          updatedAt?: TimestampString | null;
+          staff: {
+            user: {
+              fullname: string;
+            };
+          };
+            createdAt: TimestampString;
   } & Booking_Key)[];
+}
+
+export interface GetMyBookingsVariables {
+  userId: string;
 }
 
 export interface GetMyNotificationsData {
   notifications: ({
     id: string;
     staff?: {
-      fullname: string;
+      user: {
+        fullname: string;
+      };
     };
       title: string;
       message: string;
@@ -659,6 +1074,10 @@ export interface GetMyNotificationsData {
   } & Notification_Key)[];
 }
 
+export interface GetMyNotificationsVariables {
+  userId: string;
+}
+
 export interface GetNotificationByIdData {
   notification?: {
     id: string;
@@ -666,7 +1085,9 @@ export interface GetNotificationByIdData {
       fullname: string;
     };
       staff?: {
-        fullname: string;
+        user: {
+          fullname: string;
+        };
       };
         title: string;
         message: string;
@@ -678,6 +1099,54 @@ export interface GetNotificationByIdData {
 
 export interface GetNotificationByIdVariables {
   notificationId: string;
+}
+
+export interface GetParticipantByIdData {
+  participant?: {
+    id: string;
+    booking: {
+      id: string;
+      user: {
+        fullname: string;
+      };
+        service: {
+          title: string;
+        };
+    } & Booking_Key;
+      name: string;
+      age: number;
+      identification?: string | null;
+      gender: string;
+      relationship?: string | null;
+      createdAt: TimestampString;
+      updatedAt?: TimestampString | null;
+  } & Participant_Key;
+}
+
+export interface GetParticipantByIdVariables {
+  participantId: string;
+}
+
+export interface GetParticipantSamplesData {
+  samples: ({
+    id: string;
+    booking: {
+      id: string;
+      service: {
+        title: string;
+      };
+    } & Booking_Key;
+      collectionDate?: DateString | null;
+      sampleQuality: string;
+      sampleConcentration?: number | null;
+      notes?: string | null;
+      createdAt: TimestampString;
+      updatedAt?: TimestampString | null;
+  } & Sample_Key)[];
+}
+
+export interface GetParticipantSamplesVariables {
+  participantId: string;
 }
 
 export interface GetPaymentByIdData {
@@ -695,7 +1164,8 @@ export interface GetPaymentByIdData {
       paymentMethod: string;
       status: string;
       paymentDate?: DateString | null;
-      refundDetail?: string[] | null;
+      refundDetail?: string | null;
+      otherDetails?: string[] | null;
       createdAt: TimestampString;
       updatedAt?: TimestampString | null;
   } & Payment_Key;
@@ -716,12 +1186,114 @@ export interface GetPaymentsByStatusData {
       amount: number;
       paymentMethod: string;
       paymentDate?: DateString | null;
+      refundDetail?: string | null;
+      otherDetails?: string[] | null;
       createdAt: TimestampString;
   } & Payment_Key)[];
 }
 
 export interface GetPaymentsByStatusVariables {
   status: string;
+}
+
+export interface GetPositionByIdData {
+  position?: {
+    id: string;
+    name: string;
+    description?: string | null;
+    createdAt: TimestampString;
+    updatedAt?: TimestampString | null;
+  } & Position_Key;
+}
+
+export interface GetPositionByIdVariables {
+  positionId: string;
+}
+
+export interface GetPositionWithStaffCountData {
+  position?: {
+    id: string;
+    name: string;
+    description?: string | null;
+    createdAt: TimestampString;
+    updatedAt?: TimestampString | null;
+  } & Position_Key;
+    staffs: ({
+      id: string;
+      user: {
+        fullname: string;
+      };
+    } & Staff_Key)[];
+}
+
+export interface GetPositionWithStaffCountVariables {
+  positionId: string;
+}
+
+export interface GetPositionsData {
+  positions: ({
+    id: string;
+    name: string;
+    description?: string | null;
+    createdAt: TimestampString;
+    updatedAt?: TimestampString | null;
+  } & Position_Key)[];
+}
+
+export interface GetPositiveTestResultsData {
+  testResults: ({
+    id: string;
+    booking: {
+      user: {
+        fullname: string;
+      };
+        service: {
+          title: string;
+        };
+    };
+      sample: {
+        participant?: {
+          name: string;
+        };
+      };
+        staff: {
+          user: {
+            fullname: string;
+          };
+            position: {
+              name: string;
+            };
+        };
+          manager: {
+            user: {
+              fullname: string;
+            };
+              position: {
+                name: string;
+              };
+          };
+            testMethod: string;
+            accuracy: number;
+            testType: string;
+            testDate?: DateString | null;
+            reportDate?: DateString | null;
+            status: string;
+            createdAt: TimestampString;
+  } & TestResult_Key)[];
+}
+
+export interface GetRevenueByCategoryData {
+  payments: ({
+    amount: number;
+    booking: {
+      service: {
+        category: {
+          name: string;
+        };
+      };
+    };
+      paymentDate?: DateString | null;
+  })[];
 }
 
 export interface GetRoleByIdData {
@@ -769,27 +1341,35 @@ export interface GetSampleByIdData {
         fullname: string;
         email: string;
       };
-        serviceMethod: {
-          service: {
-            title: string;
-            description: string;
-            category: {
-              name: string;
-            };
+        service: {
+          title: string;
+          description: string;
+          category: {
+            name: string;
           };
-            method: {
-              name: string;
-            };
         };
+          method: {
+            name: string;
+          };
     } & Booking_Key;
       staff?: {
-        fullname: string;
+        user: {
+          fullname: string;
+        };
       };
-        collectionDate?: DateString | null;
-        status: string;
-        notes?: string | null;
-        createdAt: TimestampString;
-        updatedAt?: TimestampString | null;
+        participant?: {
+          name: string;
+          age: number;
+          gender: string;
+          identification?: string | null;
+          relationship?: string | null;
+        };
+          collectionDate?: DateString | null;
+          sampleQuality: string;
+          sampleConcentration?: number | null;
+          notes?: string | null;
+          createdAt: TimestampString;
+          updatedAt?: TimestampString | null;
   } & Sample_Key;
 }
 
@@ -797,7 +1377,7 @@ export interface GetSampleByIdVariables {
   sampleId: string;
 }
 
-export interface GetSamplesByStatusData {
+export interface GetSamplesByQualityData {
   samples: ({
     id: string;
     booking: {
@@ -805,27 +1385,33 @@ export interface GetSamplesByStatusData {
       user: {
         fullname: string;
       };
-        serviceMethod: {
-          service: {
-            title: string;
-            category: {
-              name: string;
-            };
+        service: {
+          title: string;
+          category: {
+            name: string;
           };
         };
     } & Booking_Key;
       staff?: {
-        fullname: string;
+        user: {
+          fullname: string;
+        };
       };
-        collectionDate?: DateString | null;
-        status: string;
-        notes?: string | null;
-        createdAt: TimestampString;
+        participant?: {
+          name: string;
+          age: number;
+          gender: string;
+        };
+          collectionDate?: DateString | null;
+          sampleQuality: string;
+          sampleConcentration?: number | null;
+          notes?: string | null;
+          createdAt: TimestampString;
   } & Sample_Key)[];
 }
 
-export interface GetSamplesByStatusVariables {
-  status: string;
+export interface GetSamplesByQualityVariables {
+  sampleQuality: string;
 }
 
 export interface GetServiceByIdData {
@@ -842,8 +1428,6 @@ export interface GetServiceByIdData {
       name: string;
       description?: string | null;
       hasLegalValue: boolean;
-      icon?: string | null;
-      color?: string | null;
     } & ServiceCategory_Key;
       icon?: string | null;
       featured: boolean;
@@ -862,8 +1446,6 @@ export interface GetServiceCategoriesData {
     name: string;
     description?: string | null;
     hasLegalValue: boolean;
-    icon?: string | null;
-    color?: string | null;
     createdAt: TimestampString;
     updatedAt?: TimestampString | null;
   } & ServiceCategory_Key)[];
@@ -875,8 +1457,6 @@ export interface GetServiceCategoryByIdData {
     name: string;
     description?: string | null;
     hasLegalValue: boolean;
-    icon?: string | null;
-    color?: string | null;
     createdAt: TimestampString;
     updatedAt?: TimestampString | null;
   } & ServiceCategory_Key;
@@ -886,9 +1466,34 @@ export interface GetServiceCategoryByIdVariables {
   categoryId: string;
 }
 
+export interface GetServiceMethodData {
+  serviceMethod?: {
+    serviceId: string;
+    methodId: string;
+    service: {
+      id: string;
+      title: string;
+      description: string;
+      price: number;
+    } & Service_Key;
+      method: {
+        id: string;
+        name: string;
+        description?: string | null;
+        price: number;
+      } & Method_Key;
+        createdAt: TimestampString;
+        updatedAt?: TimestampString | null;
+  } & ServiceMethod_Key;
+}
+
+export interface GetServiceMethodVariables {
+  serviceId: string;
+  methodId: string;
+}
+
 export interface GetServiceMethodsData {
   serviceMethods: ({
-    id: string;
     serviceId: string;
     methodId: string;
     service: {
@@ -912,12 +1517,10 @@ export interface GetServiceMethodsVariables {
 
 export interface GetServicePopularityData {
   bookings: ({
-    serviceMethod: {
-      service: {
-        id: string;
-        title: string;
-      } & Service_Key;
-    };
+    service: {
+      id: string;
+      title: string;
+    } & Service_Key;
   })[];
 }
 
@@ -934,8 +1537,6 @@ export interface GetServiceWithMethodsData {
       name: string;
       description?: string | null;
       hasLegalValue: boolean;
-      icon?: string | null;
-      color?: string | null;
     } & ServiceCategory_Key;
       icon?: string | null;
       featured: boolean;
@@ -943,7 +1544,8 @@ export interface GetServiceWithMethodsData {
       updatedAt?: TimestampString | null;
   } & Service_Key;
     serviceMethods: ({
-      id: string;
+      serviceId: string;
+      methodId: string;
       method: {
         id: string;
         name: string;
@@ -996,8 +1598,6 @@ export interface GetServicesData {
       name: string;
       description?: string | null;
       hasLegalValue: boolean;
-      icon?: string | null;
-      color?: string | null;
     } & ServiceCategory_Key;
       icon?: string | null;
       featured: boolean;
@@ -1008,7 +1608,8 @@ export interface GetServicesData {
 
 export interface GetServicesForMethodData {
   serviceMethods: ({
-    id: string;
+    serviceId: string;
+    methodId: string;
     service: {
       id: string;
       title: string;
@@ -1039,26 +1640,23 @@ export interface GetStaffBookingsData {
       phone?: string | null;
     };
       totalAmount: number;
-      serviceMethod: {
-        service: {
-          id: string;
-          title: string;
-          category: {
-            name: string;
-          };
-        } & Service_Key;
-          method: {
-            name: string;
-            price: number;
-          };
-      };
-        timeSlot?: {
-          slotDate: DateString;
-          startTime: string;
-          endTime: string;
+      service: {
+        id: string;
+        title: string;
+        category: {
+          name: string;
         };
-          bookingCreatedAt: TimestampString;
-          createdAt: TimestampString;
+      } & Service_Key;
+        method: {
+          name: string;
+          price: number;
+        };
+          timeSlot?: {
+            slotDate: DateString;
+            startTime: string;
+            endTime: string;
+          };
+            createdAt: TimestampString;
   } & Booking_Key)[];
 }
 
@@ -1066,18 +1664,231 @@ export interface GetStaffBookingsVariables {
   staffId: string;
 }
 
-export interface GetStaffMembersData {
-  users: ({
+export interface GetStaffByIdData {
+  staff?: {
     id: string;
-    fullname: string;
-    gender?: string | null;
-    avatar?: string | null;
-    email: string;
-    role: {
-      name: string;
-    };
+    user: {
+      id: string;
+      fullname: string;
+      gender?: string | null;
+      avatar?: string | null;
+      email: string;
+      phone?: string | null;
+      address?: string | null;
       accountStatus: string;
-  } & User_Key)[];
+    } & User_Key;
+      hireDate?: DateString | null;
+      slot?: number | null;
+      specification?: string[] | null;
+      certifications?: string[] | null;
+      positionId: string;
+      position: {
+        id: string;
+        name: string;
+        description?: string | null;
+      } & Position_Key;
+        createdAt: TimestampString;
+        updatedAt?: TimestampString | null;
+  } & Staff_Key;
+}
+
+export interface GetStaffByIdVariables {
+  staffId: string;
+}
+
+export interface GetStaffByPositionData {
+  staffs: ({
+    id: string;
+    user: {
+      id: string;
+      fullname: string;
+      gender?: string | null;
+      avatar?: string | null;
+      email: string;
+      accountStatus: string;
+    } & User_Key;
+      hireDate?: DateString | null;
+      slot?: number | null;
+      specification?: string[] | null;
+      certifications?: string[] | null;
+      positionId: string;
+      position: {
+        id: string;
+        name: string;
+        description?: string | null;
+      } & Position_Key;
+        createdAt: TimestampString;
+        updatedAt?: TimestampString | null;
+  } & Staff_Key)[];
+}
+
+export interface GetStaffByPositionIdData {
+  staffs: ({
+    id: string;
+    user: {
+      id: string;
+      fullname: string;
+      gender?: string | null;
+      avatar?: string | null;
+      email: string;
+      accountStatus: string;
+    } & User_Key;
+      hireDate?: DateString | null;
+      slot?: number | null;
+      specification?: string[] | null;
+      certifications?: string[] | null;
+      positionId: string;
+      position: {
+        id: string;
+        name: string;
+        description?: string | null;
+      } & Position_Key;
+        createdAt: TimestampString;
+        updatedAt?: TimestampString | null;
+  } & Staff_Key)[];
+}
+
+export interface GetStaffByPositionIdVariables {
+  positionId: string;
+}
+
+export interface GetStaffByPositionVariables {
+  positionName: string;
+}
+
+export interface GetStaffByPositionsData {
+  staffs: ({
+    id: string;
+    user: {
+      id: string;
+      fullname: string;
+      gender?: string | null;
+      avatar?: string | null;
+      email: string;
+      accountStatus: string;
+    } & User_Key;
+      hireDate?: DateString | null;
+      slot?: number | null;
+      specification?: string[] | null;
+      certifications?: string[] | null;
+      positionId: string;
+      position: {
+        id: string;
+        name: string;
+        description?: string | null;
+      } & Position_Key;
+        createdAt: TimestampString;
+        updatedAt?: TimestampString | null;
+  } & Staff_Key)[];
+}
+
+export interface GetStaffByPositionsVariables {
+  positionNames: string[];
+}
+
+export interface GetStaffBySpecificationData {
+  staffs: ({
+    id: string;
+    user: {
+      fullname: string;
+      email: string;
+      phone?: string | null;
+    };
+      hireDate?: DateString | null;
+      slot?: number | null;
+      specification?: string[] | null;
+      certifications?: string[] | null;
+      positionId: string;
+      position: {
+        id: string;
+        name: string;
+        description?: string | null;
+      } & Position_Key;
+        createdAt: TimestampString;
+  } & Staff_Key)[];
+}
+
+export interface GetStaffBySpecificationVariables {
+  specification: string;
+}
+
+export interface GetStaffCountByPositionData {
+  positions: ({
+    id: string;
+    name: string;
+    description?: string | null;
+  } & Position_Key)[];
+    staffs: ({
+      id: string;
+      positionId: string;
+      position: {
+        name: string;
+      };
+    } & Staff_Key)[];
+}
+
+export interface GetStaffMembersData {
+  staffs: ({
+    id: string;
+    user: {
+      id: string;
+      fullname: string;
+      gender?: string | null;
+      avatar?: string | null;
+      email: string;
+      accountStatus: string;
+    } & User_Key;
+      hireDate?: DateString | null;
+      slot?: number | null;
+      specification?: string[] | null;
+      certifications?: string[] | null;
+      positionId: string;
+      position: {
+        id: string;
+        name: string;
+        description?: string | null;
+      } & Position_Key;
+        createdAt: TimestampString;
+        updatedAt?: TimestampString | null;
+  } & Staff_Key)[];
+}
+
+export interface GetStaffPerformanceByPositionData {
+  positions: ({
+    id: string;
+    name: string;
+    description?: string | null;
+  } & Position_Key)[];
+    staffs: ({
+      id: string;
+      user: {
+        fullname: string;
+      };
+        position: {
+          id: string;
+          name: string;
+        } & Position_Key;
+          slot?: number | null;
+    } & Staff_Key)[];
+      bookings: ({
+        staffId: string;
+        staff: {
+          position: {
+            name: string;
+          };
+        };
+          createdAt: TimestampString;
+      })[];
+        testResults: ({
+          staffId: string;
+          staff: {
+            position: {
+              name: string;
+            };
+          };
+            status: string;
+            createdAt: TimestampString;
+        })[];
 }
 
 export interface GetStaffSamplesData {
@@ -1087,24 +1898,98 @@ export interface GetStaffSamplesData {
       user: {
         fullname: string;
       };
-        serviceMethod: {
-          service: {
-            title: string;
-            category: {
-              name: string;
-            };
+        service: {
+          title: string;
+          category: {
+            name: string;
           };
         };
     };
-      collectionDate?: DateString | null;
-      status: string;
-      notes?: string | null;
-      createdAt: TimestampString;
+      participant?: {
+        name: string;
+        age: number;
+        gender: string;
+      };
+        collectionDate?: DateString | null;
+        sampleQuality: string;
+        sampleConcentration?: number | null;
+        notes?: string | null;
+        createdAt: TimestampString;
   } & Sample_Key)[];
 }
 
 export interface GetStaffSamplesVariables {
   staffId: string;
+}
+
+export interface GetStaffTestResultsData {
+  testResults: ({
+    id: string;
+    booking: {
+      user: {
+        fullname: string;
+      };
+        service: {
+          title: string;
+        };
+    };
+      sample: {
+        participant?: {
+          name: string;
+        };
+      };
+        staff: {
+          user: {
+            fullname: string;
+          };
+            position: {
+              name: string;
+            };
+        };
+          manager: {
+            user: {
+              fullname: string;
+            };
+              position: {
+                name: string;
+              };
+          };
+            testMethod: string;
+            positive: boolean;
+            accuracy: number;
+            testType: string;
+            testDate?: DateString | null;
+            reportDate?: DateString | null;
+            status: string;
+            createdAt: TimestampString;
+  } & TestResult_Key)[];
+}
+
+export interface GetStaffTestResultsVariables {
+  staffId: string;
+}
+
+export interface GetStaffWorkloadData {
+  staffs: ({
+    id: string;
+    user: {
+      fullname: string;
+    };
+      slot?: number | null;
+  } & Staff_Key)[];
+    bookings: ({
+      staffId: string;
+      createdAt: TimestampString;
+    })[];
+}
+
+export interface GetTestCompletionStatsData {
+  testResults: ({
+    id: string;
+    status: string;
+    testDate?: DateString | null;
+    reportDate?: DateString | null;
+  } & TestResult_Key)[];
 }
 
 export interface GetTestResultByIdData {
@@ -1116,34 +2001,76 @@ export interface GetTestResultByIdData {
         fullname: string;
         email: string;
       };
-        serviceMethod: {
-          service: {
-            title: string;
-            description: string;
-          };
-            method: {
-              name: string;
-            };
+        service: {
+          title: string;
+          description: string;
         };
+          method: {
+            name: string;
+          };
     } & Booking_Key;
       sample: {
         id: string;
         collectionDate?: DateString | null;
-      } & Sample_Key;
-        staff?: {
-          fullname: string;
+        participant?: {
+          name: string;
+          age: number;
+          gender: string;
         };
-          testDate?: DateString | null;
-          reportDate?: DateString | null;
-          resultData?: string | null;
-          status: string;
-          createdAt: TimestampString;
-          updatedAt?: TimestampString | null;
+      } & Sample_Key;
+        staff: {
+          user: {
+            fullname: string;
+          };
+            position: {
+              name: string;
+            };
+        };
+          manager: {
+            user: {
+              fullname: string;
+            };
+              position: {
+                name: string;
+              };
+          };
+            testMethod: string;
+            positive: boolean;
+            accuracy: number;
+            testType: string;
+            testDate?: DateString | null;
+            reportDate?: DateString | null;
+            resultData?: string | null;
+            resultNotes?: string | null;
+            status: string;
+            createdAt: TimestampString;
+            updatedAt?: TimestampString | null;
   } & TestResult_Key;
 }
 
 export interface GetTestResultByIdVariables {
   resultId: string;
+}
+
+export interface GetTestResultStatsByPositionData {
+  testResults: ({
+    staffId: string;
+    staff: {
+      position: {
+        name: string;
+      };
+    };
+      managerId: string;
+      manager: {
+        position: {
+          name: string;
+        };
+      };
+        status: string;
+        positive: boolean;
+        testType: string;
+        createdAt: TimestampString;
+  })[];
 }
 
 export interface GetTestResultsByStatusData {
@@ -1153,23 +2080,84 @@ export interface GetTestResultsByStatusData {
       user: {
         fullname: string;
       };
-        serviceMethod: {
-          service: {
-            title: string;
-          };
+        service: {
+          title: string;
         };
     };
-      staff?: {
-        fullname: string;
+      sample: {
+        participant?: {
+          name: string;
+        };
       };
-        testDate?: DateString | null;
-        status: string;
-        createdAt: TimestampString;
+        staff: {
+          user: {
+            fullname: string;
+          };
+            position: {
+              name: string;
+            };
+        };
+          manager: {
+            user: {
+              fullname: string;
+            };
+              position: {
+                name: string;
+              };
+          };
+            testMethod: string;
+            positive: boolean;
+            accuracy: number;
+            testType: string;
+            testDate?: DateString | null;
+            reportDate?: DateString | null;
+            status: string;
+            createdAt: TimestampString;
   } & TestResult_Key)[];
 }
 
 export interface GetTestResultsByStatusVariables {
   status: string;
+}
+
+export interface GetTestResultsByTypeData {
+  testResults: ({
+    id: string;
+    booking: {
+      user: {
+        fullname: string;
+      };
+        service: {
+          title: string;
+        };
+    };
+      staff: {
+        user: {
+          fullname: string;
+        };
+          position: {
+            name: string;
+          };
+      };
+        manager: {
+          user: {
+            fullname: string;
+          };
+            position: {
+              name: string;
+            };
+        };
+          testMethod: string;
+          positive: boolean;
+          accuracy: number;
+          testDate?: DateString | null;
+          status: string;
+          createdAt: TimestampString;
+  } & TestResult_Key)[];
+}
+
+export interface GetTestResultsByTypeVariables {
+  testType: string;
 }
 
 export interface GetTimeSlotByIdData {
@@ -1237,39 +2225,62 @@ export interface GetUserBookingsData {
   bookings: ({
     id: string;
     totalAmount: number;
-    serviceMethod: {
+    service: {
       id: string;
-      service: {
-        id: string;
-        title: string;
-        description: string;
-        category: {
-          name: string;
-        };
-      } & Service_Key;
-        method: {
-          id: string;
-          name: string;
-          description?: string | null;
-          price: number;
-        } & Method_Key;
-    } & ServiceMethod_Key;
-      timeSlot?: {
-        slotDate: DateString;
-        startTime: string;
-        endTime: string;
+      title: string;
+      description: string;
+      category: {
+        name: string;
       };
-        staff?: {
-          fullname: string;
+    } & Service_Key;
+      method: {
+        id: string;
+        name: string;
+        description?: string | null;
+        price: number;
+      } & Method_Key;
+        timeSlot?: {
+          slotDate: DateString;
+          startTime: string;
+          endTime: string;
         };
-          bookingCreatedAt: TimestampString;
-          createdAt: TimestampString;
-          updatedAt?: TimestampString | null;
+          staff: {
+            user: {
+              fullname: string;
+            };
+          };
+            createdAt: TimestampString;
   } & Booking_Key)[];
 }
 
 export interface GetUserBookingsVariables {
   userId: string;
+}
+
+export interface GetUserByEmailData {
+  users: ({
+    id: string;
+    fullname: string;
+    gender?: string | null;
+    avatar?: string | null;
+    email: string;
+    accountStatus: string;
+    authProvider: string;
+    phone?: string | null;
+    address?: string | null;
+    roleId: string;
+    role: {
+      id: string;
+      name: string;
+      description?: string | null;
+    } & Role_Key;
+      createdAt: TimestampString;
+      lastLogin?: TimestampString | null;
+  } & User_Key)[];
+}
+
+export interface GetUserByEmailVariables {
+  email: string;
 }
 
 export interface GetUserByIdData {
@@ -1282,14 +2293,13 @@ export interface GetUserByIdData {
     accountStatus: string;
     authProvider: string;
     phone?: string | null;
-    shippingAddress?: string | null;
+    address?: string | null;
     roleId: string;
     role: {
       id: string;
       name: string;
       description?: string | null;
     } & Role_Key;
-      dailySlotCount: number;
       createdAt: TimestampString;
       lastLogin?: TimestampString | null;
   } & User_Key;
@@ -1309,14 +2319,13 @@ export interface GetUserData {
     accountStatus: string;
     authProvider: string;
     phone?: string | null;
-    shippingAddress?: string | null;
+    address?: string | null;
     roleId: string;
     role: {
       id: string;
       name: string;
       description?: string | null;
     } & Role_Key;
-      dailySlotCount: number;
       createdAt: TimestampString;
       lastLogin?: TimestampString | null;
   } & User_Key;
@@ -1326,7 +2335,9 @@ export interface GetUserNotificationsData {
   notifications: ({
     id: string;
     staff?: {
-      fullname: string;
+      user: {
+        fullname: string;
+      };
     };
       title: string;
       message: string;
@@ -1347,6 +2358,8 @@ export interface GetUserPaymentsData {
     paymentMethod: string;
     status: string;
     paymentDate?: DateString | null;
+    refundDetail?: string | null;
+    otherDetails?: string[] | null;
     createdAt: TimestampString;
   } & Payment_Key)[];
 }
@@ -1359,20 +2372,42 @@ export interface GetUserTestResultsData {
   testResults: ({
     id: string;
     booking: {
-      serviceMethod: {
-        service: {
-          title: string;
-        };
+      service: {
+        title: string;
       };
     };
-      testDate?: DateString | null;
-      reportDate?: DateString | null;
-      status: string;
-      createdAt: TimestampString;
+      staff: {
+        user: {
+          fullname: string;
+        };
+          position: {
+            name: string;
+          };
+      };
+        manager: {
+          user: {
+            fullname: string;
+          };
+            position: {
+              name: string;
+            };
+        };
+          testMethod: string;
+          positive: boolean;
+          accuracy: number;
+          testType: string;
+          testDate?: DateString | null;
+          reportDate?: DateString | null;
+          status: string;
+          createdAt: TimestampString;
   } & TestResult_Key)[];
 }
 
 export interface GetUserTestResultsVariables {
+  userId: string;
+}
+
+export interface GetUserVariables {
   userId: string;
 }
 
@@ -1443,9 +2478,19 @@ export interface Notification_Key {
   __typename?: 'Notification_Key';
 }
 
+export interface Participant_Key {
+  id: string;
+  __typename?: 'Participant_Key';
+}
+
 export interface Payment_Key {
   id: string;
   __typename?: 'Payment_Key';
+}
+
+export interface Position_Key {
+  id: string;
+  __typename?: 'Position_Key';
 }
 
 export interface Role_Key {
@@ -1464,13 +2509,19 @@ export interface ServiceCategory_Key {
 }
 
 export interface ServiceMethod_Key {
-  id: string;
+  serviceId: string;
+  methodId: string;
   __typename?: 'ServiceMethod_Key';
 }
 
 export interface Service_Key {
   id: string;
   __typename?: 'Service_Key';
+}
+
+export interface Staff_Key {
+  id: string;
+  __typename?: 'Staff_Key';
 }
 
 export interface TestResult_Key {
@@ -1489,6 +2540,7 @@ export interface UpdateBlogData {
 
 export interface UpdateBlogVariables {
   blogId: string;
+  title?: string | null;
   content?: string | null;
   imageUrl?: string | null;
 }
@@ -1511,7 +2563,8 @@ export interface UpdateBookingVariables {
   bookingId: string;
   staffId?: string | null;
   timeSlotId?: string | null;
-  serviceMethodId?: string | null;
+  serviceId?: string | null;
+  methodId?: string | null;
   totalAmount?: number | null;
 }
 
@@ -1536,6 +2589,19 @@ export interface UpdateMethodVariables {
   price?: number | null;
 }
 
+export interface UpdateParticipantData {
+  participant_update?: Participant_Key | null;
+}
+
+export interface UpdateParticipantVariables {
+  participantId: string;
+  name?: string | null;
+  age?: number | null;
+  identification?: string | null;
+  gender?: string | null;
+  relationship?: string | null;
+}
+
 export interface UpdatePaymentStatusData {
   payment_update?: Payment_Key | null;
 }
@@ -1544,6 +2610,25 @@ export interface UpdatePaymentStatusVariables {
   paymentId: string;
   status: string;
   paymentDate?: DateString | null;
+}
+
+export interface UpdatePositionData {
+  position_update?: Position_Key | null;
+}
+
+export interface UpdatePositionVariables {
+  positionId: string;
+  name?: string | null;
+  description?: string | null;
+}
+
+export interface UpdateRefundDetailData {
+  payment_update?: Payment_Key | null;
+}
+
+export interface UpdateRefundDetailVariables {
+  paymentId: string;
+  refundDetail: string;
 }
 
 export interface UpdateRoleData {
@@ -1556,15 +2641,17 @@ export interface UpdateRoleVariables {
   description?: string | null;
 }
 
-export interface UpdateSampleStatusData {
+export interface UpdateSampleData {
   sample_update?: Sample_Key | null;
 }
 
-export interface UpdateSampleStatusVariables {
+export interface UpdateSampleVariables {
   sampleId: string;
-  status: string;
   staffId?: string | null;
+  participantId?: string | null;
   collectionDate?: DateString | null;
+  sampleQuality?: string | null;
+  sampleConcentration?: number | null;
   notes?: string | null;
 }
 
@@ -1577,8 +2664,6 @@ export interface UpdateServiceCategoryVariables {
   name?: string | null;
   description?: string | null;
   hasLegalValue?: boolean | null;
-  icon?: string | null;
-  color?: string | null;
 }
 
 export interface UpdateServiceData {
@@ -1597,16 +2682,34 @@ export interface UpdateServiceVariables {
   featured?: boolean | null;
 }
 
+export interface UpdateStaffData {
+  staff_update?: Staff_Key | null;
+}
+
+export interface UpdateStaffVariables {
+  staffId: string;
+  hireDate?: DateString | null;
+  slot?: number | null;
+  specification?: string[] | null;
+  certifications?: string[] | null;
+  positionId?: string | null;
+}
+
 export interface UpdateTestResultData {
   testResult_update?: TestResult_Key | null;
 }
 
 export interface UpdateTestResultVariables {
   resultId: string;
-  resultData?: string | null;
-  status?: string | null;
-  reportDate?: DateString | null;
+  testMethod?: string | null;
+  positive?: boolean | null;
+  accuracy?: number | null;
+  testType?: string | null;
   testDate?: DateString | null;
+  reportDate?: DateString | null;
+  resultData?: string | null;
+  resultNotes?: string | null;
+  status?: string | null;
 }
 
 export interface UpdateTimeSlotBookingsData {
@@ -1644,11 +2747,12 @@ export interface UpdateUserProfileData {
 }
 
 export interface UpdateUserProfileVariables {
+  userId: string;
   fullname?: string | null;
   gender?: string | null;
   avatar?: string | null;
   phone?: string | null;
-  shippingAddress?: string | null;
+  address?: string | null;
 }
 
 export interface UpdateUserRoleData {
@@ -1703,15 +2807,27 @@ export function getRoleByName(dc: DataConnect, vars: GetRoleByNameVariables): Qu
 
 interface GetUserRef {
   /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetUserData, undefined>;
+  (vars: GetUserVariables): QueryRef<GetUserData, GetUserVariables>;
   /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetUserData, undefined>;
+  (dc: DataConnect, vars: GetUserVariables): QueryRef<GetUserData, GetUserVariables>;
   operationName: string;
 }
 export const getUserRef: GetUserRef;
 
-export function getUser(): QueryPromise<GetUserData, undefined>;
-export function getUser(dc: DataConnect): QueryPromise<GetUserData, undefined>;
+export function getUser(vars: GetUserVariables): QueryPromise<GetUserData, GetUserVariables>;
+export function getUser(dc: DataConnect, vars: GetUserVariables): QueryPromise<GetUserData, GetUserVariables>;
+
+interface GetUserByEmailRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetUserByEmailVariables): QueryRef<GetUserByEmailData, GetUserByEmailVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetUserByEmailVariables): QueryRef<GetUserByEmailData, GetUserByEmailVariables>;
+  operationName: string;
+}
+export const getUserByEmailRef: GetUserByEmailRef;
+
+export function getUserByEmail(vars: GetUserByEmailVariables): QueryPromise<GetUserByEmailData, GetUserByEmailVariables>;
+export function getUserByEmail(dc: DataConnect, vars: GetUserByEmailVariables): QueryPromise<GetUserByEmailData, GetUserByEmailVariables>;
 
 interface GetUserByIdRef {
   /* Allow users to create refs without passing in DataConnect */
@@ -1760,6 +2876,102 @@ export const getStaffMembersRef: GetStaffMembersRef;
 
 export function getStaffMembers(): QueryPromise<GetStaffMembersData, undefined>;
 export function getStaffMembers(dc: DataConnect): QueryPromise<GetStaffMembersData, undefined>;
+
+interface GetStaffByIdRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetStaffByIdVariables): QueryRef<GetStaffByIdData, GetStaffByIdVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetStaffByIdVariables): QueryRef<GetStaffByIdData, GetStaffByIdVariables>;
+  operationName: string;
+}
+export const getStaffByIdRef: GetStaffByIdRef;
+
+export function getStaffById(vars: GetStaffByIdVariables): QueryPromise<GetStaffByIdData, GetStaffByIdVariables>;
+export function getStaffById(dc: DataConnect, vars: GetStaffByIdVariables): QueryPromise<GetStaffByIdData, GetStaffByIdVariables>;
+
+interface GetPositionsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetPositionsData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetPositionsData, undefined>;
+  operationName: string;
+}
+export const getPositionsRef: GetPositionsRef;
+
+export function getPositions(): QueryPromise<GetPositionsData, undefined>;
+export function getPositions(dc: DataConnect): QueryPromise<GetPositionsData, undefined>;
+
+interface GetPositionByIdRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetPositionByIdVariables): QueryRef<GetPositionByIdData, GetPositionByIdVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetPositionByIdVariables): QueryRef<GetPositionByIdData, GetPositionByIdVariables>;
+  operationName: string;
+}
+export const getPositionByIdRef: GetPositionByIdRef;
+
+export function getPositionById(vars: GetPositionByIdVariables): QueryPromise<GetPositionByIdData, GetPositionByIdVariables>;
+export function getPositionById(dc: DataConnect, vars: GetPositionByIdVariables): QueryPromise<GetPositionByIdData, GetPositionByIdVariables>;
+
+interface GetStaffByPositionRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetStaffByPositionVariables): QueryRef<GetStaffByPositionData, GetStaffByPositionVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetStaffByPositionVariables): QueryRef<GetStaffByPositionData, GetStaffByPositionVariables>;
+  operationName: string;
+}
+export const getStaffByPositionRef: GetStaffByPositionRef;
+
+export function getStaffByPosition(vars: GetStaffByPositionVariables): QueryPromise<GetStaffByPositionData, GetStaffByPositionVariables>;
+export function getStaffByPosition(dc: DataConnect, vars: GetStaffByPositionVariables): QueryPromise<GetStaffByPositionData, GetStaffByPositionVariables>;
+
+interface GetManagersRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetManagersData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetManagersData, undefined>;
+  operationName: string;
+}
+export const getManagersRef: GetManagersRef;
+
+export function getManagers(): QueryPromise<GetManagersData, undefined>;
+export function getManagers(dc: DataConnect): QueryPromise<GetManagersData, undefined>;
+
+interface GetStaffCountByPositionRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetStaffCountByPositionData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetStaffCountByPositionData, undefined>;
+  operationName: string;
+}
+export const getStaffCountByPositionRef: GetStaffCountByPositionRef;
+
+export function getStaffCountByPosition(): QueryPromise<GetStaffCountByPositionData, undefined>;
+export function getStaffCountByPosition(dc: DataConnect): QueryPromise<GetStaffCountByPositionData, undefined>;
+
+interface GetStaffByPositionIdRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetStaffByPositionIdVariables): QueryRef<GetStaffByPositionIdData, GetStaffByPositionIdVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetStaffByPositionIdVariables): QueryRef<GetStaffByPositionIdData, GetStaffByPositionIdVariables>;
+  operationName: string;
+}
+export const getStaffByPositionIdRef: GetStaffByPositionIdRef;
+
+export function getStaffByPositionId(vars: GetStaffByPositionIdVariables): QueryPromise<GetStaffByPositionIdData, GetStaffByPositionIdVariables>;
+export function getStaffByPositionId(dc: DataConnect, vars: GetStaffByPositionIdVariables): QueryPromise<GetStaffByPositionIdData, GetStaffByPositionIdVariables>;
+
+interface GetPositionWithStaffCountRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetPositionWithStaffCountVariables): QueryRef<GetPositionWithStaffCountData, GetPositionWithStaffCountVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetPositionWithStaffCountVariables): QueryRef<GetPositionWithStaffCountData, GetPositionWithStaffCountVariables>;
+  operationName: string;
+}
+export const getPositionWithStaffCountRef: GetPositionWithStaffCountRef;
+
+export function getPositionWithStaffCount(vars: GetPositionWithStaffCountVariables): QueryPromise<GetPositionWithStaffCountData, GetPositionWithStaffCountVariables>;
+export function getPositionWithStaffCount(dc: DataConnect, vars: GetPositionWithStaffCountVariables): QueryPromise<GetPositionWithStaffCountData, GetPositionWithStaffCountVariables>;
 
 interface GetServiceCategoriesRef {
   /* Allow users to create refs without passing in DataConnect */
@@ -1893,6 +3105,18 @@ export const getServicesForMethodRef: GetServicesForMethodRef;
 export function getServicesForMethod(vars: GetServicesForMethodVariables): QueryPromise<GetServicesForMethodData, GetServicesForMethodVariables>;
 export function getServicesForMethod(dc: DataConnect, vars: GetServicesForMethodVariables): QueryPromise<GetServicesForMethodData, GetServicesForMethodVariables>;
 
+interface GetServiceMethodRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetServiceMethodVariables): QueryRef<GetServiceMethodData, GetServiceMethodVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetServiceMethodVariables): QueryRef<GetServiceMethodData, GetServiceMethodVariables>;
+  operationName: string;
+}
+export const getServiceMethodRef: GetServiceMethodRef;
+
+export function getServiceMethod(vars: GetServiceMethodVariables): QueryPromise<GetServiceMethodData, GetServiceMethodVariables>;
+export function getServiceMethod(dc: DataConnect, vars: GetServiceMethodVariables): QueryPromise<GetServiceMethodData, GetServiceMethodVariables>;
+
 interface GetServiceWithMethodsRef {
   /* Allow users to create refs without passing in DataConnect */
   (vars: GetServiceWithMethodsVariables): QueryRef<GetServiceWithMethodsData, GetServiceWithMethodsVariables>;
@@ -1955,15 +3179,15 @@ export function getUserBookings(dc: DataConnect, vars: GetUserBookingsVariables)
 
 interface GetMyBookingsRef {
   /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetMyBookingsData, undefined>;
+  (vars: GetMyBookingsVariables): QueryRef<GetMyBookingsData, GetMyBookingsVariables>;
   /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetMyBookingsData, undefined>;
+  (dc: DataConnect, vars: GetMyBookingsVariables): QueryRef<GetMyBookingsData, GetMyBookingsVariables>;
   operationName: string;
 }
 export const getMyBookingsRef: GetMyBookingsRef;
 
-export function getMyBookings(): QueryPromise<GetMyBookingsData, undefined>;
-export function getMyBookings(dc: DataConnect): QueryPromise<GetMyBookingsData, undefined>;
+export function getMyBookings(vars: GetMyBookingsVariables): QueryPromise<GetMyBookingsData, GetMyBookingsVariables>;
+export function getMyBookings(dc: DataConnect, vars: GetMyBookingsVariables): QueryPromise<GetMyBookingsData, GetMyBookingsVariables>;
 
 interface GetBookingByIdRef {
   /* Allow users to create refs without passing in DataConnect */
@@ -2001,6 +3225,30 @@ export const getStaffBookingsRef: GetStaffBookingsRef;
 export function getStaffBookings(vars: GetStaffBookingsVariables): QueryPromise<GetStaffBookingsData, GetStaffBookingsVariables>;
 export function getStaffBookings(dc: DataConnect, vars: GetStaffBookingsVariables): QueryPromise<GetStaffBookingsData, GetStaffBookingsVariables>;
 
+interface GetBookingParticipantsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetBookingParticipantsVariables): QueryRef<GetBookingParticipantsData, GetBookingParticipantsVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetBookingParticipantsVariables): QueryRef<GetBookingParticipantsData, GetBookingParticipantsVariables>;
+  operationName: string;
+}
+export const getBookingParticipantsRef: GetBookingParticipantsRef;
+
+export function getBookingParticipants(vars: GetBookingParticipantsVariables): QueryPromise<GetBookingParticipantsData, GetBookingParticipantsVariables>;
+export function getBookingParticipants(dc: DataConnect, vars: GetBookingParticipantsVariables): QueryPromise<GetBookingParticipantsData, GetBookingParticipantsVariables>;
+
+interface GetParticipantByIdRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetParticipantByIdVariables): QueryRef<GetParticipantByIdData, GetParticipantByIdVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetParticipantByIdVariables): QueryRef<GetParticipantByIdData, GetParticipantByIdVariables>;
+  operationName: string;
+}
+export const getParticipantByIdRef: GetParticipantByIdRef;
+
+export function getParticipantById(vars: GetParticipantByIdVariables): QueryPromise<GetParticipantByIdData, GetParticipantByIdVariables>;
+export function getParticipantById(dc: DataConnect, vars: GetParticipantByIdVariables): QueryPromise<GetParticipantByIdData, GetParticipantByIdVariables>;
+
 interface GetBookingSamplesRef {
   /* Allow users to create refs without passing in DataConnect */
   (vars: GetBookingSamplesVariables): QueryRef<GetBookingSamplesData, GetBookingSamplesVariables>;
@@ -2013,17 +3261,17 @@ export const getBookingSamplesRef: GetBookingSamplesRef;
 export function getBookingSamples(vars: GetBookingSamplesVariables): QueryPromise<GetBookingSamplesData, GetBookingSamplesVariables>;
 export function getBookingSamples(dc: DataConnect, vars: GetBookingSamplesVariables): QueryPromise<GetBookingSamplesData, GetBookingSamplesVariables>;
 
-interface GetSamplesByStatusRef {
+interface GetSamplesByQualityRef {
   /* Allow users to create refs without passing in DataConnect */
-  (vars: GetSamplesByStatusVariables): QueryRef<GetSamplesByStatusData, GetSamplesByStatusVariables>;
+  (vars: GetSamplesByQualityVariables): QueryRef<GetSamplesByQualityData, GetSamplesByQualityVariables>;
   /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetSamplesByStatusVariables): QueryRef<GetSamplesByStatusData, GetSamplesByStatusVariables>;
+  (dc: DataConnect, vars: GetSamplesByQualityVariables): QueryRef<GetSamplesByQualityData, GetSamplesByQualityVariables>;
   operationName: string;
 }
-export const getSamplesByStatusRef: GetSamplesByStatusRef;
+export const getSamplesByQualityRef: GetSamplesByQualityRef;
 
-export function getSamplesByStatus(vars: GetSamplesByStatusVariables): QueryPromise<GetSamplesByStatusData, GetSamplesByStatusVariables>;
-export function getSamplesByStatus(dc: DataConnect, vars: GetSamplesByStatusVariables): QueryPromise<GetSamplesByStatusData, GetSamplesByStatusVariables>;
+export function getSamplesByQuality(vars: GetSamplesByQualityVariables): QueryPromise<GetSamplesByQualityData, GetSamplesByQualityVariables>;
+export function getSamplesByQuality(dc: DataConnect, vars: GetSamplesByQualityVariables): QueryPromise<GetSamplesByQualityData, GetSamplesByQualityVariables>;
 
 interface GetSampleByIdRef {
   /* Allow users to create refs without passing in DataConnect */
@@ -2048,6 +3296,30 @@ export const getStaffSamplesRef: GetStaffSamplesRef;
 
 export function getStaffSamples(vars: GetStaffSamplesVariables): QueryPromise<GetStaffSamplesData, GetStaffSamplesVariables>;
 export function getStaffSamples(dc: DataConnect, vars: GetStaffSamplesVariables): QueryPromise<GetStaffSamplesData, GetStaffSamplesVariables>;
+
+interface GetParticipantSamplesRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetParticipantSamplesVariables): QueryRef<GetParticipantSamplesData, GetParticipantSamplesVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetParticipantSamplesVariables): QueryRef<GetParticipantSamplesData, GetParticipantSamplesVariables>;
+  operationName: string;
+}
+export const getParticipantSamplesRef: GetParticipantSamplesRef;
+
+export function getParticipantSamples(vars: GetParticipantSamplesVariables): QueryPromise<GetParticipantSamplesData, GetParticipantSamplesVariables>;
+export function getParticipantSamples(dc: DataConnect, vars: GetParticipantSamplesVariables): QueryPromise<GetParticipantSamplesData, GetParticipantSamplesVariables>;
+
+interface GetAllSamplesRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars?: GetAllSamplesVariables): QueryRef<GetAllSamplesData, GetAllSamplesVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars?: GetAllSamplesVariables): QueryRef<GetAllSamplesData, GetAllSamplesVariables>;
+  operationName: string;
+}
+export const getAllSamplesRef: GetAllSamplesRef;
+
+export function getAllSamples(vars?: GetAllSamplesVariables): QueryPromise<GetAllSamplesData, GetAllSamplesVariables>;
+export function getAllSamples(dc: DataConnect, vars?: GetAllSamplesVariables): QueryPromise<GetAllSamplesData, GetAllSamplesVariables>;
 
 interface GetBookingTestResultsRef {
   /* Allow users to create refs without passing in DataConnect */
@@ -2096,6 +3368,54 @@ export const getUserTestResultsRef: GetUserTestResultsRef;
 
 export function getUserTestResults(vars: GetUserTestResultsVariables): QueryPromise<GetUserTestResultsData, GetUserTestResultsVariables>;
 export function getUserTestResults(dc: DataConnect, vars: GetUserTestResultsVariables): QueryPromise<GetUserTestResultsData, GetUserTestResultsVariables>;
+
+interface GetManagerTestResultsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetManagerTestResultsVariables): QueryRef<GetManagerTestResultsData, GetManagerTestResultsVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetManagerTestResultsVariables): QueryRef<GetManagerTestResultsData, GetManagerTestResultsVariables>;
+  operationName: string;
+}
+export const getManagerTestResultsRef: GetManagerTestResultsRef;
+
+export function getManagerTestResults(vars: GetManagerTestResultsVariables): QueryPromise<GetManagerTestResultsData, GetManagerTestResultsVariables>;
+export function getManagerTestResults(dc: DataConnect, vars: GetManagerTestResultsVariables): QueryPromise<GetManagerTestResultsData, GetManagerTestResultsVariables>;
+
+interface GetStaffTestResultsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetStaffTestResultsVariables): QueryRef<GetStaffTestResultsData, GetStaffTestResultsVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetStaffTestResultsVariables): QueryRef<GetStaffTestResultsData, GetStaffTestResultsVariables>;
+  operationName: string;
+}
+export const getStaffTestResultsRef: GetStaffTestResultsRef;
+
+export function getStaffTestResults(vars: GetStaffTestResultsVariables): QueryPromise<GetStaffTestResultsData, GetStaffTestResultsVariables>;
+export function getStaffTestResults(dc: DataConnect, vars: GetStaffTestResultsVariables): QueryPromise<GetStaffTestResultsData, GetStaffTestResultsVariables>;
+
+interface GetTestResultsByTypeRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetTestResultsByTypeVariables): QueryRef<GetTestResultsByTypeData, GetTestResultsByTypeVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetTestResultsByTypeVariables): QueryRef<GetTestResultsByTypeData, GetTestResultsByTypeVariables>;
+  operationName: string;
+}
+export const getTestResultsByTypeRef: GetTestResultsByTypeRef;
+
+export function getTestResultsByType(vars: GetTestResultsByTypeVariables): QueryPromise<GetTestResultsByTypeData, GetTestResultsByTypeVariables>;
+export function getTestResultsByType(dc: DataConnect, vars: GetTestResultsByTypeVariables): QueryPromise<GetTestResultsByTypeData, GetTestResultsByTypeVariables>;
+
+interface GetPositiveTestResultsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetPositiveTestResultsData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetPositiveTestResultsData, undefined>;
+  operationName: string;
+}
+export const getPositiveTestResultsRef: GetPositiveTestResultsRef;
+
+export function getPositiveTestResults(): QueryPromise<GetPositiveTestResultsData, undefined>;
+export function getPositiveTestResults(dc: DataConnect): QueryPromise<GetPositiveTestResultsData, undefined>;
 
 interface GetBookingPaymentRef {
   /* Allow users to create refs without passing in DataConnect */
@@ -2219,15 +3539,15 @@ export function getBlogsByUser(dc: DataConnect, vars: GetBlogsByUserVariables): 
 
 interface GetMyBlogsRef {
   /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetMyBlogsData, undefined>;
+  (vars: GetMyBlogsVariables): QueryRef<GetMyBlogsData, GetMyBlogsVariables>;
   /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetMyBlogsData, undefined>;
+  (dc: DataConnect, vars: GetMyBlogsVariables): QueryRef<GetMyBlogsData, GetMyBlogsVariables>;
   operationName: string;
 }
 export const getMyBlogsRef: GetMyBlogsRef;
 
-export function getMyBlogs(): QueryPromise<GetMyBlogsData, undefined>;
-export function getMyBlogs(dc: DataConnect): QueryPromise<GetMyBlogsData, undefined>;
+export function getMyBlogs(vars: GetMyBlogsVariables): QueryPromise<GetMyBlogsData, GetMyBlogsVariables>;
+export function getMyBlogs(dc: DataConnect, vars: GetMyBlogsVariables): QueryPromise<GetMyBlogsData, GetMyBlogsVariables>;
 
 interface GetUserNotificationsRef {
   /* Allow users to create refs without passing in DataConnect */
@@ -2243,15 +3563,15 @@ export function getUserNotifications(dc: DataConnect, vars: GetUserNotifications
 
 interface GetMyNotificationsRef {
   /* Allow users to create refs without passing in DataConnect */
-  (): QueryRef<GetMyNotificationsData, undefined>;
+  (vars: GetMyNotificationsVariables): QueryRef<GetMyNotificationsData, GetMyNotificationsVariables>;
   /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect): QueryRef<GetMyNotificationsData, undefined>;
+  (dc: DataConnect, vars: GetMyNotificationsVariables): QueryRef<GetMyNotificationsData, GetMyNotificationsVariables>;
   operationName: string;
 }
 export const getMyNotificationsRef: GetMyNotificationsRef;
 
-export function getMyNotifications(): QueryPromise<GetMyNotificationsData, undefined>;
-export function getMyNotifications(dc: DataConnect): QueryPromise<GetMyNotificationsData, undefined>;
+export function getMyNotifications(vars: GetMyNotificationsVariables): QueryPromise<GetMyNotificationsData, GetMyNotificationsVariables>;
+export function getMyNotifications(dc: DataConnect, vars: GetMyNotificationsVariables): QueryPromise<GetMyNotificationsData, GetMyNotificationsVariables>;
 
 interface GetUnreadNotificationsCountRef {
   /* Allow users to create refs without passing in DataConnect */
@@ -2301,17 +3621,149 @@ export const getServicePopularityRef: GetServicePopularityRef;
 export function getServicePopularity(): QueryPromise<GetServicePopularityData, undefined>;
 export function getServicePopularity(dc: DataConnect): QueryPromise<GetServicePopularityData, undefined>;
 
-interface GetMonthlyRevenueRef {
+interface GetStaffBySpecificationRef {
   /* Allow users to create refs without passing in DataConnect */
-  (vars: GetMonthlyRevenueVariables): QueryRef<GetMonthlyRevenueData, GetMonthlyRevenueVariables>;
+  (vars: GetStaffBySpecificationVariables): QueryRef<GetStaffBySpecificationData, GetStaffBySpecificationVariables>;
   /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: GetMonthlyRevenueVariables): QueryRef<GetMonthlyRevenueData, GetMonthlyRevenueVariables>;
+  (dc: DataConnect, vars: GetStaffBySpecificationVariables): QueryRef<GetStaffBySpecificationData, GetStaffBySpecificationVariables>;
   operationName: string;
 }
-export const getMonthlyRevenueRef: GetMonthlyRevenueRef;
+export const getStaffBySpecificationRef: GetStaffBySpecificationRef;
 
-export function getMonthlyRevenue(vars: GetMonthlyRevenueVariables): QueryPromise<GetMonthlyRevenueData, GetMonthlyRevenueVariables>;
-export function getMonthlyRevenue(dc: DataConnect, vars: GetMonthlyRevenueVariables): QueryPromise<GetMonthlyRevenueData, GetMonthlyRevenueVariables>;
+export function getStaffBySpecification(vars: GetStaffBySpecificationVariables): QueryPromise<GetStaffBySpecificationData, GetStaffBySpecificationVariables>;
+export function getStaffBySpecification(dc: DataConnect, vars: GetStaffBySpecificationVariables): QueryPromise<GetStaffBySpecificationData, GetStaffBySpecificationVariables>;
+
+interface GetAvailableStaffRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetAvailableStaffData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetAvailableStaffData, undefined>;
+  operationName: string;
+}
+export const getAvailableStaffRef: GetAvailableStaffRef;
+
+export function getAvailableStaff(): QueryPromise<GetAvailableStaffData, undefined>;
+export function getAvailableStaff(dc: DataConnect): QueryPromise<GetAvailableStaffData, undefined>;
+
+interface GetManagersBySpecificationRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetManagersBySpecificationVariables): QueryRef<GetManagersBySpecificationData, GetManagersBySpecificationVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetManagersBySpecificationVariables): QueryRef<GetManagersBySpecificationData, GetManagersBySpecificationVariables>;
+  operationName: string;
+}
+export const getManagersBySpecificationRef: GetManagersBySpecificationRef;
+
+export function getManagersBySpecification(vars: GetManagersBySpecificationVariables): QueryPromise<GetManagersBySpecificationData, GetManagersBySpecificationVariables>;
+export function getManagersBySpecification(dc: DataConnect, vars: GetManagersBySpecificationVariables): QueryPromise<GetManagersBySpecificationData, GetManagersBySpecificationVariables>;
+
+interface GetRevenueByCategoryRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetRevenueByCategoryData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetRevenueByCategoryData, undefined>;
+  operationName: string;
+}
+export const getRevenueByCategoryRef: GetRevenueByCategoryRef;
+
+export function getRevenueByCategory(): QueryPromise<GetRevenueByCategoryData, undefined>;
+export function getRevenueByCategory(dc: DataConnect): QueryPromise<GetRevenueByCategoryData, undefined>;
+
+interface GetStaffWorkloadRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetStaffWorkloadData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetStaffWorkloadData, undefined>;
+  operationName: string;
+}
+export const getStaffWorkloadRef: GetStaffWorkloadRef;
+
+export function getStaffWorkload(): QueryPromise<GetStaffWorkloadData, undefined>;
+export function getStaffWorkload(dc: DataConnect): QueryPromise<GetStaffWorkloadData, undefined>;
+
+interface GetTestCompletionStatsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetTestCompletionStatsData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetTestCompletionStatsData, undefined>;
+  operationName: string;
+}
+export const getTestCompletionStatsRef: GetTestCompletionStatsRef;
+
+export function getTestCompletionStats(): QueryPromise<GetTestCompletionStatsData, undefined>;
+export function getTestCompletionStats(dc: DataConnect): QueryPromise<GetTestCompletionStatsData, undefined>;
+
+interface GetCustomerSatisfactionStatsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetCustomerSatisfactionStatsData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetCustomerSatisfactionStatsData, undefined>;
+  operationName: string;
+}
+export const getCustomerSatisfactionStatsRef: GetCustomerSatisfactionStatsRef;
+
+export function getCustomerSatisfactionStats(): QueryPromise<GetCustomerSatisfactionStatsData, undefined>;
+export function getCustomerSatisfactionStats(dc: DataConnect): QueryPromise<GetCustomerSatisfactionStatsData, undefined>;
+
+interface GetAvailableManagersForAssignmentRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetAvailableManagersForAssignmentData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetAvailableManagersForAssignmentData, undefined>;
+  operationName: string;
+}
+export const getAvailableManagersForAssignmentRef: GetAvailableManagersForAssignmentRef;
+
+export function getAvailableManagersForAssignment(): QueryPromise<GetAvailableManagersForAssignmentData, undefined>;
+export function getAvailableManagersForAssignment(dc: DataConnect): QueryPromise<GetAvailableManagersForAssignmentData, undefined>;
+
+interface GetAvailableStaffForTestingRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetAvailableStaffForTestingData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetAvailableStaffForTestingData, undefined>;
+  operationName: string;
+}
+export const getAvailableStaffForTestingRef: GetAvailableStaffForTestingRef;
+
+export function getAvailableStaffForTesting(): QueryPromise<GetAvailableStaffForTestingData, undefined>;
+export function getAvailableStaffForTesting(dc: DataConnect): QueryPromise<GetAvailableStaffForTestingData, undefined>;
+
+interface GetStaffByPositionsRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: GetStaffByPositionsVariables): QueryRef<GetStaffByPositionsData, GetStaffByPositionsVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: GetStaffByPositionsVariables): QueryRef<GetStaffByPositionsData, GetStaffByPositionsVariables>;
+  operationName: string;
+}
+export const getStaffByPositionsRef: GetStaffByPositionsRef;
+
+export function getStaffByPositions(vars: GetStaffByPositionsVariables): QueryPromise<GetStaffByPositionsData, GetStaffByPositionsVariables>;
+export function getStaffByPositions(dc: DataConnect, vars: GetStaffByPositionsVariables): QueryPromise<GetStaffByPositionsData, GetStaffByPositionsVariables>;
+
+interface GetStaffPerformanceByPositionRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetStaffPerformanceByPositionData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetStaffPerformanceByPositionData, undefined>;
+  operationName: string;
+}
+export const getStaffPerformanceByPositionRef: GetStaffPerformanceByPositionRef;
+
+export function getStaffPerformanceByPosition(): QueryPromise<GetStaffPerformanceByPositionData, undefined>;
+export function getStaffPerformanceByPosition(dc: DataConnect): QueryPromise<GetStaffPerformanceByPositionData, undefined>;
+
+interface GetTestResultStatsByPositionRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (): QueryRef<GetTestResultStatsByPositionData, undefined>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect): QueryRef<GetTestResultStatsByPositionData, undefined>;
+  operationName: string;
+}
+export const getTestResultStatsByPositionRef: GetTestResultStatsByPositionRef;
+
+export function getTestResultStatsByPosition(): QueryPromise<GetTestResultStatsByPositionData, undefined>;
+export function getTestResultStatsByPosition(dc: DataConnect): QueryPromise<GetTestResultStatsByPositionData, undefined>;
 
 interface CreateRoleRef {
   /* Allow users to create refs without passing in DataConnect */
@@ -2363,15 +3815,15 @@ export function createOrUpdateUser(dc: DataConnect, vars: CreateOrUpdateUserVari
 
 interface UpdateUserProfileRef {
   /* Allow users to create refs without passing in DataConnect */
-  (vars?: UpdateUserProfileVariables): MutationRef<UpdateUserProfileData, UpdateUserProfileVariables>;
+  (vars: UpdateUserProfileVariables): MutationRef<UpdateUserProfileData, UpdateUserProfileVariables>;
   /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars?: UpdateUserProfileVariables): MutationRef<UpdateUserProfileData, UpdateUserProfileVariables>;
+  (dc: DataConnect, vars: UpdateUserProfileVariables): MutationRef<UpdateUserProfileData, UpdateUserProfileVariables>;
   operationName: string;
 }
 export const updateUserProfileRef: UpdateUserProfileRef;
 
-export function updateUserProfile(vars?: UpdateUserProfileVariables): MutationPromise<UpdateUserProfileData, UpdateUserProfileVariables>;
-export function updateUserProfile(dc: DataConnect, vars?: UpdateUserProfileVariables): MutationPromise<UpdateUserProfileData, UpdateUserProfileVariables>;
+export function updateUserProfile(vars: UpdateUserProfileVariables): MutationPromise<UpdateUserProfileData, UpdateUserProfileVariables>;
+export function updateUserProfile(dc: DataConnect, vars: UpdateUserProfileVariables): MutationPromise<UpdateUserProfileData, UpdateUserProfileVariables>;
 
 interface UpdateUserRoleRef {
   /* Allow users to create refs without passing in DataConnect */
@@ -2396,6 +3848,90 @@ export const updateUserAccountStatusRef: UpdateUserAccountStatusRef;
 
 export function updateUserAccountStatus(vars: UpdateUserAccountStatusVariables): MutationPromise<UpdateUserAccountStatusData, UpdateUserAccountStatusVariables>;
 export function updateUserAccountStatus(dc: DataConnect, vars: UpdateUserAccountStatusVariables): MutationPromise<UpdateUserAccountStatusData, UpdateUserAccountStatusVariables>;
+
+interface CreateStaffRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: CreateStaffVariables): MutationRef<CreateStaffData, CreateStaffVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: CreateStaffVariables): MutationRef<CreateStaffData, CreateStaffVariables>;
+  operationName: string;
+}
+export const createStaffRef: CreateStaffRef;
+
+export function createStaff(vars: CreateStaffVariables): MutationPromise<CreateStaffData, CreateStaffVariables>;
+export function createStaff(dc: DataConnect, vars: CreateStaffVariables): MutationPromise<CreateStaffData, CreateStaffVariables>;
+
+interface UpdateStaffRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: UpdateStaffVariables): MutationRef<UpdateStaffData, UpdateStaffVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: UpdateStaffVariables): MutationRef<UpdateStaffData, UpdateStaffVariables>;
+  operationName: string;
+}
+export const updateStaffRef: UpdateStaffRef;
+
+export function updateStaff(vars: UpdateStaffVariables): MutationPromise<UpdateStaffData, UpdateStaffVariables>;
+export function updateStaff(dc: DataConnect, vars: UpdateStaffVariables): MutationPromise<UpdateStaffData, UpdateStaffVariables>;
+
+interface AssignStaffToPositionRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: AssignStaffToPositionVariables): MutationRef<AssignStaffToPositionData, AssignStaffToPositionVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: AssignStaffToPositionVariables): MutationRef<AssignStaffToPositionData, AssignStaffToPositionVariables>;
+  operationName: string;
+}
+export const assignStaffToPositionRef: AssignStaffToPositionRef;
+
+export function assignStaffToPosition(vars: AssignStaffToPositionVariables): MutationPromise<AssignStaffToPositionData, AssignStaffToPositionVariables>;
+export function assignStaffToPosition(dc: DataConnect, vars: AssignStaffToPositionVariables): MutationPromise<AssignStaffToPositionData, AssignStaffToPositionVariables>;
+
+interface CreateStaffWithPositionRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: CreateStaffWithPositionVariables): MutationRef<CreateStaffWithPositionData, CreateStaffWithPositionVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: CreateStaffWithPositionVariables): MutationRef<CreateStaffWithPositionData, CreateStaffWithPositionVariables>;
+  operationName: string;
+}
+export const createStaffWithPositionRef: CreateStaffWithPositionRef;
+
+export function createStaffWithPosition(vars: CreateStaffWithPositionVariables): MutationPromise<CreateStaffWithPositionData, CreateStaffWithPositionVariables>;
+export function createStaffWithPosition(dc: DataConnect, vars: CreateStaffWithPositionVariables): MutationPromise<CreateStaffWithPositionData, CreateStaffWithPositionVariables>;
+
+interface CreatePositionRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: CreatePositionVariables): MutationRef<CreatePositionData, CreatePositionVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: CreatePositionVariables): MutationRef<CreatePositionData, CreatePositionVariables>;
+  operationName: string;
+}
+export const createPositionRef: CreatePositionRef;
+
+export function createPosition(vars: CreatePositionVariables): MutationPromise<CreatePositionData, CreatePositionVariables>;
+export function createPosition(dc: DataConnect, vars: CreatePositionVariables): MutationPromise<CreatePositionData, CreatePositionVariables>;
+
+interface UpdatePositionRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: UpdatePositionVariables): MutationRef<UpdatePositionData, UpdatePositionVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: UpdatePositionVariables): MutationRef<UpdatePositionData, UpdatePositionVariables>;
+  operationName: string;
+}
+export const updatePositionRef: UpdatePositionRef;
+
+export function updatePosition(vars: UpdatePositionVariables): MutationPromise<UpdatePositionData, UpdatePositionVariables>;
+export function updatePosition(dc: DataConnect, vars: UpdatePositionVariables): MutationPromise<UpdatePositionData, UpdatePositionVariables>;
+
+interface DeletePositionRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: DeletePositionVariables): MutationRef<DeletePositionData, DeletePositionVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: DeletePositionVariables): MutationRef<DeletePositionData, DeletePositionVariables>;
+  operationName: string;
+}
+export const deletePositionRef: DeletePositionRef;
+
+export function deletePosition(vars: DeletePositionVariables): MutationPromise<DeletePositionData, DeletePositionVariables>;
+export function deletePosition(dc: DataConnect, vars: DeletePositionVariables): MutationPromise<DeletePositionData, DeletePositionVariables>;
 
 interface CreateServiceCategoryRef {
   /* Allow users to create refs without passing in DataConnect */
@@ -2589,6 +4125,42 @@ export const updateBookingHistoryRef: UpdateBookingHistoryRef;
 export function updateBookingHistory(vars: UpdateBookingHistoryVariables): MutationPromise<UpdateBookingHistoryData, UpdateBookingHistoryVariables>;
 export function updateBookingHistory(dc: DataConnect, vars: UpdateBookingHistoryVariables): MutationPromise<UpdateBookingHistoryData, UpdateBookingHistoryVariables>;
 
+interface CreateParticipantRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: CreateParticipantVariables): MutationRef<CreateParticipantData, CreateParticipantVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: CreateParticipantVariables): MutationRef<CreateParticipantData, CreateParticipantVariables>;
+  operationName: string;
+}
+export const createParticipantRef: CreateParticipantRef;
+
+export function createParticipant(vars: CreateParticipantVariables): MutationPromise<CreateParticipantData, CreateParticipantVariables>;
+export function createParticipant(dc: DataConnect, vars: CreateParticipantVariables): MutationPromise<CreateParticipantData, CreateParticipantVariables>;
+
+interface UpdateParticipantRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: UpdateParticipantVariables): MutationRef<UpdateParticipantData, UpdateParticipantVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: UpdateParticipantVariables): MutationRef<UpdateParticipantData, UpdateParticipantVariables>;
+  operationName: string;
+}
+export const updateParticipantRef: UpdateParticipantRef;
+
+export function updateParticipant(vars: UpdateParticipantVariables): MutationPromise<UpdateParticipantData, UpdateParticipantVariables>;
+export function updateParticipant(dc: DataConnect, vars: UpdateParticipantVariables): MutationPromise<UpdateParticipantData, UpdateParticipantVariables>;
+
+interface DeleteParticipantRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: DeleteParticipantVariables): MutationRef<DeleteParticipantData, DeleteParticipantVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: DeleteParticipantVariables): MutationRef<DeleteParticipantData, DeleteParticipantVariables>;
+  operationName: string;
+}
+export const deleteParticipantRef: DeleteParticipantRef;
+
+export function deleteParticipant(vars: DeleteParticipantVariables): MutationPromise<DeleteParticipantData, DeleteParticipantVariables>;
+export function deleteParticipant(dc: DataConnect, vars: DeleteParticipantVariables): MutationPromise<DeleteParticipantData, DeleteParticipantVariables>;
+
 interface CreateSampleRef {
   /* Allow users to create refs without passing in DataConnect */
   (vars: CreateSampleVariables): MutationRef<CreateSampleData, CreateSampleVariables>;
@@ -2601,17 +4173,29 @@ export const createSampleRef: CreateSampleRef;
 export function createSample(vars: CreateSampleVariables): MutationPromise<CreateSampleData, CreateSampleVariables>;
 export function createSample(dc: DataConnect, vars: CreateSampleVariables): MutationPromise<CreateSampleData, CreateSampleVariables>;
 
-interface UpdateSampleStatusRef {
+interface UpdateSampleRef {
   /* Allow users to create refs without passing in DataConnect */
-  (vars: UpdateSampleStatusVariables): MutationRef<UpdateSampleStatusData, UpdateSampleStatusVariables>;
+  (vars: UpdateSampleVariables): MutationRef<UpdateSampleData, UpdateSampleVariables>;
   /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: UpdateSampleStatusVariables): MutationRef<UpdateSampleStatusData, UpdateSampleStatusVariables>;
+  (dc: DataConnect, vars: UpdateSampleVariables): MutationRef<UpdateSampleData, UpdateSampleVariables>;
   operationName: string;
 }
-export const updateSampleStatusRef: UpdateSampleStatusRef;
+export const updateSampleRef: UpdateSampleRef;
 
-export function updateSampleStatus(vars: UpdateSampleStatusVariables): MutationPromise<UpdateSampleStatusData, UpdateSampleStatusVariables>;
-export function updateSampleStatus(dc: DataConnect, vars: UpdateSampleStatusVariables): MutationPromise<UpdateSampleStatusData, UpdateSampleStatusVariables>;
+export function updateSample(vars: UpdateSampleVariables): MutationPromise<UpdateSampleData, UpdateSampleVariables>;
+export function updateSample(dc: DataConnect, vars: UpdateSampleVariables): MutationPromise<UpdateSampleData, UpdateSampleVariables>;
+
+interface DeleteSampleRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: DeleteSampleVariables): MutationRef<DeleteSampleData, DeleteSampleVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: DeleteSampleVariables): MutationRef<DeleteSampleData, DeleteSampleVariables>;
+  operationName: string;
+}
+export const deleteSampleRef: DeleteSampleRef;
+
+export function deleteSample(vars: DeleteSampleVariables): MutationPromise<DeleteSampleData, DeleteSampleVariables>;
+export function deleteSample(dc: DataConnect, vars: DeleteSampleVariables): MutationPromise<DeleteSampleData, DeleteSampleVariables>;
 
 interface CreateTestResultRef {
   /* Allow users to create refs without passing in DataConnect */
@@ -2649,6 +4233,42 @@ export const assignTestResultStaffRef: AssignTestResultStaffRef;
 export function assignTestResultStaff(vars: AssignTestResultStaffVariables): MutationPromise<AssignTestResultStaffData, AssignTestResultStaffVariables>;
 export function assignTestResultStaff(dc: DataConnect, vars: AssignTestResultStaffVariables): MutationPromise<AssignTestResultStaffData, AssignTestResultStaffVariables>;
 
+interface AssignTestResultManagerRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: AssignTestResultManagerVariables): MutationRef<AssignTestResultManagerData, AssignTestResultManagerVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: AssignTestResultManagerVariables): MutationRef<AssignTestResultManagerData, AssignTestResultManagerVariables>;
+  operationName: string;
+}
+export const assignTestResultManagerRef: AssignTestResultManagerRef;
+
+export function assignTestResultManager(vars: AssignTestResultManagerVariables): MutationPromise<AssignTestResultManagerData, AssignTestResultManagerVariables>;
+export function assignTestResultManager(dc: DataConnect, vars: AssignTestResultManagerVariables): MutationPromise<AssignTestResultManagerData, AssignTestResultManagerVariables>;
+
+interface AssignTestResultStaffAndManagerRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: AssignTestResultStaffAndManagerVariables): MutationRef<AssignTestResultStaffAndManagerData, AssignTestResultStaffAndManagerVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: AssignTestResultStaffAndManagerVariables): MutationRef<AssignTestResultStaffAndManagerData, AssignTestResultStaffAndManagerVariables>;
+  operationName: string;
+}
+export const assignTestResultStaffAndManagerRef: AssignTestResultStaffAndManagerRef;
+
+export function assignTestResultStaffAndManager(vars: AssignTestResultStaffAndManagerVariables): MutationPromise<AssignTestResultStaffAndManagerData, AssignTestResultStaffAndManagerVariables>;
+export function assignTestResultStaffAndManager(dc: DataConnect, vars: AssignTestResultStaffAndManagerVariables): MutationPromise<AssignTestResultStaffAndManagerData, AssignTestResultStaffAndManagerVariables>;
+
+interface DeleteTestResultRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: DeleteTestResultVariables): MutationRef<DeleteTestResultData, DeleteTestResultVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: DeleteTestResultVariables): MutationRef<DeleteTestResultData, DeleteTestResultVariables>;
+  operationName: string;
+}
+export const deleteTestResultRef: DeleteTestResultRef;
+
+export function deleteTestResult(vars: DeleteTestResultVariables): MutationPromise<DeleteTestResultData, DeleteTestResultVariables>;
+export function deleteTestResult(dc: DataConnect, vars: DeleteTestResultVariables): MutationPromise<DeleteTestResultData, DeleteTestResultVariables>;
+
 interface CreatePaymentRef {
   /* Allow users to create refs without passing in DataConnect */
   (vars: CreatePaymentVariables): MutationRef<CreatePaymentData, CreatePaymentVariables>;
@@ -2673,17 +4293,29 @@ export const updatePaymentStatusRef: UpdatePaymentStatusRef;
 export function updatePaymentStatus(vars: UpdatePaymentStatusVariables): MutationPromise<UpdatePaymentStatusData, UpdatePaymentStatusVariables>;
 export function updatePaymentStatus(dc: DataConnect, vars: UpdatePaymentStatusVariables): MutationPromise<UpdatePaymentStatusData, UpdatePaymentStatusVariables>;
 
-interface AddRefundDetailRef {
+interface AddPaymentDetailsRef {
   /* Allow users to create refs without passing in DataConnect */
-  (vars: AddRefundDetailVariables): MutationRef<AddRefundDetailData, AddRefundDetailVariables>;
+  (vars: AddPaymentDetailsVariables): MutationRef<AddPaymentDetailsData, AddPaymentDetailsVariables>;
   /* Allow users to pass in custom DataConnect instances */
-  (dc: DataConnect, vars: AddRefundDetailVariables): MutationRef<AddRefundDetailData, AddRefundDetailVariables>;
+  (dc: DataConnect, vars: AddPaymentDetailsVariables): MutationRef<AddPaymentDetailsData, AddPaymentDetailsVariables>;
   operationName: string;
 }
-export const addRefundDetailRef: AddRefundDetailRef;
+export const addPaymentDetailsRef: AddPaymentDetailsRef;
 
-export function addRefundDetail(vars: AddRefundDetailVariables): MutationPromise<AddRefundDetailData, AddRefundDetailVariables>;
-export function addRefundDetail(dc: DataConnect, vars: AddRefundDetailVariables): MutationPromise<AddRefundDetailData, AddRefundDetailVariables>;
+export function addPaymentDetails(vars: AddPaymentDetailsVariables): MutationPromise<AddPaymentDetailsData, AddPaymentDetailsVariables>;
+export function addPaymentDetails(dc: DataConnect, vars: AddPaymentDetailsVariables): MutationPromise<AddPaymentDetailsData, AddPaymentDetailsVariables>;
+
+interface UpdateRefundDetailRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: UpdateRefundDetailVariables): MutationRef<UpdateRefundDetailData, UpdateRefundDetailVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: UpdateRefundDetailVariables): MutationRef<UpdateRefundDetailData, UpdateRefundDetailVariables>;
+  operationName: string;
+}
+export const updateRefundDetailRef: UpdateRefundDetailRef;
+
+export function updateRefundDetail(vars: UpdateRefundDetailVariables): MutationPromise<UpdateRefundDetailData, UpdateRefundDetailVariables>;
+export function updateRefundDetail(dc: DataConnect, vars: UpdateRefundDetailVariables): MutationPromise<UpdateRefundDetailData, UpdateRefundDetailVariables>;
 
 interface CreateFeedbackRef {
   /* Allow users to create refs without passing in DataConnect */
@@ -2792,4 +4424,76 @@ export const deleteNotificationRef: DeleteNotificationRef;
 
 export function deleteNotification(vars: DeleteNotificationVariables): MutationPromise<DeleteNotificationData, DeleteNotificationVariables>;
 export function deleteNotification(dc: DataConnect, vars: DeleteNotificationVariables): MutationPromise<DeleteNotificationData, DeleteNotificationVariables>;
+
+interface DeleteServiceCategoryRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: DeleteServiceCategoryVariables): MutationRef<DeleteServiceCategoryData, DeleteServiceCategoryVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: DeleteServiceCategoryVariables): MutationRef<DeleteServiceCategoryData, DeleteServiceCategoryVariables>;
+  operationName: string;
+}
+export const deleteServiceCategoryRef: DeleteServiceCategoryRef;
+
+export function deleteServiceCategory(vars: DeleteServiceCategoryVariables): MutationPromise<DeleteServiceCategoryData, DeleteServiceCategoryVariables>;
+export function deleteServiceCategory(dc: DataConnect, vars: DeleteServiceCategoryVariables): MutationPromise<DeleteServiceCategoryData, DeleteServiceCategoryVariables>;
+
+interface DeleteMethodRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: DeleteMethodVariables): MutationRef<DeleteMethodData, DeleteMethodVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: DeleteMethodVariables): MutationRef<DeleteMethodData, DeleteMethodVariables>;
+  operationName: string;
+}
+export const deleteMethodRef: DeleteMethodRef;
+
+export function deleteMethod(vars: DeleteMethodVariables): MutationPromise<DeleteMethodData, DeleteMethodVariables>;
+export function deleteMethod(dc: DataConnect, vars: DeleteMethodVariables): MutationPromise<DeleteMethodData, DeleteMethodVariables>;
+
+interface DeleteServiceRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: DeleteServiceVariables): MutationRef<DeleteServiceData, DeleteServiceVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: DeleteServiceVariables): MutationRef<DeleteServiceData, DeleteServiceVariables>;
+  operationName: string;
+}
+export const deleteServiceRef: DeleteServiceRef;
+
+export function deleteService(vars: DeleteServiceVariables): MutationPromise<DeleteServiceData, DeleteServiceVariables>;
+export function deleteService(dc: DataConnect, vars: DeleteServiceVariables): MutationPromise<DeleteServiceData, DeleteServiceVariables>;
+
+interface DeleteTimeSlotRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: DeleteTimeSlotVariables): MutationRef<DeleteTimeSlotData, DeleteTimeSlotVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: DeleteTimeSlotVariables): MutationRef<DeleteTimeSlotData, DeleteTimeSlotVariables>;
+  operationName: string;
+}
+export const deleteTimeSlotRef: DeleteTimeSlotRef;
+
+export function deleteTimeSlot(vars: DeleteTimeSlotVariables): MutationPromise<DeleteTimeSlotData, DeleteTimeSlotVariables>;
+export function deleteTimeSlot(dc: DataConnect, vars: DeleteTimeSlotVariables): MutationPromise<DeleteTimeSlotData, DeleteTimeSlotVariables>;
+
+interface DeleteBookingRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: DeleteBookingVariables): MutationRef<DeleteBookingData, DeleteBookingVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: DeleteBookingVariables): MutationRef<DeleteBookingData, DeleteBookingVariables>;
+  operationName: string;
+}
+export const deleteBookingRef: DeleteBookingRef;
+
+export function deleteBooking(vars: DeleteBookingVariables): MutationPromise<DeleteBookingData, DeleteBookingVariables>;
+export function deleteBooking(dc: DataConnect, vars: DeleteBookingVariables): MutationPromise<DeleteBookingData, DeleteBookingVariables>;
+
+interface DeleteStaffRef {
+  /* Allow users to create refs without passing in DataConnect */
+  (vars: DeleteStaffVariables): MutationRef<DeleteStaffData, DeleteStaffVariables>;
+  /* Allow users to pass in custom DataConnect instances */
+  (dc: DataConnect, vars: DeleteStaffVariables): MutationRef<DeleteStaffData, DeleteStaffVariables>;
+  operationName: string;
+}
+export const deleteStaffRef: DeleteStaffRef;
+
+export function deleteStaff(vars: DeleteStaffVariables): MutationPromise<DeleteStaffData, DeleteStaffVariables>;
+export function deleteStaff(dc: DataConnect, vars: DeleteStaffVariables): MutationPromise<DeleteStaffData, DeleteStaffVariables>;
 

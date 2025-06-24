@@ -1,5 +1,12 @@
 # Queries for ADN Lab Firebase Data Connect - Complete DNA Testing Platform
 # Chat functionality remains in Firestore
+# 
+# SCHEMA UPDATES:
+# - Removed separate Manager table
+# - Added Position table for staff role management
+# - Managers are now Staff members with specific positions
+# - TestResult.managerId now references Staff table
+# - Staff.positionId references Position table
 
 # ====== ROLE QUERIES ======
 
@@ -36,9 +43,9 @@ query GetRoleByName($roleName: String!) @auth(level: USER) {
 
 # ====== USER QUERIES ======
 
-# Get user by Firebase Auth UID with role information
-query GetUser @auth(level: USER) {
-  user(key: { id_expr: "auth.uid" }) {
+# Get current user by ID with role information
+query GetUser($userId: String!) @auth(level: USER) {
+  user(key: { id: $userId }) {
     id
     fullname
     gender
@@ -47,14 +54,36 @@ query GetUser @auth(level: USER) {
     accountStatus
     authProvider
     phone
-    shippingAddress
+    address
     roleId
     role {
       id
       name
       description
     }
-    dailySlotCount
+    createdAt
+    lastLogin
+  }
+}
+
+# Get user by email (useful for Firebase Auth integration)
+query GetUserByEmail($email: String!) @auth(level: USER) {
+  users(where: { email: { eq: $email } }, limit: 1) {
+    id
+    fullname
+    gender
+    avatar
+    email
+    accountStatus
+    authProvider
+    phone
+    address
+    roleId
+    role {
+      id
+      name
+      description
+    }
     createdAt
     lastLogin
   }
@@ -71,14 +100,13 @@ query GetUserById($userId: String!) @auth(level: USER) {
     accountStatus
     authProvider
     phone
-    shippingAddress
+    address
     roleId
     role {
       id
       name
       description
     }
-    dailySlotCount
     createdAt
     lastLogin
   }
@@ -120,20 +148,195 @@ query GetUsersByRole($roleId: String!) @auth(level: USER) {
 
 # Get staff members
 query GetStaffMembers @auth(level: USER) {
-  users(where: { 
-    role: { 
-      name: { in: ["admin", "manager", "staff", "technician"] }
-    }
-  }) {
+  staffs {
     id
-    fullname
-    gender
-    avatar
-    email
-    role {
+    user {
+      id
+      fullname
+      gender
+      avatar
+      email
+      accountStatus
+    }
+    hireDate
+    slot
+    specification
+    certifications
+    positionId
+    position {
+      id
+      name
+      description
+    }
+    createdAt
+    updatedAt
+  }
+}
+
+# Get staff by ID
+query GetStaffById($staffId: String!) @auth(level: USER) {
+  staff(key: { id: $staffId }) {
+    id
+    user {
+      id
+      fullname
+      gender
+      avatar
+      email
+      phone
+      address
+      accountStatus
+    }
+    hireDate
+    slot
+    specification
+    certifications
+    positionId
+    position {
+      id
+      name
+      description
+    }
+    createdAt
+    updatedAt
+  }
+}
+
+# ====== POSITION QUERIES ======
+
+# Get all positions
+query GetPositions @auth(level: USER) {
+  positions(orderBy: { name: ASC }) {
+    id
+    name
+    description
+    createdAt
+    updatedAt
+  }
+}
+
+# Get position by ID
+query GetPositionById($positionId: String!) @auth(level: USER) {
+  position(key: { id: $positionId }) {
+    id
+    name
+    description
+    createdAt
+    updatedAt
+  }
+}
+
+# Get staff by position
+query GetStaffByPosition($positionName: String!) @auth(level: USER) {
+  staffs(where: { position: { name: { eq: $positionName } } }) {
+    id
+    user {
+      id
+      fullname
+      gender
+      avatar
+      email
+      accountStatus
+    }
+    hireDate
+    slot
+    specification
+    certifications
+    positionId
+    position {
+      id
+      name
+      description
+    }
+    createdAt
+    updatedAt
+  }
+}
+
+# Get managers (staff with manager position)
+query GetManagers @auth(level: USER) {
+  staffs(where: { position: { name: { eq: "Manager" } } }) {
+    id
+    user {
+      id
+      fullname
+      gender
+      avatar
+      email
+      accountStatus
+    }
+    hireDate
+    slot
+    specification
+    certifications
+    positionId
+    position {
+      id
+      name
+      description
+    }
+    createdAt
+    updatedAt
+  }
+}
+
+# Get staff count by position
+query GetStaffCountByPosition @auth(level: USER) {
+  positions {
+    id
+    name
+    description
+  }
+  staffs {
+    id
+    positionId
+    position {
       name
     }
-    accountStatus
+  }
+}
+
+# Get staff members with specific position ID
+query GetStaffByPositionId($positionId: String!) @auth(level: USER) {
+  staffs(where: { positionId: { eq: $positionId } }) {
+    id
+    user {
+      id
+      fullname
+      gender
+      avatar
+      email
+      accountStatus
+    }
+    hireDate
+    slot
+    specification
+    certifications
+    positionId
+    position {
+      id
+      name
+      description
+    }
+    createdAt
+    updatedAt
+  }
+}
+
+# Get position with staff count
+query GetPositionWithStaffCount($positionId: String!) @auth(level: USER) {
+  position(key: { id: $positionId }) {
+    id
+    name
+    description
+    createdAt
+    updatedAt
+  }
+  staffs(where: { positionId: { eq: $positionId } }) {
+    id
+    user {
+      fullname
+    }
   }
 }
 
@@ -146,8 +349,6 @@ query GetServiceCategories @auth(level: USER) {
     name
     description
     hasLegalValue
-    icon
-    color
     createdAt
     updatedAt
   }
@@ -160,8 +361,6 @@ query GetServiceCategoryById($categoryId: String!) @auth(level: USER) {
     name
     description
     hasLegalValue
-    icon
-    color
     createdAt
     updatedAt
   }
@@ -206,8 +405,6 @@ query GetServices @auth(level: USER) {
       name
       description
       hasLegalValue
-      icon
-      color
     }
     icon
     featured
@@ -231,8 +428,6 @@ query GetServiceById($serviceId: String!) @auth(level: USER) {
       name
       description
       hasLegalValue
-      icon
-      color
     }
     icon
     featured
@@ -286,7 +481,6 @@ query GetFeaturedServices @auth(level: USER) {
 # Get service methods for a service
 query GetServiceMethods($serviceId: String!) @auth(level: USER) {
   serviceMethods(where: { serviceId: { eq: $serviceId } }) {
-    id
     serviceId
     methodId
     service {
@@ -307,7 +501,8 @@ query GetServiceMethods($serviceId: String!) @auth(level: USER) {
 # Get methods for a service
 query GetMethodsForService($serviceId: String!) @auth(level: USER) {
   serviceMethods(where: { serviceId: { eq: $serviceId } }) {
-    id
+    serviceId
+    methodId
     method {
       id
       name
@@ -321,7 +516,8 @@ query GetMethodsForService($serviceId: String!) @auth(level: USER) {
 # Get services for a method
 query GetServicesForMethod($methodId: String!) @auth(level: USER) {
   serviceMethods(where: { methodId: { eq: $methodId } }) {
-    id
+    serviceId
+    methodId
     service {
       id
       title
@@ -339,6 +535,34 @@ query GetServicesForMethod($methodId: String!) @auth(level: USER) {
   }
 }
 
+# Get specific service method by composite key
+query GetServiceMethod(
+  $serviceId: String!
+  $methodId: String!
+) @auth(level: USER) {
+  serviceMethod(key: { 
+    serviceId: $serviceId,
+    methodId: $methodId 
+  }) {
+    serviceId
+    methodId
+    service {
+      id
+      title
+      description
+      price
+    }
+    method {
+      id
+      name
+      description
+      price
+    }
+    createdAt
+    updatedAt
+  }
+}
+
 # Get complete service with methods
 query GetServiceWithMethods($serviceId: String!) @auth(level: USER) {
   service(key: { id: $serviceId }) {
@@ -353,8 +577,6 @@ query GetServiceWithMethods($serviceId: String!) @auth(level: USER) {
       name
       description
       hasLegalValue
-      icon
-      color
     }
     icon
     featured
@@ -362,7 +584,8 @@ query GetServiceWithMethods($serviceId: String!) @auth(level: USER) {
     updatedAt
   }
   serviceMethods(where: { serviceId: { eq: $serviceId } }) {
-    id
+    serviceId
+    methodId
     method {
       id
       name
@@ -427,22 +650,19 @@ query GetUserBookings($userId: String!) @auth(level: USER) {
   bookings(where: { userId: { eq: $userId } }, orderBy: { createdAt: DESC }) {
     id
     totalAmount
-    serviceMethod {
+    service {
       id
-      service {
-        id
-        title
-        description
-        category {
-          name
-        }
-      }
-      method {
-        id
+      title
+      description
+      category {
         name
-        description
-        price
       }
+    }
+    method {
+      id
+      name
+      description
+      price
     }
     timeSlot {
       slotDate
@@ -450,36 +670,33 @@ query GetUserBookings($userId: String!) @auth(level: USER) {
       endTime
     }
     staff {
-      fullname
+      user {
+        fullname
+      }
     }
-    bookingCreatedAt
     createdAt
-    updatedAt
   }
 }
 
 # Get current user's bookings
-query GetMyBookings @auth(level: USER) {
-  bookings(where: { userId: { eq_expr: "auth.uid" } }, orderBy: { createdAt: DESC }) {
+query GetMyBookings($userId: String!) @auth(level: USER) {
+  bookings(where: { userId: { eq: $userId } }, orderBy: { createdAt: DESC }) {
     id
     totalAmount
-    serviceMethod {
+    service {
       id
-      service {
-        id
-        title
-        description
-        duration
-        category {
-          name
-        }
-      }
-      method {
-        id
+      title
+      description
+      duration
+      category {
         name
-        description
-        price
       }
+    }
+    method {
+      id
+      name
+      description
+      price
     }
     timeSlot {
       slotDate
@@ -487,11 +704,11 @@ query GetMyBookings @auth(level: USER) {
       endTime
     }
     staff {
-      fullname
+      user {
+        fullname
+      }
     }
-    bookingCreatedAt
     createdAt
-    updatedAt
   }
 }
 
@@ -504,34 +721,33 @@ query GetBookingById($bookingId: String!) @auth(level: USER) {
       fullname
       email
       phone
-      shippingAddress
+      address
     }
     staff {
       id
-      fullname
-    }
-    serviceMethod {
-      id
-      service {
-        id
-        title
-        description
-        fullDescription
-        price
-        duration
-        category {
-          id
-          name
-          description
-          hasLegalValue
-        }
+      user {
+        fullname
       }
-      method {
+    }
+    service {
+      id
+      title
+      description
+      fullDescription
+      price
+      duration
+      category {
         id
         name
         description
-        price
+        hasLegalValue
       }
+    }
+    method {
+      id
+      name
+      description
+      price
     }
     timeSlot {
       slotDate
@@ -539,9 +755,7 @@ query GetBookingById($bookingId: String!) @auth(level: USER) {
       endTime
     }
     totalAmount
-    bookingCreatedAt
     createdAt
-    updatedAt
   }
 }
 
@@ -566,26 +780,62 @@ query GetStaffBookings($staffId: String!) @auth(level: USER) {
       phone
     }
     totalAmount
-    serviceMethod {
-      service {
-        id
-        title
-        category {
-          name
-        }
-      }
-      method {
+    service {
+      id
+      title
+      category {
         name
-        price
       }
+    }
+    method {
+      name
+      price
     }
     timeSlot {
       slotDate
       startTime
       endTime
     }
-    bookingCreatedAt
     createdAt
+  }
+}
+
+# ====== PARTICIPANT QUERIES ======
+
+# Get participants for a booking
+query GetBookingParticipants($bookingId: String!) @auth(level: USER) {
+  participants(where: { bookingId: { eq: $bookingId } }) {
+    id
+    name
+    age
+    identification
+    gender
+    relationship
+    createdAt
+    updatedAt
+  }
+}
+
+# Get participant by ID
+query GetParticipantById($participantId: String!) @auth(level: USER) {
+  participant(key: { id: $participantId }) {
+    id
+    booking {
+      id
+      user {
+        fullname
+      }
+      service {
+        title
+      }
+    }
+    name
+    age
+    identification
+    gender
+    relationship
+    createdAt
+    updatedAt
   }
 }
 
@@ -596,49 +846,61 @@ query GetBookingSamples($bookingId: String!) @auth(level: USER) {
   samples(where: { bookingId: { eq: $bookingId } }) {
     id
     booking {
-      serviceMethod {
-        service {
-          title
-          category {
-            name
-          }
+      service {
+        title
+        category {
+          name
         }
       }
     }
     staff {
-      fullname
+      user {
+        fullname
+      }
+    }
+    participant {
+      name
+      age
+      gender
     }
     collectionDate
-    status
+    sampleQuality
+    sampleConcentration
     notes
     createdAt
     updatedAt
   }
 }
 
-# Get samples by status
-query GetSamplesByStatus($status: String!) @auth(level: USER) {
-  samples(where: { status: { eq: $status } }) {
+# Get samples by quality
+query GetSamplesByQuality($sampleQuality: String!) @auth(level: USER) {
+  samples(where: { sampleQuality: { eq: $sampleQuality } }) {
     id
     booking {
       id
       user {
         fullname
       }
-      serviceMethod {
-        service {
-          title
-          category {
-            name
-          }
+      service {
+        title
+        category {
+          name
         }
       }
     }
     staff {
-      fullname
+      user {
+        fullname
+      }
+    }
+    participant {
+      name
+      age
+      gender
     }
     collectionDate
-    status
+    sampleQuality
+    sampleConcentration
     notes
     createdAt
   }
@@ -654,24 +916,32 @@ query GetSampleById($sampleId: String!) @auth(level: USER) {
         fullname
         email
       }
-      serviceMethod {
-        service {
-          title
-          description
-          category {
-            name
-          }
-        }
-        method {
+      service {
+        title
+        description
+        category {
           name
         }
       }
+      method {
+        name
+      }
     }
     staff {
-      fullname
+      user {
+        fullname
+      }
+    }
+    participant {
+      name
+      age
+      gender
+      identification
+      relationship
     }
     collectionDate
-    status
+    sampleQuality
+    sampleConcentration
     notes
     createdAt
     updatedAt
@@ -686,17 +956,74 @@ query GetStaffSamples($staffId: String!) @auth(level: USER) {
       user {
         fullname
       }
-      serviceMethod {
-        service {
-          title
-          category {
-            name
-          }
+      service {
+        title
+        category {
+          name
         }
       }
     }
+    participant {
+      name
+      age
+      gender
+    }
     collectionDate
-    status
+    sampleQuality
+    sampleConcentration
+    notes
+    createdAt
+  }
+}
+
+# Get samples for a participant
+query GetParticipantSamples($participantId: String!) @auth(level: USER) {
+  samples(where: { participantId: { eq: $participantId } }) {
+    id
+    booking {
+      id
+      service {
+        title
+      }
+    }
+    collectionDate
+    sampleQuality
+    sampleConcentration
+    notes
+    createdAt
+    updatedAt
+  }
+}
+
+# Get all samples with full details for admin
+query GetAllSamples($limit: Int, $offset: Int) @auth(level: USER) {
+  samples(limit: $limit, offset: $offset, orderBy: { createdAt: DESC }) {
+    id
+    booking {
+      id
+      user {
+        fullname
+      }
+      service {
+        title
+        category {
+          name
+        }
+      }
+    }
+    staff {
+      user {
+        fullname
+      }
+    }
+    participant {
+      name
+      age
+      gender
+    }
+    collectionDate
+    sampleQuality
+    sampleConcentration
     notes
     createdAt
   }
@@ -710,17 +1037,35 @@ query GetBookingTestResults($bookingId: String!) @auth(level: USER) {
     id
     sample {
       id
+      participant {
+        name
+      }
     }
     booking {
-      serviceMethod {
-        service {
-          title
-        }
+      service {
+        title
       }
     }
     staff {
-      fullname
+      user {
+        fullname
+      }
+      position {
+        name
+      }
     }
+    manager {
+      user {
+        fullname
+      }
+      position {
+        name
+      }
+    }
+    testMethod
+    positive
+    accuracy
+    testType
     testDate
     reportDate
     status
@@ -739,26 +1084,47 @@ query GetTestResultById($resultId: String!) @auth(level: USER) {
         fullname
         email
       }
-      serviceMethod {
-        service {
-          title
-          description
-        }
-        method {
-          name
-        }
+      service {
+        title
+        description
+      }
+      method {
+        name
       }
     }
     sample {
       id
       collectionDate
+      participant {
+        name
+        age
+        gender
+      }
     }
     staff {
-      fullname
+      user {
+        fullname
+      }
+      position {
+        name
+      }
     }
+    manager {
+      user {
+        fullname
+      }
+      position {
+        name
+      }
+    }
+    testMethod
+    positive
+    accuracy
+    testType
     testDate
     reportDate
     resultData
+    resultNotes
     status
     createdAt
     updatedAt
@@ -767,22 +1133,43 @@ query GetTestResultById($resultId: String!) @auth(level: USER) {
 
 # Get test results by status
 query GetTestResultsByStatus($status: String!) @auth(level: USER) {
-  testResults(where: { status: { eq: $status } }) {
+  testResults(where: { status: { eq: $status } }, orderBy: { createdAt: DESC }) {
     id
     booking {
       user {
         fullname
       }
-      serviceMethod {
-        service {
-          title
-        }
+      service {
+        title
+      }
+    }
+    sample {
+      participant {
+        name
       }
     }
     staff {
-      fullname
+      user {
+        fullname
+      }
+      position {
+        name
+      }
     }
+    manager {
+      user {
+        fullname
+      }
+      position {
+        name
+      }
+    }
+    testMethod
+    positive
+    accuracy
+    testType
     testDate
+    reportDate
     status
     createdAt
   }
@@ -795,12 +1182,198 @@ query GetUserTestResults($userId: String!) @auth(level: USER) {
   }, orderBy: { testDate: DESC }) {
     id
     booking {
-      serviceMethod {
-        service {
-          title
-        }
+      service {
+        title
       }
     }
+    staff {
+      user {
+        fullname
+      }
+      position {
+        name
+      }
+    }
+    manager {
+      user {
+        fullname
+      }
+      position {
+        name
+      }
+    }
+    testMethod
+    positive
+    accuracy
+    testType
+    testDate
+    reportDate
+    status
+    createdAt
+  }
+}
+
+# Get test results by manager
+query GetManagerTestResults($managerId: String!) @auth(level: USER) {
+  testResults(where: { managerId: { eq: $managerId } }, orderBy: { createdAt: DESC }) {
+    id
+    booking {
+      user {
+        fullname
+      }
+      service {
+        title
+      }
+    }
+    sample {
+      participant {
+        name
+      }
+    }
+    staff {
+      user {
+        fullname
+      }
+      position {
+        name
+      }
+    }
+    manager {
+      user {
+        fullname
+      }
+      position {
+        name
+      }
+    }
+    testMethod
+    positive
+    accuracy
+    testType
+    testDate
+    reportDate
+    status
+    createdAt
+  }
+}
+
+# Get test results by staff
+query GetStaffTestResults($staffId: String!) @auth(level: USER) {
+  testResults(where: { staffId: { eq: $staffId } }, orderBy: { createdAt: DESC }) {
+    id
+    booking {
+      user {
+        fullname
+      }
+      service {
+        title
+      }
+    }
+    sample {
+      participant {
+        name
+      }
+    }
+    staff {
+      user {
+        fullname
+      }
+      position {
+        name
+      }
+    }
+    manager {
+      user {
+        fullname
+      }
+      position {
+        name
+      }
+    }
+    testMethod
+    positive
+    accuracy
+    testType
+    testDate
+    reportDate
+    status
+    createdAt
+  }
+}
+
+# Get test results by test type
+query GetTestResultsByType($testType: String!) @auth(level: USER) {
+  testResults(where: { testType: { eq: $testType } }, orderBy: { testDate: DESC }) {
+    id
+    booking {
+      user {
+        fullname
+      }
+      service {
+        title
+      }
+    }
+    staff {
+      user {
+        fullname
+      }
+      position {
+        name
+      }
+    }
+    manager {
+      user {
+        fullname
+      }
+      position {
+        name
+      }
+    }
+    testMethod
+    positive
+    accuracy
+    testDate
+    status
+    createdAt
+  }
+}
+
+# Get test results with positive results
+query GetPositiveTestResults @auth(level: USER) {
+  testResults(where: { positive: { eq: true } }, orderBy: { testDate: DESC }) {
+    id
+    booking {
+      user {
+        fullname
+      }
+      service {
+        title
+      }
+    }
+    sample {
+      participant {
+        name
+      }
+    }
+    staff {
+      user {
+        fullname
+      }
+      position {
+        name
+      }
+    }
+    manager {
+      user {
+        fullname
+      }
+      position {
+        name
+      }
+    }
+    testMethod
+    accuracy
+    testType
     testDate
     reportDate
     status
@@ -819,6 +1392,7 @@ query GetBookingPayment($bookingId: String!) @auth(level: USER) {
     status
     paymentDate
     refundDetail
+    otherDetails
     createdAt
     updatedAt
   }
@@ -841,6 +1415,7 @@ query GetPaymentById($paymentId: String!) @auth(level: USER) {
     status
     paymentDate
     refundDetail
+    otherDetails
     createdAt
     updatedAt
   }
@@ -858,6 +1433,8 @@ query GetPaymentsByStatus($status: String!) @auth(level: USER) {
     amount
     paymentMethod
     paymentDate
+    refundDetail
+    otherDetails
     createdAt
   }
 }
@@ -872,6 +1449,8 @@ query GetUserPayments($userId: String!) @auth(level: USER) {
     paymentMethod
     status
     paymentDate
+    refundDetail
+    otherDetails
     createdAt
   }
 }
@@ -929,9 +1508,11 @@ query GetBlogs($limit: Int, $offset: Int) @auth(level: USER) {
       fullname
       avatar
     }
+    title
     content
     imageUrl
     createdAt
+    updatedAt
   }
 }
 
@@ -947,9 +1528,11 @@ query GetBlogById($blogId: String!) @auth(level: USER) {
         name
       }
     }
+    title
     content
     imageUrl
     createdAt
+    updatedAt
   }
 }
 
@@ -957,19 +1540,23 @@ query GetBlogById($blogId: String!) @auth(level: USER) {
 query GetBlogsByUser($userId: String!) @auth(level: USER) {
   blogs(where: { userId: { eq: $userId } }, orderBy: { createdAt: DESC }) {
     id
+    title
     content
     imageUrl
     createdAt
+    updatedAt
   }
 }
 
 # Get current user's blog posts
-query GetMyBlogs @auth(level: USER) {
-  blogs(where: { userId: { eq_expr: "auth.uid" } }, orderBy: { createdAt: DESC }) {
+query GetMyBlogs($userId: String!) @auth(level: USER) {
+  blogs(where: { userId: { eq: $userId } }, orderBy: { createdAt: DESC }) {
     id
+    title
     content
     imageUrl
     createdAt
+    updatedAt
   }
 }
 
@@ -980,7 +1567,9 @@ query GetUserNotifications($userId: String!) @auth(level: USER) {
   notifications(where: { userId: { eq: $userId } }, orderBy: { createdAt: DESC }) {
     id
     staff {
-      fullname
+      user {
+        fullname
+      }
     }
     title
     message
@@ -991,11 +1580,13 @@ query GetUserNotifications($userId: String!) @auth(level: USER) {
 }
 
 # Get current user's notifications
-query GetMyNotifications @auth(level: USER) {
-  notifications(where: { userId: { eq_expr: "auth.uid" } }, orderBy: { createdAt: DESC }) {
+query GetMyNotifications($userId: String!) @auth(level: USER) {
+  notifications(where: { userId: { eq: $userId } }, orderBy: { createdAt: DESC }) {
     id
     staff {
-      fullname
+      user {
+        fullname
+      }
     }
     title
     message
@@ -1023,7 +1614,9 @@ query GetNotificationById($notificationId: String!) @auth(level: USER) {
       fullname
     }
     staff {
-      fullname
+      user {
+        fullname
+      }
     }
     title
     message
@@ -1047,25 +1640,261 @@ query GetBookingStats @auth(level: USER) {
 # Get service popularity
 query GetServicePopularity @auth(level: USER) {
   bookings {
-    serviceMethod {
-      service {
-        id
-        title
-      }
+    service {
+      id
+      title
     }
   }
 }
 
-# Get monthly revenue
-query GetMonthlyRevenue($startDate: Date!, $endDate: Date!) @auth(level: USER) {
-  payments(where: { 
-    status: { eq: "completed" }
-    paymentDate: { 
-      ge: $startDate
-      lt: $endDate
+# Get staff by specification
+query GetStaffBySpecification($specification: String!) @auth(level: USER) {
+  staffs(where: { specification: { includes: $specification } }) {
+    id
+    user {
+      fullname
+      email
+      phone
     }
+    hireDate
+    slot
+    specification
+    certifications
+    positionId
+    position {
+      id
+      name
+      description
+    }
+    createdAt
+  }
+}
+
+# Get available staff (with available slots)
+query GetAvailableStaff @auth(level: USER) {
+  staffs(where: { slot: { gt: 0 } }, orderBy: { slot: DESC }) {
+    id
+    user {
+      fullname
+      email
+    }
+    slot
+    specification
+    positionId
+    position {
+      id
+      name
+      description
+    }
+    createdAt
+  }
+}
+
+# Get managers by specification
+query GetManagersBySpecification($specification: String!) @auth(level: USER) {
+  staffs(where: { 
+    specification: { includes: $specification },
+    position: { name: { eq: "Manager" } }
   }) {
+    id
+    user {
+      fullname
+      email
+      phone
+    }
+    hireDate
+    slot
+    specification
+    certifications
+    positionId
+    position {
+      id
+      name
+      description
+    }
+    createdAt
+  }
+}
+
+# Get revenue by service category
+query GetRevenueByCategory @auth(level: USER) {
+  payments(where: { status: { eq: "completed" } }) {
     amount
+    booking {
+      service {
+        category {
+          name
+        }
+      }
+    }
     paymentDate
+  }
+}
+
+# Get staff workload (booking count)
+query GetStaffWorkload @auth(level: USER) {
+  staffs {
+    id
+    user {
+      fullname
+    }
+    slot
+  }
+  bookings {
+    staffId
+    createdAt
+  }
+}
+
+# Get test completion rate
+query GetTestCompletionStats @auth(level: USER) {
+  testResults {
+    id
+    status
+    testDate
+    reportDate
+  }
+}
+
+# Get customer satisfaction (feedback ratings)
+query GetCustomerSatisfactionStats @auth(level: USER) {
+  feedbacks {
+    rating
+    createdAt
+  }
+}
+
+# Get available managers for test result assignment
+query GetAvailableManagersForAssignment @auth(level: USER) {
+  staffs(where: { 
+    position: { name: { in: ["Manager", "Senior Manager", "Lab Manager", "Quality Manager"] } }
+  }, orderBy: { user: { fullname: ASC } }) {
+    id
+    user {
+      id
+      fullname
+      email
+    }
+    position {
+      id
+      name
+      description
+    }
+    slot
+    specification
+    certifications
+    createdAt
+  }
+}
+
+# Get staff members available for test processing
+query GetAvailableStaffForTesting @auth(level: USER) {
+  staffs(where: { 
+    position: { name: { in: ["Lab Technician", "Senior Technician", "Researcher", "Analyst"] } },
+    slot: { gt: 0 }
+  }, orderBy: { slot: DESC }) {
+    id
+    user {
+      id
+      fullname
+      email
+    }
+    position {
+      id
+      name
+      description
+    }
+    slot
+    specification
+    certifications
+    createdAt
+  }
+}
+
+# Get staff by multiple positions
+query GetStaffByPositions($positionNames: [String!]!) @auth(level: USER) {
+  staffs(where: { position: { name: { in: $positionNames } } }) {
+    id
+    user {
+      id
+      fullname
+      gender
+      avatar
+      email
+      accountStatus
+    }
+    hireDate
+    slot
+    specification
+    certifications
+    positionId
+    position {
+      id
+      name
+      description
+    }
+    createdAt
+    updatedAt
+  }
+}
+
+# Get staff performance metrics by position
+query GetStaffPerformanceByPosition @auth(level: USER) {
+  positions {
+    id
+    name
+    description
+  }
+  staffs {
+    id
+    user {
+      fullname
+    }
+    position {
+      id
+      name
+    }
+    slot
+  }
+  bookings {
+    staffId
+    staff {
+      position {
+        name
+      }
+    }
+    createdAt
+  }
+  testResults {
+    staffId
+    staff {
+      position {
+        name
+      }
+    }
+    status
+    createdAt
+  }
+}
+
+# Get test result statistics by staff position
+query GetTestResultStatsByPosition @auth(level: USER) {
+  testResults {
+    staffId
+    staff {
+      position {
+        name
+      }
+    }
+    managerId
+    manager {
+      position {
+        name
+      }
+    }
+    status
+    positive
+    testType
+    createdAt
   }
 }

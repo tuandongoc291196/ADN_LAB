@@ -15,7 +15,6 @@ const updateTimeSlot = async (timeSlotId, operation) => {
         timeSlot(key: { id: $id }) {
           id
           currentBookings
-          maxCapacity
         }
       }
     `;

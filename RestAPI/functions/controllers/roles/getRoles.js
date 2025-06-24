@@ -1,4 +1,5 @@
 const { dataConnect } = require("../../config/firebase.js");
+const {checkRoleExists} = require("./roleUtils.js");
 
 const getAllRoles = async (req, res) => {
   try {
@@ -46,11 +47,20 @@ const getAllRoles = async (req, res) => {
 const getOneRole = async (req, res) => {
   try {
     const { roleId } = req.body;
+
     if (!roleId) {
       return res.status(400).json({
         statusCode: 400,
         status: "error",
         message: "roleId is required",
+      });
+    }
+
+    if (!(await checkRoleExists(roleId))) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "Role does not exist",
       });
     }
 
@@ -103,37 +113,7 @@ const getOneRole = async (req, res) => {
   }
 }
 
-const checkRoleExists = async (roleId) => {
-  try {
-    const GET_ONE_ROLE_QUERY = `
-      query GetRoleById($roleId: String!) @auth(level: USER) {
-        role(key: {id: $roleId}) {
-          id
-          name
-          description
-          createdAt
-          updatedAt
-        }
-      }
-    `;
-
-    const variables = {
-      roleId: roleId,
-    };
-
-    const response = await dataConnect.executeGraphql(GET_ONE_ROLE_QUERY, {
-      variables: variables,
-    }); 
-    
-    return response.data && response.data.role !== null ? response.data.role : null;
-  } catch (error) {
-    console.error("Error checking if role exists:", error);
-    throw error;
-  }
-};
-
 module.exports = {
   getAllRoles,
   getOneRole,
-  checkRoleExists
 };

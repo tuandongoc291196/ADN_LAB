@@ -182,36 +182,36 @@ const Payment = () => {
         },
         body: JSON.stringify({
           totalAmount,
-          paymentChoice: paymentMethod.toLocaleUpperCase()
+          paymentChoice: paymentMethod.toUpperCase()
         }),
       });
 
+      const result = await response.json();
+      console.log('🔍 API response result:', result);
+      console.log('🔍 paymentMethod raw:', paymentMethod);
+
+      const method = paymentMethod.toUpperCase();
+      console.log('🔍 method after toUpperCase:', method);
+
       if (!response.ok) {
-        throw new Error('Thanh toán thất bại');
+        throw new Error(result.message || 'Thanh toán thất bại');
       }
 
-      const result = await response.json();
+      if (method === 'MOMO' && result.resultCode === 0 && result.payUrl) {
+        window.location.href = result.payUrl;
+        return;
+      }
 
-      const paymentResult = {
-        bookingId,
-        bookingData,
-        paymentMethod,
-        paymentData: result,
-        amount: totalAmount,
-        status: 'success',
-        timestamp: new Date().toISOString()
-      };
+      if (method === 'ZALOPAY' && result.return_code === 1 && result.order_url) {
+        window.location.href = result.order_url;
+        return;
+      }
 
-      navigate('/payment-success', {
-        state: {
-          paymentResult,
-          paymentMethodInfo: paymentMethods.find(m => m.id === paymentMethod)
-        }
-      });
+      throw new Error(result.return_message || result.message || 'Không thể xử lý thanh toán');
 
     } catch (error) {
       console.error('Payment error:', error);
-      alert('Có lỗi xảy ra trong quá trình thanh toán. Vui lòng thử lại.');
+      // alert(Có lỗi xảy ra trong quá trình thanh toán: ${ error.message });
     } finally {
       setLoading(false);
     }

@@ -9,7 +9,7 @@ type Role @table {
 
 # User accounts keyed by Firebase Auth UID
 type User @table {
-  id: String! @default(expr: "auth.uid")
+  id: String!
   fullname: String!
   gender: String
   avatar: String
@@ -17,12 +17,32 @@ type User @table {
   accountStatus: String! @default(value: "inactive")
   authProvider: String!
   phone: String
-  shippingAddress: String
+  address: String
   roleId: String! @default(value: "0")
   role: Role! @ref(fields: "roleId")
-  dailySlotCount: Int! @default(value: 0)
   createdAt: Timestamp! @default(expr: "request.time")
   lastLogin: Timestamp
+}
+
+type Staff @table {
+  id: String! @col(name: "staff_id")
+  user: User! @ref(fields: "id")
+  hireDate: Date
+  slot: Int! @default(value: 0)
+  specification: [String] @default(value: [])
+  certifications: [String] @default(value: [])
+  positionId: String!
+  position: Position! @ref(fields: "positionId")
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
+}
+
+type Position @table {
+  id: String! @col(name: "position_id")
+  name: String! @unique
+  description: String
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
 }
 
 # DNA testing services
@@ -46,8 +66,6 @@ type ServiceCategory @table {
   name: String! @unique
   description: String
   hasLegalValue: Boolean!
-  icon: String
-  color: String
   createdAt: Timestamp! @default(expr: "request.time")
   updatedAt: Timestamp
 }
@@ -61,8 +79,7 @@ type Method @table {
   updatedAt: Timestamp
 }
 
-type ServiceMethod @table {
-  id: String! @col(name: "service_method_id")
+type ServiceMethod @table(key: ["serviceId", "methodId"]) {
   serviceId: String!
   service: Service! @ref(fields: "serviceId")
   methodId: String!
@@ -88,13 +105,14 @@ type Booking @table {
   id: String! @col(name: "booking_id")
   userId: String!
   user: User! @ref(fields: "userId")
-  staffId: String
-  staff: User @ref(fields: "staffId")
+  staffId: String!
+  staff: Staff! @ref(fields: "staffId")
   timeSlotId: String
   timeSlot: TimeSlot @ref(fields: "timeSlotId")
-  serviceMethodId: String!
-  serviceMethod: ServiceMethod! @ref(fields: "serviceMethodId")
-  bookingCreatedAt: Timestamp! @default(expr: "request.time")
+  serviceId: String!
+  service: Service! @ref(fields: "serviceId")
+  methodId: String!
+  method: Method! @ref(fields: "methodId")
   totalAmount: Float!
   createdAt: Timestamp! @default(expr: "request.time")
   updatedAt: Timestamp
@@ -106,7 +124,20 @@ type BookingHistory @table {
   booking: Booking! @ref(fields: "bookingId")
   description: String!
   status: String! @default(value: "pending")
-   createdAt: Timestamp! @default(expr: "request.time")
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
+}
+
+type Participant @table {
+  id: String! @col(name: "participant_id")
+  bookingId: String!
+  booking: Booking! @ref(fields: "bookingId")
+  name: String!
+  age: Int!
+  identification: String
+  gender: String!
+  relationship: String
+  createdAt: Timestamp! @default(expr: "request.time")
   updatedAt: Timestamp
 }
 
@@ -116,9 +147,12 @@ type Sample @table {
   bookingId: String!
   booking: Booking! @ref(fields: "bookingId")
   staffId: String
-  staff: User @ref(fields: "staffId")
+  staff: Staff @ref(fields: "staffId")
+  participantId: String
+  participant: Participant @ref(fields: "participantId")
   collectionDate: Date
-  status: String! @default(value: "pending")
+  sampleQuality: String!
+  sampleConcentration: Float
   notes: String
   createdAt: Timestamp! @default(expr: "request.time")
   updatedAt: Timestamp
@@ -131,11 +165,18 @@ type TestResult @table {
   booking: Booking! @ref(fields: "bookingId")
   sampleId: String!
   sample: Sample! @ref(fields: "sampleId")
-  staffId: String
-  staff: User @ref(fields: "staffId")
+  staffId: String!
+  staff: Staff! @ref(fields: "staffId")
+  managerId: String!
+  manager: Staff! @ref(fields: "managerId")
+  testMethod: String!
+  positive: Boolean!
+  accuracy: Float!
+  testType: String!
   testDate: Date
   reportDate: Date
   resultData: String
+  resultNotes: String
   status: String! @default(value: "pending")
   createdAt: Timestamp! @default(expr: "request.time")
   updatedAt: Timestamp
@@ -150,7 +191,8 @@ type Payment @table {
   paymentMethod: String!
   status: String! @default(value: "pending")
   paymentDate: Date
-  refundDetail: [String] @default(value: [])
+  refundDetail: String
+  otherDetails: [String] @default(value: [])
   createdAt: Timestamp! @default(expr: "request.time")
   updatedAt: Timestamp
 }
@@ -169,7 +211,8 @@ type Feedback @table {
 type Blog @table {
   id: String! @col(name: "blog_id")
   userId: String!
-  user: User! @ref(fields: "userId")  
+  user: User! @ref(fields: "userId")
+  title: String!
   content: String!
   imageUrl: String
   createdAt: Timestamp! @default(expr: "request.time")
@@ -182,7 +225,7 @@ type Notification @table {
   userId: String
   user: User @ref(fields: "userId")
   staffId: String
-  staff: User @ref(fields: "staffId")
+  staff: Staff @ref(fields: "staffId")
   title: String!
   message: String!
   isRead: Boolean! @default(value: false)

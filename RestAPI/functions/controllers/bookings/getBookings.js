@@ -1,45 +1,40 @@
 const { dataConnect } = require("../../config/firebase.js");
+const { checkBookingExists } = require("./bookingUtils.js");
+const {getBookingHistoryByBookingId} = require("../bookingHistory/getBookingHistory.js");
 
-// Get all bookings for the current user
 const getAllBookings = async (req, res) => {
   try {
     const GET_MY_BOOKINGS_QUERY = `
       query GetMyBookings @auth(level: USER) {
         bookings(orderBy: { createdAt: DESC }) {
           id
-          status
-          collectionMethod
+          userId
+          staffId
+          timeSlotId
+          serviceId
+          methodId
           totalAmount
-          price
-          quantity
-          notes
-          service {
-            id
-            title
-            description
-            category
-            serviceType
-            duration
-          }
-          timeSlot {
-            slotDate
-            startTime
-            endTime
-          }
-          staff {
-            fullname
-          }
           createdAt
           updatedAt
+          service {
+            id
+          }
+          timeSlot {
+            id
+          }
+          staff {
+            id
+          }
+          method {
+            id
+          }
         }
       }
     `;
 
-    console.log("Executing GraphQL query:", GET_MY_BOOKINGS_QUERY);
     const response = await dataConnect.executeGraphql(GET_MY_BOOKINGS_QUERY);
 
     const responseData = response.data;
-    console.log("Response data:", responseData);
 
     if (!responseData.bookings || responseData.bookings.length === 0) {
       return res.status(404).json({
@@ -79,9 +74,7 @@ const getOneBooking = async (req, res) => {
       });
     }
 
-    console.log("Checking if booking exists before retrieval, bookingId:", bookingId);
     const existingBooking = await checkBookingExists(bookingId);
-    console.log("Booking existence check result:", existingBooking);
     
     if (!existingBooking) {
       return res.status(404).json({
@@ -100,54 +93,44 @@ const getOneBooking = async (req, res) => {
       query GetBookingById($bookingId: String!) @auth(level: USER) {
         booking(key: { id: $bookingId }) {
           id
-          user {
-            id
-            fullname
-            email
-            phone
-            shippingAddress
-          }
-          staff {
-            id
-            fullname
-          }
-          service {
-            id
-            title
-            description
-            fullDescription
-            price
-            duration
-            category
-            serviceType
-            hasLegalValue
-            participants
-            requiredDocuments
-            procedures
-          }
-          timeSlot {
-            slotDate
-            startTime
-            endTime
-          }
-          status
-          collectionMethod
-          price
-          quantity
-          notes
+          userId
+          staffId
+          timeSlotId
+          serviceId
+          methodId
           totalAmount
           createdAt
           updatedAt
+          user {
+            id
+          }
+          staff {
+            id
+          }
+          service {
+            id
+          }
+          timeSlot {
+            id
+          }
+          method {
+            id
+          }
         }
       }
     `;
     
-    console.log("Executing GraphQL query:", GET_BOOKING_BY_ID_QUERY, "with variables:", variables);
-    const response = await dataConnect.executeGraphql(GET_BOOKING_BY_ID_QUERY, {
+    const responseBooking = await dataConnect.executeGraphql(GET_BOOKING_BY_ID_QUERY, {
       variables: variables,
     });
 
-    const responseData = response.data;
+    const responseBookingData = responseBooking.data.booking;
+    const responseHistoryData = await getBookingHistoryByBookingId(bookingId);
+
+    const responseData = {
+      booking: responseBookingData,
+      history: responseHistoryData,
+    };
 
     res.status(200).json({
       statusCode: 200,
@@ -166,37 +149,7 @@ const getOneBooking = async (req, res) => {
   }
 };
 
-const checkBookingExists = async (bookingId) => {
-  try {
-    const CHECK_BOOKING_EXISTS_QUERY = `
-      query GetBookingById($bookingId: String!) @auth(level: USER) {
-        booking(key: { id: $bookingId }) {
-          id
-          status
-          createdAt
-        }
-      }
-    `;
-
-    const variables = { bookingId };
-    console.log("Executing GraphQL query:", CHECK_BOOKING_EXISTS_QUERY, "with variables:", variables);
-    const response = await dataConnect.executeGraphql(CHECK_BOOKING_EXISTS_QUERY, { variables });
-    console.log("Booking existence check response:", response.data.booking);
-    return response.data.booking;
-  } catch (error) {
-    console.error("Error checking booking existence:", error);
-    throw error;
-  }
-};
-
-
-// Get boooking by UserID/StaffID
-
-// Check for user's booking (1 user/ 1 booking/ 1 slot)
-
-// Change relation between service and methods (one service table, one servicemethod table, one method table)
 module.exports = {
   getAllBookings,
   getOneBooking,
-  checkBookingExists
 };

@@ -5,11 +5,10 @@ import { Container, Row, Col, Nav, Card, Alert, Badge } from 'react-bootstrap';
 // Import Admin Components
 import AdminOverview from './AdminOverview';
 import BlogManagement from './BlogManagement';
-import GuideManagement from './GuideManagement';
-import TechnologyManagement from './TechnologyManagement';
 import AdminReports from './AdminReports';
 import UserManagement from './UserManagement';
 import SystemSettings from './SystemSettings';
+import StaffManagementByAdmin from './StaffManagementByAdmin';
 
 const AdminDashboard = ({ user }) => {
   const location = useLocation();
@@ -53,20 +52,12 @@ const AdminDashboard = ({ user }) => {
       description: 'Tạo và quản lý bài viết blog'
     },
     {
-      key: 'guides',
-      label: 'Hướng dẫn xét nghiệm',
+      key: 'staff',
+      label: 'Quản lý nhân viên',
       icon: 'bi-book',
-      path: '/admin/guides',
+      path: '/admin/staff',
       color: 'info',
-      description: 'Quản lý nội dung hướng dẫn'
-    },
-    {
-      key: 'technology',
-      label: 'Công nghệ ADN',
-      icon: 'bi-cpu',
-      path: '/admin/technology',
-      color: 'warning',
-      description: 'Quản lý thông tin công nghệ'
+      description: 'Quản lý nhân viên'
     },
     {
       key: 'reports',
@@ -208,8 +199,7 @@ const AdminDashboard = ({ user }) => {
             <Route path="/" element={<AdminOverview user={adminUser} />} />
             <Route path="/overview" element={<AdminOverview user={adminUser} />} />
             <Route path="/blog/*" element={<BlogManagement user={adminUser} />} />
-            <Route path="/guides/*" element={<GuideManagement user={adminUser} />} />
-            <Route path="/technology/*" element={<TechnologyManagement user={adminUser} />} />
+            <Route path="/staff/*" element={<StaffManagementByAdmin user={adminUser} />} />
             <Route path="/reports/*" element={<AdminReports user={adminUser} />} />
             <Route path="/users/*" element={<UserManagement user={adminUser} />} />
             <Route path="/settings/*" element={<SystemSettings user={adminUser} />} />

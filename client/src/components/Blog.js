@@ -32,11 +32,14 @@ const Blog = () => {
       <section className="bg-primary text-white py-5">
         <Container>
           <Row className="align-items-center">
-            <Col>
+            <Col lg={8}>
               <h1 className="display-4 fw-bold mb-4">Góc kiến thức ADN</h1>
               <p className="lead mb-4">
                 Khám phá các bài viết chuyên sâu, tin tức và kiến thức hữu ích về lĩnh vực di truyền và xét nghiệm ADN từ các chuyên gia của chúng tôi.
               </p>
+            </Col>
+            <Col lg={4} className="text-center d-none d-lg-block">
+              <i className="bi bi-newspaper" style={{fontSize: '10rem', color: 'rgba(255,255,255,0.5)'}}></i>
             </Col>
           </Row>
         </Container>

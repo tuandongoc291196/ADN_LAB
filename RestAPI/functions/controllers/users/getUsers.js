@@ -1,4 +1,6 @@
 const { dataConnect } = require("../../config/firebase.js");
+const { checkUserExists} = require("./userUtils.js");
+const { checkRoleExists } = require("../roles/roleUtils.js");
 
 const getAllUsers = async (req, res) => {
   try {
@@ -44,10 +46,7 @@ const getOneUser = async (req, res) => {
       });
     }
 
-    console.log("Checking if user exists before update, userId:", userId);
-    const existingUser = await checkUserExists(userId);
-    console.log("User existence check result:", existingUser);
-    if (!existingUser) {
+    if (!(await checkUserExists(userId))) {
       return res.status(404).json({
         statusCode: 404,
         status: "error",
@@ -84,109 +83,80 @@ const getOneUser = async (req, res) => {
   }
 };
 
-const checkUserExists = async (userId) => {
+const getUsersByRole = async (req, res) => {
   try {
-    const GET_ONE_USER_QUERY = `
-      query GetUserById($userId: String!) @auth(level: USER) {
-        user(key: {id: $userId}) {
+    const { roleId } = req.body;
+    if (!roleId) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "roleId is required",
+      });
+    }
+
+    if (!(await checkRoleExists(roleId))) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "Role not found",
+        error: "Role with the provided ID does not exist",
+      });
+    }
+
+    const variables = {
+      roleId: roleId,
+    };
+
+    const GET_USERS_BY_ROLE_QUERY = `
+      query GetUsersByRole($roleId: String!) @auth(level: USER) {
+        users(where: {roleId: {eq: $roleId}}) {
           id
           fullname
+          gender
+          avatar
           email
           accountStatus
           role {
-            id
             name
           }
           createdAt
-          lastLogin
         }
       }
     `;
 
-    const variables = {userId};
-    console.log("Executing GraphQL query:", GET_ONE_USER_QUERY, "with variables:", variables);
-    const response = await dataConnect.executeGraphql(GET_ONE_USER_QUERY, { variables });
-    
-    return response.data?.user || null;
-  } catch (error) {
-    console.error("Error checking user existence:", error);
-    throw error;
-  }
-};
-
-const countUsersByRole = async (roleId) => {
-  try {
-    if (!roleId) {
-      throw new Error("roleId is required");
+    console.log("Executing GraphQL query:", GET_USERS_BY_ROLE_QUERY, "with variables:", variables);
+    const response = await dataConnect.executeGraphql(GET_USERS_BY_ROLE_QUERY, {
+      variables: variables,
+    });
+    const responseData = response.data.users;
+    console.log(responseData);
+    if (!responseData || responseData.length === 0) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "No users found for the specified role",
+      });
     }
 
-    const COUNT_USERS_BY_ROLE_QUERY = `
-      query CountUsersByRole($roleId: String!) @auth(level: USER) {
-        users(where: {roleId: {eq: $roleId}}) {
-          id
-        }
-      }
-    `;
-
-    const variables = { roleId };
-    console.log("Executing GraphQL query:", COUNT_USERS_BY_ROLE_QUERY, "with variables:", variables);
-    const response = await dataConnect.executeGraphql(COUNT_USERS_BY_ROLE_QUERY, { variables });
-    
-    const responseData = response.data?.users || [];
-    const userCount = responseData.length;
-    
-    console.log(`Found ${userCount} users with roleId "${roleId}"`);
-    return userCount;
+    res.status(200).json({
+      statusCode: 200,
+      status: "success",
+      message: "Users retrieved successfully",
+      data: responseData,
+    });
   } catch (error) {
-    console.error(`Error counting users with roleId ${roleId}:`, error);
-    throw error;
-  }
-};
-
-const getStaffWithLowestSlotCount = async () => {
-  try {
-    const GET_STAFF_WITH_LOWEST_SLOT_COUNT_QUERY = `
-      query GetStaffWithLowestSlotCount @auth(level: USER) {
-        users(
-          where: {roleId: {eq: "1"}}
-          orderBy: {dailySlotCount: ASC}
-          limit: 1
-        ) {
-          id
-          fullname
-          email
-          dailySlotCount
-          maxDailySlots
-          role {
-            id
-            name
-          }
-        }
-      }
-    `;
-
-    console.log("Executing GraphQL query:", GET_STAFF_WITH_LOWEST_SLOT_COUNT_QUERY);
-    const response = await dataConnect.executeGraphql(GET_STAFF_WITH_LOWEST_SLOT_COUNT_QUERY);
-
-    const staff = response.data.users?.[0];
-    
-    if (!staff) {
-      console.log("No staff members found with roleId '1'");
-      return null;
-    }
-
-    console.log(`Found staff with lowest slot count: ${staff.fullname} (ID: ${staff.id}) with ${staff.dailySlotCount} slots`);
-    return staff.id;
-  } catch (error) {
-    console.error("Error getting staff with lowest slot count:", error);
-    throw error;
+    console.error("Error fetching users by role:", error);
+    res.status(500).json({
+      statusCode: 500,
+      status: "error",
+      message: "Failed to retrieve users by role",
+      error: error.message,
+    });
   }
 };
 
 module.exports = {
   getAllUsers,
   getOneUser,
-  checkUserExists,
-  countUsersByRole,
-  getStaffWithLowestSlotCount
+  getUsersByRole
 };
