@@ -1,11 +1,12 @@
 const { dataConnect } = require("../../config/firebase.js");
 const {addTimeSlot} = require("../timeSlots/addTimeSlot.js");
 const {checkServiceExists} = require("../services/serviceUtils.js");
-const {getStaffWithLowestSlotCount} = require("../users/userUtils.js");
+const {getActiveStaffWithLowestSlotCount} = require("../users/userUtils.js");
 const {checkUserExists} = require("../users/userUtils.js");
 const {updateStaffSlotCount} = require("../users/updateUser.js");
 const {checkMethodExists} = require("../methods/methodUtils.js");
 const {checkBookingExists} = require("./bookingUtils.js");
+const {addBookingHistory} = require("../bookingHistory/addBookingHistory.js");
 
 const addBooking = async (req, res) => {
   try {
@@ -98,7 +99,7 @@ const addBooking = async (req, res) => {
       }
     `;
 
-    const staffId = await getStaffWithLowestSlotCount("1");
+    const staffId = await getActiveStaffWithLowestSlotCount("1");
     const timeSlotId = `${slotDate}_${startTime}_${endTime}`;
 
     const bookingVariables = {
@@ -152,6 +153,17 @@ const addBooking = async (req, res) => {
     const responseData = response.data;
 
     const updateStaffResponse = await updateStaffSlotCount(staffId, "increase");
+    const createBooking = await addBookingHistory(bookingVariables.id, "created", "Booking created successfully");
+    const pendingBooking = await addBookingHistory(bookingVariables.id, "pending", "Booking is pending confirmation");
+
+    console.log({
+      updateStaffResponse,
+      updateTimeSlotResponse,
+      responseData, 
+      createBooking,
+      pendingBooking
+    })
+
     return res.status(201).json({
       statusCode: 201,
       status: "success",

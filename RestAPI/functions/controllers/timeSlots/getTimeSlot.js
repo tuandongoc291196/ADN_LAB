@@ -1,5 +1,5 @@
 const { dataConnect } = require("../../config/firebase.js");
-const {countUsersByRole} = require("../users/userUtils.js");
+const {countActiveUsersByRole} = require("../users/userUtils.js");
 const { checkTimeSlotExists} = require("./timeSlotUtils.js");
 
 const getUnavailableTimeSlots = async (req, res) => {
@@ -13,7 +13,7 @@ const getUnavailableTimeSlots = async (req, res) => {
         message: "slotDate is required",
       });
     }
-    const maxBookings = await countUsersByRole("1");
+    const maxBookings = await countActiveUsersByRole("1");
     const GET_UNAVAILABLE_TIME_SLOTS = `
       query GetUnAvailableTimeSlots($slotDate: Date!, $maxBookings: Int!) @auth(level: USER) {
         timeSlots(where: {slotDate: {eq: $slotDate}, currentBookings: {ge: $maxBookings}}, orderBy: {startTime: ASC}) {
