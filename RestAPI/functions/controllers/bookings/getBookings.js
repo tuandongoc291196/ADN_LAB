@@ -1,7 +1,7 @@
 const { dataConnect } = require("../../config/firebase.js");
 const { checkBookingExists } = require("./bookingUtils.js");
+const {getBookingHistoryByBookingId} = require("../bookingHistory/getBookingHistory.js");
 
-// Get all bookings for the current user
 const getAllBookings = async (req, res) => {
   try {
     const GET_MY_BOOKINGS_QUERY = `
@@ -120,11 +120,17 @@ const getOneBooking = async (req, res) => {
       }
     `;
     
-    const response = await dataConnect.executeGraphql(GET_BOOKING_BY_ID_QUERY, {
+    const responseBooking = await dataConnect.executeGraphql(GET_BOOKING_BY_ID_QUERY, {
       variables: variables,
     });
 
-    const responseData = response.data;
+    const responseBookingData = responseBooking.data.booking;
+    const responseHistoryData = await getBookingHistoryByBookingId(bookingId);
+
+    const responseData = {
+      booking: responseBookingData,
+      history: responseHistoryData,
+    };
 
     res.status(200).json({
       statusCode: 200,
