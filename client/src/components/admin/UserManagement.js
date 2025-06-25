@@ -1,46 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Card, Row, Col, Button, Table, Badge, Modal, Form, 
+import {
+  Card, Row, Col, Button, Table, Badge, Modal, Form,
   Alert, InputGroup, Dropdown, Pagination, Toast, ToastContainer,
   Tab, Tabs, ProgressBar
 } from 'react-bootstrap';
-import { getAllUsers, getAllRoles } from '../../services/api';
+import { getStaffListByRole, getAllRoles } from '../../services/api';
+import StaffManagementByAdmin from './StaffManagementByAdmin';
 
 const UserManagement = ({ user }) => {
   const [activeTab, setActiveTab] = useState('users');
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activities, setActivities] = useState([
-    {
-      id: 1,
-      userId: 1,
-      userName: 'Nguyễn Văn A',
-      action: 'Đăng nhập hệ thống',
-      timestamp: '2024-11-20T10:30:00',
-      ip: '192.168.1.100',
-      device: 'Chrome on Windows'
-    },
-    {
-      id: 2,
-      userId: 2,
-      userName: 'Trần Thị B',
-      action: 'Đặt đơn xét nghiệm ADN Y',
-      timestamp: '2024-11-19T15:45:00',
-      ip: '192.168.1.101',
-      device: 'Safari on iPhone'
-    },
-    {
-      id: 3,
-      userId: 3,
-      userName: 'Dr. Lê Văn C',
-      action: 'Cập nhật kết quả xét nghiệm',
-      timestamp: '2024-11-19T09:15:00',
-      ip: '192.168.1.102',
-      device: 'Chrome on Windows'
-    }
-  ]);
-
+  const [activities, setActivities] = useState([]); // Placeholder for activities
+  const [staffCount, setStaffCount] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('edit'); // 'edit', 'create', 'view'
   const [editingUser, setEditingUser] = useState(null);
@@ -67,7 +40,7 @@ const UserManagement = ({ user }) => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const userRes = await getAllUsers();
+        const userRes = await getStaffListByRole([0]);
         setRoles(userRes || []);
       } catch (err) {
         setError(err.message);
@@ -81,8 +54,8 @@ const UserManagement = ({ user }) => {
   // Filter users
   const filteredUsers = roles.filter(user => {
     const matchesSearch = (user.fullname || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (user.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (user.phone || '').includes(searchTerm);
+      (user.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.phone || '').includes(searchTerm);
     const matchesRole = filterRole === 'all' || (user.role?.name === filterRole);
     const matchesStatus = filterStatus === 'all' || user.accountStatus === filterStatus;
     return matchesSearch && matchesRole && matchesStatus;
@@ -118,7 +91,7 @@ const UserManagement = ({ user }) => {
       case 'customer':
         return <Badge bg="primary">Khách hàng</Badge>;
       case 'manager':
-        return <Badge bg="primary">Quản lý</Badge>;
+        return <Badge bg="secondary">Quản lý</Badge>;
       default:
         return <Badge bg="light">Không xác định</Badge>;
     }
@@ -156,8 +129,8 @@ const UserManagement = ({ user }) => {
   const handleSaveUser = () => {
     if (editingUser) {
       // Update existing user
-      setRoles(roles.map(u => 
-        u.id === editingUser.id 
+      setRoles(roles.map(u =>
+        u.id === editingUser.id
           ? { ...u, ...formData }
           : u
       ));
@@ -176,14 +149,14 @@ const UserManagement = ({ user }) => {
       setRoles([newUser, ...roles]);
       setToastMessage('Người dùng mới đã được tạo thành công!');
     }
-    
+
     setShowModal(false);
     setShowToast(true);
   };
 
   const handleStatusChange = (id, newStatus) => {
-    setRoles(roles.map(u => 
-      u.id === id 
+    setRoles(roles.map(u =>
+      u.id === id
         ? { ...u, accountStatus: newStatus }
         : u
     ));
@@ -214,6 +187,27 @@ const UserManagement = ({ user }) => {
   if (loading) return <div className="text-center py-5"><span>Đang tải dữ liệu người dùng...</span></div>;
   if (error) return <Alert variant="danger">Lỗi: {error}</Alert>;
 
+  const getCurrentTabCount = () => {
+    switch (activeTab) {
+      case 'users':
+        return filteredUsers.length;
+      case 'staff':
+        return staffCount; // sẽ hiển thị từ StaffManagementByAdmin, nếu muốn đếm thì cần props
+      case 'activities':
+        return activities.length;
+      default:
+        return roles.length;
+    }
+  };
+
+  const getTabTitle = () => {
+    switch (activeTab) {
+      case 'users': return 'Tổng khách hàng';
+      case 'staff': return 'Tổng nhân viên';
+      case 'activities': return 'Tổng hoạt động';
+      default: return 'Tổng người dùng';
+    }
+  };
   return (
     <div>
       {/* Page Header */}
@@ -237,8 +231,8 @@ const UserManagement = ({ user }) => {
           <Card className="border-0 shadow-sm text-center">
             <Card.Body>
               <i className="bi bi-people text-primary fs-1 mb-2"></i>
-              <h3 className="mb-0">{roles.length}</h3>
-              <small className="text-muted">Tổng người dùng</small>
+              <h3 className="mb-0">{getCurrentTabCount()}</h3>
+              <small className="text-muted">{getTabTitle()}</small>
             </Card.Body>
           </Card>
         </Col>
@@ -284,6 +278,11 @@ const UserManagement = ({ user }) => {
                 <i className="bi bi-people me-2"></i>
                 Danh sách người dùng
               </span>
+            } /><Tab eventKey="staff" title={
+              <span>
+                <i className="bi bi-person-badge me-2"></i>
+                Danh sách nhân viên
+              </span>
             } />
             <Tab eventKey="activities" title={
               <span>
@@ -313,8 +312,8 @@ const UserManagement = ({ user }) => {
                   </InputGroup>
                 </Col>
                 <Col md={3} className="mb-2">
-                  <Form.Select 
-                    value={filterRole} 
+                  <Form.Select
+                    value={filterRole}
                     onChange={(e) => setFilterRole(e.target.value)}
                   >
                     <option value="all">Tất cả vai trò</option>
@@ -324,8 +323,8 @@ const UserManagement = ({ user }) => {
                   </Form.Select>
                 </Col>
                 <Col md={3} className="mb-2">
-                  <Form.Select 
-                    value={filterStatus} 
+                  <Form.Select
+                    value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
                   >
                     <option value="all">Tất cả trạng thái</option>
@@ -363,15 +362,15 @@ const UserManagement = ({ user }) => {
                         <div className="d-flex align-items-center">
                           <div className="me-3">
                             {userItem.avatar ? (
-                              <img 
-                                src={userItem.avatar} 
+                              <img
+                                src={userItem.avatar}
                                 alt="Avatar"
                                 className="rounded-circle"
                                 style={{ width: '40px', height: '40px', objectFit: 'cover' }}
                               />
                             ) : (
                               <div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
-                                   style={{ width: '40px', height: '40px' }}>
+                                style={{ width: '40px', height: '40px' }}>
                                 {userItem.fullname.charAt(0).toUpperCase()}
                               </div>
                             )}
@@ -421,13 +420,13 @@ const UserManagement = ({ user }) => {
                               <i className="bi bi-pencil me-2"></i>Chỉnh sửa
                             </Dropdown.Item>
                             <Dropdown.Divider />
-                            <Dropdown.Item 
+                            <Dropdown.Item
                               onClick={() => handleStatusChange(userItem.id, userItem.accountStatus === 'active' ? 'suspended' : 'active')}
                             >
                               <i className="bi bi-person-x me-2"></i>
                               {userItem.accountStatus === 'active' ? 'Tạm khóa' : 'Kích hoạt'}
                             </Dropdown.Item>
-                            <Dropdown.Item 
+                            <Dropdown.Item
                               className="text-danger"
                               onClick={() => handleDeleteUser(userItem.id)}
                             >
@@ -445,7 +444,7 @@ const UserManagement = ({ user }) => {
               {totalPages > 1 && (
                 <div className="d-flex justify-content-center mt-3">
                   <Pagination>
-                    <Pagination.Prev 
+                    <Pagination.Prev
                       disabled={currentPage === 1}
                       onClick={() => setCurrentPage(currentPage - 1)}
                     />
@@ -458,7 +457,7 @@ const UserManagement = ({ user }) => {
                         {index + 1}
                       </Pagination.Item>
                     ))}
-                    <Pagination.Next 
+                    <Pagination.Next
                       disabled={currentPage === totalPages}
                       onClick={() => setCurrentPage(currentPage + 1)}
                     />
@@ -467,7 +466,10 @@ const UserManagement = ({ user }) => {
               )}
             </div>
           )}
-
+          {/* Staff Tab */}
+          {activeTab === 'staff' && (
+            <StaffManagementByAdmin onCountChange={(count) => setStaffCount(count)} />
+          )}
           {/* Activities Tab */}
           {activeTab === 'activities' && (
             <div>
@@ -504,8 +506,8 @@ const UserManagement = ({ user }) => {
       <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
         <Modal.Header closeButton>
           <Modal.Title>
-            {modalType === 'create' ? 'Tạo người dùng mới' : 
-             modalType === 'edit' ? 'Chỉnh sửa thông tin' : 'Thông tin chi tiết'}
+            {modalType === 'create' ? 'Tạo người dùng mới' :
+              modalType === 'edit' ? 'Chỉnh sửa thông tin' : 'Thông tin chi tiết'}
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
@@ -567,7 +569,7 @@ const UserManagement = ({ user }) => {
                     type="text"
                     placeholder="Nhập họ tên..."
                     value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   />
                 </Col>
                 <Col md={6} className="mb-3">
@@ -576,7 +578,7 @@ const UserManagement = ({ user }) => {
                     type="email"
                     placeholder="Nhập email..."
                     value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   />
                 </Col>
               </Row>
@@ -588,7 +590,7 @@ const UserManagement = ({ user }) => {
                     type="tel"
                     placeholder="Nhập số điện thoại..."
                     value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   />
                 </Col>
                 <Col md={6} className="mb-3">
@@ -597,7 +599,7 @@ const UserManagement = ({ user }) => {
                     type="text"
                     placeholder="Nhập địa chỉ..."
                     value={formData.location}
-                    onChange={(e) => setFormData({...formData, location: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   />
                 </Col>
               </Row>
@@ -607,7 +609,7 @@ const UserManagement = ({ user }) => {
                   <Form.Label>Vai trò</Form.Label>
                   <Form.Select
                     value={formData.role}
-                    onChange={(e) => setFormData({...formData, role: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                   >
                     <option value="customer">Khách hàng</option>
                     <option value="staff">Nhân viên</option>
@@ -618,7 +620,7 @@ const UserManagement = ({ user }) => {
                   <Form.Label>Trạng thái</Form.Label>
                   <Form.Select
                     value={formData.status}
-                    onChange={(e) => setFormData({...formData, status: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                   >
                     <option value="active">Hoạt động</option>
                     <option value="inactive">Không hoạt động</option>
@@ -632,7 +634,7 @@ const UserManagement = ({ user }) => {
                     type="text"
                     placeholder="Nhập phòng ban..."
                     value={formData.department}
-                    onChange={(e) => setFormData({...formData, department: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                     disabled={formData.role === 'customer'}
                   />
                 </Col>
@@ -644,7 +646,7 @@ const UserManagement = ({ user }) => {
                     type="checkbox"
                     label="Đã xác thực email"
                     checked={formData.verified}
-                    onChange={(e) => setFormData({...formData, verified: e.target.checked})}
+                    onChange={(e) => setFormData({ ...formData, verified: e.target.checked })}
                   />
                 </Col>
               </Row>

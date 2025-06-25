@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Badge from 'react-bootstrap/Badge';
 import { getStaffListByRole } from '../../services/api';
 
 const StaffManagement = () => {
@@ -17,9 +18,10 @@ const StaffManagement = () => {
     const fetchStaff = async () => {
       setLoading(true);
       try {
-        const staffList = await getStaffListByRole('1');
+        const staffList = await getStaffListByRole([1]); // Assuming '1' and '2' are the roles for staff
         console.log(staffList);
         setStaff(staffList || []);
+        //onCountChange && onCountChange(staffList.length);
       } catch (err) {
         // Có thể toast lỗi hoặc setError
       } finally {
@@ -39,20 +41,38 @@ const StaffManagement = () => {
     setShowModal(true);
   };
 
+  const getRoleBadge = (roleName) => {
+    switch (roleName) {
+      case 'staff':
+        return <Badge bg="info">Nhân viên</Badge>;
+      case 'manager':
+        return <Badge bg="danger">Quản lý</Badge>;
+      default:
+        return <Badge bg="light">Không xác định</Badge>;
+    }
+  };
+
   const getStatusBadge = (status) => {
-    return (
-      <span className={`badge bg-${status === 'active' ? 'success' : 'danger'}`}>
-        {status === 'active' ? 'Đang làm việc' : 'Nghỉ việc'}
-      </span>
-    );
+    switch (status) {
+      case 'active':
+        return <Badge bg="success">Hoạt động</Badge>;
+      case 'inactive':
+        return <Badge bg="secondary">Không hoạt động</Badge>;
+      case 'suspended':
+        return <Badge bg="danger">Tạm khóa</Badge>;
+      case 'pending':
+        return <Badge bg="warning">Chờ xác thực</Badge>;
+      default:
+        return <Badge bg="light">Không xác định</Badge>;
+    }
   };
 
   const filteredStaff = staff.filter(member => {
     const matchesDepartment = filterDepartment === 'all' || member.department === filterDepartment;
-    const matchesSearch = 
-      member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.phone.includes(searchTerm);
+    const matchesSearch =
+      (member.fullname?.toLowerCase() || member.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (member.email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (member.phone || '').includes(searchTerm);
     return matchesDepartment && matchesSearch;
   });
 
@@ -111,22 +131,24 @@ const StaffManagement = () => {
                 {filteredStaff.map(member => (
                   <tr key={member.id}>
                     <td>
-                      <div>{member.name}</div>
+                      <div>{member.fullname || member.name}</div>
                       <small className="text-muted">{member.email}</small>
                     </td>
-                    <td>{member.department}</td>
-                    <td>{member.position}</td>
-                    <td>{member.joinDate}</td>
-                    <td>{getStatusBadge(member.status)}</td>
+                    <td>{member.department || ''}</td>
+                    <td>{getRoleBadge(member.role?.name)}</td>
+                    <td>{member.createdAt ? new Date(member.createdAt).toLocaleDateString('vi-VN') : ''}</td>
+                    <td>{getStatusBadge(member.accountStatus)}</td>
                     <td>
-                      <div className="d-flex gap-2">
-                        <span className="badge bg-info">
-                          {member.performance.completedTests} xét nghiệm
-                        </span>
-                        <span className="badge bg-success">
-                          {member.performance.accuracy}% chính xác
-                        </span>
-                      </div>
+                      {member.performance ? (
+                        <div className="d-flex gap-2">
+                          <span className="badge bg-info">
+                            {member.performance.completedTests} xét nghiệm
+                          </span>
+                          <span className="badge bg-success">
+                            {member.performance.accuracy}% chính xác
+                          </span>
+                        </div>
+                      ) : <span className="text-muted">N/A</span>}
                     </td>
                     <td>
                       <div className="btn-group">
@@ -174,22 +196,26 @@ const StaffManagement = () => {
               <div className="modal-body">
                 <div className="mb-3">
                   <h6>Thông tin cá nhân</h6>
-                  <p><strong>Tên:</strong> {selectedStaff.name}</p>
+                  <p><strong>Tên:</strong> {selectedStaff.fullname || selectedStaff.name}</p>
                   <p><strong>Email:</strong> {selectedStaff.email}</p>
                   <p><strong>Số điện thoại:</strong> {selectedStaff.phone}</p>
                 </div>
                 <div className="mb-3">
                   <h6>Thông tin công việc</h6>
-                  <p><strong>Phòng ban:</strong> {selectedStaff.department}</p>
-                  <p><strong>Vị trí:</strong> {selectedStaff.position}</p>
-                  <p><strong>Ngày vào làm:</strong> {selectedStaff.joinDate}</p>
-                  <p><strong>Trạng thái:</strong> {getStatusBadge(selectedStaff.status)}</p>
+                  <p><strong>Phòng ban:</strong> {selectedStaff.department || ''}</p>
+                  <p><strong>Vị trí:</strong> {selectedStaff.position || ''}</p>
+                  <p><strong>Ngày vào làm:</strong> {selectedStaff.createdAt ? new Date(selectedStaff.createdAt).toLocaleDateString('vi-VN') : ''}</p>
+                  <p><strong>Trạng thái:</strong> {getStatusBadge(selectedStaff.accountStatus)}</p>
                 </div>
                 <div className="mb-3">
                   <h6>Hiệu suất làm việc</h6>
-                  <p><strong>Số xét nghiệm đã hoàn thành:</strong> {selectedStaff.performance.completedTests}</p>
-                  <p><strong>Độ chính xác:</strong> {selectedStaff.performance.accuracy}%</p>
-                  <p><strong>Đánh giá từ khách hàng:</strong> {selectedStaff.performance.customerRating}/5</p>
+                  {selectedStaff.performance && (
+                    <>
+                      <p><strong>Số xét nghiệm đã hoàn thành:</strong> {selectedStaff.performance.completedTests}</p>
+                      <p><strong>Độ chính xác:</strong> {selectedStaff.performance.accuracy}%</p>
+                      <p><strong>Đánh giá từ khách hàng:</strong> {selectedStaff.performance.customerRating}/5</p>
+                    </>
+                  )}
                 </div>
               </div>
               <div className="modal-footer">

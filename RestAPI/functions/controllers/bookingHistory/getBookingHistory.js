@@ -1,6 +1,6 @@
 const { dataConnect } = require("../../config/firebase.js");
 
-const {getBookingHistoryByBookingId} = async (bookingId) => {
+const getBookingHistoryByBookingId = async (bookingId) => {
     try {
         if (!bookingId) {
             throw new Error("bookingId is required");

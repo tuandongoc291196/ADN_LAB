@@ -2,6 +2,9 @@ const functions = require('firebase-functions');
 const express = require('express');
 const cors = require('cors');
 const {swaggerUi, swaggerDocs} = require('./config/swagger');
+const {onSchedule} = require("firebase-functions/v2/scheduler");
+
+const { cleanupExpiredBookings } = require("./controllers/scheduledTasks/cleanupExpiredBookings");
 
 const {addUser} = require('./controllers/users/addUser');
 const {getAllUsers, getOneUser, getUsersByRole} = require('./controllers/users/getUsers');
@@ -22,6 +25,7 @@ const {deleteRole} = require('./controllers/roles/deleteRole');
 const {addRole} = require('./controllers/roles/addRole');
 
 const {addBooking} = require('./controllers/bookings/addBooking');
+const {getAllBookings, getOneBooking, getBookingByTimeSlotId, getBookingByUserId, getBookingbyStaffId} = require('./controllers/bookings/getBookings');
 
 const {addPayment} = require('./controllers/payments/addPayment');
 
@@ -73,7 +77,16 @@ app.delete('/roles', deleteRole);
 app.post('/roles/add', addRole);
 
 app.post('/bookings/add', addBooking);
+app.get('/bookings', getAllBookings);
+app.post('/bookings', getOneBooking);
+app.post('/bookings/timeslot', getBookingByTimeSlotId);
+app.post('/bookings/user', getBookingByUserId);
+app.post('/bookings/staff', getBookingbyStaffId);
 
-app.post('/payments', addPayment);
+app.post('/payments/add', addPayment);
 
 exports.app = functions.https.onRequest(app);
+exports.cleanupExpiredBookings = onSchedule('every 5 minutes', async (event) => {
+  console.log('Running expired bookings cleanup...');
+  await cleanupExpiredBookings();
+});

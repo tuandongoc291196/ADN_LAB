@@ -10,16 +10,16 @@ export const getAllServices = async () => {
         'Content-Type': 'application/json',
       },
     });
-    
+
     console.log('getAllServices response status:', response.status);
-    
+
     if (!response.ok) {
       throw new Error('Network response was not ok');
     }
-    
+
     const data = await response.json();
     console.log('getAllServices response data:', data);
-    
+
     return data.data;
   } catch (error) {
     console.error('getAllServices error:', error);
@@ -37,11 +37,11 @@ export const getServiceById = async (serviceId) => {
       },
       body: JSON.stringify({ serviceId }),
     });
-    
+
     if (!response.ok) {
       throw new Error('Network response was not ok');
     }
-    
+
     const data = await response.json();
     return data.data;
   } catch (error) {
@@ -65,12 +65,12 @@ export const getMethodsByServiceId = async (serviceId) => {
     }
 
     const data = await response.json();
-    
+
     // API trả về serviceMethods array, cần extract method data
     if (data.data && Array.isArray(data.data)) {
       return data.data.map(item => item.method).filter(Boolean);
     }
-    
+
     return [];
   } catch (error) {
     throw new Error('Failed to fetch methods for service: ' + error.message);
@@ -114,12 +114,12 @@ export const getServicesByMethodId = async (methodId) => {
     }
 
     const data = await response.json();
-    
+
     // API trả về serviceMethods array, cần extract service data
     if (data.data && Array.isArray(data.data)) {
       return data.data.map(item => item.service).filter(Boolean);
     }
-    
+
     return [];
   } catch (error) {
     throw new Error('Failed to fetch services by method: ' + error.message);
@@ -162,21 +162,31 @@ export const getAllRoles = async () => {
 };
 
 // Lấy danh sách nhân viên theo role
-export const getStaffListByRole = async (roleNameOrId) => {
+export const getStaffListByRole = async (roleIds) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/users/role`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ roleId: '1' }), // hoặc { roleId: ... } tùy BE
-    });
-    console.log(response);
-    if (!response.ok) throw new Error('Network response was not ok');
-    const data = await response.json();
-    return data.data || [];
+    const results = await Promise.all(
+      roleIds.map(async (roleId) => {
+        const response = await fetch(`${API_BASE_URL}/users/role`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ roleId: roleId.toString() }), // ép thành chuỗi
+        });
+
+        if (!response.ok) {
+          console.error(`Lỗi khi fetch roleId ${roleId}:`, response.status);
+          return []; // nếu lỗi, trả mảng rỗng
+        }
+
+        const data = await response.json();
+        return data.data || [];
+      })
+    );
+
+    return results.flat();
   } catch (error) {
-    throw new Error('Failed to fetch staff by role: ' + error.message);
+    throw new Error('Failed to fetch staff by multiple roles: ' + error.message);
   }
 };
 
