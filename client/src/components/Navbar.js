@@ -26,7 +26,7 @@ const MainNavbar = ({ setUser }) => {
       manager: { bg: 'warning', icon: 'bi-briefcase', text: 'Manager' },
       customer: { bg: 'primary', icon: 'bi-person', text: 'Khách hàng' }
     };
-    
+
     const config = roleConfig[role] || roleConfig.customer;
     return (
       <Badge bg={config.bg} className="ms-2">
@@ -50,11 +50,11 @@ const MainNavbar = ({ setUser }) => {
     if (userAuth) {
       const storedUserData = localStorage.getItem('userData');
       let enhancedUserData = null;
-      
+
       if (storedUserData) {
         const parsed = JSON.parse(storedUserData);
         const detectedRole = getUserRole(userAuth.email);
-        
+
         // Enhance user data with role detection
         enhancedUserData = {
           ...parsed,
@@ -64,10 +64,10 @@ const MainNavbar = ({ setUser }) => {
           displayName: userAuth.displayName,
           photoURL: userAuth.photoURL
         };
-        
+
         setUserData(enhancedUserData);
         setUser(enhancedUserData);
-        
+
         // Update localStorage with enhanced data
         localStorage.setItem('isAuthenticated', 'true');
       } else {
@@ -83,7 +83,7 @@ const MainNavbar = ({ setUser }) => {
           verified: userAuth.emailVerified,
           authProvider: 'firebase'
         };
-        
+
         setUserData(enhancedUserData);
         setUser(enhancedUserData);
         localStorage.setItem('isAuthenticated', 'true');
@@ -125,10 +125,10 @@ const MainNavbar = ({ setUser }) => {
 
   return (
     <>
-      <Navbar 
-        bg="white" 
-        expand="lg" 
-        sticky="top" 
+      <Navbar
+        bg="white"
+        expand="lg"
+        sticky="top"
         className="shadow-sm border-bottom"
         expanded={expanded}
         onToggle={setExpanded}
@@ -139,12 +139,12 @@ const MainNavbar = ({ setUser }) => {
             {/* Logo Section */}
             <div className="me-2 d-flex align-items-center justify-content-center" style={{ width: '50px', height: '50px' }}>
               {logoUrl ? (
-                <Image 
-                  src={logoUrl} 
+                <Image
+                  src={logoUrl}
                   alt="ADN LAB Logo"
-                  style={{ 
-                    width: '100%', 
-                    height: '100%', 
+                  style={{
+                    width: '100%',
+                    height: '100%',
                     objectFit: 'contain',
                     borderRadius: '8px'
                   }}
@@ -155,16 +155,16 @@ const MainNavbar = ({ setUser }) => {
                   }}
                 />
               ) : null}
-              
+
               {/* Fallback icon */}
-              <div 
+              <div
                 className="bg-primary rounded-circle p-2 fallback-icon"
                 style={{ display: logoUrl ? 'none' : 'flex' }}
               >
                 <i className="bi bi-dna text-white fs-5"></i>
               </div>
             </div>
-            
+
             <div>
               <span className="text-primary fs-4">ADN LAB</span>
               <div className="small text-muted" style={{ fontSize: '0.7rem', lineHeight: '1' }}>
@@ -179,9 +179,9 @@ const MainNavbar = ({ setUser }) => {
           <Navbar.Collapse id="navbar-nav">
             {/* Main Navigation */}
             <Nav className="me-auto">
-              <Nav.Link 
-                as={Link} 
-                to="/" 
+              <Nav.Link
+                as={Link}
+                to="/"
                 className={`fw-medium ${isActive('/') ? 'active text-primary' : ''}`}
                 onClick={handleNavClick}
               >
@@ -190,19 +190,19 @@ const MainNavbar = ({ setUser }) => {
               </Nav.Link>
 
               {/* Services Dropdown */}
-              <NavDropdown 
+              <NavDropdown
                 title={
                   <span className={`fw-medium ${isServiceActive() ? 'text-primary' : ''}`}>
                     <i className="bi bi-grid-3x3-gap me-2"></i>
                     Dịch vụ ADN
                   </span>
-                } 
+                }
                 id="services-dropdown"
                 className={isServiceActive() ? 'active' : ''}
               >
-                <NavDropdown.Item 
-                  as={Link} 
-                  to="/services" 
+                <NavDropdown.Item
+                  as={Link}
+                  to="/services"
                   onClick={handleNavClick}
                   className="py-2"
                 >
@@ -210,16 +210,16 @@ const MainNavbar = ({ setUser }) => {
                   <strong>Tất cả dịch vụ</strong>
                   <div className="small text-muted">Xem toàn bộ danh sách</div>
                 </NavDropdown.Item>
-                
+
                 <NavDropdown.Divider />
-                
+
                 <NavDropdown.Header className="text-warning">
                   <i className="bi bi-award me-2"></i>
                   ADN Hành chính
                 </NavDropdown.Header>
-                <NavDropdown.Item 
-                  as={Link} 
-                  to="/services?type=administrative" 
+                <NavDropdown.Item
+                  as={Link}
+                  to="/services?type=administrative"
                   onClick={handleNavClick}
                   className="py-2"
                 >
@@ -228,10 +228,10 @@ const MainNavbar = ({ setUser }) => {
                   <Badge bg="warning" text="dark" className="ms-2 small">Có giá trị pháp lý</Badge>
                   <div className="small text-muted">Phục vụ làm giấy khai sinh</div>
                 </NavDropdown.Item>
-                
-                <NavDropdown.Item 
-                  as={Link} 
-                  to="/services?type=administrative" 
+
+                <NavDropdown.Item
+                  as={Link}
+                  to="/services?type=administrative"
                   onClick={handleNavClick}
                   className="py-2"
                 >
@@ -240,16 +240,16 @@ const MainNavbar = ({ setUser }) => {
                   <Badge bg="warning" text="dark" className="ms-2 small">Có giá trị pháp lý</Badge>
                   <div className="small text-muted">Thừa kế, nhập tịch, visa...</div>
                 </NavDropdown.Item>
-                
+
                 <NavDropdown.Divider />
-                
+
                 <NavDropdown.Header className="text-success">
                   <i className="bi bi-house me-2"></i>
                   ADN Dân sự
                 </NavDropdown.Header>
-                <NavDropdown.Item 
-                  as={Link} 
-                  to="/services?type=civil" 
+                <NavDropdown.Item
+                  as={Link}
+                  to="/services?type=civil"
                   onClick={handleNavClick}
                   className="py-2"
                 >
@@ -258,10 +258,10 @@ const MainNavbar = ({ setUser }) => {
                   <Badge bg="success" className="ms-2 small">Tham khảo cá nhân</Badge>
                   <div className="small text-muted">Tìm hiểu quan hệ cha con, anh em</div>
                 </NavDropdown.Item>
-                
-                <NavDropdown.Item 
-                  as={Link} 
-                  to="/services?type=civil" 
+
+                <NavDropdown.Item
+                  as={Link}
+                  to="/services?type=civil"
                   onClick={handleNavClick}
                   className="py-2"
                 >
@@ -273,18 +273,18 @@ const MainNavbar = ({ setUser }) => {
               </NavDropdown>
 
               {/* Information Dropdown */}
-              <NavDropdown 
+              <NavDropdown
                 title={
                   <span className="fw-medium">
                     <i className="bi bi-book me-2"></i>
                     Thông tin
                   </span>
-                } 
+                }
                 id="info-dropdown"
               >
-                <NavDropdown.Item 
-                  as={Link} 
-                  to="/about" 
+                <NavDropdown.Item
+                  as={Link}
+                  to="/about"
                   onClick={handleNavClick}
                   className="py-2"
                 >
@@ -303,9 +303,9 @@ const MainNavbar = ({ setUser }) => {
                 </NavDropdown.Item>
               </NavDropdown>
 
-              <Nav.Link 
-                as={Link} 
-                to="/blog" 
+              <Nav.Link
+                as={Link}
+                to="/blog"
                 className={`fw-medium ${location.pathname.startsWith('/blog') ? 'active text-primary' : ''}`}
                 onClick={handleNavClick}
               >
@@ -313,9 +313,9 @@ const MainNavbar = ({ setUser }) => {
                 Blog
               </Nav.Link>
 
-              <Nav.Link 
-                as={Link} 
-                to="/tracking" 
+              <Nav.Link
+                as={Link}
+                to="/tracking"
                 className={`fw-medium ${isActive('/tracking') ? 'active text-primary' : ''}`}
                 onClick={handleNavClick}
               >
@@ -336,9 +336,9 @@ const MainNavbar = ({ setUser }) => {
 
               {/* Booking Button */}
               <Nav.Item className="me-lg-3">
-                <Button 
-                  variant="warning" 
-                  as={Link} 
+                <Button
+                  variant="warning"
+                  as={Link}
                   to="/appointment"
                   onClick={handleNavClick}
                   className="fw-medium"
@@ -356,16 +356,16 @@ const MainNavbar = ({ setUser }) => {
                     <span className="visually-hidden">Loading...</span>
                   </div>
                 ) : userAuth ? (
-                  <NavDropdown 
+                  <NavDropdown
                     title={
                       <span className="d-flex align-items-center">
                         {userAuth.photoURL ? (
-                          <Image 
-                            src={userAuth.photoURL} 
-                            roundedCircle 
-                            width="24" 
-                            height="24" 
-                            className="me-2" 
+                          <Image
+                            src={userAuth.photoURL}
+                            roundedCircle
+                            width="24"
+                            height="24"
+                            className="me-2"
                           />
                         ) : (
                           <i className="bi bi-person-circle me-1"></i>
@@ -375,16 +375,16 @@ const MainNavbar = ({ setUser }) => {
                         </span>
                         {userData?.role_string && getRoleBadge(userData.role_string)}
                       </span>
-                    } 
+                    }
                     id="user-dropdown"
                     align="end"
                   >
                     {/* Dashboard Links based on role */}
                     {hasAdminAccess() && (
                       <>
-                        <NavDropdown.Item 
-                          as={Link} 
-                          to={getDashboardLink(userData?.role_string || 'user')} 
+                        <NavDropdown.Item
+                          as={Link}
+                          to={getDashboardLink(userData?.role_string || 'user')}
                           onClick={handleNavClick}
                         >
                           <i className="bi bi-speedometer2 me-2"></i>
@@ -456,7 +456,7 @@ const MainNavbar = ({ setUser }) => {
                 <div className="text-center">
                   <div className="mb-2">
                     <i className="bi bi-telephone text-primary me-2"></i>
-                    <span className="text-muted">Hotline:</span> 
+                    <span className="text-muted">Hotline:</span>
                     <strong className="text-primary ms-1">1900 1234</strong>
                   </div>
                   <div className="small text-muted">Hỗ trợ 24/7 - Tư vấn miễn phí</div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Badge from 'react-bootstrap/Badge';
 import { getStaffListByRole } from '../../services/api';
 
 const StaffManagementByAdmin = () => {
@@ -17,7 +18,7 @@ const StaffManagementByAdmin = () => {
     const fetchStaff = async () => {
       setLoading(true);
       try {
-        const staffList = await getStaffListByRole('1');
+        const staffList = await getStaffListByRole([1, 2]); // Assuming '1' and '2' are the roles for staff
         console.log(staffList);
         setStaff(staffList || []);
       } catch (err) {
@@ -39,9 +40,20 @@ const StaffManagementByAdmin = () => {
     setShowModal(true);
   };
 
-  const getStatusBadge = (status) => (
-    <span className={`badge bg-${status === 'active' ? 'success' : 'danger'}`}>{status === 'active' ? 'Đang làm việc' : 'Nghỉ việc'}</span>
-  );
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'active':
+        return <Badge bg="success">Hoạt động</Badge>;
+      case 'inactive':
+        return <Badge bg="secondary">Không hoạt động</Badge>;
+      case 'suspended':
+        return <Badge bg="danger">Tạm khóa</Badge>;
+      case 'pending':
+        return <Badge bg="warning">Chờ xác thực</Badge>;
+      default:
+        return <Badge bg="light">Không xác định</Badge>;
+    }
+  };
 
   const filteredStaff = staff.filter(member => {
     const matchesDepartment = filterDepartment === 'all' || member.department === filterDepartment;
