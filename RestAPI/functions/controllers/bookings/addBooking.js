@@ -7,6 +7,7 @@ const {updateStaffSlotCount} = require("../users/updateUser.js");
 const {checkMethodExists} = require("../methods/methodUtils.js");
 const {checkBookingExists} = require("./bookingUtils.js");
 const {addBookingHistory} = require("../bookingHistory/addBookingHistory.js");
+const {addParticipant} = require("../participants/addParticipant.js");
 
 const addBooking = async (req, res) => {
   try {
@@ -93,9 +94,37 @@ const addBooking = async (req, res) => {
       });
     }
 
+    for (let i = 0; i < participants.length; i++) {
+      const participant = participants[i];
+      
+      if (!participant.name) {
+        return res.status(400).json({
+          statusCode: 400,
+          status: "error",
+          message: `Participant at index ${i} is missing required field: name`,
+        });
+      }
+      
+      if (!participant.age || isNaN(participant.age) || participant.age < 0) {
+        return res.status(400).json({
+          statusCode: 400,
+          status: "error",
+          message: `Participant at index ${i} has invalid age`,
+        });
+      }
+      
+      if (!participant.gender) {
+        return res.status(400).json({
+          statusCode: 400,
+          status: "error",
+          message: `Participant at index ${i} is missing required field: gender`,
+        });
+      }
+    }
+    
     const CREATE_BOOKING_MUTATION = `
-      mutation CreateBooking($id: String!, $userId: String!, $staffId: String!, $timeSlotId: String, $serviceId: String!, $methodId: String!, $totalAmount: Float!) @auth(level: USER) {
-        booking_insert(data: {id: $id, userId: $userId, staffId: $staffId, timeSlotId: $timeSlotId, serviceId: $serviceId, methodId: $methodId, totalAmount: $totalAmount})
+      mutation CreateBooking($id: String!, $userId: String!, $staffId: String!, $timeSlotId: String, $serviceId: String!, $methodId: String!, $totalAmount: Float!, $expiresAt: Timestamp!) @auth(level: USER) {
+        booking_insert(data: {id: $id, userId: $userId, staffId: $staffId, timeSlotId: $timeSlotId, serviceId: $serviceId, methodId: $methodId, totalAmount: $totalAmount, expiresAt: $expiresAt})
       }
     `;
 
@@ -109,7 +138,8 @@ const addBooking = async (req, res) => {
       timeSlotId: timeSlotId,
       serviceId,
       methodId,
-      totalAmount
+      totalAmount,
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString()
     };
 
     if (await checkBookingExists(bookingVariables.id)) {
@@ -153,15 +183,33 @@ const addBooking = async (req, res) => {
     const responseData = response.data;
 
     const updateStaffResponse = await updateStaffSlotCount(staffId, "increase");
-    const createBooking = await addBookingHistory(bookingVariables.id, "created", "Booking created successfully");
+    const createBooking = await addBookingHistory(bookingVariables.id, "created", "Booking saved successfully");
     const pendingBooking = await addBookingHistory(bookingVariables.id, "pending", "Booking is pending confirmation");
+
+    const participantResults = [];
+    for (const participant of participants) {
+      try {
+        const participantResult = await addParticipant(
+          bookingVariables.id,
+          participant.name,
+          participant.age,
+          participant.identification,
+          participant.gender,
+          participant.relationship
+        );
+        participantResults.push(participantResult);
+      } catch (participantError) {
+        console.error("Error adding participant:", participantError);
+      }
+    }
 
     console.log({
       updateStaffResponse,
       updateTimeSlotResponse,
       responseData, 
       createBooking,
-      pendingBooking
+      pendingBooking,
+      participantResults
     })
 
     return res.status(201).json({

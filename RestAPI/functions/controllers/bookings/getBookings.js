@@ -1,6 +1,10 @@
 const { dataConnect } = require("../../config/firebase.js");
 const { checkBookingExists } = require("./bookingUtils.js");
 const {getBookingHistoryByBookingId} = require("../bookingHistory/getBookingHistory.js");
+const {getParticipantsByBookingId} = require("../participants/getParticipants.js");
+const {checkUserExists} = require("../users/userUtils.js");
+const {checkStaffExists} = require("../users/userUtils.js");
+const {checkTimeSlotExists} = require("../timeSlots/timeSlotUtils.js");
 
 const getAllBookings = async (req, res) => {
   try {
@@ -126,10 +130,12 @@ const getOneBooking = async (req, res) => {
 
     const responseBookingData = responseBooking.data.booking;
     const responseHistoryData = await getBookingHistoryByBookingId(bookingId);
+    const responseParticipantsData = await getParticipantsByBookingId(bookingId);
 
     const responseData = {
       booking: responseBookingData,
       history: responseHistoryData,
+      participants: responseParticipantsData,
     };
 
     res.status(200).json({
@@ -149,7 +155,259 @@ const getOneBooking = async (req, res) => {
   }
 };
 
+const getBookingByUserId = async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "userId is required",
+      });
+    }
+
+    if (!await checkUserExists(userId)) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "User not found",
+        error: "User with the provided ID does not exist",
+      });
+    }
+
+    const GET_BOOKINGS_BY_USER_QUERY = `
+      query GetBookingsByUser($userId: String!) @auth(level: USER) {
+        bookings(where: { userId: { eq: $userId } }, orderBy: { createdAt: DESC }) {
+          id
+          userId
+          staffId
+          timeSlotId
+          serviceId
+          methodId
+          totalAmount
+          createdAt
+          updatedAt
+          service {
+            id
+          }
+          timeSlot {
+            id
+          }
+          staff {
+            id
+          }
+          method {
+            id
+          }
+        }
+      }
+    `;
+
+    const variables = { 
+      userId: userId 
+    };
+    const response = await dataConnect.executeGraphql(GET_BOOKINGS_BY_USER_QUERY, { 
+      variables: variables 
+    });
+
+    const responseData = response.data.bookings;
+
+    if (!responseData || responseData.length === 0) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "No bookings found for the given user ID",
+      });
+    }
+
+    res.status(200).json({
+      statusCode: 200,
+      status: "success",
+      message: "Bookings retrieved successfully",
+      data: responseData,
+    });
+  } catch (error) {
+    console.error("Error fetching bookings by user ID:", error);
+    res.status(500).json({
+      statusCode: 500,
+      status: "error",
+      message: "Failed to retrieve bookings by user ID",
+      error: error.message,
+    });
+  }
+}
+
+const getBookingbyStaffId = async (req, res) => {
+  try {
+    const { staffId } = req.body;
+
+    if (!staffId) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "staffId is required",
+      });
+    }
+
+    if (!await checkStaffExists(staffId, "1")) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "Staff not found",
+        error: "Staff with the provided ID does not exist",
+      });
+    }
+
+    const GET_BOOKINGS_BY_STAFF_QUERY = `
+      query GetBookingsByStaff($staffId: String!) @auth(level: USER) {
+        bookings(where: { staffId: { eq: $staffId } }, orderBy: { createdAt: DESC }) {
+          id
+          userId
+          staffId
+          timeSlotId
+          serviceId
+          methodId
+          totalAmount
+          createdAt
+          updatedAt
+          service {
+            id
+          }
+          timeSlot {
+            id
+          }
+          staff {
+            id
+          }
+          method {
+            id
+          }
+        }
+      }
+    `;
+
+    const variables = { 
+      staffId: staffId 
+    };
+    const response = await dataConnect.executeGraphql(GET_BOOKINGS_BY_STAFF_QUERY, { 
+      variables: variables 
+    });
+
+    const responseData = response.data.bookings;
+
+    if (!responseData || responseData.length === 0) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "No bookings found for the given staff ID",
+      });
+    }
+
+    res.status(200).json({
+      statusCode: 200,
+      status: "success",
+      message: "Bookings retrieved successfully",
+      data: responseData,
+    });
+  } catch (error) {
+    console.error("Error fetching bookings by staff ID:", error);
+    res.status(500).json({
+      statusCode: 500,
+      status: "error",
+      message: "Failed to retrieve bookings by staff ID",
+      error: error.message,
+    });
+  }
+}
+
+const getBookingByTimeSlotId = async (req, res) => {
+  try {
+    const { timeSlotId } = req.body;
+
+    if (!timeSlotId) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "timeSlotId is required",
+      });
+    }
+
+    if (!await checkTimeSlotExists(timeSlotId)) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "Time slot not found",
+        error: "Time slot with the provided ID does not exist",
+      });
+    }
+
+    const GET_BOOKINGS_BY_TIME_SLOT_QUERY = `
+      query GetBookingsByTimeSlot($timeSlotId: String!) @auth(level: USER) {
+        bookings(where: { timeSlotId: { eq: $timeSlotId } }, orderBy: { createdAt: DESC }) {
+          id
+          userId
+          staffId
+          timeSlotId
+          serviceId
+          methodId
+          totalAmount
+          createdAt
+          updatedAt
+          service {
+            id
+          }
+          timeSlot {
+            id
+          }
+          staff {
+            id
+          }
+          method {
+            id
+          }
+        }
+      }
+    `;
+
+    const variables = { 
+      timeSlotId: timeSlotId 
+    };
+    const response = await dataConnect.executeGraphql(GET_BOOKINGS_BY_TIME_SLOT_QUERY, { 
+      variables: variables 
+    });
+
+    const responseData = response.data.bookings;
+
+    if (!responseData || responseData.length === 0) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "No bookings found for the given time slot ID",
+      });
+    }
+
+    res.status(200).json({
+      statusCode: 200,
+      status: "success",
+      message: "Bookings retrieved successfully",
+      data: responseData,
+    });
+  } catch (error) {
+    console.error("Error fetching bookings by time slot ID:", error);
+    res.status(500).json({
+      statusCode: 500,
+      status: "error",
+      message: "Failed to retrieve bookings by time slot ID",
+      error: error.message,
+    });
+  }
+}
+
 module.exports = {
   getAllBookings,
   getOneBooking,
+  getBookingByUserId,
+  getBookingbyStaffId,
+  getBookingByTimeSlotId,
 };

@@ -399,12 +399,11 @@ const updateStaffSlotCount = async (staffId, operation) => {
 
     const staffRecord = getResponse.data.staff;
     const currentSlotCount = staffRecord.slot || 0;
-    const maxDailySlots = 4; // Default max slots
     const isIncrease = operation === 'increase';
     
     let newSlotCount;
     if (isIncrease) {
-      newSlotCount = Math.min(currentSlotCount + 1, maxDailySlots);
+      newSlotCount = currentSlotCount + 1;
     } else {
       newSlotCount = Math.max(0, currentSlotCount - 1);
     }
@@ -430,8 +429,7 @@ const updateStaffSlotCount = async (staffId, operation) => {
       data: response.data,
       message: `Staff slot count ${operation}d successfully`,
       previousSlotCount: currentSlotCount,
-      newSlotCount: newSlotCount,
-      maxDailySlots: maxDailySlots
+      newSlotCount: newSlotCount
     };
   } catch (error) {
     console.error(`Error ${operation}ing staff slot count:`, error);

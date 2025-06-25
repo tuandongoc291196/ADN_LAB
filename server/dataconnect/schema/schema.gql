@@ -114,6 +114,7 @@ type Booking @table {
   methodId: String!
   method: Method! @ref(fields: "methodId")
   totalAmount: Float!
+  expiresAt: Timestamp
   createdAt: Timestamp! @default(expr: "request.time")
   updatedAt: Timestamp
 }

@@ -27,7 +27,8 @@ const updateTimeSlot = async (timeSlotId, operation) => {
       throw new Error("Time slot not found");
     }
 
-    const currentBookings = getResponse.data.timeSlot.currentBookings || 0;
+    const currentBookings = getResponse.data.timeSlot.currentBookings;
+    console.log("Current bookings for time slot:", currentBookings);
     const isIncrease = operation === 'increase';
     const newBookings = isIncrease ? currentBookings + 1 : Math.max(0, currentBookings - 1);
 
