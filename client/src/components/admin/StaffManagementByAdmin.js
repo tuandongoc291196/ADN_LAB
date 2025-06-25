@@ -5,7 +5,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import Badge from 'react-bootstrap/Badge';
 import { getStaffListByRole } from '../../services/api';
 
-const StaffManagementByAdmin = () => {
+const StaffManagementByAdmin = ({ onCountChange }) => {
   const navigate = useNavigate();
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,6 +21,7 @@ const StaffManagementByAdmin = () => {
         const staffList = await getStaffListByRole([1, 2]); // Assuming '1' and '2' are the roles for staff
         console.log(staffList);
         setStaff(staffList || []);
+        onCountChange && onCountChange(staffList.length);
       } catch (err) {
         // Có thể toast lỗi hoặc setError
       } finally {
@@ -38,6 +39,17 @@ const StaffManagementByAdmin = () => {
   const handleViewDetails = (staffMember) => {
     setSelectedStaff(staffMember);
     setShowModal(true);
+  };
+
+  const getRoleBadge = (roleName) => {
+    switch (roleName) {
+      case 'staff':
+        return <Badge bg="info">Nhân viên</Badge>;
+      case 'manager':
+        return <Badge bg="danger">Quản lý</Badge>;
+      default:
+        return <Badge bg="light">Không xác định</Badge>;
+    }
   };
 
   const getStatusBadge = (status) => {
@@ -123,7 +135,7 @@ const StaffManagementByAdmin = () => {
                       <small className="text-muted">{member.email}</small>
                     </td>
                     <td>{member.department || ''}</td>
-                    <td>{member.position || ''}</td>
+                    <td>{getRoleBadge(member.role?.name)}</td>
                     <td>{member.createdAt ? new Date(member.createdAt).toLocaleDateString('vi-VN') : ''}</td>
                     <td>{getStatusBadge(member.accountStatus)}</td>
                     <td>

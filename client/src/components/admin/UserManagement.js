@@ -4,7 +4,8 @@ import {
   Alert, InputGroup, Dropdown, Pagination, Toast, ToastContainer,
   Tab, Tabs, ProgressBar
 } from 'react-bootstrap';
-import { getAllUsers, getAllRoles } from '../../services/api';
+import { getStaffListByRole, getAllRoles } from '../../services/api';
+import StaffManagementByAdmin from './StaffManagementByAdmin';
 
 const UserManagement = ({ user }) => {
   const [activeTab, setActiveTab] = useState('users');
@@ -12,7 +13,7 @@ const UserManagement = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activities, setActivities] = useState([]); // Placeholder for activities
-
+  const [staffCount, setStaffCount] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('edit'); // 'edit', 'create', 'view'
   const [editingUser, setEditingUser] = useState(null);
@@ -39,7 +40,7 @@ const UserManagement = ({ user }) => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const userRes = await getAllUsers();
+        const userRes = await getStaffListByRole([0]);
         setRoles(userRes || []);
       } catch (err) {
         setError(err.message);
@@ -186,6 +187,27 @@ const UserManagement = ({ user }) => {
   if (loading) return <div className="text-center py-5"><span>Đang tải dữ liệu người dùng...</span></div>;
   if (error) return <Alert variant="danger">Lỗi: {error}</Alert>;
 
+  const getCurrentTabCount = () => {
+    switch (activeTab) {
+      case 'users':
+        return filteredUsers.length;
+      case 'staff':
+        return staffCount; // sẽ hiển thị từ StaffManagementByAdmin, nếu muốn đếm thì cần props
+      case 'activities':
+        return activities.length;
+      default:
+        return roles.length;
+    }
+  };
+
+  const getTabTitle = () => {
+    switch (activeTab) {
+      case 'users': return 'Tổng khách hàng';
+      case 'staff': return 'Tổng nhân viên';
+      case 'activities': return 'Tổng hoạt động';
+      default: return 'Tổng người dùng';
+    }
+  };
   return (
     <div>
       {/* Page Header */}
@@ -209,8 +231,8 @@ const UserManagement = ({ user }) => {
           <Card className="border-0 shadow-sm text-center">
             <Card.Body>
               <i className="bi bi-people text-primary fs-1 mb-2"></i>
-              <h3 className="mb-0">{roles.length}</h3>
-              <small className="text-muted">Tổng người dùng</small>
+              <h3 className="mb-0">{getCurrentTabCount()}</h3>
+              <small className="text-muted">{getTabTitle()}</small>
             </Card.Body>
           </Card>
         </Col>
@@ -255,6 +277,11 @@ const UserManagement = ({ user }) => {
               <span>
                 <i className="bi bi-people me-2"></i>
                 Danh sách người dùng
+              </span>
+            } /><Tab eventKey="staff" title={
+              <span>
+                <i className="bi bi-person-badge me-2"></i>
+                Danh sách nhân viên
               </span>
             } />
             <Tab eventKey="activities" title={
@@ -439,7 +466,10 @@ const UserManagement = ({ user }) => {
               )}
             </div>
           )}
-
+          {/* Staff Tab */}
+          {activeTab === 'staff' && (
+            <StaffManagementByAdmin onCountChange={(count) => setStaffCount(count)} />
+          )}
           {/* Activities Tab */}
           {activeTab === 'activities' && (
             <div>
