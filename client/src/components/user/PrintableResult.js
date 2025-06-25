@@ -1,485 +1,348 @@
-import React from 'react';
-import { Badge, Alert } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Container, Row, Col, Card, Button, Badge, Alert, Table } from 'react-bootstrap';
+import { getTestResult } from '../../services/api';
 
-const PrintableResult = ({ resultData, className = "" }) => {
-  if (!resultData) return null;
+const PrintableResult = () => {
+  const { resultId } = useParams();
+  const navigate = useNavigate();
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const getResultBadge = (conclusion) => {
-    switch (conclusion) {
-      case 'POSITIVE':
-        return <Badge bg="success" className="fs-6">XÁC NHẬN QUAN HỆ</Badge>;
-      case 'NEGATIVE':
-        return <Badge bg="danger" className="fs-6">LOẠI TRỪ QUAN HỆ</Badge>;
-      case 'INCONCLUSIVE':
-        return <Badge bg="warning" className="fs-6">KHÔNG KẾT LUẬN</Badge>;
-      default:
-        return <Badge bg="secondary" className="fs-6">CHƯA XÁC ĐỊNH</Badge>;
+  useEffect(() => {
+    fetchResultData();
+  }, [resultId]);
+
+  const fetchResultData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Mock data - trong thực tế sẽ gọi API
+      const mockResult = {
+        id: resultId || 'RES001',
+        serviceName: 'Xét nghiệm ADN Cha - Con',
+        serviceType: 'administrative',
+        resultDate: new Date().toLocaleDateString('vi-VN'),
+        status: 'completed',
+        accuracy: '99.9999%',
+        conclusion: 'Không loại trừ quan hệ cha con',
+        participants: [
+          {
+            id: 'P001',
+            name: 'Nguyễn Văn A',
+            relationship: 'Cha nghi vấn',
+            sampleType: 'Niêm mạc miệng',
+            sampleDate: '2024-01-15'
+          },
+          {
+            id: 'P002', 
+            name: 'Nguyễn Văn B',
+            relationship: 'Con',
+            sampleType: 'Niêm mạc miệng',
+            sampleDate: '2024-01-15'
+          }
+        ],
+        laboratory: {
+          name: 'Phòng thí nghiệm ADN LAB',
+          address: '123 Đường ABC, Quận XYZ, Hà Nội',
+          phone: '1900 1234',
+          email: 'info@adnlab.vn',
+          license: 'Số 123/GP-BYT'
+        },
+        analyst: {
+          name: 'TS. Trần Thị C',
+          position: 'Trưởng phòng xét nghiệm',
+          signature: 'TS. Trần Thị C'
+        },
+        technicalDetails: {
+          method: 'STR Analysis',
+          markers: '16 loci',
+          equipment: 'ABI 3500 Genetic Analyzer',
+          software: 'GeneMapper ID-X v1.4'
+        }
+      };
+
+      setResult(mockResult);
+    } catch (err) {
+      console.error('Error fetching result:', err);
+      setError('Không thể tải kết quả xét nghiệm');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleDownloadPDF = () => {
+    // TODO: Implement PDF download
+    alert('Tính năng tải PDF sẽ được cập nhật sớm');
   };
 
   const getServiceTypeBadge = (serviceType) => {
     return serviceType === 'administrative' 
-      ? <Badge bg="warning" text="dark">Có giá trị pháp lý</Badge>
-      : <Badge bg="info">Dân sự</Badge>;
+      ? <Badge bg="warning" text="dark" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}>ADN Hành chính</Badge>
+      : <Badge bg="success" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}>ADN Dân sự</Badge>;
   };
 
-  const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString('vi-VN', options);
+  const getStatusBadge = (status) => {
+    const statusConfig = {
+      'completed': { bg: 'success', text: 'Hoàn thành' },
+      'in-progress': { bg: 'warning', text: 'Đang xử lý' },
+      'pending': { bg: 'secondary', text: 'Chờ xử lý' }
+    };
+    
+    const config = statusConfig[status] || { bg: 'secondary', text: 'Không xác định' };
+    return <Badge bg={config.bg} style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}>{config.text}</Badge>;
   };
+
+  if (loading) {
+    return (
+      <div className="text-center py-5">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+        <p className="mt-3 text-muted">Đang tải kết quả xét nghiệm...</p>
+      </div>
+    );
+  }
+
+  if (error || !result) {
+    return (
+      <Container className="py-5">
+        <Alert variant="danger">
+          <i className="bi bi-exclamation-triangle me-2"></i>
+          {error || 'Không tìm thấy kết quả xét nghiệm'}
+        </Alert>
+        <div className="text-center mt-4">
+          <Button variant="primary" onClick={() => navigate('/user/results')}>
+            <i className="bi bi-arrow-left me-2"></i>
+            Quay lại danh sách kết quả
+          </Button>
+        </div>
+      </Container>
+    );
+  }
 
   return (
-    <div className={`printable-result ${className}`}>
-      <style jsx>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          
-          .printable-result, .printable-result * {
-            visibility: visible;
-          }
-          
-          .printable-result {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            font-size: 12px;
-            line-height: 1.4;
-            color: #000 !important;
-            background: #fff !important;
-          }
-          
-          .printable-result h3 {
-            font-size: 18px;
-            margin-bottom: 10px;
-          }
-          
-          .printable-result h4 {
-            font-size: 16px;
-            margin-bottom: 8px;
-          }
-          
-          .printable-result h5, .printable-result h6 {
-            font-size: 14px;
-            margin-bottom: 6px;
-          }
-          
-          .printable-result table {
-            font-size: 11px;
-            border-collapse: collapse;
-            width: 100%;
-          }
-          
-          .printable-result table td,
-          .printable-result table th {
-            border: 1px solid #ccc;
-            padding: 4px 6px;
-            text-align: left;
-          }
-          
-          .printable-result .alert {
-            border: 2px solid #000 !important;
-            background-color: #f8f9fa !important;
-            color: #000 !important;
-            padding: 10px;
-            margin: 10px 0;
-          }
-          
-          .printable-result .badge {
-            border: 1px solid #000 !important;
-            background-color: #fff !important;
-            color: #000 !important;
-            padding: 2px 6px;
-            font-weight: bold;
-          }
-          
-          .printable-result .border-bottom {
-            border-bottom: 2px solid #000 !important;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-          }
-          
-          .printable-result .border-top {
-            border-top: 1px solid #000 !important;
-            margin-top: 15px;
-            padding-top: 10px;
-          }
-          
-          .no-print {
-            display: none !important;
-          }
-        }
-        
-        @page {
-          margin: 2cm;
-          size: A4;
-        }
-      `}</style>
-
-      {/* Header */}
-      <div className="text-center mb-4 border-bottom pb-3">
-        <h3 className="fw-bold">TRUNG TÂM XÉT NGHIỆM ADN LAB</h3>
-        <p className="mb-1">123 Đường ABC, Quận XYZ, Hà Nội</p>
-        <p className="mb-1">Hotline: 1900 1234 | Email: info@adnlab.vn</p>
-        <h4 className="text-primary mt-3 mb-2 fw-bold">KẾT QUẢ XÉT NGHIỆM ADN</h4>
-        <p className="mb-0">Mã xét nghiệm: <strong>{resultData.id}</strong></p>
+    <>
+      {/* Print Actions - Hidden when printing */}
+      <div className="d-print-none bg-light py-3 border-bottom">
+        <Container>
+          <Row className="align-items-center">
+            <Col>
+              <h4 className="mb-0">
+                <i className="bi bi-printer me-2"></i>
+                Kết quả xét nghiệm ADN
+              </h4>
+            </Col>
+            <Col xs="auto">
+              <div className="d-flex gap-2">
+                <Button variant="outline-primary" onClick={handlePrint}>
+                  <i className="bi bi-printer me-2"></i>
+                  In kết quả
+                </Button>
+                <Button variant="outline-success" onClick={handleDownloadPDF}>
+                  <i className="bi bi-download me-2"></i>
+                  Tải PDF
+                </Button>
+                <Button variant="outline-secondary" onClick={() => navigate('/user/results')}>
+                  <i className="bi bi-arrow-left me-2"></i>
+                  Quay lại
+                </Button>
+              </div>
+            </Col>
+          </Row>
+        </Container>
       </div>
 
-      {/* Basic Information */}
-      <div className="row mb-4">
-        <div className="col-md-6">
-          <h6 className="fw-bold mb-3">THÔNG TIN CHUNG</h6>
-          <table className="table table-borderless table-sm">
-            <tbody>
-              <tr>
-                <td style={{ width: '40%' }}><strong>Dịch vụ:</strong></td>
-                <td>{resultData.service}</td>
-              </tr>
-              <tr>
-                <td><strong>Loại xét nghiệm:</strong></td>
-                <td>{getServiceTypeBadge(resultData.serviceType)}</td>
-              </tr>
-              <tr>
-                <td><strong>Ngày lấy mẫu:</strong></td>
-                <td>{formatDate(resultData.appointmentDate)}</td>
-              </tr>
-              <tr>
-                <td><strong>Ngày có kết quả:</strong></td>
-                <td>{formatDate(resultData.completionDate)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <div className="col-md-6">
-          <h6 className="fw-bold mb-3">THÔNG TIN KỸ THUẬT</h6>
-          <table className="table table-borderless table-sm">
-            <tbody>
-              <tr>
-                <td style={{ width: '40%' }}><strong>Phương pháp:</strong></td>
-                <td>{resultData.result.method}</td>
-              </tr>
-              <tr>
-                <td><strong>Loại mẫu:</strong></td>
-                <td>{resultData.result.sampleType}</td>
-              </tr>
-              <tr>
-                <td><strong>Mã phòng lab:</strong></td>
-                <td>{resultData.result.labCode}</td>
-              </tr>
-              <tr>
-                <td><strong>Kỹ thuật viên:</strong></td>
-                <td>{resultData.result.technician}</td>
-              </tr>
-              {resultData.result.gestationalAge && (
-                <tr>
-                  <td><strong>Tuổi thai:</strong></td>
-                  <td>{resultData.result.gestationalAge}</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {/* Printable Content */}
+      <Container className="py-4">
+        <div className="printable-content">
+          {/* Header */}
+          <Row className="mb-4">
+            <Col md={8}>
+              <div className="text-center text-md-start">
+                <h2 className="fw-bold text-primary mb-2">PHÒNG THÍ NGHIỆM ADN LAB</h2>
+                <p className="text-muted mb-1">{result.laboratory.address}</p>
+                <p className="text-muted mb-1">Điện thoại: {result.laboratory.phone} | Email: {result.laboratory.email}</p>
+                <p className="text-muted mb-0">Giấy phép: {result.laboratory.license}</p>
+              </div>
+            </Col>
+            <Col md={4} className="text-center text-md-end">
+              <div className="border border-dark p-3 d-inline-block">
+                <h6 className="mb-1">SỐ KẾT QUẢ</h6>
+                <h4 className="fw-bold text-primary mb-0">{result.id}</h4>
+              </div>
+            </Col>
+          </Row>
 
-      {/* Participants Information */}
-      <div className="mb-4">
-        <h6 className="fw-bold mb-3">THÔNG TIN NGƯỜI THAM GIA</h6>
-        <table className="table table-bordered">
-          <thead className="table-light">
-            <tr>
-              <th>Họ và tên</th>
-              <th>Vai trò</th>
-              <th>Mối quan hệ</th>
-              <th>Loại mẫu</th>
-            </tr>
-          </thead>
-          <tbody>
-            {resultData.participants.map((participant, index) => (
-              <tr key={index}>
-                <td><strong>{participant.name}</strong></td>
-                <td>{participant.role}</td>
-                <td>{participant.relationship}</td>
-                <td>{resultData.result.sampleType}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          {/* Title */}
+          <div className="text-center mb-4">
+            <h1 className="fw-bold text-dark mb-2">KẾT QUẢ XÉT NGHIỆM ADN</h1>
+            <div className="d-flex justify-content-center gap-3">
+              {getServiceTypeBadge(result.serviceType)}
+              {getStatusBadge(result.status)}
+            </div>
+          </div>
 
-      {/* Main Result */}
-      <div className="mb-4 p-4 border rounded">
-        <h5 className="text-center fw-bold mb-3">
-          KẾT QUẢ XÉT NGHIỆM
-        </h5>
-        
-        <div className="text-center mb-4">
-          {getResultBadge(resultData.result.conclusion)}
-          <div className="h4 text-primary mt-2 fw-bold">
-            Độ chính xác: {resultData.result.confidence}
+          {/* Service Information */}
+          <Card className="mb-4 border-2">
+            <Card.Header className="bg-light">
+              <h5 className="mb-0 fw-bold">
+                <i className="bi bi-info-circle me-2"></i>
+                Thông tin dịch vụ
+              </h5>
+            </Card.Header>
+            <Card.Body>
+              <Row>
+                <Col md={6}>
+                  <p><strong>Dịch vụ:</strong> {result.serviceName}</p>
+                  <p><strong>Ngày xét nghiệm:</strong> {result.resultDate}</p>
+                </Col>
+                <Col md={6}>
+                  <p><strong>Độ chính xác:</strong> {result.accuracy}</p>
+                  <p><strong>Kết luận:</strong> {result.conclusion}</p>
+                </Col>
+              </Row>
+            </Card.Body>
+          </Card>
+
+          {/* Participants */}
+          <Card className="mb-4 border-2">
+            <Card.Header className="bg-light">
+              <h5 className="mb-0 fw-bold">
+                <i className="bi bi-people me-2"></i>
+                Thông tin người tham gia
+              </h5>
+            </Card.Header>
+            <Card.Body>
+              <Table bordered responsive>
+                <thead className="table-light">
+                  <tr>
+                    <th>STT</th>
+                    <th>Họ và tên</th>
+                    <th>Mối quan hệ</th>
+                    <th>Loại mẫu</th>
+                    <th>Ngày lấy mẫu</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.participants.map((participant, index) => (
+                    <tr key={participant.id}>
+                      <td>{index + 1}</td>
+                      <td className="fw-bold">{participant.name}</td>
+                      <td>{participant.relationship}</td>
+                      <td>{participant.sampleType}</td>
+                      <td>{participant.sampleDate}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </Card.Body>
+          </Card>
+
+          {/* Technical Details */}
+          <Card className="mb-4 border-2">
+            <Card.Header className="bg-light">
+              <h5 className="mb-0 fw-bold">
+                <i className="bi bi-gear me-2"></i>
+                Thông tin kỹ thuật
+              </h5>
+            </Card.Header>
+            <Card.Body>
+              <Row>
+                <Col md={6}>
+                  <p><strong>Phương pháp:</strong> {result.technicalDetails.method}</p>
+                  <p><strong>Số loci phân tích:</strong> {result.technicalDetails.markers}</p>
+                </Col>
+                <Col md={6}>
+                  <p><strong>Thiết bị:</strong> {result.technicalDetails.equipment}</p>
+                  <p><strong>Phần mềm:</strong> {result.technicalDetails.software}</p>
+                </Col>
+              </Row>
+            </Card.Body>
+          </Card>
+
+          {/* Conclusion */}
+          <Card className="mb-4 border-2">
+            <Card.Header className="bg-light">
+              <h5 className="mb-0 fw-bold">
+                <i className="bi bi-check-circle me-2"></i>
+                Kết luận
+              </h5>
+            </Card.Header>
+            <Card.Body>
+              <div className="text-center">
+                <h4 className="text-primary fw-bold mb-3">{result.conclusion}</h4>
+                <p className="text-muted">
+                  Kết quả này có độ chính xác {result.accuracy} và được thực hiện theo tiêu chuẩn quốc tế.
+                </p>
+              </div>
+            </Card.Body>
+          </Card>
+
+          {/* Footer */}
+          <Row className="mt-5">
+            <Col md={6} className="text-center">
+              <div className="border-top border-dark pt-3">
+                <p className="mb-1"><strong>Người phân tích</strong></p>
+                <p className="mb-1">{result.analyst.name}</p>
+                <p className="text-muted small">{result.analyst.position}</p>
+                <div className="mt-3">
+                  <p className="text-muted small">Chữ ký</p>
+                  <div className="border-bottom border-dark" style={{width: '150px', height: '50px'}}></div>
+                </div>
+              </div>
+            </Col>
+            <Col md={6} className="text-center">
+              <div className="border-top border-dark pt-3">
+                <p className="mb-1"><strong>Ngày ký</strong></p>
+                <p className="mb-1">{result.resultDate}</p>
+                <div className="mt-3">
+                  <p className="text-muted small">Dấu mộc</p>
+                  <div className="border border-dark rounded-circle mx-auto" style={{width: '80px', height: '80px'}}></div>
+                </div>
+              </div>
+            </Col>
+          </Row>
+
+          {/* Disclaimer */}
+          <div className="mt-4 p-3 bg-light rounded">
+            <h6 className="fw-bold mb-2">Lưu ý quan trọng:</h6>
+            <ul className="small text-muted mb-0">
+              <li>Kết quả này chỉ có giá trị khi được sử dụng đúng mục đích và trong thời gian hiệu lực</li>
+              <li>Mọi thắc mắc về kết quả vui lòng liên hệ phòng thí nghiệm trong vòng 30 ngày</li>
+              <li>Kết quả này được bảo mật theo quy định của pháp luật</li>
+            </ul>
           </div>
         </div>
+      </Container>
 
-        <Alert 
-          variant={
-            resultData.result.conclusion === 'POSITIVE' ? 'success' : 
-            resultData.result.conclusion === 'NEGATIVE' ? 'danger' : 'warning'
+      {/* Print Styles */}
+      <style jsx>{`
+        @media print {
+          .d-print-none {
+            display: none !important;
           }
-          className="text-center"
-        >
-          <div className="fw-bold h6 mb-2">KẾT LUẬN:</div>
-          <p className="mb-0 fw-bold">{resultData.result.summary}</p>
-        </Alert>
-
-        <div className="mt-3">
-          <h6 className="fw-bold">Chi tiết kết quả:</h6>
-          <p className="mb-0">{resultData.result.details}</p>
-        </div>
-      </div>
-
-      {/* Legal Notice */}
-      {resultData.result.hasLegalValue && (
-        <Alert variant="warning" className="mb-4">
-          <strong>GIÁ TRỊ PHÁP LÝ:</strong> Kết quả này có đầy đủ giá trị pháp lý và được 
-          công nhận bởi các cơ quan tòa án, cơ quan nhà nước trong các thủ tục hành chính.
-        </Alert>
-      )}
-
-      {/* Footer */}
-      <div className="mt-4 pt-3 border-top text-center">
-        <p className="mb-1">
-          <strong>Địa chỉ phòng lab:</strong> 123 Đường ABC, Quận XYZ, Hà Nội
-        </p>
-        <p className="mb-1">
-          Kết quả được ký và xác nhận bởi: <strong>{resultData.result.technician}</strong>
-        </p>
-        <p className="mb-1">
-          <strong>Ngày in:</strong> {new Date().toLocaleDateString('vi-VN')}
-        </p>
-        <p className="mb-0">
-          <em>Mọi thắc mắc xin liên hệ hotline: 1900 1234</em>
-        </p>
-      </div>
-    </div>
+          .printable-content {
+            margin: 0;
+            padding: 20px;
+          }
+          .card {
+            border: 1px solid #000 !important;
+            break-inside: avoid;
+          }
+          .table {
+            font-size: 12px;
+          }
+        }
+      `}</style>
+    </>
   );
 };
 
-// Utility function để in kết quả
-export const printResult = (resultData) => {
-  // Tạo cửa sổ mới để in
-  const printWindow = window.open('', '_blank');
-  const printContent = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Kết quả xét nghiệm ${resultData.id}</title>
-      <meta charset="utf-8">
-      <style>
-        body {
-          font-family: Arial, sans-serif;
-          margin: 0;
-          padding: 20px;
-          font-size: 12px;
-          line-height: 1.4;
-          color: #000;
-          background: #fff;
-        }
-        
-        h3 { font-size: 18px; margin-bottom: 10px; text-align: center; }
-        h4 { font-size: 16px; margin-bottom: 8px; }
-        h5, h6 { font-size: 14px; margin-bottom: 6px; }
-        
-        table {
-          font-size: 11px;
-          border-collapse: collapse;
-          width: 100%;
-          margin-bottom: 10px;
-        }
-        
-        table td, table th {
-          border: 1px solid #ccc;
-          padding: 4px 6px;
-          text-align: left;
-        }
-        
-        .table-borderless td {
-          border: none;
-          padding: 2px 6px;
-        }
-        
-        .alert {
-          border: 2px solid #000;
-          background-color: #f8f9fa;
-          padding: 10px;
-          margin: 10px 0;
-          text-align: center;
-        }
-        
-        .badge {
-          border: 1px solid #000;
-          background-color: #fff;
-          color: #000;
-          padding: 2px 6px;
-          font-weight: bold;
-          font-size: 10px;
-        }
-        
-        .border-bottom {
-          border-bottom: 2px solid #000;
-          margin-bottom: 15px;
-          padding-bottom: 10px;
-        }
-        
-        .border-top {
-          border-top: 1px solid #000;
-          margin-top: 15px;
-          padding-top: 10px;
-        }
-        
-        .text-center { text-align: center; }
-        .fw-bold { font-weight: bold; }
-        .mb-1 { margin-bottom: 0.25rem; }
-        .mb-2 { margin-bottom: 0.5rem; }
-        .mb-3 { margin-bottom: 1rem; }
-        .mb-4 { margin-bottom: 1.5rem; }
-        .mt-2 { margin-top: 0.5rem; }
-        .mt-3 { margin-top: 1rem; }
-        .mt-4 { margin-top: 1.5rem; }
-        .p-4 { padding: 1.5rem; }
-        .pt-3 { padding-top: 1rem; }
-        .pb-3 { padding-bottom: 1rem; }
-        
-        @page {
-          margin: 2cm;
-          size: A4;
-        }
-      </style>
-    </head>
-    <body>
-      ${generatePrintHTML(resultData)}
-    </body>
-    </html>
-  `;
-  
-  printWindow.document.write(printContent);
-  printWindow.document.close();
-  printWindow.focus();
-  
-  // Đợi một chút để nội dung load xong rồi in
-  setTimeout(() => {
-    printWindow.print();
-    printWindow.close();
-  }, 500);
-};
-
-// Function để tạo HTML cho in
-const generatePrintHTML = (resultData) => {
-  const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString('vi-VN', options);
-  };
-
-  const getResultText = (conclusion) => {
-    switch (conclusion) {
-      case 'POSITIVE': return 'XÁC NHẬN QUAN HỆ';
-      case 'NEGATIVE': return 'LOẠI TRỪ QUAN HỆ';
-      case 'INCONCLUSIVE': return 'KHÔNG KẾT LUẬN';
-      default: return 'CHƯA XÁC ĐỊNH';
-    }
-  };
-
-  const getServiceTypeText = (serviceType) => {
-    return serviceType === 'administrative' ? 'Có giá trị pháp lý' : 'Dân sự';
-  };
-
-  return `
-    <div class="border-bottom pb-3 mb-4">
-      <h3 class="fw-bold">TRUNG TÂM XÉT NGHIỆM ADN LAB</h3>
-      <p class="mb-1">123 Đường ABC, Quận XYZ, Hà Nội</p>
-      <p class="mb-1">Hotline: 1900 1234 | Email: info@adnlab.vn</p>
-      <h4 class="mt-3 mb-2 fw-bold">KẾT QUẢ XÉT NGHIỆM ADN</h4>
-      <p class="mb-0">Mã xét nghiệm: <strong>${resultData.id}</strong></p>
-    </div>
-
-    <div style="display: flex; margin-bottom: 1.5rem;">
-      <div style="width: 50%; padding-right: 15px;">
-        <h6 class="fw-bold mb-3">THÔNG TIN CHUNG</h6>
-        <table class="table-borderless">
-          <tr><td style="width: 40%;"><strong>Dịch vụ:</strong></td><td>${resultData.service}</td></tr>
-          <tr><td><strong>Loại:</strong></td><td>${getServiceTypeText(resultData.serviceType)}</td></tr>
-          <tr><td><strong>Ngày lấy mẫu:</strong></td><td>${formatDate(resultData.appointmentDate)}</td></tr>
-          <tr><td><strong>Ngày có KQ:</strong></td><td>${formatDate(resultData.completionDate)}</td></tr>
-        </table>
-      </div>
-      <div style="width: 50%; padding-left: 15px;">
-        <h6 class="fw-bold mb-3">THÔNG TIN KỸ THUẬT</h6>
-        <table class="table-borderless">
-          <tr><td style="width: 40%;"><strong>Phương pháp:</strong></td><td>${resultData.result.method}</td></tr>
-          <tr><td><strong>Loại mẫu:</strong></td><td>${resultData.result.sampleType}</td></tr>
-          <tr><td><strong>Mã lab:</strong></td><td>${resultData.result.labCode}</td></tr>
-          <tr><td><strong>KTV:</strong></td><td>${resultData.result.technician}</td></tr>
-          ${resultData.result.gestationalAge ? `<tr><td><strong>Tuổi thai:</strong></td><td>${resultData.result.gestationalAge}</td></tr>` : ''}
-        </table>
-      </div>
-    </div>
-
-    <div class="mb-4">
-      <h6 class="fw-bold mb-3">THÔNG TIN NGƯỜI THAM GIA</h6>
-      <table>
-        <thead>
-          <tr><th>Họ và tên</th><th>Vai trò</th><th>Mối quan hệ</th><th>Loại mẫu</th></tr>
-        </thead>
-        <tbody>
-          ${resultData.participants.map(p => `
-            <tr>
-              <td><strong>${p.name}</strong></td>
-              <td>${p.role}</td>
-              <td>${p.relationship}</td>
-              <td>${resultData.result.sampleType}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    </div>
-
-    <div class="mb-4 p-4" style="border: 2px solid #000;">
-      <h5 class="text-center fw-bold mb-3">KẾT QUẢ XÉT NGHIỆM</h5>
-      
-      <div class="text-center mb-4">
-        <div class="badge fw-bold" style="font-size: 14px; padding: 8px 16px;">
-          ${getResultText(resultData.result.conclusion)}
-        </div>
-        <div class="mt-2 fw-bold" style="font-size: 16px;">
-          Độ chính xác: ${resultData.result.confidence}
-        </div>
-      </div>
-
-      <div class="alert">
-        <div class="fw-bold mb-2">KẾT LUẬN:</div>
-        <p class="mb-0 fw-bold">${resultData.result.summary}</p>
-      </div>
-
-      <div class="mt-3">
-        <h6 class="fw-bold">Chi tiết kết quả:</h6>
-        <p class="mb-0">${resultData.result.details}</p>
-      </div>
-    </div>
-
-    ${resultData.result.hasLegalValue ? `
-      <div class="alert mb-4">
-        <strong>GIÁ TRỊ PHÁP LÝ:</strong> Kết quả này có đầy đủ giá trị pháp lý và được 
-        công nhận bởi các cơ quan tòa án, cơ quan nhà nước trong các thủ tục hành chính.
-      </div>
-    ` : ''}
-
-    <div class="mt-4 pt-3 border-top text-center">
-      <p class="mb-1"><strong>Địa chỉ phòng lab:</strong> 123 Đường ABC, Quận XYZ, Hà Nội</p>
-      <p class="mb-1">Kết quả được ký và xác nhận bởi: <strong>${resultData.result.technician}</strong></p>
-      <p class="mb-1"><strong>Ngày in:</strong> ${new Date().toLocaleDateString('vi-VN')}</p>
-      <p class="mb-0"><em>Mọi thắc mắc xin liên hệ hotline: 1900 1234</em></p>
-    </div>
-  `;
-};
-
-export default PrintableResult;
+export default PrintableResult; 

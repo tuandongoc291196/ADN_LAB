@@ -149,8 +149,8 @@ function App() {
             
             {/* Services Routes */}
             <Route path="/services" element={<ServiceList />} />
-            <Route path="/services/:id" element={<ServiceDetail />} />
             <Route path="/services/category/:category" element={<ServiceList />} />
+            <Route path="/services/:id" element={<ServiceDetail />} />
             <Route path="/feedback/:serviceId" element={<FeedbackForm user={user} />} />
             
             {/* Booking System Routes */}

@@ -1,65 +1,193 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { Container, Row, Col, Card, Form, InputGroup, Button, Badge, Spinner, Alert } from 'react-bootstrap';
-import { Search } from 'react-bootstrap-icons';
-import { getAllServices } from '../../services/api';
-import './ServiceList.css';
+import React, { useState, useEffect } from 'react';
+import { Container, Row, Col, Card, Button, Badge, Form, Alert } from 'react-bootstrap';
+import { Link, useSearchParams } from 'react-router-dom';
+import { getAllServices, getAllMethods, getServicesByCategory, getMethodsByServiceId } from '../../services/api';
+import { enrichMethodData } from '../data/services-data';
 
 const ServiceList = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [services, setServices] = useState([]);
+  const [methods, setMethods] = useState([]);
+  const [serviceMethods, setServiceMethods] = useState({}); // { serviceId: [methods] }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [filterType, setFilterType] = useState(searchParams.get('type') || '');
+  const [filterMethod, setFilterMethod] = useState('');
+  const [sortBy, setSortBy] = useState('name');
 
   useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        setLoading(true);
-        const data = await getAllServices();
-        setServices(data || []);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchServices();
+    fetchMethods();
   }, []);
 
-  const categories = useMemo(() => {
-    if (services.length === 0) return [];
-    const uniqueCategories = [
-      ...new Set(
-        services.map(s =>
-          typeof s.category === 'object'
-            ? s.category.id || s.category.name || JSON.stringify(s.category)
-            : s.category
-        )
-      ),
-    ];
-    return ['all', ...uniqueCategories];
-  }, [services]);
+  useEffect(() => {
+    if (filterType) {
+      setSearchParams({ type: filterType });
+    } else {
+      setSearchParams({});
+    }
+  }, [filterType, setSearchParams]);
 
-  const filteredServices = useMemo(() => {
-    return services.filter(service => {
-      const catValue =
-        typeof service.category === 'object'
-          ? service.category.id || service.category.name || JSON.stringify(service.category)
-          : service.category;
-      const matchesCategory = selectedCategory === 'all' || catValue === selectedCategory;
-      const matchesSearch = service.title.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesCategory && matchesSearch;
-    });
-  }, [services, searchTerm, selectedCategory]);
+  const fetchServices = async () => {
+    try {
+      setLoading(true);
+      const response = await getAllServices();
+      console.log('Services API response:', response);
+      
+      if (response && Array.isArray(response)) {
+        setServices(response);
+        // Fetch methods for each service
+        await fetchMethodsForServices(response);
+      } else {
+        setServices([]);
+      }
+    } catch (err) {
+      console.error('Error fetching services:', err);
+      setError('Không thể tải danh sách dịch vụ');
+      setServices([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchMethods = async () => {
+    try {
+      const response = await getAllMethods();
+      console.log('Methods API response:', response);
+      
+      if (response && Array.isArray(response)) {
+        setMethods(response);
+      } else {
+        setMethods([]);
+      }
+    } catch (err) {
+      console.error('Error fetching methods:', err);
+      setMethods([]);
+    }
+  };
+
+  const fetchMethodsForServices = async (servicesList) => {
+    try {
+      const methodsMap = {};
+      
+      // Fetch methods for each service
+      for (const service of servicesList) {
+        try {
+          const serviceMethods = await getMethodsByServiceId(service.id);
+          console.log(`Methods for service ${service.id}:`, serviceMethods);
+          
+          if (serviceMethods && Array.isArray(serviceMethods)) {
+            methodsMap[service.id] = serviceMethods;
+          } else {
+            methodsMap[service.id] = [];
+          }
+        } catch (err) {
+          console.error(`Error fetching methods for service ${service.id}:`, err);
+          methodsMap[service.id] = [];
+        }
+      }
+      
+      console.log('Final serviceMethods map:', methodsMap);
+      setServiceMethods(methodsMap);
+    } catch (err) {
+      console.error('Error fetching methods for services:', err);
+      setServiceMethods({});
+    }
+  };
+
+  // Helper function để xác định service type từ category
+  const getServiceTypeFromCategory = (category) => {
+    if (!category) return 'civil';
+    return category.hasLegalValue ? 'administrative' : 'civil';
+  };
+
+  // Helper function để format price
+  const formatPrice = (price) => {
+    if (typeof price === 'number') {
+      return new Intl.NumberFormat('vi-VN').format(price) + ' VNĐ';
+    }
+    return price || 'Liên hệ';
+  };
+
+  const getServiceTypeBadge = (serviceType) => {
+    return serviceType === 'administrative' 
+      ? <Badge bg="warning" text="dark" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}>ADN Hành chính</Badge>
+      : <Badge bg="success" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}>ADN Dân sự</Badge>;
+  };
+
+  const getMethodBadges = (serviceId) => {
+    const serviceMethodsList = serviceMethods[serviceId] || [];
+    
+    if (serviceMethodsList.length === 0) {
+      return (
+        <Badge bg="secondary" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}>
+          <i className="bi bi-gear me-1"></i>
+          Đang cập nhật
+        </Badge>
+      );
+    }
+    
+    // Enrich methods với icon và color từ METHOD_MAPPING
+    const enrichedMethods = enrichMethodData(serviceMethodsList);
+    
+    return enrichedMethods.map(method => (
+      <Badge 
+        key={method.id} 
+        bg={method.color || 'secondary'} 
+        className="me-2 mb-2"
+        style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}
+      >
+        <i className={`${method.icon || 'bi-gear'} me-1`}></i>
+        {method.name}
+      </Badge>
+    ));
+  };
+
+  // Filter services theo category và method
+  const filteredServices = services.filter(service => {
+    const serviceType = getServiceTypeFromCategory(service.category);
+    const matchesType = !filterType || serviceType === filterType;
+    
+    // Filter theo method nếu có
+    const matchesMethod = !filterMethod || 
+      (serviceMethods[service.id] && 
+       serviceMethods[service.id].some(method => method.id === filterMethod));
+    
+    return matchesType && matchesMethod;
+  });
+
+  const sortedServices = [...filteredServices].sort((a, b) => {
+    switch (sortBy) {
+      case 'name':
+        return a.title.localeCompare(b.title);
+      case 'price-low':
+        return (a.price || 0) - (b.price || 0);
+      case 'price-high':
+        return (b.price || 0) - (a.price || 0);
+      case 'duration':
+        return a.duration.localeCompare(b.duration);
+      default:
+        return 0;
+    }
+  });
+
+  const handleFilterChange = (type, value) => {
+    if (type === 'serviceType') {
+      setFilterType(value);
+      setFilterMethod(''); // Reset method filter when service type changes
+    } else if (type === 'method') {
+      setFilterMethod(value);
+    }
+  };
 
   if (loading) {
     return (
-      <Container className="text-center py-5">
-        <Spinner animation="border" variant="primary" />
-        <p className="mt-2">Đang tải danh sách dịch vụ...</p>
-      </Container>
+      <div className="text-center py-5">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+        <p className="mt-3 text-muted">Đang tải danh sách dịch vụ...</p>
+      </div>
     );
   }
 
@@ -67,98 +195,270 @@ const ServiceList = () => {
     return (
       <Container className="py-5">
         <Alert variant="danger">
-          <Alert.Heading>Đã xảy ra lỗi</Alert.Heading>
-          <p>Không thể tải dữ liệu dịch vụ. Vui lòng thử lại sau.</p>
-          <hr />
-          <p className="mb-0">Chi tiết lỗi: {error}</p>
+          <i className="bi bi-exclamation-triangle me-2"></i>
+          {error}
         </Alert>
       </Container>
     );
   }
 
   return (
-    <div className="service-list-page">
-      <header className="page-header text-center text-white py-5">
+    <>
+      {/* Hero Section - Style giống ServiceDetail */}
+      <section className="bg-primary text-white py-5">
         <Container>
-          <h1 className="display-4 fw-bold">Dịch vụ của chúng tôi</h1>
-          <p className="lead">Khám phá các dịch vụ xét nghiệm ADN chính xác và đáng tin cậy</p>
+          <Row className="align-items-center">
+            <Col lg={8}>
+              <h1 className="display-4 fw-bold mb-4">
+                Danh sách dịch vụ xét nghiệm ADN
+              </h1>
+              <p className="lead mb-4">
+                Chọn dịch vụ phù hợp với nhu cầu của bạn - Độ chính xác 99.9999% với công nghệ hiện đại
+              </p>
+              
+            </Col>
+            <Col lg={4} className="text-end d-none d-lg-block">
+              <i className="bi bi-grid-3x3" style={{
+                fontSize: '10rem', 
+                color: 'rgb(255, 255, 255)'
+              }}></i>
+            </Col>
+          </Row>
         </Container>
-      </header>
+      </section>
 
       <Container className="py-5">
-        <Card className="shadow-sm mb-4 filter-card">
-          <Card.Body>
-            <Row className="align-items-end">
-              <Col md={6} lg={8} className="mb-3 mb-md-0">
-                <Form.Label htmlFor="search-input">Tìm kiếm dịch vụ</Form.Label>
-                <InputGroup>
-                  <InputGroup.Text><Search /></InputGroup.Text>
-                  <Form.Control
-                    id="search-input"
-                    placeholder="Nhập tên dịch vụ..."
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                  />
-                </InputGroup>
-              </Col>
-              <Col md={6} lg={4}>
-                <Form.Label htmlFor="category-select">Lọc theo danh mục</Form.Label>
-                <Form.Select
-                  id="category-select"
-                  value={selectedCategory}
-                  onChange={e => setSelectedCategory(e.target.value)}
-                >
-                  {categories.map(category => (
-                    <option key={category} value={category}>
-                      {category === 'all' ? 'Tất cả danh mục' : category}
-                    </option>
-                  ))}
-                </Form.Select>
-              </Col>
-            </Row>
-          </Card.Body>
-        </Card>
+        {/* Filter Section */}
+        {/* Filters - All in one row */}
+        <Row className="mb-4">
+          <Col lg={3} md={6} className="mb-3">
+            <Form.Control
+              type="text"
+              placeholder="Tìm kiếm dịch vụ..."
+              className="border-2 h-100"
+              style={{ borderRadius: '12px', padding: '12px 16px', fontWeight: '500' }}
+            />
+          </Col>
+          
+          <Col lg={2} md={6} className="mb-3">
+            <Form.Select 
+              value={filterType} 
+              onChange={(e) => handleFilterChange('serviceType', e.target.value)}
+              className="border-2 h-100"
+              style={{ borderRadius: '12px', padding: '12px 16px', fontWeight: '500' }}
+            >
+              <option value="">Tất cả loại dịch vụ</option>
+              <option value="civil">ADN Dân sự</option>
+              <option value="administrative">ADN Hành chính</option>
+            </Form.Select>
+          </Col>
+          
+          <Col lg={3} md={6} className="mb-3">
+            <Form.Select 
+              value={filterMethod} 
+              onChange={(e) => handleFilterChange('method', e.target.value)}
+              className="border-2 h-100"
+              style={{ borderRadius: '12px', padding: '12px 16px', fontWeight: '500' }}
+            >
+              <option value="">Tất cả phương thức lấy mẫu</option>
+              {methods.map(method => (
+                <option key={method.id} value={method.id}>
+                  {method.name}
+                </option>
+              ))}
+            </Form.Select>
+          </Col>
+          
+          <Col lg={3} md={6} className="mb-3">
+            <Form.Select 
+              value={sortBy} 
+              onChange={(e) => setSortBy(e.target.value)}
+              className="border-2 h-100"
+              style={{ borderRadius: '12px', padding: '12px 16px', fontWeight: '500' }}
+            >
+              <option value="name">Sắp xếp theo tên</option>
+              <option value="price-low">Giá thấp → cao</option>
+              <option value="price-high">Giá cao → thấp</option>
+              <option value="duration">Thời gian</option>
+            </Form.Select>
+          </Col>
+          
+          <Col lg={1} md={6} className="mb-3">
+            <Button 
+              variant="outline-secondary" 
+              onClick={() => {
+                setFilterType('');
+                setFilterMethod('');
+                setSortBy('name');
+              }}
+              className="w-100 h-100"
+              style={{ borderRadius: '12px', padding: '12px 16px', fontWeight: '600' }}
+              title="Đặt lại bộ lọc"
+            >
+              <i className="bi bi-arrow-clockwise"></i>
+            </Button>
+          </Col>
+        </Row>
 
+        {/* Results count */}
         <div className="mb-4">
-          <h5>
-            <Badge bg="primary" pill>
-              {filteredServices.length}
-            </Badge>
-            {' '}Kết quả
-          </h5>
+          <div className="d-flex align-items-center justify-content-between">
+            <p className="text-muted mb-0">
+              Hiển thị <strong>{sortedServices.length}</strong> dịch vụ
+              {filterType && ` (${filterType === 'civil' ? 'Dân sự' : 'Hành chính'})`}
+              {filterMethod && ` - Phương thức: ${methods.find(m => m.id === filterMethod)?.name}`}
+            </p>
+          </div>
         </div>
 
-        {filteredServices.length > 0 ? (
-          <Row xs={1} md={2} lg={3} className="g-4">
-            {filteredServices.map(service => (
-              <Col key={String(service.id)}>
-                <Card className="h-100 service-card shadow-sm border-0">
-                  <Link to={`/services/${service.id}`} className="card-link">
-                    <Card.Img variant="top" src={service.imageUrl || 'https://via.placeholder.com/400x250'} className="service-card-img" />
+        {/* Services Grid */}
+        {sortedServices.length === 0 ? (
+          <Alert variant="info" className="text-center py-5">
+            <i className="bi bi-info-circle fs-1 mb-3 d-block"></i>
+            <h4>Không tìm thấy dịch vụ phù hợp</h4>
+            <p className="mb-3">Hãy thử thay đổi bộ lọc hoặc liên hệ với chúng tôi để được tư vấn</p>
+            <Button 
+              variant="primary" 
+              onClick={() => {
+                setFilterType('');
+                setFilterMethod('');
+                setSortBy('name');
+              }}
+              style={{ borderRadius: '12px', padding: '12px 24px', fontWeight: '600' }}
+            >
+              <i className="bi bi-arrow-clockwise me-2"></i>
+              Xem tất cả dịch vụ
+            </Button>
+          </Alert>
+        ) : (
+          <Row>
+            {sortedServices.map(service => {
+              const serviceType = getServiceTypeFromCategory(service.category);
+              return (
+                <Col key={service.id} lg={4} md={6} className="mb-4">
+                  <Card 
+                    className="h-100 border-0 shadow-sm"
+                    style={{ 
+                      borderRadius: '16px',
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                      transition: 'all 0.3s ease',
+                      cursor: 'pointer'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-5px)';
+                      e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.15)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = '';
+                      e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.08)';
+                    }}
+                  >
+                    <Card.Header className={`border-0 ${
+                      serviceType === 'administrative' ? 'bg-warning bg-opacity-10' : 'bg-success bg-opacity-10'
+                    }`}>
+                      {/* Service Type - Căn giữa */}
+                      <div className="text-center mb-3">
+                        {getServiceTypeBadge(serviceType)}
+                      </div>
+                      
+                      {/* Service Name và Featured - Cùng hàng */}
+                      <div className="d-flex align-items-center">
+                        <i className={`bi ${service.featured ? 'bi-star-fill' : 'bi-star'} text-danger me-2`} 
+                           title={service.featured ? 'Dịch vụ nổi bật' : 'Dịch vụ thường'}></i>
+                        <h6 className="mb-0 fw-bold text-dark flex-grow-1">{service.title}</h6>
+                      </div>
+                    </Card.Header>
+
                     <Card.Body className="d-flex flex-column">
-                      <Card.Title className="h5">{service.title}</Card.Title>
-                      {service.category && <Badge bg="secondary" className="mb-2 align-self-start">{typeof service.category === 'object' ? service.category.name : service.category}</Badge>}
-                      <Card.Text className="text-muted flex-grow-1">{service.description}</Card.Text>
-                      <div className="mt-auto">
-                        <p className="h5 text-primary fw-bold mb-3">
-                          {service.price.toLocaleString('vi-VN')} VNĐ
-                        </p>
-                        <Button variant="primary" className="w-100">Xem chi tiết</Button>
+                      {/* Description - Fixed height */}
+                      <div className="mb-3" style={{ minHeight: '60px' }}>
+                        <Card.Text className="text-muted mb-0">
+                          {service.description}
+                        </Card.Text>
+                      </div>
+                      
+                      {/* Price and Duration - Fixed height */}
+                      <div className="mb-3 text-center" style={{ minHeight: '50px' }}>
+                        <div className="h5 text-primary mb-1">{formatPrice(service.price)}</div>
+                        <small className="text-muted">
+                          <i className="bi bi-clock me-1"></i>
+                          Thời gian: {service.duration}
+                        </small>
+                      </div>
+                      
+                      {/* Collection Methods - Fixed height */}
+                      <div className="mb-3" style={{ minHeight: '80px' }}>
+                        <small className="text-muted d-block mb-2">Phương thức lấy mẫu:</small>
+                        <div className="d-flex flex-wrap gap-1">
+                          {getMethodBadges(service.id)}
+                        </div>
+                      </div>
+
+                      {/* Buttons - Fixed at bottom */}
+                      <div className="d-grid gap-2 mt-auto">
+                        <Button 
+                          variant="outline-primary" 
+                          as={Link} 
+                          to={`/services/${encodeURIComponent(service.id)}`}
+                          className="fw-bold"
+                          style={{ borderRadius: '12px', padding: '12px 24px', fontWeight: '600' }}
+                        >
+                          <i className="bi bi-eye me-2"></i>
+                          Xem chi tiết
+                        </Button>
+                        <Button 
+                          variant="primary" 
+                          as={Link} 
+                          to="/appointment" 
+                          state={{ selectedService: service.id }}
+                          className="fw-bold"
+                          style={{ borderRadius: '12px', padding: '12px 24px', fontWeight: '600' }}
+                        >
+                          <i className="bi bi-calendar-plus me-2"></i>
+                          Đặt lịch ngay
+                        </Button>
                       </div>
                     </Card.Body>
-                  </Link>
-                </Card>
-              </Col>
-            ))}
+                  </Card>
+                </Col>
+              );
+            })}
           </Row>
-        ) : (
-          <Alert variant="info" className="text-center py-5">
-            <h4 className="alert-heading">Không tìm thấy dịch vụ</h4>
-            <p>Không có dịch vụ nào phù hợp với tiêu chí tìm kiếm của bạn. Vui lòng thử lại.</p>
-          </Alert>
         )}
+
+        {/* CTA Section */}
+        <div className="text-center mt-5 pt-5">
+          <div className="bg-light rounded-4 p-5" style={{ borderRadius: '24px' }}>
+            <h3 className="mb-3 fw-bold">Cần tư vấn chọn dịch vụ phù hợp?</h3>
+            <p className="lead text-muted mb-4">
+              Đội ngũ chuyên gia của chúng tôi sẵn sàng tư vấn và hỗ trợ bạn 24/7
+            </p>
+            <div className="d-flex justify-content-center gap-3 flex-wrap">
+              <Button 
+                variant="primary" 
+                size="lg"
+                as={Link} 
+                to="/appointment"
+                className="fw-bold"
+                style={{ borderRadius: '12px', padding: '12px 24px', fontWeight: '600' }}
+              >
+                <i className="bi bi-calendar-plus me-2"></i>
+                Đặt lịch ngay
+              </Button>
+              <Button 
+                variant="outline-primary" 
+                size="lg"
+                className="fw-bold"
+                style={{ borderRadius: '12px', padding: '12px 24px', fontWeight: '600' }}
+              >
+                <i className="bi bi-telephone me-2"></i>
+                Gọi tư vấn: 1900 1234
+              </Button>
+            </div>
+          </div>
+        </div>
       </Container>
-    </div>
+    </>
   );
 };
 

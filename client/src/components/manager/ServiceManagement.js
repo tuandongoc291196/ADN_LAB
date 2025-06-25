@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Row, Col, Badge, Spinner, Alert, InputGroup, Card } from 'react-bootstrap';
 import { Plus, Pencil, Eye, EyeSlash, CheckCircle, XCircle, Star, StarFill, Search, SortDown, SortUp } from 'react-bootstrap-icons';
 import { getAllServices, getAllMethods } from '../../services/api';
-import { COLLECTION_METHODS } from '../data/services-data';
 
 function ServiceManagement() {
   const [services, setServices] = useState([]);
@@ -658,19 +657,7 @@ function ServiceManagement() {
                 <Form.Group className="mb-3">
                   <Form.Label>Phương thức lấy mẫu *</Form.Label>
                   <div className="d-flex flex-wrap gap-3">
-                    {Object.values(COLLECTION_METHODS)
-                      .filter(method => method.allowedFor.includes(form.category))
-                      .map(method => (
-                        <Form.Check
-                          key={method.id}
-                          type="checkbox"
-                          id={`collection-method-${method.id}`}
-                          label={method.title}
-                          checked={form.collectionMethods.includes(method.id)}
-                          onChange={() => handleCollectionMethodChange(method.id)}
-                          className="me-3"
-                        />
-                      ))}
+                    {/* TODO: Thay thế Object.values(COLLECTION_METHODS) bằng enriched methods từ BE hoặc logic lấy methods thực tế */}
                   </div>
                 </Form.Group>
               </Col>
