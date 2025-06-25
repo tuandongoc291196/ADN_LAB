@@ -1,9 +1,16 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Badge } from 'react-bootstrap';
-import { getServicesByType, COLLECTION_METHODS } from './data/services-data';
+import { getAllServices, getServicesByCategory, getAllMethods, getMethodsByServiceId } from '../services/api';
+import { enrichMethodData } from './data/services-data';
 
 const Home = () => {
+  const [services, setServices] = useState([]);
+  const [methods, setMethods] = useState([]);
+  const [serviceMethods, setServiceMethods] = useState({}); // { serviceId: [methods] }
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   // Enhanced inline styles
   const styles = {
     heroSection: {
@@ -58,14 +65,132 @@ const Home = () => {
     }
   };
 
+  useEffect(() => {
+    fetchServices();
+    fetchMethods();
+  }, []);
+
+  const fetchServices = async () => {
+    try {
+      setLoading(true);
+      const response = await getAllServices();
+      console.log('Home - Services API response:', response);
+      
+      if (response && Array.isArray(response)) {
+        setServices(response);
+        // Fetch methods for each service
+        await fetchMethodsForServices(response);
+      } else {
+        setServices([]);
+      }
+    } catch (err) {
+      console.error('Error fetching services:', err);
+      setError('Không thể tải danh sách dịch vụ');
+      setServices([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchMethods = async () => {
+    try {
+      const response = await getAllMethods();
+      console.log('Home - Methods API response:', response);
+      
+      if (response && Array.isArray(response)) {
+        setMethods(response);
+      } else {
+        setMethods([]);
+      }
+    } catch (err) {
+      console.error('Error fetching methods:', err);
+      setMethods([]);
+    }
+  };
+
+  const fetchMethodsForServices = async (servicesList) => {
+    try {
+      const methodsMap = {};
+      
+      // Fetch methods for each service
+      for (const service of servicesList) {
+        try {
+          const serviceMethods = await getMethodsByServiceId(service.id);
+          console.log(`Methods for service ${service.id}:`, serviceMethods);
+          
+          if (serviceMethods && Array.isArray(serviceMethods)) {
+            methodsMap[service.id] = serviceMethods;
+          } else {
+            methodsMap[service.id] = [];
+          }
+        } catch (err) {
+          console.error(`Error fetching methods for service ${service.id}:`, err);
+          methodsMap[service.id] = [];
+        }
+      }
+      
+      console.log('Final serviceMethods map:', methodsMap);
+      setServiceMethods(methodsMap);
+    } catch (err) {
+      console.error('Error fetching methods for services:', err);
+      setServiceMethods({});
+    }
+  };
+
+  // Helper function để xác định service type từ category
+  const getServiceTypeFromCategory = (category) => {
+    if (!category) return 'civil';
+    return category.hasLegalValue ? 'administrative' : 'civil';
+  };
+
+  // Helper function để format price
+  const formatPrice = (price) => {
+    if (typeof price === 'number') {
+      return new Intl.NumberFormat('vi-VN').format(price) + ' VNĐ';
+    }
+    return price || 'Liên hệ';
+  };
+
   // Get featured services from each category
-  const featuredAdminServices = getServicesByType('administrative')
-    .filter(service => service.featured)
+  const featuredAdminServices = services
+    .filter(service => {
+      const serviceType = getServiceTypeFromCategory(service.category);
+      const isFeatured = service.featured === true;
+      // Chỉ log khi cần debug
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Service ${service.title}: featured=${service.featured}, type=${serviceType}, isFeatured=${isFeatured}`);
+      }
+      return serviceType === 'administrative' && isFeatured;
+    })
     .slice(0, 2);
   
-  const featuredCivilServices = getServicesByType('civil')
-    .filter(service => service.featured)
+  const featuredCivilServices = services
+    .filter(service => {
+      const serviceType = getServiceTypeFromCategory(service.category);
+      const isFeatured = service.featured === true;
+      // Chỉ log khi cần debug
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Service ${service.title}: featured=${service.featured}, type=${serviceType}, isFeatured=${isFeatured}`);
+      }
+      return serviceType === 'civil' && isFeatured;
+    })
     .slice(0, 2);
+
+  // Debug information - chỉ log một lần
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Featured Admin Services:', featuredAdminServices);
+    console.log('Featured Civil Services:', featuredCivilServices);
+
+    const totalServices = services.length;
+    const featuredServices = services.filter(service => service.featured === true).length;
+    const adminServices = services.filter(service => getServiceTypeFromCategory(service.category) === 'administrative').length;
+    const civilServices = services.filter(service => getServiceTypeFromCategory(service.category) === 'civil').length;
+    
+    console.log(`Total services: ${totalServices}`);
+    console.log(`Featured services: ${featuredServices}`);
+    console.log(`Admin services: ${adminServices}`);
+    console.log(`Civil services: ${civilServices}`);
+  }
 
   // Process workflow data
   const workflows = {
@@ -151,9 +276,59 @@ const Home = () => {
 
   const getServiceTypeBadge = (serviceType) => {
     return serviceType === 'administrative' 
-      ? <Badge bg="warning" text="dark">Có giá trị pháp lý</Badge>
-      : <Badge bg="success">Dân sự</Badge>;
+      ? <Badge bg="warning" text="dark" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}>ADN Hành chính</Badge>
+      : <Badge bg="success" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}>ADN Dân sự</Badge>;
   };
+
+  const getMethodBadges = (serviceId) => {
+    const serviceMethodsList = serviceMethods[serviceId] || [];
+    
+    if (serviceMethodsList.length === 0) {
+      return (
+        <Badge bg="secondary" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}>
+          <i className="bi bi-gear me-1"></i>
+          Đang cập nhật
+        </Badge>
+      );
+    }
+    
+    // Enrich methods với icon và color từ METHOD_MAPPING
+    const enrichedMethods = enrichMethodData(serviceMethodsList);
+    
+    return enrichedMethods.map(method => (
+      <Badge 
+        key={method.id} 
+        bg={method.color || 'secondary'} 
+        className="me-2 mb-2"
+        style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}
+      >
+        <i className={`${method.icon || 'bi-gear'} me-1`}></i>
+        {method.name}
+      </Badge>
+    ));
+  };
+
+  if (loading) {
+    return (
+      <div className="text-center py-5">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+        <p className="mt-3 text-muted">Đang tải trang chủ...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container className="py-5">
+        <div className="alert alert-danger">
+          <i className="bi bi-exclamation-triangle me-2"></i>
+          {error}
+        </div>
+      </Container>
+    );
+  }
 
   return (
     <>
@@ -412,96 +587,113 @@ const Home = () => {
           </div>
 
           {/* Administrative Services */}
-          <div className="mb-5">
-            <h3 className="mb-4">
-              <i className="bi bi-award text-warning me-2"></i>
-              Dịch vụ ADN Hành chính
-              <Badge bg="warning" text="dark" className="ms-2">Có giá trị pháp lý</Badge>
-            </h3>
-            <Row>
-              {featuredAdminServices.map(service => (
-                <Col key={service.id} lg={6} className="mb-4">
-                  <Card className="h-100 border-0 shadow-sm" style={styles.serviceCard}>
-                    <Card.Body>
-                      <div className="d-flex align-items-center mb-3">
-                        <div className="bg-warning bg-opacity-10 rounded-circle p-3 me-3" style={styles.serviceIcon}>
-                          <i className={`${service.icon} text-warning fs-4`}></i>
-                        </div>
-                        <div>
+          {featuredAdminServices.length > 0 && (
+            <div className="mb-5">
+              <h3 className="mb-4">
+                <i className="bi bi-award text-warning me-2"></i>
+                Dịch vụ ADN Hành chính
+                <Badge bg="warning" text="dark" className="ms-2">Có giá trị pháp lý</Badge>
+              </h3>
+              <Row>
+                {featuredAdminServices.map(service => (
+                  <Col key={service.id} lg={6} className="mb-4">
+                    <Card className="h-100 border-0 shadow-sm" style={styles.serviceCard}>
+                      <Card.Body>
+                        <div className="text-center mb-3">
                           <Card.Title className="mb-1">{service.title}</Card.Title>
-                          <div className="text-warning fw-bold">{service.price}</div>
                         </div>
-                      </div>
-                      <Card.Text>{service.description}</Card.Text>
-                      <div className="mb-3">
-                        <Badge bg="warning" text="dark" className="me-2">
-                          <i className="bi bi-award me-1"></i>Giá trị pháp lý
-                        </Badge>
-                        <Badge bg="light" text="dark">
-                          <i className="bi bi-clock me-1"></i>{service.duration}
-                        </Badge>
-                      </div>
-                      <div className="d-grid gap-2">
-                        <Button variant="outline-warning" as={Link} to={`/services/${service.id}`}>
-                          Xem chi tiết
-                        </Button>
-                        <Button variant="warning" as={Link} to="/appointment" state={{ selectedService: service.id }}>
-                          Đặt lịch ngay
-                        </Button>
-                      </div>
-                    </Card.Body>
-                  </Card>
-                </Col>
-              ))}
-            </Row>
-          </div>
+                        <Card.Text className="mb-3">{service.description}</Card.Text>
+                        <div className="text-center mb-3">
+                          <div className="text-warning fw-bold h5">{formatPrice(service.price)}</div>
+                        </div>
+                        <div className="mb-3 text-center">
+                          <Badge bg="light" text="dark">
+                            <i className="bi bi-clock me-1"></i>{service.duration}
+                          </Badge>
+                        </div>
+                        <div className="mb-3">
+                          <small className="text-muted d-block mb-2">Phương thức lấy mẫu:</small>
+                          <div className="d-flex flex-wrap gap-1 justify-content-center">
+                            {getMethodBadges(service.id)}
+                          </div>
+                        </div>
+                        <div className="d-grid gap-2">
+                          <Button variant="outline-warning" as={Link} to={`/services/${encodeURIComponent(service.id)}`}>
+                            Xem chi tiết
+                          </Button>
+                          <Button variant="warning" as={Link} to="/appointment" state={{ selectedService: service.id }}>
+                            Đặt lịch ngay
+                          </Button>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  </Col>
+                ))}
+              </Row>
+            </div>
+          )}
 
           {/* Civil Services */}
-          <div>
-            <h3 className="mb-4">
-              <i className="bi bi-house text-success me-2"></i>
-              Dịch vụ ADN Dân sự
-              <Badge bg="success" className="ms-2">Linh hoạt - Riêng tư</Badge>
-            </h3>
-            <Row>
-              {featuredCivilServices.map(service => (
-                <Col key={service.id} lg={6} className="mb-4">
-                  <Card className="h-100 border-0 shadow-sm" style={styles.serviceCard}>
-                    <Card.Body>
-                      <div className="d-flex align-items-center mb-3">
-                        <div className="bg-success bg-opacity-10 rounded-circle p-3 me-3" style={styles.serviceIcon}>
-                          <i className={`${service.icon} text-success fs-4`}></i>
-                        </div>
-                        <div>
+          {featuredCivilServices.length > 0 && (
+            <div>
+              <h3 className="mb-4">
+                <i className="bi bi-house text-success me-2"></i>
+                Dịch vụ ADN Dân sự
+                <Badge bg="success" className="ms-2">Linh hoạt - Riêng tư</Badge>
+              </h3>
+              <Row>
+                {featuredCivilServices.map(service => (
+                  <Col key={service.id} lg={6} className="mb-4">
+                    <Card className="h-100 border-0 shadow-sm" style={styles.serviceCard}>
+                      <Card.Body>
+                        <div className="text-center mb-3">
                           <Card.Title className="mb-1">{service.title}</Card.Title>
-                          <div className="text-success fw-bold">{service.price}</div>
                         </div>
-                      </div>
-                      <Card.Text>{service.description}</Card.Text>
-                      <div className="mb-3">
-                        {service.allowedMethods.includes('self-sample') && (
-                          <Badge bg="success" className="me-2">
-                            <i className="bi bi-house me-1"></i>Tự lấy mẫu
+                        <Card.Text className="mb-3">{service.description}</Card.Text>
+                        <div className="text-center mb-3">
+                          <div className="text-success fw-bold h5">{formatPrice(service.price)}</div>
+                        </div>
+                        <div className="mb-3 text-center">
+                          <Badge bg="light" text="dark">
+                            <i className="bi bi-clock me-1"></i>{service.duration}
                           </Badge>
-                        )}
-                        <Badge bg="light" text="dark">
-                          <i className="bi bi-clock me-1"></i>{service.duration}
-                        </Badge>
-                      </div>
-                      <div className="d-grid gap-2">
-                        <Button variant="outline-success" as={Link} to={`/services/${service.id}`}>
-                          Xem chi tiết
-                        </Button>
-                        <Button variant="success" as={Link} to="/appointment" state={{ selectedService: service.id }}>
-                          Đặt lịch ngay
-                        </Button>
-                      </div>
-                    </Card.Body>
-                  </Card>
-                </Col>
-              ))}
-            </Row>
-          </div>
+                        </div>
+                        <div className="mb-3">
+                          <small className="text-muted d-block mb-2">Phương thức lấy mẫu:</small>
+                          <div className="d-flex flex-wrap gap-1 justify-content-center">
+                            {getMethodBadges(service.id)}
+                          </div>
+                        </div>
+                        <div className="d-grid gap-2">
+                          <Button variant="outline-success" as={Link} to={`/services/${encodeURIComponent(service.id)}`}>
+                            Xem chi tiết
+                          </Button>
+                          <Button variant="success" as={Link} to="/appointment" state={{ selectedService: service.id }}>
+                            Đặt lịch ngay
+                          </Button>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  </Col>
+                ))}
+              </Row>
+            </div>
+          )}
+
+          {/* No featured services message */}
+          {featuredAdminServices.length === 0 && featuredCivilServices.length === 0 && (
+            <div className="text-center py-5">
+              <div className="alert alert-info">
+                <i className="bi bi-info-circle fs-1 mb-3 d-block"></i>
+                <h4>Chưa có dịch vụ nổi bật</h4>
+                <p className="mb-3">Hãy xem tất cả dịch vụ của chúng tôi</p>
+                <Button variant="primary" as={Link} to="/services">
+                  <i className="bi bi-grid-3x3-gap me-2"></i>
+                  Xem tất cả dịch vụ
+                </Button>
+              </div>
+            </div>
+          )}
 
           <div className="text-center mt-5">
             <Button size="lg" variant="primary" as={Link} to="/services">

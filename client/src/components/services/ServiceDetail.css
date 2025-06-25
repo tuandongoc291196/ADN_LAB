@@ -1,1 +1,352 @@
 /* CSS for ServiceDetail Component */ 
+
+/* Service Detail Page Styles - Similar to AppointmentBooking */
+.service-detail-page {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+/* Header Section - Similar to AppointmentBooking */
+.service-detail-page section.bg-primary {
+  background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%) !important;
+}
+
+.service-icon-large {
+  width: 100px;
+  height: 100px;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.service-detail-icon {
+  font-size: 2.5rem;
+  color: white;
+}
+
+.service-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.service-badges .badge {
+  font-size: 0.9rem;
+  padding: 0.6rem 1rem;
+  border-radius: 25px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-weight: 500;
+}
+
+/* Cards - Similar to AppointmentBooking */
+.service-detail-page .card {
+  border-radius: 0.75rem;
+  transition: all 0.3s ease;
+}
+
+.service-detail-page .card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Service Info Card */
+.service-detail-page .card .card-header {
+  border-radius: 0.75rem 0.75rem 0 0;
+  border: none;
+  padding: 1.5rem;
+}
+
+.service-detail-page .card .card-body {
+  padding: 2rem;
+}
+
+/* Methods Card */
+.method-item {
+  border-radius: 0.75rem;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.method-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.method-icon-wrapper {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto;
+  background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.method-item:hover .method-icon-wrapper {
+  transform: scale(1.1);
+}
+
+.method-icon {
+  font-size: 1.5rem;
+  color: white;
+}
+
+/* Service Summary Card */
+.service-detail-page .sticky-top {
+  top: 2rem;
+}
+
+.service-detail-page .list-group-item {
+  border: none;
+  padding: 1rem 0;
+  background: transparent;
+}
+
+.service-detail-page .list-group-item:not(:last-child) {
+  border-bottom: 1px solid #e9ecef;
+}
+
+/* Buttons - Similar to AppointmentBooking */
+.service-detail-page .btn {
+  border-radius: 25px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.service-detail-page .btn-primary {
+  background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+  border: none;
+}
+
+.service-detail-page .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(13, 110, 253, 0.4);
+  background: linear-gradient(135deg, #0b5ed7 0%, #0a58ca 100%);
+}
+
+.service-detail-page .btn-outline-primary {
+  border: 2px solid #0d6efd;
+  color: #0d6efd;
+}
+
+.service-detail-page .btn-outline-primary:hover {
+  background: #0d6efd;
+  border-color: #0d6efd;
+  transform: translateY(-2px);
+}
+
+.service-detail-page .btn-outline-light {
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  color: white;
+  backdrop-filter: blur(10px);
+}
+
+.service-detail-page .btn-outline-light:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: white;
+  color: white;
+}
+
+/* Alerts - Similar to AppointmentBooking */
+.service-detail-page .alert {
+  border-radius: 0.75rem;
+  border: none;
+  padding: 1.5rem;
+}
+
+.service-detail-page .alert-info {
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  color: #1565c0;
+}
+
+.service-detail-page .alert-warning {
+  background: linear-gradient(135deg, #fff3e0 0%, #ffcc02 100%);
+  color: #ef6c00;
+}
+
+/* Badges - Similar to AppointmentBooking */
+.service-detail-page .badge {
+  font-size: 0.9rem;
+  padding: 0.6rem 1rem;
+  border-radius: 25px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-weight: 500;
+}
+
+.service-detail-page .badge.bg-success {
+  background-color: #198754 !important;
+}
+
+.service-detail-page .badge.bg-warning {
+  background-color: #ffc107 !important;
+  color: #000 !important;
+}
+
+.service-detail-page .badge.bg-primary {
+  background-color: #0d6efd !important;
+}
+
+.service-detail-page .badge.bg-secondary {
+  background-color: #6c757d !important;
+}
+
+/* Price styling */
+.service-detail-page .fs-5 {
+  color: #0d6efd !important;
+  font-weight: 700;
+}
+
+/* Icon colors */
+.service-detail-page .text-success { color: #198754 !important; }
+.service-detail-page .text-info { color: #0dcaf0 !important; }
+.service-detail-page .text-warning { color: #ffc107 !important; }
+.service-detail-page .text-primary { color: #0d6efd !important; }
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .service-icon-large {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .service-detail-icon {
+    font-size: 2rem;
+  }
+  
+  .service-badges .badge {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.8rem;
+  }
+  
+  .service-detail-page .card .card-body {
+    padding: 1.5rem;
+  }
+  
+  .method-icon-wrapper {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .method-icon {
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .service-detail-page section.bg-primary {
+    padding: 2rem 0;
+  }
+  
+  .service-detail-page section.bg-primary h1 {
+    font-size: 1.5rem;
+  }
+  
+  .service-detail-page section.bg-primary p {
+    font-size: 1rem;
+  }
+  
+  .service-badges {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .service-badges .badge {
+    width: fit-content;
+  }
+  
+  .service-detail-page .card .card-body {
+    padding: 1rem;
+  }
+  
+  .method-item .card-body {
+    padding: 1rem;
+  }
+}
+
+/* Animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.service-detail-page .card {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.service-detail-page .card:nth-child(1) { animation-delay: 0.1s; }
+.service-detail-page .card:nth-child(2) { animation-delay: 0.2s; }
+.service-detail-page .card:nth-child(3) { animation-delay: 0.3s; }
+
+/* Loading and Error States */
+.service-detail-page .spinner-border {
+  width: 3rem;
+  height: 3rem;
+  color: #0d6efd;
+}
+
+/* Custom scrollbar */
+.service-detail-page .card-body {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.service-detail-page .card-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.service-detail-page .card-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.service-detail-page .card-body::-webkit-scrollbar-thumb {
+  background: #0d6efd;
+  border-radius: 3px;
+}
+
+.service-detail-page .card-body::-webkit-scrollbar-thumb:hover {
+  background: #0b5ed7;
+}
+
+/* Hover effects */
+.service-detail-page .badge:hover {
+  transform: scale(1.05);
+  transition: transform 0.2s ease;
+}
+
+/* Focus states for accessibility */
+.service-detail-page .card:focus-within {
+  outline: 2px solid #0d6efd;
+  outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+  .service-detail-page .btn,
+  .service-detail-page .sticky-top {
+    display: none !important;
+  }
+  
+  .service-detail-page .card {
+    break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #dee2e6 !important;
+  }
+} 
