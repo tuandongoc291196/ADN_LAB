@@ -42,6 +42,60 @@ const checkUserExists = async (userId) => {
   }
 };
 
+const checkStaffExists = async (staffId, positionId) => {
+  try {
+    if (!staffId) {
+      throw new Error("staffId is required");
+    }
+
+    if (!positionId) {
+      throw new Error("positionId is required");
+    }
+
+    const GET_ONE_STAFF_QUERY = `
+      query GetStaffByIdAndPosition($staffId: String!, $positionId: String!) @auth(level: USER) {
+        staffs(where: {
+          id: {eq: $staffId},
+          positionId: {eq: $positionId}
+        }) {
+          id
+          positionId
+          user {
+            id
+            fullname
+            email
+          }
+          position {
+            id
+            name
+          }
+        }
+      }
+    `;
+
+    const variables = {
+      staffId: staffId,
+      positionId: positionId,
+    };
+    console.log("Executing GraphQL query:", GET_ONE_STAFF_QUERY, "with variables:", variables);
+    const response = await dataConnect.executeGraphql(GET_ONE_STAFF_QUERY, {
+      variables: variables
+    }); 
+
+    const responseData = response.data.staffs;
+    if (!responseData || responseData.length === 0) {
+      console.log(`Staff with ID ${staffId} and positionId ${positionId} does not exist`);
+      return false;
+    } else {
+      console.log(`Staff with ID ${staffId} and positionId ${positionId} exists`);
+      return true;
+    }
+  } catch (error) {
+    console.error("Error checking staff existence:", error);
+    throw error;
+  }
+};  
+
 const countUsersByRole = async (roleId) => {
   try {
     if (!roleId) {
@@ -153,6 +207,7 @@ const getActiveStaffWithLowestSlotCount = async (positionId) => {
 
 module.exports = {
   checkUserExists,
+  checkStaffExists,
   countUsersByRole,
   getActiveStaffWithLowestSlotCount,
   countActiveUsersByRole

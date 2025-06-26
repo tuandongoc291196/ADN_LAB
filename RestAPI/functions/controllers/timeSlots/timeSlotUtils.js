@@ -1,5 +1,5 @@
 const { dataConnect } = require("../../config/firebase.js");
-const {countUsersByRole} = require("../users/userUtils.js");
+const {countActiveUsersByRole} = require("../users/userUtils.js");
 
 const checkTimeSlotExists = async (timeSlotId) => {
   try {
@@ -36,12 +36,48 @@ const checkTimeSlotExists = async (timeSlotId) => {
   }
 }
 
-const isSlotAvailable = async (timeSlotId) => {
+const isSlotTimePassed = (startTime, slotDate) => {
   try {
-    if (!timeSlotId) {
-      throw new Error("timeSlotId is required");
+    console.log("Checking if slot time has passed for:", slotDate, startTime);
+    if (!startTime) {
+      throw new Error("startTime is required");
     }
-    const maxBookings = await countUsersByRole("1");
+    if (!slotDate) {
+      throw new Error("slotDate is required");
+    }
+
+    const currentTime = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Bangkok"}));
+    const slotDateTime = new Date(`${slotDate}T${startTime}`);
+    console.log("Current time:", currentTime);
+    console.log("Slot date and time:", slotDateTime);
+
+    if (slotDateTime <= currentTime) {
+      console.log(`Time slot ${slotDate} ${startTime} has already passed`);
+      throw new Error(`Time slot ${slotDate} ${startTime} has already passed`);
+    }
+
+    return false;
+  } catch (error) {
+    console.error("Error checking if slot time has passed:", error);
+    throw error;
+  }
+};
+
+const isSlotBookingAvailable = async (startTime, endTime, slotDate) => {
+  try {
+    console.log("Checking slot booking availability for:", slotDate, startTime, endTime);
+    if (!startTime) {
+      throw new Error("startTime is required");
+    }
+    if (!endTime) {
+      throw new Error("endTime is required");
+    }
+    if (!slotDate) {
+      throw new Error("slotDate is required");
+    }
+
+    const timeSlotId = `${slotDate}_${startTime}_${endTime}`;
+    const maxBookings = await countActiveUsersByRole("1");
     
     const GET_AVAILABLE_TIME_SLOT = `
       query GetAvailableTimeSlot($timeSlotId: String!, $maxBookings: Int!) @auth(level: USER) {
@@ -57,7 +93,6 @@ const isSlotAvailable = async (timeSlotId) => {
 
     const variables = { timeSlotId, maxBookings };
 
-    console.log("Checking slot availability for:", timeSlotId);
     const response = await dataConnect.executeGraphql(GET_AVAILABLE_TIME_SLOT, {
       variables: variables,
     });
@@ -66,19 +101,21 @@ const isSlotAvailable = async (timeSlotId) => {
     
     if (!responseData || responseData.length === 0) {
       console.log("Time slot not available or not found:", timeSlotId);
-      return false;
+      throw new Error("Time slot is fully booked or does not exist");
     }
 
     console.log(`Slot ${timeSlotId} is available with ${responseData[0].currentBookings}/${maxBookings} bookings`);
     return true;
 
   } catch (error) {
-    console.error("Error checking slot availability:", error);
-    return false;
+    console.error("Error checking slot booking availability:", error);
+    throw error;
   }
 };
 
+
 module.exports = {
   checkTimeSlotExists,
-  isSlotAvailable,
+  isSlotTimePassed,
+  isSlotBookingAvailable,
 };

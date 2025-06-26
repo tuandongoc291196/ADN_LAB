@@ -1,7 +1,7 @@
 const { dataConnect } = require("../../config/firebase.js");
 const {checkTimeSlotExists} = require("./timeSlotUtils.js");
 const {updateTimeSlot} = require("./updateTimeSlot.js");
-const {isSlotAvailable} = require("../timeSlots/timeSlotUtils.js");
+const {isSlotBookingAvailable, isSlotTimePassed} = require("../timeSlots/timeSlotUtils.js");
 
 const addTimeSlot = async (slotDate, startTime, endTime) => {
   try {
@@ -16,8 +16,8 @@ const addTimeSlot = async (slotDate, startTime, endTime) => {
     }
 
     const CREATE_TIME_SLOT_MUTATION = `
-      mutation CreateTimeSlot($id: String!, $slotDate: Date!, $startTime: String!, $endTime: String!, $notes: String) @auth(level: USER) {
-        timeSlot_insert(data: {id: $id, slotDate: $slotDate, startTime: $startTime, endTime: $endTime, notes: $notes})
+      mutation CreateTimeSlot($id: String!, $slotDate: Date!, $startTime: String!, $endTime: String!, $currentBookings: Int!, $notes: String) @auth(level: USER) {
+        timeSlot_insert(data: {id: $id, slotDate: $slotDate, startTime: $startTime, endTime: $endTime, currentBookings: $currentBookings, notes: $notes})
       }
     `;
 
@@ -26,17 +26,16 @@ const addTimeSlot = async (slotDate, startTime, endTime) => {
       slotDate,
       startTime,
       endTime,
+      currentBookings: 1,
       notes: "",
     };
 
     const existingTimeSlot = await checkTimeSlotExists(variables.id);
+    await isSlotTimePassed(startTime, slotDate);
     if (existingTimeSlot != null) {
+      
       console.log("Time slot already exists with ID:", variables.id);
-
-      const isAvailable = await isSlotAvailable(variables.id);
-        if (!isAvailable) {
-          throw new Error("Time slot is not available");
-        }
+      await isSlotBookingAvailable(startTime, endTime, slotDate);
       console.log("Time slot is available for booking:", variables.id);
       const updateTimeSlotResponse = await updateTimeSlot(variables.id, 'increase');
       return {

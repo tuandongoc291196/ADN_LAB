@@ -6,11 +6,11 @@ try {
     const partnerCode = 'MOMO';
     const redirectUrl = 'http://localhost:5173/';
     const ipnUrl = 'http://localhost:5173/';
-    const requestType = "captureWallet";
+    const requestType = "payWithMethod";
     const extraData = '';
     const orderGroupId = '';
     const autoCapture = true;
-    const orderExpireTime = 0.2;
+    const orderExpireTime = 15;
     const lang = 'en';
 
     // Validate required configuration

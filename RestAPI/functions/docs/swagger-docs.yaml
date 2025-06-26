@@ -1,93 +1,261 @@
 openapi: 3.0.0
 info:
   title: ADN LAB API
+  description: Comprehensive API documentation for ADN LAB booking and management system
   version: 1.0.0
-  description: |
-    # ADN LAB API Documentation
-
-    Welcome to the ADN LAB API documentation. This API provides comprehensive access to DNA laboratory services, payment processing, and user management.
-
-    ## Features
-
-    - **🧬 DNA Testing Services**: Comprehensive DNA analysis and testing services
-    - **💳 Payment Processing**: Support for multiple payment gateways (MOMO, VNPAY, ZALOPAY)
-    - **👥 User Management**: Complete user account and profile management
-    - **🔐 Role-Based Access**: Secure access control with role-based permissions
-    - **📅 Appointment Booking**: Schedule and manage DNA testing appointments
-    - **⏰ Time Slot Management**: Efficient time slot allocation and tracking
-
-    ## Quick Start
-
-    1. **Authentication**: Obtain a JWT token through Firebase Authentication
-    2. **Base URL**: Use the appropriate base URL for your environment
-    3. **Headers**: Include `Authorization: Bearer <token>` for authenticated endpoints
-    4. **Content-Type**: Use `application/json` for request bodies
-
-    ## Payment Integration
-
-    This API supports three major payment gateways in Vietnam:
-    - **MOMO**: Mobile money payments
-    - **VNPAY**: Vietnam's leading payment gateway
-    - **ZALOPAY**: Digital wallet payments
-
-    ## Rate Limiting
-
-    - **Authenticated Users**: 1000 requests per hour
-    - **Public Endpoints**: 100 requests per hour
-
-    ## Response Format
-
-    All API responses follow a consistent format:
-    ```json
-    {
-      "statusCode": 200,
-      "status": "success",
-      "message": "Operation completed successfully",
-      "data": { ... }
-    }
-    ```
-
-    ## Error Handling
-
-    Error responses include detailed information:
-    ```json
-    {
-      "statusCode": 400,
-      "message": "Invalid request",
-      "error": "Detailed error description"
-    }
-    ```
-
-    *Last updated: June 2025*
   contact:
-    name: ADN LAB Support Team
-    email: support@adnlab.vn
-    url: https://adnlab.vn
+    name: ADN LAB Team
+    email: support@adnlab.com
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
 
 servers:
   - url: http://localhost:5001/su25-swp391-g8/us-central1/app
-    description: Development server
+    description: Local development server
   - url: https://app-bggwpxm32a-uc.a.run.app
     description: Production server
 
-tags:
-  - name: Health
-    description: Health check endpoints
-  - name: Services
-    description: DNA services and collection methods endpoints
-  - name: Methods
-    description: Collection methods management
-  - name: Method Services
-    description: Method-Service relationship endpoints
-  - name: Users
-    description: User management endpoints
-  - name: Roles
-    description: Role management endpoints for user access control
-  - name: Payments
-    description: Payment management endpoints for MOMO, VNPAY, and ZALOPAY
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique user identifier
+        fullname:
+          type: string
+          description: User's full name
+        email:
+          type: string
+          format: email
+          description: User's email address
+        gender:
+          type: string
+          enum: [male, female, other]
+        avatar:
+          type: string
+          description: URL to user's avatar image
+        phone:
+          type: string
+          description: User's phone number
+        address:
+          type: string
+          description: User's address
+        accountStatus:
+          type: string
+          enum: [active, inactive, suspended]
+        authProvider:
+          type: string
+          enum: [email, google, facebook]
+        roleId:
+          type: string
+          description: Reference to user's role
+        role:
+          $ref: '#/components/schemas/Role'
+        dailySlotCount:
+          type: integer
+          description: Current daily slot count for staff
+        maxDailySlots:
+          type: integer
+          description: Maximum daily slots for staff
+        createdAt:
+          type: string
+          format: date-time
+        lastLogin:
+          type: string
+          format: date-time
+
+    Role:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique role identifier
+        name:
+          type: string
+          description: Role name
+        description:
+          type: string
+          description: Role description
+
+    Service:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique service identifier
+        title:
+          type: string
+          description: Service title
+        description:
+          type: string
+          description: Short service description
+        fullDescription:
+          type: string
+          description: Detailed service description
+        price:
+          type: number
+          format: float
+          description: Service price
+        duration:
+          type: string
+          description: Service duration
+        categoryId:
+          type: string
+          description: Reference to service category
+        category:
+          $ref: '#/components/schemas/Category'
+        icon:
+          type: string
+          description: Service icon URL or identifier
+        featured:
+          type: boolean
+          description: Whether service is featured
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique category identifier
+        name:
+          type: string
+          description: Category name
+        description:
+          type: string
+          description: Category description
+        hasLegalValue:
+          type: boolean
+          description: Whether category has legal implications
+
+    Method:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique method identifier
+        name:
+          type: string
+          description: Method name
+        description:
+          type: string
+          description: Method description
+
+    Booking:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique booking identifier
+        userId:
+          type: string
+          description: Reference to user who made the booking
+        staffId:
+          type: string
+          description: Reference to assigned staff member
+        timeSlotId:
+          type: string
+          description: Reference to time slot
+        serviceId:
+          type: string
+          description: Reference to booked service
+        methodId:
+          type: string
+          description: Reference to booking method
+        totalAmount:
+          type: number
+          format: float
+          description: Total booking amount
+        expiresAt:
+          type: string
+          format: date-time
+          description: Booking expiration time
+        createdAt:
+          type: string
+          format: date-time
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique payment identifier
+        bookingId:
+          type: string
+          description: Reference to associated booking
+        amount:
+          type: number
+          format: float
+          description: Payment amount
+        paymentMethod:
+          type: string
+          enum: [MOMO, VNPAY, ZALOPAY]
+          description: Payment method used
+        status:
+          type: string
+          enum: [pending, success, failed, refunded]
+          description: Payment status
+        paymentDate:
+          type: string
+          format: date
+          description: Date of payment
+        refundDetail:
+          type: string
+          description: Refund details if applicable
+        otherDetails:
+          type: array
+          items:
+            type: string
+          description: Additional payment details
+
+    Participant:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Participant's name
+        age:
+          type: integer
+          minimum: 0
+          description: Participant's age
+        gender:
+          type: string
+          enum: [male, female, other]
+          description: Participant's gender
+
+    ApiResponse:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          description: HTTP status code
+        status:
+          type: string
+          enum: [success, error]
+          description: Response status
+        message:
+          type: string
+          description: Response message
+        data:
+          type: object
+          description: Response data
+        error:
+          type: string
+          description: Error message if applicable
 
 security:
   - BearerAuth: []
@@ -96,12 +264,12 @@ paths:
   /:
     get:
       tags:
-        - Health
-      summary: Health check endpoint
-      description: Basic health check to verify API is running
+        - General
+      summary: API Health Check
+      description: Basic endpoint to check if the API is running
       responses:
         '200':
-          description: API is running successfully
+          description: API is running
           content:
             text/plain:
               schema:
@@ -113,10 +281,8 @@ paths:
     post:
       tags:
         - Services
-      summary: Add a new DNA service
-      description: Create a new DNA testing service with all required details
-      security:
-        - BearerAuth: []
+      summary: Add a new service
+      description: Create a new service with associated methods
       requestBody:
         required: true
         content:
@@ -126,123 +292,86 @@ paths:
               required:
                 - title
                 - description
+                - fullDescription
                 - price
-                - category
+                - duration
+                - categoryId
+                - icon
+                - featured
+                - methods
               properties:
                 title:
                   type: string
                   description: Service title
-                  example: "Paternity DNA Test"
                 description:
                   type: string
-                  description: Brief service description
-                  example: "Accurate paternity testing service"
+                  description: Short service description
                 fullDescription:
                   type: string
-                  description: Complete service description
-                  example: "Comprehensive paternity DNA analysis with 99.9% accuracy"
+                  description: Detailed service description
                 price:
                   type: number
-                  description: Service price in VND
-                  example: 1500000
+                  format: float
+                  description: Service price
                 duration:
                   type: string
                   description: Service duration
-                  example: "5-7 days"
-                category:
+                categoryId:
                   type: string
-                  description: Service category
-                  example: "Paternity Testing"
-                serviceType:
-                  type: string
-                  description: Type of service
-                  example: "laboratory"
-                hasLegalValue:
-                  type: boolean
-                  description: Whether service has legal value
-                  example: true
+                  description: Category ID
                 icon:
                   type: string
-                  description: Service icon identifier
-                  example: "family-icon"
-                participants:
-                  type: string
-                  description: Required participants
-                  example: "Father and child"
-                requiredDocuments:
-                  type: string
-                  description: Required documents
-                  example: "ID cards, consent forms"
-                procedures:
-                  type: string
-                  description: Service procedures
-                  example: "Sample collection, DNA analysis, report generation"
+                  description: Service icon
                 featured:
                   type: boolean
                   description: Whether service is featured
-                  example: false
+                methods:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of method IDs
       responses:
         '201':
           description: Service created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServiceResponse'
+                $ref: '#/components/schemas/ApiResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: Bad request - validation error
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error
 
   /services:
     get:
       tags:
         - Services
-      summary: Get all DNA services
-      description: Retrieve all available DNA testing services with their collection methods
+      summary: Get all services
+      description: Retrieve all services with their categories
       responses:
         '200':
           description: Services retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServicesResponse'
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Service'
+        '404':
+          description: No services found
         '500':
-          $ref: '#/components/responses/InternalServerError'
-
+          description: Internal server error
+    
     post:
       tags:
         - Services
-      summary: Get a specific service by ID
-      description: Retrieve detailed information about a specific DNA service
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ServiceRequest'
-      responses:
-        '200':
-          description: Service retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ServiceResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-    put:
-      tags:
-        - Services
-      summary: Update an existing service
-      description: Update details of an existing DNA service
-      security:
-        - BearerAuth: []
+      summary: Get a specific service
+      description: Retrieve a service by its ID along with associated methods
       requestBody:
         required: true
         content:
@@ -254,83 +383,80 @@ paths:
               properties:
                 serviceId:
                   type: string
-                  description: Service ID to update
-                  example: "service_123"
-                title:
-                  type: string
-                  description: Updated service title
-                  example: "Premium Paternity DNA Test"
-                description:
-                  type: string
-                  description: Updated brief description
-                  example: "Enhanced paternity testing with faster results"
-                fullDescription:
-                  type: string
-                  description: Updated complete description
-                  example: "Premium paternity DNA analysis with 99.99% accuracy and express processing"
-                price:
-                  type: number
-                  description: Updated service price in VND
-                  example: 2000000
-                duration:
-                  type: string
-                  description: Updated service duration
-                  example: "3-5 days"
-                category:
-                  type: string
-                  description: Updated service category
-                  example: "Premium Paternity Testing"
-                serviceType:
-                  type: string
-                  description: Updated type of service
-                  example: "express-laboratory"
-                hasLegalValue:
-                  type: boolean
-                  description: Updated legal value status
-                  example: true
-                icon:
-                  type: string
-                  description: Updated service icon
-                  example: "premium-family-icon"
-                participants:
-                  type: string
-                  description: Updated required participants
-                  example: "Father, mother, and child"
-                requiredDocuments:
-                  type: string
-                  description: Updated required documents
-                  example: "Government ID, notarized consent forms"
-                procedures:
-                  type: string
-                  description: Updated service procedures
-                  example: "Express sample collection, priority DNA analysis, certified report generation"
-                featured:
-                  type: boolean
-                  description: Updated featured status
-                  example: true
+                  description: Service ID to retrieve
       responses:
         '200':
-          description: Service updated successfully
+          description: Service retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServiceResponse'
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          service:
+                            $ref: '#/components/schemas/Service'
+                          methods:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Method'
         '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: Bad request - serviceId required
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: Service not found
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error
+
+    put:
+      tags:
+        - Services
+      summary: Update a service
+      description: Update an existing service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: Service ID to update
+                title:
+                  type: string
+                description:
+                  type: string
+                fullDescription:
+                  type: string
+                price:
+                  type: number
+                  format: float
+                duration:
+                  type: string
+                categoryId:
+                  type: string
+                icon:
+                  type: string
+                featured:
+                  type: boolean
+      responses:
+        '200':
+          description: Service updated successfully
+        '400':
+          description: Bad request
+        '404':
+          description: Service not found
+        '500':
+          description: Internal server error
 
     delete:
       tags:
         - Services
       summary: Delete a service
-      description: Remove a DNA service from the system
-      security:
-        - BearerAuth: []
+      description: Delete an existing service
       requestBody:
         required: true
         content:
@@ -343,39 +469,22 @@ paths:
                 serviceId:
                   type: string
                   description: Service ID to delete
-                  example: "service_123"
       responses:
         '200':
           description: Service deleted successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: number
-                    example: 200
-                  status:
-                    type: string
-                    example: "success"
-                  message:
-                    type: string
-                    example: "Service deleted successfully"
         '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: Bad request
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: Service not found
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error
 
   /services/category:
     post:
       tags:
         - Services
       summary: Get services by category
-      description: Retrieve all services belonging to a specific category
+      description: Retrieve services belonging to a specific category
       requestBody:
         required: true
         content:
@@ -387,174 +496,59 @@ paths:
               properties:
                 categoryId:
                   type: string
-                  description: Category ID to filter services
-                  example: "paternity"
+                  description: Category ID to filter by
       responses:
         '200':
           description: Services retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServicesResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  # Method Services Endpoints
-  /method/services:
-    post:
-      tags:
-        - Method Services
-      summary: Get method services relationship
-      description: Retrieve services associated with specific collection methods
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - methodId
-              properties:
-                methodId:
-                  type: string
-                  description: Method ID to get associated services
-                  example: "method_123"
-      responses:
-        '200':
-          description: Method services retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: number
-                    example: 200
-                  status:
-                    type: string
-                    example: "success"
-                  message:
-                    type: string
-                    example: "Method services retrieved successfully"
-                  data:
-                    type: object
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
                     properties:
-                      methodServices:
+                      data:
                         type: array
                         items:
-                          $ref: '#/components/schemas/ServiceCollectionMethod'
+                          $ref: '#/components/schemas/Service'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          description: Bad request
+        '404':
+          description: No services found for category
         '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  /service/methods:
-    post:
-      tags:
-        - Method Services
-      summary: Get services by method ID
-      description: Retrieve all services that support a specific collection method
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - methodId
-              properties:
-                methodId:
-                  type: string
-                  description: Method ID to get associated services
-                  example: "method_123"
-      responses:
-        '200':
-          description: Services by method retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ServicesResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error
 
   # Methods Endpoints
   /methods:
     get:
       tags:
         - Methods
-      summary: Get all collection methods
-      description: Retrieve all available sample collection methods
+      summary: Get all methods
+      description: Retrieve all available methods
       responses:
         '200':
           description: Methods retrieved successfully
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: number
-                    example: 200
-                  status:
-                    type: string
-                    example: "success"
-                  message:
-                    type: string
-                    example: "Methods retrieved successfully"
-                  data:
-                    type: object
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
                     properties:
-                      methods:
+                      data:
                         type: array
                         items:
-                          type: object
-                          properties:
-                            id:
-                              type: string
-                              description: Method ID
-                              example: "method_123"
-                            title:
-                              type: string
-                              description: Method title
-                              example: "Saliva Collection"
-                            description:
-                              type: string
-                              description: Method description
-                              example: "Non-invasive saliva sample collection"
-                            icon:
-                              type: string
-                              description: Method icon
-                              example: "saliva-icon"
-                            color:
-                              type: string
-                              description: Method color code
-                              example: "#FF5733"
-                            note:
-                              type: string
-                              description: Additional notes
-                              example: "Avoid eating 30 minutes before collection"
-                            process:
-                              type: string
-                              description: Collection process
-                              example: "Spit into provided container"
-                            allowedFor:
-                              type: string
-                              description: Who can use this method
-                              example: "All ages"
+                          $ref: '#/components/schemas/Method'
+        '404':
+          description: No methods found
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error
 
     post:
       tags:
         - Methods
-      summary: Get a specific method by ID
-      description: Retrieve detailed information about a specific collection method
+      summary: Get a specific method
+      description: Retrieve a method by its ID
       requestBody:
         required: true
         content:
@@ -567,78 +561,23 @@ paths:
                 methodId:
                   type: string
                   description: Method ID to retrieve
-                  example: "method_123"
       responses:
         '200':
           description: Method retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: number
-                    example: 200
-                  status:
-                    type: string
-                    example: "success"
-                  message:
-                    type: string
-                    example: "Method retrieved successfully"
-                  data:
-                    type: object
-                    properties:
-                      method:
-                        type: object
-                        properties:
-                          id:
-                            type: string
-                            description: Method ID
-                            example: "method_123"
-                          title:
-                            type: string
-                            description: Method title
-                            example: "Saliva Collection"
-                          description:
-                            type: string
-                            description: Method description
-                            example: "Non-invasive saliva sample collection"
-                          icon:
-                            type: string
-                            description: Method icon
-                            example: "saliva-icon"
-                          color:
-                            type: string
-                            description: Method color code
-                            example: "#FF5733"
-                          note:
-                            type: string
-                            description: Additional notes
-                            example: "Avoid eating 30 minutes before collection"
-                          process:
-                            type: string
-                            description: Collection process
-                            example: "Spit into provided container"
-                          allowedFor:
-                            type: string
-                            description: Who can use this method
-                            example: "All ages"
         '400':
-          $ref: '#/components/responses/BadRequest'
+          description: Bad request
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: Method not found
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error
 
-  # Users Endpoints
-  /users/add:
+  # Method-Service Relationships
+  /method/services:
     post:
       tags:
-        - Users
-      summary: Add a new user
-      description: Create a new user account in the system
-      security:
-        - BearerAuth: []
+        - Method Services
+      summary: Get services by method
+      description: Retrieve services that support a specific method
       requestBody:
         required: true
         content:
@@ -646,153 +585,165 @@ paths:
             schema:
               type: object
               required:
-                - fullname
-                - email
+                - methodId
               properties:
-                fullname:
+                methodId:
                   type: string
-                  description: User's full name
-                  example: "John Doe"
+                  description: Method ID to get services for
+      responses:
+        '200':
+          description: Services retrieved successfully
+        '400':
+          description: Bad request
+        '404':
+          description: No services found for method
+        '500':
+          description: Internal server error
+
+  /service/methods:
+    post:
+      tags:
+        - Method Services
+      summary: Get methods by service
+      description: Retrieve methods supported by a specific service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - serviceId
+              properties:
+                serviceId:
+                  type: string
+                  description: Service ID to get methods for
+      responses:
+        '200':
+          description: Methods retrieved successfully
+        '400':
+          description: Bad request
+        '404':
+          description: No methods found for service
+        '500':
+          description: Internal server error
+
+  # Users Endpoints
+  /users/add:
+    post:
+      tags:
+        - Users
+      summary: Add a new user
+      description: Create a new user account with role assignment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - name
+                - roleId
+              properties:
                 email:
                   type: string
                   format: email
                   description: User's email address
-                  example: "john.doe@example.com"
-                phoneNumber:
+                password:
                   type: string
-                  description: User's phone number
-                  example: "+84901234567"
-                dateOfBirth:
+                  description: User's password
+                name:
                   type: string
-                  format: date
-                  description: User's date of birth
-                  example: "1990-01-15"
-                address:
-                  type: string
-                  description: User's address
-                  example: "123 Main St, Ho Chi Minh City"
+                  description: User's full name
                 roleId:
                   type: string
                   description: Role ID to assign to user
-                  example: "customer"
       responses:
         '201':
           description: User created successfully
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: number
-                    example: 201
-                  status:
-                    type: string
-                    example: "success"
-                  message:
-                    type: string
-                    example: "User created successfully"
-                  data:
-                    type: object
-                    properties:
-                      user:
-                        $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/ApiResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '409':
-          description: User already exists
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: number
-                    example: 409
-                  message:
-                    type: string
-                    example: "User already exists"
-                  error:
-                    type: string
-                    example: "A user with this email already exists"
+          description: Bad request - validation error
+        '404':
+          description: Role not found
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error
 
   /users:
     get:
       tags:
         - Users
       summary: Get all users
-      description: Retrieve all users in the system
-      security:
-        - BearerAuth: []
+      description: Retrieve all users with pagination
       responses:
         '200':
           description: Users retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UsersResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          users:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/User'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error
 
     post:
       tags:
         - Users
-      summary: Get a specific user by ID
-      description: Retrieve detailed information about a specific user
-      security:
-        - BearerAuth: []
+      summary: Get a specific user
+      description: Retrieve a user by their ID
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserRequest'
+              type: object
+              required:
+                - userId
+              properties:
+                userId:
+                  type: string
+                  description: User ID to retrieve
       responses:
         '200':
           description: User retrieved successfully
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: number
-                    example: 200
-                  status:
-                    type: string
-                    example: "success"
-                  message:
-                    type: string
-                    example: "User retrieved successfully"
-                  data:
-                    type: object
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
                     properties:
-                      user:
-                        $ref: '#/components/schemas/User'
+                      data:
+                        type: object
+                        properties:
+                          user:
+                            $ref: '#/components/schemas/User'
         '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: Bad request
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: User not found
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error
 
     put:
       tags:
         - Users
       summary: Update user information
       description: Update user profile information
-      security:
-        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -805,73 +756,37 @@ paths:
                 userId:
                   type: string
                   description: User ID to update
-                  example: "user_12345"
                 fullname:
                   type: string
-                  description: Updated full name
-                  example: "John Smith"
-                email:
+                  description: User's full name
+                gender:
                   type: string
-                  format: email
-                  description: Updated email address
-                  example: "john.smith@example.com"
-                phoneNumber:
+                  enum: [male, female, other]
+                avatar:
                   type: string
-                  description: Updated phone number
-                  example: "+84901234568"
-                dateOfBirth:
+                  description: Avatar URL
+                phone:
                   type: string
-                  format: date
-                  description: Updated date of birth
-                  example: "1990-01-15"
+                  description: Phone number
                 address:
                   type: string
-                  description: Updated address
-                  example: "456 New St, Ho Chi Minh City"
-                accountStatus:
-                  type: string
-                  enum: ["active", "inactive", "suspended"]
-                  description: Updated account status
-                  example: "active"
+                  description: User's address
       responses:
         '200':
           description: User updated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: number
-                    example: 200
-                  status:
-                    type: string
-                    example: "success"
-                  message:
-                    type: string
-                    example: "User updated successfully"
-                  data:
-                    type: object
-                    properties:
-                      user:
-                        $ref: '#/components/schemas/User'
         '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: Bad request
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: User not found
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error
 
   /users/role:
     post:
       tags:
         - Users
       summary: Get users by role
-      description: Retrieve all users with a specific role
-      security:
-        - BearerAuth: []
+      description: Retrieve users with a specific role
       requestBody:
         required: true
         content:
@@ -883,30 +798,34 @@ paths:
               properties:
                 roleId:
                   type: string
-                  description: Role ID to filter users
-                  example: "staff"
+                  description: Role ID to filter by
       responses:
         '200':
-          description: Users by role retrieved successfully
+          description: Users retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UsersResponse'
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/User'
         '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: Bad request
+        '404':
+          description: No users found for role
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error
 
   /users/role/staff:
     put:
       tags:
         - Users
       summary: Update user role to staff
-      description: Promote a user to staff role
-      security:
-        - BearerAuth: []
+      description: Promote a user to staff role and create staff record
       requestBody:
         required: true
         content:
@@ -915,47 +834,23 @@ paths:
               type: object
               required:
                 - userId
+                - roleId
               properties:
                 userId:
                   type: string
-                  description: User ID to promote to staff
-                  example: "user_12345"
-                staffPosition:
+                  description: User ID to update
+                roleId:
                   type: string
-                  description: Staff position assignment
-                  example: "lab_technician"
+                  description: Staff role ID
       responses:
         '200':
           description: User role updated to staff successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: number
-                    example: 200
-                  status:
-                    type: string
-                    example: "success"
-                  message:
-                    type: string
-                    example: "User role updated to staff successfully"
-                  data:
-                    type: object
-                    properties:
-                      user:
-                        $ref: '#/components/schemas/User'
         '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+          description: Bad request
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: User or role not found
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error
 
   /users/role/admin:
     put:
@@ -963,8 +858,329 @@ paths:
         - Users
       summary: Update user role to admin
       description: Promote a user to admin role
-      security:
-        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+                - roleId
+              properties:
+                userId:
+                  type: string
+                  description: User ID to update
+                roleId:
+                  type: string
+                  description: Admin role ID
+      responses:
+        '200':
+          description: User role updated to admin successfully
+        '400':
+          description: Bad request
+        '404':
+          description: User or role not found
+        '500':
+          description: Internal server error
+
+  # Roles Endpoints
+  /roles:
+    get:
+      tags:
+        - Roles
+      summary: Get all roles
+      description: Retrieve all available roles
+      responses:
+        '200':
+          description: Roles retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Role'
+        '404':
+          description: No roles found
+        '500':
+          description: Internal server error
+
+    post:
+      tags:
+        - Roles
+      summary: Get a specific role
+      description: Retrieve a role by its ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - roleId
+              properties:
+                roleId:
+                  type: string
+                  description: Role ID to retrieve
+      responses:
+        '200':
+          description: Role retrieved successfully
+        '400':
+          description: Bad request
+        '404':
+          description: Role not found
+        '500':
+          description: Internal server error
+
+    put:
+      tags:
+        - Roles
+      summary: Update a role
+      description: Update an existing role
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - roleId
+              properties:
+                roleId:
+                  type: string
+                  description: Role ID to update
+                name:
+                  type: string
+                  description: Role name
+                description:
+                  type: string
+                  description: Role description
+      responses:
+        '200':
+          description: Role updated successfully
+        '400':
+          description: Bad request
+        '404':
+          description: Role not found
+        '500':
+          description: Internal server error
+
+    delete:
+      tags:
+        - Roles
+      summary: Delete a role
+      description: Delete an existing role
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - roleId
+              properties:
+                roleId:
+                  type: string
+                  description: Role ID to delete
+      responses:
+        '200':
+          description: Role deleted successfully
+        '400':
+          description: Bad request
+        '404':
+          description: Role not found
+        '500':
+          description: Internal server error
+
+  /roles/add:
+    post:
+      tags:
+        - Roles
+      summary: Add a new role
+      description: Create a new role
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - description
+              properties:
+                name:
+                  type: string
+                  description: Role name
+                description:
+                  type: string
+                  description: Role description
+      responses:
+        '201':
+          description: Role created successfully
+        '400':
+          description: Bad request
+        '500':
+          description: Internal server error
+
+  # Bookings Endpoints
+  /bookings/add:
+    post:
+      tags:
+        - Bookings
+      summary: Create a new booking
+      description: Create a new booking with participants and automatic staff assignment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+                - slotDate
+                - startTime
+                - endTime
+                - methodId
+                - serviceId
+                - totalAmount
+                - participants
+              properties:
+                userId:
+                  type: string
+                  description: User ID making the booking
+                slotDate:
+                  type: string
+                  format: date
+                  description: Date of the booking slot
+                startTime:
+                  type: string
+                  description: Start time of the booking
+                endTime:
+                  type: string
+                  description: End time of the booking
+                methodId:
+                  type: string
+                  description: Method ID for the booking
+                serviceId:
+                  type: string
+                  description: Service ID for the booking
+                totalAmount:
+                  type: number
+                  format: float
+                  minimum: 0
+                  description: Total booking amount
+                participants:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Participant'
+                  description: Array of participants
+      responses:
+        '201':
+          description: Booking created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: Bad request - validation error
+        '404':
+          description: User, service, or method not found
+        '409':
+          description: Booking already exists
+        '500':
+          description: Internal server error
+
+  /bookings:
+    get:
+      tags:
+        - Bookings
+      summary: Get all bookings
+      description: Retrieve all bookings
+      responses:
+        '200':
+          description: Bookings retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Booking'
+        '404':
+          description: No bookings found
+        '500':
+          description: Internal server error
+
+    post:
+      tags:
+        - Bookings
+      summary: Get a specific booking
+      description: Retrieve a booking by its ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - bookingId
+              properties:
+                bookingId:
+                  type: string
+                  description: Booking ID to retrieve
+      responses:
+        '200':
+          description: Booking retrieved successfully
+        '400':
+          description: Bad request
+        '404':
+          description: Booking not found
+        '500':
+          description: Internal server error
+
+  /bookings/timeslot:
+    post:
+      tags:
+        - Bookings
+      summary: Get bookings by time slot
+      description: Retrieve bookings for a specific time slot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - timeSlotId
+              properties:
+                timeSlotId:
+                  type: string
+                  description: Time slot ID to filter by
+      responses:
+        '200':
+          description: Bookings retrieved successfully
+        '400':
+          description: Bad request
+        '404':
+          description: No bookings found for time slot
+        '500':
+          description: Internal server error
+
+  /bookings/user:
+    post:
+      tags:
+        - Bookings
+      summary: Get bookings by user
+      description: Retrieve bookings for a specific user
       requestBody:
         required: true
         content:
@@ -976,807 +1192,108 @@ paths:
               properties:
                 userId:
                   type: string
-                  description: User ID to promote to admin
-                  example: "user_12345"
+                  description: User ID to filter by
       responses:
         '200':
-          description: User role updated to admin successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: number
-                    example: 200
-                  status:
-                    type: string
-                    example: "success"
-                  message:
-                    type: string
-                    example: "User role updated to admin successfully"
-                  data:
-                    type: object
-                    properties:
-                      user:
-                        $ref: '#/components/schemas/User'
+          description: Bookings retrieved successfully
         '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+          description: Bad request
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: No bookings found for user
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error
 
-  # Roles Endpoints
-  /roles:
-    get:
-      tags:
-        - Roles
-      summary: Get all roles
-      description: Retrieve all available roles in the system
-      security:
-        - BearerAuth: []
-      responses:
-        '200':
-          description: Roles retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RolesResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
+  /bookings/staff:
     post:
       tags:
-        - Roles
-      summary: Get a specific role by ID
-      description: Retrieve detailed information about a specific role
-      security:
-        - BearerAuth: []
+        - Bookings
+      summary: Get bookings by staff
+      description: Retrieve bookings assigned to a specific staff member
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RoleRequest'
+              type: object
+              required:
+                - staffId
+              properties:
+                staffId:
+                  type: string
+                  description: Staff ID to filter by
       responses:
         '200':
-          description: Role retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: number
-                    example: 200
-                  status:
-                    type: string
-                    example: "success"
-                  message:
-                    type: string
-                    example: "Role retrieved successfully"
-                  data:
-                    type: object
-                    properties:
-                      role:
-                        $ref: '#/components/schemas/Role'
+          description: Bookings retrieved successfully
         '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: Bad request
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: No bookings found for staff
         '500':
-          $ref: '#/components/responses/InternalServerError'
-
-    put:
-      tags:
-        - Roles
-      summary: Update a role
-      description: Update role information
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateRoleRequest'
-      responses:
-        '200':
-          description: Role updated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: number
-                    example: 200
-                  status:
-                    type: string
-                    example: "success"
-                  message:
-                    type: string
-                    example: "Role updated successfully"
-                  data:
-                    type: object
-                    properties:
-                      role:
-                        $ref: '#/components/schemas/Role'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-    delete:
-      tags:
-        - Roles
-      summary: Delete a role
-      description: Remove a role from the system
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DeleteRoleRequest'
-      responses:
-        '200':
-          description: Role deleted successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: number
-                    example: 200
-                  status:
-                    type: string
-                    example: "success"
-                  message:
-                    type: string
-                    example: "Role deleted successfully"
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  /roles/add:
-    post:
-      tags:
-        - Roles
-      summary: Add a new role
-      description: Create a new role in the system
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateRoleRequest'
-      responses:
-        '201':
-          description: Role created successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: number
-                    example: 201
-                  status:
-                    type: string
-                    example: "success"
-                  message:
-                    type: string
-                    example: "Role created successfully"
-                  data:
-                    type: object
-                    properties:
-                      role:
-                        $ref: '#/components/schemas/Role'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '409':
-          description: Role already exists
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: number
-                    example: 409
-                  message:
-                    type: string
-                    example: "Role already exists"
-                  error:
-                    type: string
-                    example: "A role with this ID already exists"
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error
 
   # Payments Endpoints
-  /payments:
+  /payments/add:
     post:
       tags:
         - Payments
-      summary: Create a payment
-      description: |
-        Create a new payment request for DNA services. Supports multiple payment gateways:
-        - **MOMO**: Mobile money payments
-        - **VNPAY**: Vietnam's leading payment gateway  
-        - **ZALOPAY**: Digital wallet payments
-        
-        Returns a payment URL where users can complete their payment.
-      security:
-        - BearerAuth: []
+      summary: Process a payment
+      description: Process a payment for a booking using specified payment method
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PaymentRequest'
+              type: object
+              required:
+                - bookingId
+                - amount
+                - paymentMethod
+              properties:
+                bookingId:
+                  type: string
+                  description: Booking ID to pay for
+                amount:
+                  type: number
+                  format: float
+                  description: Payment amount
+                paymentMethod:
+                  type: string
+                  enum: [MOMO, VNPAY, ZALOPAY]
+                  description: Payment method to use
       responses:
         '200':
-          description: Payment URL generated successfully
+          description: Payment initiated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaymentResponse'
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: Payment gateway response data
         '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+          description: Bad request - validation error or invalid payment method
+        '404':
+          description: Booking not found
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error
 
-components:
-  securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: Firebase Authentication JWT token
-
-  schemas:
-    # Payment Schemas
-    Payment:
-      type: object
-      properties:
-        id:
-          type: string
-          description: Payment ID
-          example: 'PAY_12345'
-        totalAmount:
-          type: number
-          description: Total payment amount in VND
-          example: 50000
-        paymentChoice:
-          type: string
-          enum: ['MOMO', 'VNPAY', 'ZALOPAY']
-          description: Payment method chosen
-          example: 'VNPAY'
-        status:
-          type: string
-          enum: ['pending', 'completed', 'failed', 'refunded']
-          description: Payment status
-          example: 'completed'
-        createdAt:
-          type: string
-          format: date-time
-          description: Payment creation timestamp
-          example: '2024-12-06T10:30:00.000Z'
-
-    PaymentRequest:
-      type: object
-      required: ['totalAmount', 'paymentChoice']
-      properties:
-        totalAmount:
-          type: number
-          minimum: 1000
-          description: Total payment amount in VND (minimum 1,000 VND)
-          example: 50000
-        paymentChoice:
-          type: string
-          enum: ['MOMO', 'VNPAY', 'ZALOPAY']
-          description: Payment method - MOMO, VNPAY, or ZALOPAY
-          example: 'VNPAY'
-
-    PaymentResponse:
-      type: object
-      properties:
-        statusCode:
-          type: number
-          description: HTTP status code
-          example: 200
-        payUrl:
-          type: string
-          description: Payment URL to redirect user for payment
-          example: 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?...'
-        message:
-          type: string
-          description: Response message
-          example: 'Payment URL generated successfully'
-
-    # User Schemas
-    User:
-      type: object
-      properties:
-        id:
-          type: string
-          description: User ID
-          example: 'user_12345'
-        fullname:
-          type: string
-          description: Full name of the user
-          example: 'John Doe'
-        email:
-          type: string
-          format: email
-          description: Email address
-          example: 'john.doe@example.com'
-        phoneNumber:
-          type: string
-          description: Phone number
-          example: '+84901234567'
-        dateOfBirth:
-          type: string
-          format: date
-          description: Date of birth
-          example: '1990-01-15'
-        address:
-          type: string
-          description: User address
-          example: '123 Main St, Ho Chi Minh City'
-        accountStatus:
-          type: string
-          description: Account status
-          example: 'active'
-        role:
-          type: object
-          properties:
-            id:
-              type: string
-              description: Role ID
-              example: 'role_123'
-            name:
-              type: string
-              description: Role name
-              example: 'customer'
-        createdAt:
-          type: string
-          format: date-time
-          description: Account creation timestamp
-          example: '2024-12-06T10:30:00.000Z'
-        lastLogin:
-          type: string
-          format: date-time
-          description: Last login timestamp
-          example: '2024-12-06T15:45:00.000Z'
-
-    UserRequest:
-      type: object
-      required: ['userId']
-      properties:
-        userId:
-          type: string
-          description: User ID to retrieve
-          example: 'user_12345'
-
-    UsersResponse:
-      type: object
-      properties:
-        statusCode:
-          type: number
-          description: HTTP status code
-          example: 200
-        status:
-          type: string
-          description: Response status
-          example: 'success'
-        message:
-          type: string
-          description: Response message
-          example: 'Users retrieved successfully'
-        data:
-          type: object
-          properties:
-            users:
-              type: array
-              items:
-                $ref: '#/components/schemas/User'
-
-    # Service Schemas
-    Service:
-      type: object
-      properties:
-        id:
-          type: string
-          description: Service ID
-          example: 'service_123'
-        title:
-          type: string
-          description: Service title
-          example: 'DNA Analysis'
-        description:
-          type: string
-          description: Brief service description
-          example: 'Basic DNA analysis service'
-        fullDescription:
-          type: string
-          description: Complete service description
-          example: 'Comprehensive DNA analysis including genetic markers and ancestry information'
-        price:
-          type: number
-          description: Service price in VND
-          example: 500000
-        duration:
-          type: string
-          description: Service duration
-          example: '5-7 days'
-        category:
-          type: string
-          description: Service category
-          example: 'DNA Testing'
-        serviceType:
-          type: string
-          description: Type of service
-          example: 'laboratory'
-        hasLegalValue:
-          type: boolean
-          description: Whether service has legal value
-          example: true
-        icon:
-          type: string
-          description: Service icon
-          example: 'dna-icon'
-        participants:
-          type: string
-          description: Required participants
-          example: '1-2 people'
-        requiredDocuments:
-          type: string
-          description: Required documents
-          example: 'ID card, consent form'
-        procedures:
-          type: string
-          description: Service procedures
-          example: 'Sample collection, analysis, report generation'
-        featured:
-          type: boolean
-          description: Whether service is featured
-          example: false
-        createdAt:
-          type: string
-          format: date-time
-          description: Service creation timestamp
-          example: '2024-12-06T10:30:00.000Z'
-        updatedAt:
-          type: string
-          format: date-time
-          description: Service last update timestamp
-          example: '2024-12-06T12:30:00.000Z'
-
-    ServiceCollectionMethod:
-      type: object
-      properties:
-        id:
-          type: string
-          description: Method ID
-          example: 'method_123'
-        serviceId:
-          type: string
-          description: Associated service ID
-          example: 'service_123'
-        methodId:
-          type: string
-          description: Collection method ID
-          example: 'collect_123'
-        methodTitle:
-          type: string
-          description: Collection method title
-          example: 'Saliva Collection'
-        methodDescription:
-          type: string
-          description: Method description
-          example: 'Non-invasive saliva sample collection'
-        methodIcon:
-          type: string
-          description: Method icon
-          example: 'saliva-icon'
-        methodColor:
-          type: string
-          description: Method color code
-          example: '#FF5733'
-        methodNote:
-          type: string
-          description: Additional method notes
-          example: 'Avoid eating 30 minutes before collection'
-        methodProcess:
-          type: string
-          description: Collection process details
-          example: 'Spit into provided container'
-        allowedFor:
-          type: string
-          description: Who can use this method
-          example: 'All ages'
-        createdAt:
-          type: string
-          format: date-time
-          description: Method creation timestamp
-          example: '2024-12-06T10:30:00.000Z'
-
-    ServiceRequest:
-      type: object
-      required: ['serviceId']
-      properties:
-        serviceId:
-          type: string
-          description: Service ID to retrieve
-          example: 'service_123'
-
-    ServiceResponse:
-      type: object
-      properties:
-        statusCode:
-          type: number
-          description: HTTP status code
-          example: 200
-        status:
-          type: string
-          description: Response status
-          example: 'success'
-        message:
-          type: string
-          description: Response message
-          example: 'Service retrieved successfully'
-        data:
-          type: object
-          properties:
-            service:
-              $ref: '#/components/schemas/Service'
-
-    ServicesResponse:
-      type: object
-      properties:
-        statusCode:
-          type: number
-          description: HTTP status code
-          example: 200
-        status:
-          type: string
-          description: Response status
-          example: 'success'
-        message:
-          type: string
-          description: Response message
-          example: 'Services and methods retrieved successfully'
-        data:
-          type: object
-          properties:
-            dnaServices:
-              type: array
-              items:
-                $ref: '#/components/schemas/Service'
-            serviceCollectionMethods:
-              type: array
-              items:
-                $ref: '#/components/schemas/ServiceCollectionMethod'
-
-    # Role Schemas
-    Role:
-      type: object
-      properties:
-        id:
-          type: string
-          description: Role ID
-          example: 'admin'
-        name:
-          type: string
-          description: Role name
-          example: 'Administrator'
-        description:
-          type: string
-          description: Role description
-          example: 'Full system access with administrative privileges'
-        createdAt:
-          type: string
-          format: date-time
-          description: Role creation timestamp
-          example: '2024-12-06T10:30:00.000Z'
-        updatedAt:
-          type: string
-          format: date-time
-          description: Role last update timestamp
-          example: '2024-12-06T12:30:00.000Z'
-
-    RoleRequest:
-      type: object
-      required: ['roleId']
-      properties:
-        roleId:
-          type: string
-          description: Role ID to retrieve
-          example: 'admin'
-
-    CreateRoleRequest:
-      type: object
-      required: ['id', 'name', 'description']
-      properties:
-        id:
-          type: string
-          description: Unique role ID
-          example: 'manager'
-        name:
-          type: string
-          description: Role name
-          example: 'Manager'
-        description:
-          type: string
-          description: Role description
-          example: 'Manager role with limited administrative access'
-
-    UpdateRoleRequest:
-      type: object
-      required: ['roleId', 'name', 'description']
-      properties:
-        roleId:
-          type: string
-          description: Role ID to update
-          example: 'manager'
-        name:
-          type: string
-          description: Updated role name
-          example: 'Senior Manager'
-        description:
-          type: string
-          description: Updated role description
-          example: 'Senior manager role with extended privileges'
-
-    DeleteRoleRequest:
-      type: object
-      required: ['roleId']
-      properties:
-        roleId:
-          type: string
-          description: Role ID to delete
-          example: 'manager'
-
-    RolesResponse:
-      type: object
-      properties:
-        statusCode:
-          type: number
-          description: HTTP status code
-          example: 200
-        status:
-          type: string
-          description: Response status
-          example: 'success'
-        message:
-          type: string
-          description: Response message
-          example: 'Roles retrieved successfully'
-        data:
-          type: object
-          properties:
-            roles:
-              type: array
-              items:
-                $ref: '#/components/schemas/Role'
-
-    # Error Schema
-    Error:
-      type: object
-      properties:
-        statusCode:
-          type: number
-          description: HTTP status code
-          example: 400
-        message:
-          type: string
-          description: Error message
-          example: 'totalAmount is required'
-        error:
-          type: string
-          description: Detailed error description
-          example: 'Missing required parameter'
-
-  responses:
-    BadRequest:
-      description: Bad request - Invalid input parameters
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    Unauthorized:
-      description: Unauthorized - Invalid or missing authentication token
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              statusCode:
-                type: number
-                example: 401
-              message:
-                type: string
-                example: 'Unauthorized access'
-              error:
-                type: string
-                example: 'Invalid or missing authentication token'
-
-    NotFound:
-      description: Resource not found
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              statusCode:
-                type: number
-                example: 404
-              message:
-                type: string
-                example: 'Resource not found'
-              error:
-                type: string
-                example: 'The requested resource does not exist'
-
-    Forbidden:
-      description: Forbidden - Insufficient permissions
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              statusCode:
-                type: number
-                example: 403
-              message:
-                type: string
-                example: 'Forbidden access'
-              error:
-                type: string
-                example: 'Insufficient permissions to access this resource'
-
-    InternalServerError:
-      description: Internal server error
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              statusCode:
-                type: number
-                example: 500
-              message:
-                type: string
-                example: 'Internal server error'
-              error:
-                type: string
-                example: 'An unexpected error occurred'
+tags:
+  - name: General
+    description: General API endpoints
+  - name: Services
+    description: Service management endpoints
+  - name: Methods
+    description: Method management endpoints
+  - name: Method Services
+    description: Method-Service relationship endpoints
+  - name: Users
+    description: User management endpoints
+  - name: Roles
+    description: Role management endpoints
+  - name: Bookings
+    description: Booking management endpoints
+  - name: Payments
+    description: Payment processing endpoints
