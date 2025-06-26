@@ -39,10 +39,10 @@ const AppointmentBooking = () => {
           getAllServices(),
           getAllMethods()
         ]);
-        
+
         setServices(servicesData || []);
         setMethods(methodsData || []);
-        
+
         // Enrich methods with icon and color
         const enriched = enrichMethodData(methodsData || []);
         setEnrichedMethods(enriched);
@@ -120,7 +120,7 @@ const AppointmentBooking = () => {
 
   const handleServiceSelect = (serviceId) => {
     const selectedService = getServiceById(services, serviceId);
-    
+
     setBookingData({
       ...bookingData,
       serviceId: serviceId,
@@ -213,7 +213,7 @@ const AppointmentBooking = () => {
   };
 
   const getServiceTypeBadge = (serviceType) => {
-    return serviceType === 'administrative' 
+    return serviceType === 'administrative'
       ? <Badge bg="warning" text="dark">Hành chính</Badge>
       : <Badge bg="success">Dân sự</Badge>;
   };
@@ -221,9 +221,9 @@ const AppointmentBooking = () => {
   const getMethodBadges = (allowedMethods) => {
     return allowedMethods.map(method => {
       return (
-        <Badge 
-          key={method.id} 
-          bg={method.color || 'secondary'} 
+        <Badge
+          key={method.id}
+          bg={method.color || 'secondary'}
           className="me-1"
           title={method.description}
         >
@@ -275,13 +275,12 @@ const AppointmentBooking = () => {
                 <div className="d-flex justify-content-center align-items-center">
                   {[1, 2, 3, 4].map((step, index) => (
                     <React.Fragment key={step}>
-                      <div className={`rounded-circle d-flex align-items-center justify-content-center border-2 ${
-                        currentStep >= step 
-                          ? 'bg-primary text-white border-primary' 
-                          : currentStep === step - 1 
-                            ? 'bg-white text-primary border-primary'
-                            : 'bg-light text-muted border-light'
-                      }`} style={{ width: '50px', height: '50px', fontWeight: 'bold' }}>
+                      <div className={`rounded-circle d-flex align-items-center justify-content-center border-2 ${currentStep >= step
+                        ? 'bg-primary text-white border-primary'
+                        : currentStep === step - 1
+                          ? 'bg-white text-primary border-primary'
+                          : 'bg-light text-muted border-light'
+                        }`} style={{ width: '50px', height: '50px', fontWeight: 'bold' }}>
                         {currentStep > step ? (
                           <i className="bi bi-check-lg"></i>
                         ) : (
@@ -289,12 +288,12 @@ const AppointmentBooking = () => {
                         )}
                       </div>
                       {index < 3 && (
-                        <div className={`mx-3`} 
-                             style={{ 
-                               width: '60px', 
-                               height: '3px', 
-                               backgroundColor: currentStep > step ? '#0d6efd' : '#dee2e6' 
-                             }}>
+                        <div className={`mx-3`}
+                          style={{
+                            width: '60px',
+                            height: '3px',
+                            backgroundColor: currentStep > step ? '#0d6efd' : '#dee2e6'
+                          }}>
                         </div>
                       )}
                     </React.Fragment>
@@ -337,10 +336,9 @@ const AppointmentBooking = () => {
                 {/* Service Type Comparison */}
                 <Row className="mb-5">
                   <Col md={6} className="mb-4">
-                    <Card 
-                      className={`h-100 border-success cursor-pointer ${
-                        bookingData.serviceType === 'civil' ? 'border-3 shadow-lg' : 'border-2'
-                      }`}
+                    <Card
+                      className={`h-100 border-success cursor-pointer ${bookingData.serviceType === 'civil' ? 'border-3 shadow-lg' : 'border-2'
+                        }`}
                       onClick={() => handleServiceTypeChange('civil')}
                       style={{ cursor: 'pointer', transition: 'all 0.3s ease' }}
                     >
@@ -359,7 +357,7 @@ const AppointmentBooking = () => {
                             <li className="mb-2"><i className="bi bi-check-circle text-success me-2"></i>Giá thành hợp lý</li>
                           </ul>
                         </div>
-                        
+
                         <div className="mb-4">
                           <h6 className="text-success mb-3">Phù hợp cho:</h6>
                           <ul className="small text-muted ps-3">
@@ -388,10 +386,9 @@ const AppointmentBooking = () => {
                   </Col>
 
                   <Col md={6} className="mb-4">
-                    <Card 
-                      className={`h-100 border-warning cursor-pointer ${
-                        bookingData.serviceType === 'administrative' ? 'border-3 shadow-lg' : 'border-2'
-                      }`}
+                    <Card
+                      className={`h-100 border-warning cursor-pointer ${bookingData.serviceType === 'administrative' ? 'border-3 shadow-lg' : 'border-2'
+                        }`}
                       onClick={() => handleServiceTypeChange('administrative')}
                       style={{ cursor: 'pointer', transition: 'all 0.3s ease' }}
                     >
@@ -410,7 +407,7 @@ const AppointmentBooking = () => {
                             <li className="mb-2"><i className="bi bi-shield-check text-warning me-2"></i>Tuân thủ tiêu chuẩn quốc tế</li>
                           </ul>
                         </div>
-                        
+
                         <div className="mb-4">
                           <h6 className="text-warning mb-3">Phù hợp cho:</h6>
                           <ul className="small text-muted">
@@ -457,14 +454,13 @@ const AppointmentBooking = () => {
                     <Row>
                       {getServicesByType(services, bookingData.serviceType).map(service => (
                         <Col key={service.id} lg={4} md={6} className="mb-4">
-                          <Card 
-                            className={`h-100 border-0 shadow-sm ${
-                              bookingData.serviceId === service.id 
-                                ? 'border-start border-4 border-primary shadow-lg' 
-                                : ''
-                            }`}
-                            style={{ 
-                              cursor: 'pointer', 
+                          <Card
+                            className={`h-100 border-0 shadow-sm ${bookingData.serviceId === service.id
+                              ? 'border-start border-4 border-primary shadow-lg'
+                              : ''
+                              }`}
+                            style={{
+                              cursor: 'pointer',
                               transition: 'all 0.3s ease',
                               transform: bookingData.serviceId === service.id ? 'translateY(-5px)' : 'none'
                             }}
@@ -472,8 +468,8 @@ const AppointmentBooking = () => {
                           >
                             {service.featured && (
                               <div className="position-relative">
-                                <Badge 
-                                  bg="primary" 
+                                <Badge
+                                  bg="primary"
                                   className="position-absolute top-0 end-0 m-2"
                                   style={{ zIndex: 1 }}
                                 >
@@ -481,14 +477,12 @@ const AppointmentBooking = () => {
                                 </Badge>
                               </div>
                             )}
-                            
-                            <Card.Header className={`border-0 ${
-                              service.category?.hasLegalValue ? 'bg-warning bg-opacity-10' : 'bg-success bg-opacity-10'
-                            }`}>
+
+                            <Card.Header className={`border-0 ${service.category?.hasLegalValue ? 'bg-warning bg-opacity-10' : 'bg-success bg-opacity-10'
+                              }`}>
                               <div className="d-flex align-items-center mb-2">
-                                <div className={`rounded-circle p-2 me-3 ${
-                                  service.category?.hasLegalValue ? 'bg-warning' : 'bg-success'
-                                }`}>
+                                <div className={`rounded-circle p-2 me-3 ${service.category?.hasLegalValue ? 'bg-warning' : 'bg-success'
+                                  }`}>
                                   <i className={`${service.icon || 'bi-dna'} text-white fs-5`}></i>
                                 </div>
                                 <div className="flex-grow-1">
@@ -502,11 +496,11 @@ const AppointmentBooking = () => {
                               <Card.Text className="text-muted flex-grow-1">
                                 {service.description}
                               </Card.Text>
-                              
+
                               {/* Price and Duration */}
                               <div className="mb-3">
                                 <div className="h5 text-primary mb-1">
-                                  {typeof service.price === 'number' 
+                                  {typeof service.price === 'number'
                                     ? new Intl.NumberFormat('vi-VN').format(service.price) + ' VNĐ'
                                     : service.price || 'Liên hệ'
                                   }
@@ -516,7 +510,7 @@ const AppointmentBooking = () => {
                                   Thời gian: {service.duration}
                                 </small>
                               </div>
-                              
+
                               {/* Collection Methods */}
                               <div className="mb-3">
                                 <small className="text-muted d-block mb-2">Phương thức lấy mẫu:</small>
@@ -525,9 +519,9 @@ const AppointmentBooking = () => {
                                     enrichedMethods.map(method => {
                                       const isDisabled = isMethodDisabled(method.id, service);
                                       return (
-                                        <Badge 
-                                          key={method.id} 
-                                          bg={isDisabled ? 'secondary' : method.color || 'secondary'} 
+                                        <Badge
+                                          key={method.id}
+                                          bg={isDisabled ? 'secondary' : method.color || 'secondary'}
                                           className="me-1"
                                           style={{ opacity: isDisabled ? 0.5 : 1 }}
                                         >
@@ -578,10 +572,10 @@ const AppointmentBooking = () => {
 
                 <Row className="mt-4">
                   <Col className="text-end">
-                    <Button 
-                      variant="primary" 
+                    <Button
+                      variant="primary"
                       size="lg"
-                      onClick={nextStep} 
+                      onClick={nextStep}
                       disabled={!bookingData.serviceId}
                     >
                       Tiếp tục <i className="bi bi-arrow-right ms-2"></i>
@@ -606,7 +600,7 @@ const AppointmentBooking = () => {
                 {selectedService.category?.hasLegalValue && (
                   <Alert variant="warning" className="mb-4">
                     <i className="bi bi-shield-check me-2"></i>
-                    <strong>Lưu ý quan trọng:</strong> Với dịch vụ có giá trị pháp lý, bắt buộc phải thu mẫu 
+                    <strong>Lưu ý quan trọng:</strong> Với dịch vụ có giá trị pháp lý, bắt buộc phải thu mẫu
                     có giám sát (tại cơ sở hoặc nhân viên đến nhà) để đảm bảo tính chính xác và giá trị pháp lý.
                   </Alert>
                 )}
@@ -614,7 +608,7 @@ const AppointmentBooking = () => {
                 {selectedService.id === 'civil-prenatal' && (
                   <Alert variant="info" className="mb-4">
                     <i className="bi bi-heart-pulse me-2"></i>
-                    <strong>ADN trước sinh đặc biệt:</strong> Cần có chuyên gia y tế thực hiện do yêu cầu 
+                    <strong>ADN trước sinh đặc biệt:</strong> Cần có chuyên gia y tế thực hiện do yêu cầu
                     kỹ thuật cao và để đảm bảo an toàn cho mẹ và bé.
                   </Alert>
                 )}
@@ -624,28 +618,26 @@ const AppointmentBooking = () => {
                     enrichedMethods.map(method => {
                       const isDisabled = isMethodDisabled(method.id, selectedService);
                       const restrictionReason = getMethodRestrictionReason(method.id, selectedService);
-                      
+
                       return (
                         <Col key={method.id} lg={4} md={6} className="mb-4">
-                          <Card 
-                            className={`h-100 border-2 ${
-                              isDisabled 
-                                ? 'border-light bg-light opacity-50' 
-                                : bookingData.collectionMethod === method.id 
-                                  ? `border-${method.color || 'primary'} shadow-lg` 
-                                  : `border-${method.color || 'primary'} border-opacity-25 cursor-pointer`
-                            }`}
-                            style={{ 
-                              cursor: isDisabled ? 'not-allowed' : 'pointer', 
-                              transition: 'all 0.3s ease' 
+                          <Card
+                            className={`h-100 border-2 ${isDisabled
+                              ? 'border-light bg-light opacity-50'
+                              : bookingData.collectionMethod === method.id
+                                ? `border-${method.color || 'primary'} shadow-lg`
+                                : `border-${method.color || 'primary'} border-opacity-25 cursor-pointer`
+                              }`}
+                            style={{
+                              cursor: isDisabled ? 'not-allowed' : 'pointer',
+                              transition: 'all 0.3s ease'
                             }}
                             onClick={() => !isDisabled && handleMethodSelect(method.id)}
                           >
-                            <Card.Header className={`${
-                              isDisabled 
-                                ? 'bg-light text-muted' 
-                                : `bg-${method.color || 'primary'} text-white`
-                            } text-center`}>
+                            <Card.Header className={`${isDisabled
+                              ? 'bg-light text-muted'
+                              : `bg-${method.color || 'primary'} text-white`
+                              } text-center`}>
                               <div className="py-2">
                                 <i className={`${method.icon || 'bi-gear'} fs-1 mb-2 d-block`}></i>
                                 <h5 className="mb-0">{method.name}</h5>
@@ -658,7 +650,7 @@ const AppointmentBooking = () => {
                             </Card.Header>
                             <Card.Body>
                               <Card.Text className="mb-3">{method.description}</Card.Text>
-                              
+
                               {isDisabled ? (
                                 <Alert variant="danger" className="small">
                                   <i className="bi bi-x-circle me-2"></i>
@@ -725,10 +717,10 @@ const AppointmentBooking = () => {
                     </Button>
                   </Col>
                   <Col className="text-end">
-                    <Button 
-                      variant="primary" 
+                    <Button
+                      variant="primary"
                       size="lg"
-                      onClick={nextStep} 
+                      onClick={nextStep}
                       disabled={!bookingData.collectionMethod}
                     >
                       Tiếp tục <i className="bi bi-arrow-right ms-2"></i>
@@ -747,7 +739,7 @@ const AppointmentBooking = () => {
                     Vui lòng điền đầy đủ thông tin để hoàn tất việc đặt lịch
                   </p>
                 </div>
-                
+
                 <Row>
                   {/* Customer Information */}
                   <Col lg={6} className="mb-4">
@@ -888,7 +880,7 @@ const AppointmentBooking = () => {
                             <Form.Label>Ngày hẹn <span className="text-danger">*</span></Form.Label>
                             <Form.Select
                               value={bookingData.appointmentDate}
-                              onChange={(e) => setBookingData({...bookingData, appointmentDate: e.target.value})}
+                              onChange={(e) => setBookingData({ ...bookingData, appointmentDate: e.target.value })}
                               required
                             >
                               <option value="">Chọn ngày hẹn</option>
@@ -914,7 +906,7 @@ const AppointmentBooking = () => {
                                       variant={bookingData.appointmentTime === time ? 'warning' : 'outline-warning'}
                                       size="sm"
                                       className="w-100"
-                                      onClick={() => setBookingData({...bookingData, appointmentTime: time})}
+                                      onClick={() => setBookingData({ ...bookingData, appointmentTime: time })}
                                     >
                                       {time}
                                     </Button>
@@ -951,7 +943,7 @@ const AppointmentBooking = () => {
                     )}
 
                     {/* Special Requests */}
-                    <Card className="mb-4 shadow-sm">
+                    {/* <Card className="mb-4 shadow-sm">
                       <Card.Header className="bg-success text-white">
                         <h5 className="mb-0">
                           <i className="bi bi-chat-text me-2"></i>
@@ -964,12 +956,12 @@ const AppointmentBooking = () => {
                           rows={3}
                           placeholder="Nhập yêu cầu đặc biệt (nếu có)..."
                           value={bookingData.specialRequests}
-                          onChange={(e) => setBookingData({...bookingData, specialRequests: e.target.value})}
+                          onChange={(e) => setBookingData({ ...bookingData, specialRequests: e.target.value })}
                         />
                       </Card.Body>
                     </Card>
 
-                    {/* Required Documents Reminder */}
+                    {/* Required Documents Reminder 
                     {selectedService && (
                       <Card className="border-info shadow-sm">
                         <Card.Header className="bg-info text-white">
@@ -980,7 +972,7 @@ const AppointmentBooking = () => {
                         </Card.Header>
                         <Card.Body>
                           <ul className="list-unstyled mb-0">
-                            {selectedService.requiredDocuments.map((doc, index) => (
+                            {selectedService?.requiredDocuments?.map((doc, index) => (
                               <li key={index} className="small mb-2">
                                 <i className="bi bi-check text-info me-2"></i>
                                 {doc}
@@ -989,7 +981,7 @@ const AppointmentBooking = () => {
                           </ul>
                         </Card.Body>
                       </Card>
-                    )}
+                    )} */}
                   </Col>
                 </Row>
 
@@ -1000,14 +992,14 @@ const AppointmentBooking = () => {
                     </Button>
                   </Col>
                   <Col className="text-end">
-                    <Button 
-                      variant="primary" 
+                    <Button
+                      variant="primary"
                       size="lg"
                       onClick={nextStep}
                       disabled={
-                        !bookingData.customerInfo.fullName || 
-                        !bookingData.customerInfo.phone || 
-                        !bookingData.customerInfo.address || 
+                        !bookingData.customerInfo.fullName ||
+                        !bookingData.customerInfo.phone ||
+                        !bookingData.customerInfo.address ||
                         (bookingData.collectionMethod !== 'self-sample' && (!bookingData.appointmentDate || !bookingData.appointmentTime))
                       }
                     >
@@ -1027,7 +1019,7 @@ const AppointmentBooking = () => {
                     Vui lòng kiểm tra lại thông tin trước khi xác nhận đặt lịch
                   </p>
                 </div>
-                
+
                 <Card className="shadow-lg">
                   <Card.Header className="bg-primary text-white">
                     <h5 className="mb-0">
@@ -1063,9 +1055,8 @@ const AppointmentBooking = () => {
                           <Row>
                             <Col md={6}>
                               <div className="d-flex align-items-center mb-4">
-                                <div className={`rounded-circle p-3 me-3 ${
-                                  selectedService.serviceType === 'administrative' ? 'bg-warning' : 'bg-success'
-                                }`}>
+                                <div className={`rounded-circle p-3 me-3 ${selectedService.serviceType === 'administrative' ? 'bg-warning' : 'bg-success'
+                                  }`}>
                                   <i className={`${selectedService.icon || 'bi-dna'} text-white fs-4`}></i>
                                 </div>
                                 <div>
@@ -1159,8 +1150,8 @@ const AppointmentBooking = () => {
                             <Col md={6}>
                               {bookingData.collectionMethod === 'self-sample' ? (
                                 <div className="text-center">
-                                  <div className="bg-success bg-opacity-10 rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" 
-                                       style={{ width: '80px', height: '80px' }}>
+                                  <div className="bg-success bg-opacity-10 rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center"
+                                    style={{ width: '80px', height: '80px' }}>
                                     <i className="bi bi-box text-success fs-1"></i>
                                   </div>
                                   <h5 className="text-success mb-3">Tự lấy mẫu tại nhà</h5>
@@ -1175,8 +1166,8 @@ const AppointmentBooking = () => {
                                 </div>
                               ) : (
                                 <div className="text-center">
-                                  <div className="bg-primary bg-opacity-10 rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" 
-                                       style={{ width: '80px', height: '80px' }}>
+                                  <div className="bg-primary bg-opacity-10 rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center"
+                                    style={{ width: '80px', height: '80px' }}>
                                     <i className="bi bi-calendar-event text-primary fs-1"></i>
                                   </div>
                                   <h5 className="text-primary mb-3">Thông tin lịch hẹn</h5>
@@ -1191,7 +1182,7 @@ const AppointmentBooking = () => {
                                 </div>
                               )}
                             </Col>
-                            <Col md={6}>
+                            {/* <Col md={6}>
                               {bookingData.specialRequests && (
                                 <div className="mb-4">
                                   <h6 className="text-primary mb-3">Yêu cầu đặc biệt</h6>
@@ -1204,7 +1195,7 @@ const AppointmentBooking = () => {
                               <div>
                                 <h6 className="text-primary mb-3">Giấy tờ cần mang theo</h6>
                                 <ul className="list-unstyled">
-                                  {selectedService.requiredDocuments.map((doc, index) => (
+                                  {selectedService?.requiredDocuments?.map((doc, index) => (
                                     <li key={index} className="mb-2">
                                       <i className="bi bi-check-circle text-success me-2"></i>
                                       {doc}
@@ -1212,14 +1203,14 @@ const AppointmentBooking = () => {
                                   ))}
                                 </ul>
                               </div>
-                            </Col>
+                            </Col> */}
                           </Row>
                         </Tab.Pane>
                       </Tab.Content>
                     </Tab.Container>
-                    
+
                     <hr />
-                    
+
                     <Alert variant="info" className="mb-0">
                       <div className="d-flex align-items-start">
                         <i className="bi bi-info-circle me-3 mt-1"></i>
