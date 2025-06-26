@@ -36,14 +36,11 @@ const checkTimeSlotExists = async (timeSlotId) => {
   }
 }
 
-const isSlotAvailable = async (startTime, endTime, slotDate) => {
+const isSlotTimePassed = (startTime, slotDate) => {
   try {
-    console.log("Checking slot availability for:", slotDate, startTime, endTime);
+    console.log("Checking if slot time has passed for:", slotDate, startTime);
     if (!startTime) {
       throw new Error("startTime is required");
-    }
-    if (!endTime) {
-      throw new Error("endTime is required");
     }
     if (!slotDate) {
       throw new Error("slotDate is required");
@@ -57,6 +54,26 @@ const isSlotAvailable = async (startTime, endTime, slotDate) => {
     if (slotDateTime <= currentTime) {
       console.log(`Time slot ${slotDate} ${startTime} has already passed`);
       throw new Error(`Time slot ${slotDate} ${startTime} has already passed`);
+    }
+
+    return false;
+  } catch (error) {
+    console.error("Error checking if slot time has passed:", error);
+    throw error;
+  }
+};
+
+const isSlotBookingAvailable = async (startTime, endTime, slotDate) => {
+  try {
+    console.log("Checking slot booking availability for:", slotDate, startTime, endTime);
+    if (!startTime) {
+      throw new Error("startTime is required");
+    }
+    if (!endTime) {
+      throw new Error("endTime is required");
+    }
+    if (!slotDate) {
+      throw new Error("slotDate is required");
     }
 
     const timeSlotId = `${slotDate}_${startTime}_${endTime}`;
@@ -91,12 +108,14 @@ const isSlotAvailable = async (startTime, endTime, slotDate) => {
     return true;
 
   } catch (error) {
-    console.error("Error checking slot availability:", error);
+    console.error("Error checking slot booking availability:", error);
     throw error;
   }
 };
 
+
 module.exports = {
   checkTimeSlotExists,
-  isSlotAvailable,
+  isSlotTimePassed,
+  isSlotBookingAvailable,
 };
