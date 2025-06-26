@@ -1,7 +1,7 @@
 const { dataConnect } = require("../../config/firebase.js");
 const {checkTimeSlotExists} = require("./timeSlotUtils.js");
 const {updateTimeSlot} = require("./updateTimeSlot.js");
-const {isSlotAvailable} = require("../timeSlots/timeSlotUtils.js");
+const {isSlotBookingAvailable, isSlotTimePassed} = require("../timeSlots/timeSlotUtils.js");
 
 const addTimeSlot = async (slotDate, startTime, endTime) => {
   try {
@@ -31,9 +31,11 @@ const addTimeSlot = async (slotDate, startTime, endTime) => {
     };
 
     const existingTimeSlot = await checkTimeSlotExists(variables.id);
-    await isSlotAvailable(startTime, endTime, slotDate);
+    await isSlotTimePassed(startTime, slotDate);
     if (existingTimeSlot != null) {
+      
       console.log("Time slot already exists with ID:", variables.id);
+      await isSlotBookingAvailable(startTime, endTime, slotDate);
       console.log("Time slot is available for booking:", variables.id);
       const updateTimeSlotResponse = await updateTimeSlot(variables.id, 'increase');
       return {

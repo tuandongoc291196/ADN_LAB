@@ -32,14 +32,18 @@ const cleanupExpiredBookings = async () => {
         const historyResponse = await dataConnect.executeGraphql(GET_LATEST_BOOKING_HISTORY_QUERY, {
           variables: { bookingId: booking.id }
         });
-        const latestHistory = historyResponse.data?.bookingHistory?.[0];
+        const latestHistory = historyResponse.data.bookingHistories;
         if (!latestHistory || latestHistory.status !== "booked") {
           console.log(`Marking expired booking as cancelled: ${booking.id}`);
           await updateStaffSlotCount(booking.staffId, "decrease");
           await addBookingHistory(booking.id, "expired", "Booking expired due to payment timeout - automatically cancelled");
           console.log(`Successfully marked booking as expired: ${booking.id}`);
-        } else {
+        } else if (latestHistory.status === "booked") {
           console.log(`Booking ${booking.id} has completed payment, skipping cleanup`);
+        } else if (latestHistory[0].status === "expired") {
+          console.log(`Booking ${booking.id} already marked as expired, skipping`);
+        } else {
+          console.log(`Booking ${booking.id} has status ${latestHistory[0].status}, skipping cleanup`);
         }
       } catch (bookingError) {
         console.error(`Error processing booking ${booking.id}:`, bookingError);
