@@ -33,6 +33,7 @@ const cleanupExpiredBookings = async () => {
           variables: { bookingId: booking.id }
         });
         const latestHistory = historyResponse.data.bookingHistories;
+        console.log(`Processing booking ${booking.id} with latest history:`, latestHistory);
         if (!latestHistory || latestHistory.status !== "booked") {
           console.log(`Marking expired booking as cancelled: ${booking.id}`);
           await updateStaffSlotCount(booking.staffId, "decrease");

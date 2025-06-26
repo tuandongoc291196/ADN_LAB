@@ -8,7 +8,7 @@ const { cleanupExpiredBookings } = require("./controllers/scheduledTasks/cleanup
 
 const {addUser} = require('./controllers/users/addUser');
 const {getAllUsers, getOneUser, getUsersByRole} = require('./controllers/users/getUsers');
-const {updateUserRoleToStaff, updateUserRoleToAdmin, updateUser} = require('./controllers/users/updateUser');
+const {updateUserRoleToStaff, updateUserRoleToAdmin, updateUser, updateUserAccountStatus} = require('./controllers/users/updateUser');
 
 const {addService} = require('./controllers/services/addService');
 const {getOneService, getAllServices, getServiceByCategoryId} = require('./controllers/services/getServices');
@@ -27,6 +27,7 @@ const {addRole} = require('./controllers/roles/addRole');
 const {addBooking} = require('./controllers/bookings/addBooking');
 const {getAllBookings, getOneBooking, getBookingByTimeSlotId, getBookingByUserId, getBookingbyStaffId} = require('./controllers/bookings/getBookings');
 
+const {getUnavailableTimeSlots, getOneTimeSlot} = require('./controllers/timeSlots/getTimeSlot');
 const {addPayment} = require('./controllers/payments/addPayment');
 
 const app = express();
@@ -37,8 +38,6 @@ app.use(cors({
   origin: [
     'http://localhost:3000', 
     'http://localhost:5001',
-    'https://su25-swp391-g8.web.app',
-    'https://su25-swp391-g8.firebaseapp.com',
     'https://app-bggwpxm32a-uc.a.run.app'
   ]
 }));
@@ -69,6 +68,7 @@ app.post ('/users/role', getUsersByRole);
 app.put('/users/role/staff', updateUserRoleToStaff);
 app.put('/users', updateUser);
 app.put('/users/role/admin', updateUserRoleToAdmin);
+app.put('/users/status', updateUserAccountStatus);
 
 app.get('/roles', getAllRoles);
 app.post('/roles', getOneRole);
@@ -82,6 +82,9 @@ app.post('/bookings', getOneBooking);
 app.post('/bookings/timeslot', getBookingByTimeSlotId);
 app.post('/bookings/user', getBookingByUserId);
 app.post('/bookings/staff', getBookingbyStaffId);
+
+app.post('/timeslots/unavailable', getUnavailableTimeSlots);
+app.post('/timeslots/one', getOneTimeSlot);
 
 app.post('/payments/add', addPayment);
 
