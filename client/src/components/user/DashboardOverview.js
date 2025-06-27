@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Row, Col, Card, Button, Alert, Badge, ProgressBar } from 'react-bootstrap';
+import { Row, Col, Card, Button, Badge, ProgressBar } from 'react-bootstrap';
 import ResultsSummary from './ResultsSummary';
 
 const DashboardOverview = ({ user }) => {
@@ -69,7 +69,7 @@ const DashboardOverview = ({ user }) => {
         <Col>
           <div className="d-flex justify-content-between align-items-center">
             <div>
-              <h2 className="mb-1">Chào mừng trở lại, {user.name.split(' ').pop()}! 👋</h2>
+              <h2 className="mb-1">Chào mừng trở lại, {(user && user.name && typeof user.name === 'string') ? user.name.split(' ').pop() : ''}! 👋</h2>
               <p className="text-muted mb-0">Đây là tổng quan về các hoạt động xét nghiệm của bạn</p>
             </div>
             <div className="d-none d-md-block">

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Navbar, Nav, NavDropdown, Container, Button, Badge, Image } from 'react-bootstrap';
-import { auth, logout, adminEmails, staffEmails, managerEmails } from './config/firebase';
+import { auth, logout } from './config/firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
 
 const MainNavbar = ({ setUser }) => {
@@ -12,22 +12,17 @@ const MainNavbar = ({ setUser }) => {
   const [userData, setUserData] = useState(null);
   const [logoUrl] = useState('https://firebasestorage.googleapis.com/v0/b/su25-swp391-g8.firebasestorage.app/o/assets%2Flogo.png?alt=media&token=1c903ba1-852a-4f5b-b498-97c31ffbb742');
 
-  const getUserRole = (email) => {
-    if (adminEmails.includes(email)) return 'admin';
-    if (staffEmails.includes(email)) return 'staff';
-    if (managerEmails.includes(email)) return 'manager';
-    return 'customer';
-  };
 
   const getRoleBadge = (role) => {
     const roleConfig = {
-      admin: { bg: 'danger', icon: 'bi-crown', text: 'Admin' },
-      staff: { bg: 'info', icon: 'bi-person-badge', text: 'Staff' },
-      manager: { bg: 'warning', icon: 'bi-briefcase', text: 'Manager' },
+      admin: { bg: 'danger', icon: 'bi-crown', text: 'Quản trị viên' },
+      staff: { bg: 'info', icon: 'bi-person-badge', text: 'Nhân viên' },
+      manager: { bg: 'warning', icon: 'bi-briefcase', text: 'Quản lí' },
       customer: { bg: 'primary', icon: 'bi-person', text: 'Khách hàng' }
     };
-
-    const config = roleConfig[role] || roleConfig.customer;
+    // Normalize role string
+    const normalizedRole = (role || '').toLowerCase().trim();
+    const config = roleConfig[normalizedRole] || roleConfig.customer;
     return (
       <Badge bg={config.bg} className="ms-2">
         <i className={`${config.icon} me-1`}></i>
@@ -45,56 +40,67 @@ const MainNavbar = ({ setUser }) => {
       default: return '/user';
     }
   };
-
+  const storedUserData = localStorage.getItem('userData');
   useEffect(() => {
-    if (userAuth) {
-      const storedUserData = localStorage.getItem('userData');
-      let enhancedUserData = null;
-
-      if (storedUserData) {
-        const parsed = JSON.parse(storedUserData);
-        const detectedRole = getUserRole(userAuth.email);
-
-        // Enhance user data with role detection
-        enhancedUserData = {
-          ...parsed,
-          role_string: detectedRole,
-          role: ['admin', 'staff', 'manager'].includes(detectedRole), // Keep boolean for backward compatibility
-          email: userAuth.email,
-          displayName: userAuth.displayName,
-          photoURL: userAuth.photoURL
-        };
-
-        setUserData(enhancedUserData);
-        setUser(enhancedUserData);
-
-        // Update localStorage with enhanced data
-        localStorage.setItem('isAuthenticated', 'true');
-      } else {
-        // Create user data if not exists
-        const detectedRole = getUserRole(userAuth.email);
-        enhancedUserData = {
-          user_id: userAuth.uid,
-          fullname: userAuth.displayName || userAuth.email.split('@')[0],
-          email: userAuth.email,
-          role_string: detectedRole,
-          role: ['admin', 'staff', 'manager'].includes(detectedRole),
-          avatar: userAuth.photoURL,
-          verified: userAuth.emailVerified,
-          authProvider: 'firebase'
-        };
-
-        setUserData(enhancedUserData);
-        setUser(enhancedUserData);
-        localStorage.setItem('isAuthenticated', 'true');
+    // Lấy userData mới nhất từ localStorage mỗi lần render
+    if (storedUserData) {
+      const parsed = JSON.parse(storedUserData);
+      // Ưu tiên lấy role từ role.name nếu có
+      let role = '';
+      // Nếu userId là 0 thì role là customer
+      if (parsed.user_id === 0 || parsed.user_id === '0') {
+        role = 'customer';
+      } else if (parsed.role && typeof parsed.role === 'object' && parsed.role.name) {
+        role = parsed.role.name;
+      } else if (typeof parsed.role === 'string') {
+        role = parsed.role;
+      } else if (parsed.role_string) {
+        role = parsed.role_string;
       }
-    } else {
-      setUserData(null);
-      setUser(null);
-      localStorage.removeItem('user');
-      localStorage.removeItem('isAuthenticated');
+      // Normalize role
+      role = (role || '').toLowerCase().trim();
+      const enhancedUser = {
+        ...parsed,
+        role_string: role,
+        isAdmin: ['admin', 'manager', 'staff'].includes(role),
+      };
+      setUserData(enhancedUser);
+      setUser(enhancedUser);
+    } else if (auth.currentUser) {
+      // 🔥 Nếu không có localStorage nhưng đã login Firebase → gọi API lấy user
+      const fetchUserData = async () => {
+        try {
+          const res = await fetch(`https://app-bggwpxm32a-uc.a.run.app/users`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ userId: auth.currentUser.uid }),
+          });
+          const result = await res.json();
+          const userInfo = result.data;
+          const role = userInfo?.role?.name?.toLowerCase() || 'customer';
+
+          const enhancedUser = {
+            ...userInfo,
+            role_string: role,
+            isAdmin: ['admin', 'manager', 'staff'].includes(role),
+          };
+
+          localStorage.setItem('userData', JSON.stringify(enhancedUser));
+          localStorage.setItem('isAuthenticated', 'true');
+          setUserData(enhancedUser);
+          setUser(enhancedUser);
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+          // setUserData(null);
+          // setUser(null);
+        }
+      };
+      fetchUserData();
     }
-  }, [userAuth, setUser]);
+  }, [storedUserData, setUser]);
+  console.log('userData', userData);
 
   const handleLogout = () => {
     logout();
@@ -120,7 +126,7 @@ const MainNavbar = ({ setUser }) => {
 
   // Check if user has admin/staff/manager access
   const hasAdminAccess = () => {
-    return userData?.role || userData?.role_string === 'admin' || userData?.role_string === 'staff' || userData?.role_string === 'manager';
+    return userData?.isAdmin === true;
   };
 
   return (
@@ -391,6 +397,7 @@ const MainNavbar = ({ setUser }) => {
                           Dashboard
                           {userData?.role_string && (
                             <Badge bg="secondary" className="ms-2 small">
+                              {/* Sửa lỗi: chỉ hiển thị nếu role_string tồn tại */}
                               {userData.role_string.charAt(0).toUpperCase() + userData.role_string.slice(1)}
                             </Badge>
                           )}
