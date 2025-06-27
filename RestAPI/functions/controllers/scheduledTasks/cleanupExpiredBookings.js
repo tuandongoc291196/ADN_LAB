@@ -1,5 +1,6 @@
 const { dataConnect } = require("../../config/firebase.js");
 const { updateStaffSlotCount } = require("../users/updateUser.js");
+const { updateTimeSlot } = require("../timeSlots/updateTimeSlot.js");
 const { addBookingHistory } = require("../bookingHistory/addBookingHistory.js");
 
 const GET_EXPIRED_BOOKINGS_QUERY = `
@@ -34,23 +35,24 @@ const cleanupExpiredBookings = async () => {
         });
         const latestHistory = historyResponse.data.bookingHistories;
         console.log(`Processing booking ${booking.id} with latest history:`, latestHistory);
-        if (!latestHistory || latestHistory.status !== "booked") {
+        console.log(`Status of latest history:`,latestHistory[0]?.status);
+        if (latestHistory[0]?.status === "expired") {
+          console.log(`Booking ${booking.id} already marked as expired, skipping`);
+        } else if (latestHistory[0]?.status === "booked") {
+          console.log(`Booking ${booking.id} has completed payment, skipping cleanup`);
+        } else if (!latestHistory || latestHistory[0]?.status !== "booked") {
           console.log(`Marking expired booking as cancelled: ${booking.id}`);
           await updateStaffSlotCount(booking.staffId, "decrease");
+          await updateTimeSlot(booking.timeSlotId, "decrease");
           await addBookingHistory(booking.id, "expired", "Booking expired due to payment timeout - automatically cancelled");
           console.log(`Successfully marked booking as expired: ${booking.id}`);
-        } else if (latestHistory.status === "booked") {
-          console.log(`Booking ${booking.id} has completed payment, skipping cleanup`);
-        } else if (latestHistory[0].status === "expired") {
-          console.log(`Booking ${booking.id} already marked as expired, skipping`);
         } else {
-          console.log(`Booking ${booking.id} has status ${latestHistory[0].status}, skipping cleanup`);
+          console.log(`Booking ${booking.id} has status ${latestHistory[0]?.status}, skipping cleanup`);
         }
       } catch (bookingError) {
         console.error(`Error processing booking ${booking.id}:`, bookingError);
       }
     }
-    console.log(`Cleanup completed. Processed ${expiredBookings.length} expired bookings.`);
   } catch (error) {
     console.error("Error in cleanup process:", error);
   }

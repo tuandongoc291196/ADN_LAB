@@ -89,7 +89,7 @@ app.post('/timeslots/one', getOneTimeSlot);
 app.post('/payments/add', addPayment);
 
 exports.app = functions.https.onRequest(app);
-exports.cleanupExpiredBookings = onSchedule('every 5 minutes', async (event) => {
+exports.cleanupExpiredBookings = onSchedule('every 15 minutes', async (event) => {
   console.log('Running expired bookings cleanup...');
   await cleanupExpiredBookings();
 });
