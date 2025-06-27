@@ -437,10 +437,99 @@ const updateStaffSlotCount = async (staffId, operation) => {
   }
 };
 
+const updateUserAccountStatus = async (req, res) => {
+  try {
+    const { userId, status } = req.body;
+    if (!userId) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "userId is required",
+      });
+    }
+
+    if (!status) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "status is required",
+      });
+    } 
+    
+    if (!(await checkUserExists(userId))) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "User not found",
+        error: "User with the provided ID does not exist",
+      });
+    } 
+
+    const UPDATE_USER_STATUS_MUTATION = `
+      mutation UpdateUser($userId: String!, $accountStatus: String) @auth(level: USER) {
+          user_update(key: {id: $userId}, data: {
+            accountStatus: $accountStatus
+          })
+      }
+    `;
+
+    const variables = {
+      userId: userId,
+      accountStatus: status,
+    };
+    console.log("Executing GraphQL mutation to update user account status:", UPDATE_USER_STATUS_MUTATION, "with variables:", variables);
+    const response = await dataConnect.executeGraphql(UPDATE_USER_STATUS_MUTATION, {
+      variables: variables,
+    }); 
+    const responseData = response.data.user_update;
+    if (!responseData) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "Failed to update user account status",
+        error: "There was an issue updating the user account status. Please check your data and try again.",
+      });
+    }
+    res.status(200).json({
+      statusCode: 200,
+      status: "success",
+      message: "User account status updated successfully",
+      data: responseData,
+    });
+  } catch (error) {
+    console.error("Error updating user account status:", error);
+    
+    if (error.message && error.message.includes('SQL query error')) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "Database operation failed",
+        error: "There was an issue with the database operation. Please check your data and try again.",
+      });
+    }
+
+    if (error.codePrefix === 'data-connect' && error.errorInfo) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "Database operation failed",
+        error: error.message,
+      });
+    }
+
+    res.status(500).json({
+      statusCode: 500,
+      status: "error",
+      message: "Failed to update user account status",
+      error: error.message,
+    });
+  }
+};  
 
 module.exports = {
   updateUserRoleToStaff,
   updateUser,
   updateStaffSlotCount,
-  updateUserRoleToAdmin
+  updateUserRoleToAdmin, 
+  updateUserAccountStatus
 };
