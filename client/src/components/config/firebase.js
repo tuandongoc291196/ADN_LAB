@@ -35,7 +35,6 @@ import {
   getUser,
   getUsers,
   updateUserRole as updateUserRoleAPI,
-  updateUserAccountStatus
 } from "../../lib/dataconnect";
 
 const firebaseConfig = {
@@ -125,10 +124,6 @@ const signInWithGoogle = async () => {
     } catch (getUserError) {
       console.log("User error");
     }    
-    updateUserAccountStatus(dataConnect, {
-      userId: user.uid,
-      accountStatus: "active"
-    });
     const { data: userData } = await getUser(dataConnect, { userId: user.uid });
     localStorage.setItem("user_id", user.uid);
     localStorage.setItem("userData", JSON.stringify(userData.user));
@@ -149,11 +144,6 @@ const logInWithEmailAndPassword = async (email, password) => {
     
     localStorage.setItem("user_id", user.uid);
     localStorage.setItem("userData", JSON.stringify(userData.user));
-    const response = updateUserAccountStatus(dataConnect, {
-      userId: user.uid,
-      accountStatus: "active"
-    });
-    console.log("User account status updated:", response);
     return res;
   } catch (err) {
     console.error(err);
@@ -187,10 +177,6 @@ const registerWithEmailAndPassword = async (name, phone, email, password) => {
     
     localStorage.setItem("user_id", user.uid);
     localStorage.setItem("userData", JSON.stringify(userData.user));
-    updateUserAccountStatus(dataConnect, {
-      userId: user.uid,
-      accountStatus: "active"
-    });
     return res;
   } catch (err) {
     console.error(err);
@@ -211,10 +197,6 @@ const sendPasswordReset = async (email) => {
 
 const logout = async () => {
   const userId = localStorage.getItem("user_id");  
-  updateUserAccountStatus(dataConnect, {
-      userId: userId,
-      accountStatus: "inactive"
-    });
   
   // Cleanup user online status
   await cleanupUserStatus(userId);
@@ -597,21 +579,6 @@ async function updateUserRole(userId, roleId) {
   }
 }
 
-async function updateAccountStatus(userId, accountStatus) {
-  try {
-    updateUserAccountStatus(dataConnect, {
-      userId,
-      accountStatus
-    });
-    
-    // Invalidate cache for the updated user
-    invalidateUserCache(userId);
-  } catch (error) {
-    console.error("Error updating account status:", error);
-    throw error;
-  }
-}
-
 // User online status management
 const USER_STATUS_COLLECTION = "userStatus";
 
@@ -734,7 +701,6 @@ export {
   updateProfile,
   getAllUsers,
   updateUserRole,
-  updateAccountStatus,
   isAdmin,
   isStaff,
   adminEmails,
