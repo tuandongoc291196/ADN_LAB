@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Navbar, Nav, NavDropdown, Container, Button, Badge, Image } from 'react-bootstrap';
 import { auth, logout } from './config/firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
+import Swal from 'sweetalert2';
 
 const MainNavbar = ({ setUser }) => {
   const [expanded, setExpanded] = useState(false);
@@ -42,6 +43,12 @@ const MainNavbar = ({ setUser }) => {
   };
   const storedUserData = localStorage.getItem('userData');
   useEffect(() => {
+    const justLoggedOut = sessionStorage.getItem('justLoggedOut') === 'true';
+    if (justLoggedOut) {
+      // Nếu vừa đăng xuất, reset userData và user
+      sessionStorage.removeItem('justLoggedOut');
+      return;
+    }
     // Lấy userData mới nhất từ localStorage mỗi lần render
     if (storedUserData) {
       const parsed = JSON.parse(storedUserData);
@@ -108,6 +115,8 @@ const MainNavbar = ({ setUser }) => {
     localStorage.removeItem('userData');
     localStorage.removeItem('user');
     localStorage.removeItem('isAuthenticated');
+    sessionStorage.setItem('justLoggedOut', 'true');
+    // Reset user state
     setUser(null);
     navigate('/');
   };
@@ -127,6 +136,26 @@ const MainNavbar = ({ setUser }) => {
   // Check if user has admin/staff/manager access
   const hasAdminAccess = () => {
     return userData?.isAdmin === true;
+  };
+
+  // Handler for booking button
+  const handleBookingClick = (e) => {
+    if (!storedUserData) {
+      e.preventDefault(); // chặn click chuyển trang
+      Swal.fire({
+        icon: 'info',
+        title: 'Bạn chưa đăng nhập',
+        text: 'Vui lòng đăng nhập để đặt lịch xét nghiệm',
+        confirmButtonText: 'Đăng nhập ngay',
+        confirmButtonColor: '#3085d6',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate('/login', { state: { redirectTo: '/appointment' } });
+        }
+      });
+    } else {
+      handleNavClick(); // vẫn xử lý bình thường nếu đã login
+    }
   };
 
   return (
@@ -346,7 +375,7 @@ const MainNavbar = ({ setUser }) => {
                   variant="warning"
                   as={Link}
                   to="/appointment"
-                  onClick={handleNavClick}
+                  onClick={handleBookingClick}
                   className="fw-medium"
                 >
                   <i className="bi bi-calendar-plus me-1"></i>

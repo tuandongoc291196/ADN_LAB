@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Badge, Alert, ListGroup, Nav, Tab } from 'react-bootstrap';
 import { getAllServices, getAllMethods, getMethodsByServiceId } from '../../services/api';
 import { enrichMethodData } from '../data/services-data';
+import Swal from 'sweetalert2';
 
 const ServiceDetail = () => {
   const { id } = useParams();
@@ -14,6 +15,8 @@ const ServiceDetail = () => {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('process');
   const [openFaq, setOpenFaq] = useState(null);
+  const storedUserData = JSON.parse(localStorage.getItem('userData'));
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     fetchServiceData();
@@ -26,27 +29,27 @@ const ServiceDetail = () => {
 
       // Fetch services
       const servicesResponse = await getAllServices();
-      
+
       if (servicesResponse && Array.isArray(servicesResponse)) {
         const decodedId = decodeURIComponent(id);
-        
+
         // Try exact match first
         let foundService = servicesResponse.find(s => s.id === decodedId);
-        
+
         // If not found, try case-insensitive match
         if (!foundService) {
-          foundService = servicesResponse.find(s => 
+          foundService = servicesResponse.find(s =>
             s.id.toLowerCase() === decodedId.toLowerCase()
           );
         }
-        
+
         // If still not found, try partial match
         if (!foundService) {
-          foundService = servicesResponse.find(s => 
+          foundService = servicesResponse.find(s =>
             s.id.includes(decodedId) || decodedId.includes(s.id)
           );
         }
-        
+
         if (foundService) {
           setService(foundService);
           // Fetch methods for this specific service
@@ -60,7 +63,7 @@ const ServiceDetail = () => {
 
       // Fetch all methods for reference
       const methodsResponse = await getAllMethods();
-      
+
       if (methodsResponse && Array.isArray(methodsResponse)) {
         setMethods(methodsResponse);
       }
@@ -75,7 +78,7 @@ const ServiceDetail = () => {
   const fetchServiceMethods = async (serviceId) => {
     try {
       const response = await getMethodsByServiceId(serviceId);
-      
+
       if (response && Array.isArray(response)) {
         setServiceMethods(response);
       } else {
@@ -103,22 +106,22 @@ const ServiceDetail = () => {
         'forensic-icon': 'bi-shield-check',
         'immigration-icon': 'bi-passport'
       };
-      
+
       // Kiểm tra xem có trong mapping không
       if (iconMapping[service.icon]) {
         return iconMapping[service.icon];
       }
-      
+
       // Nếu icon từ BE đã có prefix bi- thì giữ nguyên
       if (service.icon.startsWith('bi-')) {
         return service.icon;
       }
-      
+
       // Nếu chưa có prefix bi- thì thêm vào
       const iconWithPrefix = `bi-${service.icon}`;
       return iconWithPrefix;
     }
-    
+
     // Icon mặc định cho ADN dân sự
     return 'bi-dna';
   };
@@ -138,7 +141,7 @@ const ServiceDetail = () => {
   };
 
   const getServiceTypeBadge = (serviceType) => {
-    return serviceType === 'administrative' 
+    return serviceType === 'administrative'
       ? <Badge bg="warning" text="dark" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}>ADN Hành chính</Badge>
       : <Badge bg="success" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}>ADN Dân sự</Badge>;
   };
@@ -152,14 +155,14 @@ const ServiceDetail = () => {
         </Badge>
       );
     }
-    
+
     // Enrich methods với icon và color từ METHOD_MAPPING
     const enrichedMethods = enrichMethodData(serviceMethods);
-    
+
     return enrichedMethods.map(method => (
-      <Badge 
-        key={method.id} 
-        bg={method.color || 'secondary'} 
+      <Badge
+        key={method.id}
+        bg={method.color || 'secondary'}
         className="me-2 mb-2"
         style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}
       >
@@ -195,7 +198,7 @@ const ServiceDetail = () => {
           <i className="bi bi-exclamation-triangle me-2"></i>
           {error || 'Không tìm thấy dịch vụ'}
         </Alert>
-        
+
         {/* Debug Information */}
         <div className="mt-4 p-3 bg-light rounded">
           <h6>Debug Information:</h6>
@@ -203,8 +206,8 @@ const ServiceDetail = () => {
           <p><strong>Decoded ID:</strong> {id ? decodeURIComponent(id) : 'undefined'}</p>
           <p><strong>Current URL:</strong> {window.location.href}</p>
           <p><strong>Error:</strong> {error}</p>
-          <Button 
-            variant="outline-info" 
+          <Button
+            variant="outline-info"
             size="sm"
             onClick={() => {
               fetchServiceData();
@@ -213,8 +216,8 @@ const ServiceDetail = () => {
           >
             Debug - Retry Fetch
           </Button>
-          <Button 
-            variant="outline-warning" 
+          <Button
+            variant="outline-warning"
             size="sm"
             onClick={() => {
               navigate('/services');
@@ -224,11 +227,11 @@ const ServiceDetail = () => {
             Test - Go to Services
           </Button>
         </div>
-        
+
         <div className="text-center mt-4">
-          <Button 
-            variant="primary" 
-            as={Link} 
+          <Button
+            variant="primary"
+            as={Link}
             to="/services"
             style={{ borderRadius: '12px', padding: '12px 24px', fontWeight: '600' }}
           >
@@ -242,12 +245,34 @@ const ServiceDetail = () => {
 
   const serviceType = getServiceTypeFromCategory(service.category);
 
+  const handleNavClick = () => {
+    setExpanded(false);
+  };
+  // Kiểm tra xem người dùng đã đăng nhập chưa
+  const handleBookingClick = (e) => {
+    if (!storedUserData) {
+      e.preventDefault(); // chặn click chuyển trang
+      Swal.fire({
+        icon: 'info',
+        title: 'Bạn chưa đăng nhập',
+        text: 'Vui lòng đăng nhập để đặt lịch xét nghiệm',
+        confirmButtonText: 'Đăng nhập ngay',
+        confirmButtonColor: '#3085d6',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate('/login', { state: { redirectTo: '/appointment' } });
+        }
+      });
+    } else {
+      handleNavClick(); // vẫn xử lý bình thường nếu đã login
+    }
+  };
+
   return (
     <>
       {/* Hero Section - Style giống Blog.js */}
-      <section className={`py-5 ${
-        serviceType === 'administrative' ? 'bg-warning text-dark' : 'bg-success text-white'
-      }`}>
+      <section className={`py-5 ${serviceType === 'administrative' ? 'bg-warning text-dark' : 'bg-success text-white'
+        }`}>
         <Container>
           <Row className="align-items-center">
             <Col lg={8}>
@@ -258,7 +283,7 @@ const ServiceDetail = () => {
             </Col>
             <Col lg={4} className="text-end d-none d-lg-block">
               <i className={getServiceIcon(service)} style={{
-                fontSize: '10rem', 
+                fontSize: '10rem',
                 color: 'rgba(255,255,255,0.5)'
               }}></i>
             </Col>
@@ -330,7 +355,7 @@ const ServiceDetail = () => {
               <Card.Header className="border-0 bg-light">
                 <Nav variant="tabs" className="border-0">
                   <Nav.Item>
-                    <Nav.Link 
+                    <Nav.Link
                       active={activeTab === 'process'}
                       onClick={() => setActiveTab('process')}
                       className="border-0"
@@ -346,7 +371,7 @@ const ServiceDetail = () => {
                     </Nav.Link>
                   </Nav.Item>
                   <Nav.Item>
-                    <Nav.Link 
+                    <Nav.Link
                       active={activeTab === 'faq'}
                       onClick={() => setActiveTab('faq')}
                       className="border-0"
@@ -362,7 +387,7 @@ const ServiceDetail = () => {
                     </Nav.Link>
                   </Nav.Item>
                   <Nav.Item>
-                    <Nav.Link 
+                    <Nav.Link
                       active={activeTab === 'features'}
                       onClick={() => setActiveTab('features')}
                       className="border-0"
@@ -378,7 +403,7 @@ const ServiceDetail = () => {
                     </Nav.Link>
                   </Nav.Item>
                   <Nav.Item>
-                    <Nav.Link 
+                    <Nav.Link
                       active={activeTab === 'contact'}
                       onClick={() => setActiveTab('contact')}
                       className="border-0"
@@ -402,7 +427,7 @@ const ServiceDetail = () => {
                     <div className="row">
                       <div className="col-md-6">
                         <div className="d-flex align-items-start mb-3">
-                          <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style={{width: '40px', height: '40px', minWidth: '40px'}}>
+                          <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style={{ width: '40px', height: '40px', minWidth: '40px' }}>
                             <span className="fw-bold">1</span>
                           </div>
                           <div>
@@ -411,7 +436,7 @@ const ServiceDetail = () => {
                           </div>
                         </div>
                         <div className="d-flex align-items-start mb-3">
-                          <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style={{width: '40px', height: '40px', minWidth: '40px'}}>
+                          <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style={{ width: '40px', height: '40px', minWidth: '40px' }}>
                             <span className="fw-bold">2</span>
                           </div>
                           <div>
@@ -422,7 +447,7 @@ const ServiceDetail = () => {
                       </div>
                       <div className="col-md-6">
                         <div className="d-flex align-items-start mb-3">
-                          <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style={{width: '40px', height: '40px', minWidth: '40px'}}>
+                          <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style={{ width: '40px', height: '40px', minWidth: '40px' }}>
                             <span className="fw-bold">3</span>
                           </div>
                           <div>
@@ -431,7 +456,7 @@ const ServiceDetail = () => {
                           </div>
                         </div>
                         <div className="d-flex align-items-start mb-3">
-                          <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style={{width: '40px', height: '40px', minWidth: '40px'}}>
+                          <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style={{ width: '40px', height: '40px', minWidth: '40px' }}>
                             <span className="fw-bold">4</span>
                           </div>
                           <div>
@@ -442,33 +467,33 @@ const ServiceDetail = () => {
                       </div>
                     </div>
                   </Tab.Pane>
-                  
+
                   <Tab.Pane active={activeTab === 'faq'}>
                     <h5>Câu hỏi thường gặp</h5>
                     <div className="accordion" id="faqAccordion">
                       {/* Câu hỏi 1 */}
                       <div className="accordion-item border-0 mb-3 shadow-sm" style={{ borderRadius: '12px' }}>
                         <h2 className="accordion-header" id="faq1">
-                          <button 
+                          <button
                             className={`accordion-button ${openFaq !== 'faq1' ? 'collapsed' : ''} border-0`}
-                            type="button" 
+                            type="button"
                             onClick={() => toggleFaq('faq1')}
-                            style={{ 
+                            style={{
                               borderRadius: '12px',
                               backgroundColor: openFaq === 'faq1' ? '#f8f9fa' : 'white',
                               fontWeight: '600'
                             }}
                           >
                             <div className="d-flex align-items-center">
-                              <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style={{width: '32px', height: '32px', minWidth: '32px'}}>
+                              <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style={{ width: '32px', height: '32px', minWidth: '32px' }}>
                                 <span className="fw-bold small">1</span>
                               </div>
                               <span>Xét nghiệm ADN có chính xác không?</span>
                             </div>
                           </button>
                         </h2>
-                        <div 
-                          id="collapse1" 
+                        <div
+                          id="collapse1"
                           className={`accordion-collapse collapse ${openFaq === 'faq1' ? 'show' : ''}`}
                           data-bs-parent="#faqAccordion"
                         >
@@ -485,26 +510,26 @@ const ServiceDetail = () => {
                       {/* Câu hỏi 2 */}
                       <div className="accordion-item border-0 mb-3 shadow-sm" style={{ borderRadius: '12px' }}>
                         <h2 className="accordion-header" id="faq2">
-                          <button 
+                          <button
                             className={`accordion-button ${openFaq !== 'faq2' ? 'collapsed' : ''} border-0`}
-                            type="button" 
+                            type="button"
                             onClick={() => toggleFaq('faq2')}
-                            style={{ 
+                            style={{
                               borderRadius: '12px',
                               backgroundColor: openFaq === 'faq2' ? '#f8f9fa' : 'white',
                               fontWeight: '600'
                             }}
                           >
                             <div className="d-flex align-items-center">
-                              <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style={{width: '32px', height: '32px', minWidth: '32px'}}>
+                              <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style={{ width: '32px', height: '32px', minWidth: '32px' }}>
                                 <span className="fw-bold small">2</span>
                               </div>
                               <span>Cần bao nhiêu mẫu để xét nghiệm?</span>
                             </div>
                           </button>
                         </h2>
-                        <div 
-                          id="collapse2" 
+                        <div
+                          id="collapse2"
                           className={`accordion-collapse collapse ${openFaq === 'faq2' ? 'show' : ''}`}
                           data-bs-parent="#faqAccordion"
                         >
@@ -521,26 +546,26 @@ const ServiceDetail = () => {
                       {/* Câu hỏi 3 */}
                       <div className="accordion-item border-0 mb-3 shadow-sm" style={{ borderRadius: '12px' }}>
                         <h2 className="accordion-header" id="faq3">
-                          <button 
+                          <button
                             className={`accordion-button ${openFaq !== 'faq3' ? 'collapsed' : ''} border-0`}
-                            type="button" 
+                            type="button"
                             onClick={() => toggleFaq('faq3')}
-                            style={{ 
+                            style={{
                               borderRadius: '12px',
                               backgroundColor: openFaq === 'faq3' ? '#f8f9fa' : 'white',
                               fontWeight: '600'
                             }}
                           >
                             <div className="d-flex align-items-center">
-                              <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style={{width: '32px', height: '32px', minWidth: '32px'}}>
+                              <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style={{ width: '32px', height: '32px', minWidth: '32px' }}>
                                 <span className="fw-bold small">3</span>
                               </div>
                               <span>Thời gian có kết quả là bao lâu?</span>
                             </div>
                           </button>
                         </h2>
-                        <div 
-                          id="collapse3" 
+                        <div
+                          id="collapse3"
                           className={`accordion-collapse collapse ${openFaq === 'faq3' ? 'show' : ''}`}
                           data-bs-parent="#faqAccordion"
                         >
@@ -557,26 +582,26 @@ const ServiceDetail = () => {
                       {/* Câu hỏi 4 */}
                       <div className="accordion-item border-0 mb-3 shadow-sm" style={{ borderRadius: '12px' }}>
                         <h2 className="accordion-header" id="faq4">
-                          <button 
+                          <button
                             className={`accordion-button ${openFaq !== 'faq4' ? 'collapsed' : ''} border-0`}
-                            type="button" 
+                            type="button"
                             onClick={() => toggleFaq('faq4')}
-                            style={{ 
+                            style={{
                               borderRadius: '12px',
                               backgroundColor: openFaq === 'faq4' ? '#f8f9fa' : 'white',
                               fontWeight: '600'
                             }}
                           >
                             <div className="d-flex align-items-center">
-                              <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style={{width: '32px', height: '32px', minWidth: '32px'}}>
+                              <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style={{ width: '32px', height: '32px', minWidth: '32px' }}>
                                 <span className="fw-bold small">4</span>
                               </div>
                               <span>Xét nghiệm ADN có bảo mật không?</span>
                             </div>
                           </button>
                         </h2>
-                        <div 
-                          id="collapse4" 
+                        <div
+                          id="collapse4"
                           className={`accordion-collapse collapse ${openFaq === 'faq4' ? 'show' : ''}`}
                           data-bs-parent="#faqAccordion"
                         >
@@ -593,26 +618,26 @@ const ServiceDetail = () => {
                       {/* Câu hỏi 5 */}
                       <div className="accordion-item border-0 mb-3 shadow-sm" style={{ borderRadius: '12px' }}>
                         <h2 className="accordion-header" id="faq5">
-                          <button 
+                          <button
                             className={`accordion-button ${openFaq !== 'faq5' ? 'collapsed' : ''} border-0`}
-                            type="button" 
+                            type="button"
                             onClick={() => toggleFaq('faq5')}
-                            style={{ 
+                            style={{
                               borderRadius: '12px',
                               backgroundColor: openFaq === 'faq5' ? '#f8f9fa' : 'white',
                               fontWeight: '600'
                             }}
                           >
                             <div className="d-flex align-items-center">
-                              <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style={{width: '32px', height: '32px', minWidth: '32px'}}>
+                              <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style={{ width: '32px', height: '32px', minWidth: '32px' }}>
                                 <span className="fw-bold small">5</span>
                               </div>
                               <span>Sự khác biệt giữa ADN dân sự và hành chính?</span>
                             </div>
                           </button>
                         </h2>
-                        <div 
-                          id="collapse5" 
+                        <div
+                          id="collapse5"
                           className={`accordion-collapse collapse ${openFaq === 'faq5' ? 'show' : ''}`}
                           data-bs-parent="#faqAccordion"
                         >
@@ -627,13 +652,13 @@ const ServiceDetail = () => {
                       </div>
                     </div>
                   </Tab.Pane>
-                  
+
                   <Tab.Pane active={activeTab === 'features'}>
                     <h5>Đặc điểm nổi bật</h5>
                     <div className="row">
                       <div className="col-md-6">
                         <div className="d-flex align-items-start mb-3">
-                          <div className="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-3" style={{width: '40px', height: '40px', minWidth: '40px'}}>
+                          <div className="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-3" style={{ width: '40px', height: '40px', minWidth: '40px' }}>
                             <i className="bi bi-check-lg"></i>
                           </div>
                           <div>
@@ -642,7 +667,7 @@ const ServiceDetail = () => {
                           </div>
                         </div>
                         <div className="d-flex align-items-start mb-3">
-                          <div className="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-3" style={{width: '40px', height: '40px', minWidth: '40px'}}>
+                          <div className="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-3" style={{ width: '40px', height: '40px', minWidth: '40px' }}>
                             <i className="bi bi-check-lg"></i>
                           </div>
                           <div>
@@ -653,7 +678,7 @@ const ServiceDetail = () => {
                       </div>
                       <div className="col-md-6">
                         <div className="d-flex align-items-start mb-3">
-                          <div className="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-3" style={{width: '40px', height: '40px', minWidth: '40px'}}>
+                          <div className="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-3" style={{ width: '40px', height: '40px', minWidth: '40px' }}>
                             <i className="bi bi-check-lg"></i>
                           </div>
                           <div>
@@ -662,7 +687,7 @@ const ServiceDetail = () => {
                           </div>
                         </div>
                         <div className="d-flex align-items-start mb-3">
-                          <div className="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-3" style={{width: '40px', height: '40px', minWidth: '40px'}}>
+                          <div className="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-3" style={{ width: '40px', height: '40px', minWidth: '40px' }}>
                             <i className="bi bi-check-lg"></i>
                           </div>
                           <div>
@@ -673,13 +698,13 @@ const ServiceDetail = () => {
                       </div>
                     </div>
                   </Tab.Pane>
-                  
+
                   <Tab.Pane active={activeTab === 'contact'}>
                     <h5>Liên hệ tư vấn</h5>
                     <div className="row">
                       <div className="col-md-6">
                         <div className="d-flex align-items-start mb-4">
-                          <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style={{width: '50px', height: '50px', minWidth: '50px'}}>
+                          <div className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style={{ width: '50px', height: '50px', minWidth: '50px' }}>
                             <i className="bi bi-telephone fs-4"></i>
                           </div>
                           <div>
@@ -690,7 +715,7 @@ const ServiceDetail = () => {
                           </div>
                         </div>
                         <div className="d-flex align-items-start mb-4">
-                          <div className="rounded-circle bg-info text-white d-flex align-items-center justify-content-center me-3" style={{width: '50px', height: '50px', minWidth: '50px'}}>
+                          <div className="rounded-circle bg-info text-white d-flex align-items-center justify-content-center me-3" style={{ width: '50px', height: '50px', minWidth: '50px' }}>
                             <i className="bi bi-envelope fs-4"></i>
                           </div>
                           <div>
@@ -703,14 +728,14 @@ const ServiceDetail = () => {
                       </div>
                       <div className="col-md-6">
                         <div className="d-flex align-items-start mb-4">
-                          <div className="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-3" style={{width: '50px', height: '50px', minWidth: '50px'}}>
+                          <div className="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-3" style={{ width: '50px', height: '50px', minWidth: '50px' }}>
                             <i className="bi bi-chat-dots fs-4"></i>
                           </div>
                           <div>
                             <h6 className="mb-2">Tư vấn trực tuyến</h6>
                             <p className="text-muted small mb-1">Chat với chuyên gia ngay</p>
-                            <Button 
-                              variant="outline-success" 
+                            <Button
+                              variant="outline-success"
                               size="sm"
                               style={{ borderRadius: '8px', padding: '8px 16px', fontWeight: '600' }}
                             >
@@ -720,7 +745,7 @@ const ServiceDetail = () => {
                           </div>
                         </div>
                         <div className="d-flex align-items-start mb-4">
-                          <div className="rounded-circle bg-warning text-white d-flex align-items-center justify-content-center me-3" style={{width: '50px', height: '50px', minWidth: '50px'}}>
+                          <div className="rounded-circle bg-warning text-white d-flex align-items-center justify-content-center me-3" style={{ width: '50px', height: '50px', minWidth: '50px' }}>
                             <i className="bi bi-geo-alt fs-4"></i>
                           </div>
                           <div>
@@ -732,7 +757,7 @@ const ServiceDetail = () => {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="mt-4 p-3 bg-light rounded">
                       <h6 className="mb-3">
                         <i className="bi bi-info-circle text-primary me-2"></i>
@@ -764,25 +789,26 @@ const ServiceDetail = () => {
               <Card.Body className="p-4">
                 <div className="text-center mb-4">
                   {service.featured && (
-                      <Badge bg="danger" className="mb-3">
-                        <i className="bi bi-star me-2"></i>
-                        Dịch vụ nổi bật
-                      </Badge>
-                    )}
-                    <div className="h3 text-black mb-3">{service.title}</div>
-                    <div className="h3 text-primary mb-2">{formatPrice(service.price)}</div>
-                    <div className="text-muted mb-3">
-                      <i className="bi bi-clock me-1"></i>
-                      Thời gian: {service.duration}
-                    </div>
-                  
+                    <Badge bg="danger" className="mb-3">
+                      <i className="bi bi-star me-2"></i>
+                      Dịch vụ nổi bật
+                    </Badge>
+                  )}
+                  <div className="h3 text-black mb-3">{service.title}</div>
+                  <div className="h3 text-primary mb-2">{formatPrice(service.price)}</div>
+                  <div className="text-muted mb-3">
+                    <i className="bi bi-clock me-1"></i>
+                    Thời gian: {service.duration}
+                  </div>
+
                 </div>
-                
+
                 <div className="d-grid gap-2">
-                  <Button 
-                    variant="primary" 
-                    as={Link} 
-                    to="/appointment" 
+                  <Button
+                    variant="primary"
+                    as={Link}
+                    to="/appointment"
+                    onClick={handleBookingClick}
                     state={{ selectedService: service.id }}
                     className="fw-bold"
                     style={{ borderRadius: '12px', padding: '12px 24px', fontWeight: '600' }}
@@ -790,9 +816,9 @@ const ServiceDetail = () => {
                     <i className="bi bi-calendar-plus me-2"></i>
                     Đặt lịch ngay
                   </Button>
-                  <Button 
-                    variant="outline-primary" 
-                    as={Link} 
+                  <Button
+                    variant="outline-primary"
+                    as={Link}
                     to="/services"
                     className="fw-bold"
                     style={{ borderRadius: '12px', padding: '12px 24px', fontWeight: '600' }}
