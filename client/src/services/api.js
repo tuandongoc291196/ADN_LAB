@@ -231,4 +231,24 @@ export const getServiceCategories = async () => {
   } catch (error) {
     throw new Error('Failed to fetch service categories: ' + error.message);
   }
-}; 
+};
+
+// Tạo mới booking
+export const createBooking = async (bookingData) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/bookings/add`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(bookingData),
+    });
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    const data = await response.json();
+    return data.data;
+  } catch (error) {
+    throw new Error('Failed to create booking: ' + error.message);
+  }
+};

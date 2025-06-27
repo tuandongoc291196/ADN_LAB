@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Badge, Form, Alert, Tab, Nav } from 'react-bootstrap';
-import { getAllServices, getAllMethods, getMethodsByServiceId } from '../../services/api';
+import { getAllServices, getAllMethods, getMethodsByServiceId, createBooking } from '../../services/api';
 import { getServiceById, getServicesByType, canServiceUseSelfSample, isAdministrativeService, enrichMethodData, isMethodDisabled, getMethodRestrictionReason } from '../data/services-data';
 
 const AppointmentBooking = () => {
@@ -28,6 +28,22 @@ const AppointmentBooking = () => {
       participants: []
     },
     specialRequests: ''
+  });
+  const [idNumberErrors, setIdNumberErrors] = useState({});
+  const [phoneErrors, setPhoneErrors] = useState({});
+  const storedUserData = localStorage.getItem('userData');
+  const userData = storedUserData ? JSON.parse(storedUserData) : null;
+  const calculateEndTime = (startTime) => {
+    const [hour, minute] = startTime.split(':').map(Number);
+    const endHour = hour + 1;
+    return `${endHour < 10 ? '0' : ''}${endHour}:${minute < 10 ? '0' : ''}${minute}`;
+  };
+
+  const [customerErrors, setCustomerErrors] = useState({
+    fullName: '',
+    phone: '',
+    idNumber: '',
+    address: ''
   });
 
   // Fetch services and methods from API
@@ -98,12 +114,24 @@ const AppointmentBooking = () => {
     }
   }, [location.state, services]);
 
-  // Available time slots
-  const timeSlots = [
-    '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
-    '11:00', '11:30', '13:30', '14:00', '14:30', '15:00',
-    '15:30', '16:00', '16:30', '17:00'
-  ];
+  // Nếu có userData trong localStorage thì tự động điền thông tin người đặt lịch
+
+  useEffect(() => {
+    if (storedUserData) {
+      const parsed = JSON.parse(storedUserData);
+      setBookingData(prev => ({
+        ...prev,
+        customerInfo: {
+          ...prev.customerInfo,
+          fullName: parsed.fullname || parsed.fullName || '',
+          phone: parsed.phone || '',
+          email: parsed.email || '',
+          idNumber: parsed.id_number || parsed.idNumber || '',
+          address: parsed.address || '',
+        }
+      }));
+    }
+  }, [storedUserData]);
 
   const handleServiceTypeChange = (type) => {
     setBookingData({
@@ -182,24 +210,104 @@ const AppointmentBooking = () => {
     }
   };
 
-  const handleBookingSubmit = () => {
-    // TODO: Submit booking data to API
-    console.log('Booking data:', bookingData);
-    // Navigate to confirmation page
-    navigate('/booking-confirmation', { state: { bookingData } });
+  const handleBookingSubmit = async () => {
+    // Lấy userId từ localStorage
+    let userId = '';
+    try {
+      const userData = JSON.parse(localStorage.getItem('userData'));
+      userId = userData?.uid || userData?.user_id || userData?.id || '';
+    } catch (e) { }
+
+    // Lấy service/method info
+    const service = selectedService;
+    const method = selectedMethod;
+
+    // Tính toán startTime, endTime từ slot
+    let startTime = bookingData.appointmentTime || '';
+    let endTime = '';
+    if (startTime) {
+      const [h, m] = startTime.split(':');
+      const start = new Date(0, 0, 0, parseInt(h), parseInt(m));
+      start.setHours(start.getHours() + 1);
+      endTime = start.toTimeString().slice(0, 5);
+    }
+
+    // Map participants
+    const participants = (bookingData.customerInfo.participants || []).map((p) => ({
+      name: p.name || '',
+      age: p.age || null,
+      identification: p.idNumber || '',
+      gender: p.gender || '',
+      relationship: p.relation || p.role || '',
+    }));
+
+    // Thông tin người đặt lịch
+    const information = {
+      name: bookingData.customerInfo.fullName,
+      identification: bookingData.customerInfo.idNumber,
+      address: bookingData.customerInfo.address,
+      phone: bookingData.customerInfo.phone,
+      email: bookingData.customerInfo.email
+    };
+
+    // Tổng tiền
+    let totalAmount = 0;
+    if (service && typeof service.price === 'number') totalAmount = service.price;
+
+    // Chuẩn bị payload
+    const payload = {
+      userId: userData.user_id,
+      slotDate: bookingData.appointmentDate,
+      startTime: bookingData.appointmentTime,
+      endTime: calculateEndTime(bookingData.appointmentTime),
+      methodId: bookingData.collectionMethod,
+      serviceId: service.id, // phải là ID từ backend
+      totalAmount,
+      information: {
+        name: bookingData.customerInfo.fullName,
+        identification: bookingData.customerInfo.idNumber,
+        address: bookingData.customerInfo.address,
+        phone: bookingData.customerInfo.phone,
+        email: bookingData.customerInfo.email,
+      },
+      participants: bookingData.customerInfo.participants.map((p) => ({
+        name: p.name,
+        identification: p.idNumber,
+        relationship: p.relation,
+        age: p.age || 30, // gán mặc định nếu thiếu
+        gender: p.gender || 'male' // hoặc female nếu có
+      }))
+    };
+
+    try {
+      const res = await createBooking(payload);
+      navigate('/booking-confirmation', { state: { bookingData, bookingId: res?.id || null } });
+    } catch (err) {
+      alert('Đặt lịch thất bại! Vui lòng thử lại hoặc liên hệ hỗ trợ.');
+      console.error('Booking error:', err);
+    }
+    console.log('Booking payload:', payload);
   };
+
 
   const selectedService = bookingData.serviceId ? getServiceById(services, bookingData.serviceId) : null;
   const selectedMethod = bookingData.collectionMethod ? enrichedMethods.find(m => m.id === bookingData.collectionMethod) : null;
 
-  // Generate next 30 days for date selection (excluding Sundays)
-  const generateDateOptions = () => {
+  // Helper: Render badge for service type
+  const renderServiceTypeBadge = (serviceType) => {
+    if (serviceType === 'administrative') {
+      return <Badge bg="warning" text="dark">Hành chính</Badge>;
+    }
+    return <Badge bg="success">Dân sự</Badge>;
+  };
+
+  // Helper: Generate next 30 days for date selection (excluding Sundays)
+  const getDateOptions = () => {
     const dates = [];
     const today = new Date();
     for (let i = 1; i <= 30; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
-      // Skip Sundays
       if (date.getDay() !== 0) {
         dates.push(date.toISOString().split('T')[0]);
       }
@@ -207,32 +315,24 @@ const AppointmentBooking = () => {
     return dates;
   };
 
-  const formatDate = (dateString) => {
+  // Helper: Format date to Vietnamese
+  const renderDate = (dateString) => {
+    if (!dateString) return '';
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     return new Date(dateString).toLocaleDateString('vi-VN', options);
   };
 
-  const getServiceTypeBadge = (serviceType) => {
-    return serviceType === 'administrative'
-      ? <Badge bg="warning" text="dark">Hành chính</Badge>
-      : <Badge bg="success">Dân sự</Badge>;
-  };
-
-  const getMethodBadges = (allowedMethods) => {
-    return allowedMethods.map(method => {
-      return (
-        <Badge
-          key={method.id}
-          bg={method.color || 'secondary'}
-          className="me-1"
-          title={method.description}
-        >
-          <i className={`${method.icon || 'bi-gear'} me-1`}></i>
-          {method.name}
-        </Badge>
-      );
-    });
-  };
+  // Time slots for booking (modern, 8 slots per day, 1 hour each)
+  const timeSlots = [
+    { label: '08:00 - 09:00', value: '08:00' },
+    { label: '09:00 - 10:00', value: '09:00' },
+    { label: '10:00 - 11:00', value: '10:00' },
+    { label: '11:00 - 12:00', value: '11:00' },
+    { label: '13:00 - 14:00', value: '13:00' },
+    { label: '14:00 - 15:00', value: '14:00' },
+    { label: '15:00 - 16:00', value: '15:00' },
+    { label: '16:00 - 17:00', value: '16:00' }
+  ];
 
   return (
     <div>
@@ -443,7 +543,7 @@ const AppointmentBooking = () => {
                       <h3 className="mb-3">
                         Chọn dịch vụ cụ thể
                         <span className="ms-3">
-                          {getServiceTypeBadge(bookingData.serviceType)}
+                          {renderServiceTypeBadge(bookingData.serviceType)}
                         </span>
                       </h3>
                       <p className="text-muted">
@@ -486,7 +586,7 @@ const AppointmentBooking = () => {
                                   <i className={`${service.icon || 'bi-dna'} text-white fs-5`}></i>
                                 </div>
                                 <div className="flex-grow-1">
-                                  {getServiceTypeBadge(service.category?.hasLegalValue ? 'administrative' : 'civil')}
+                                  {renderServiceTypeBadge(service.category?.hasLegalValue ? 'administrative' : 'civil')}
                                 </div>
                               </div>
                             </Card.Header>
@@ -592,7 +692,7 @@ const AppointmentBooking = () => {
                   <h2 className="display-6 fw-bold">Chọn phương thức lấy mẫu</h2>
                   <div className="mt-3">
                     <h5>Dịch vụ đã chọn: <span className="text-primary">{selectedService.title}</span></h5>
-                    {getServiceTypeBadge(selectedService.category?.hasLegalValue ? 'administrative' : 'civil')}
+                    {renderServiceTypeBadge(selectedService.category?.hasLegalValue ? 'administrative' : 'civil')}
                   </div>
                 </div>
 
@@ -759,21 +859,50 @@ const AppointmentBooking = () => {
                                 type="text"
                                 placeholder="Nhập họ và tên đầy đủ"
                                 value={bookingData.customerInfo.fullName}
-                                onChange={(e) => handleCustomerInfoChange('fullName', e.target.value)}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  handleCustomerInfoChange('fullName', value);
+                                  setCustomerErrors(prev => ({
+                                    ...prev,
+                                    fullName: value.trim() ? '' : 'Họ và tên không được để trống'
+                                  }));
+                                }}
+                                isInvalid={!!customerErrors.fullName}
                                 required
                               />
+                              <Form.Control.Feedback type="invalid">
+                                {customerErrors.fullName}
+                              </Form.Control.Feedback>
                             </Col>
+
                             <Col md={6} className="mb-3">
                               <Form.Label>Số điện thoại <span className="text-danger">*</span></Form.Label>
                               <Form.Control
                                 type="tel"
+                                inputMode="numeric"
+                                maxLength={10}
                                 placeholder="Nhập số điện thoại"
                                 value={bookingData.customerInfo.phone}
-                                onChange={(e) => handleCustomerInfoChange('phone', e.target.value)}
+                                onChange={(e) => {
+                                  const value = e.target.value.replace(/\D/g, '');
+                                  handleCustomerInfoChange('phone', value);
+                                  const error =
+                                    !value
+                                      ? 'Số điện thoại không được để trống'
+                                      : !/^0\d{9}$/.test(value)
+                                        ? 'Số điện thoại phải bắt đầu bằng 0 và đủ 10 số'
+                                        : '';
+                                  setCustomerErrors(prev => ({ ...prev, phone: error }));
+                                }}
+                                isInvalid={!!customerErrors.phone}
                                 required
                               />
+                              <Form.Control.Feedback type="invalid">
+                                {customerErrors.phone}
+                              </Form.Control.Feedback>
                             </Col>
                           </Row>
+
                           <Row>
                             <Col md={6} className="mb-3">
                               <Form.Label>Email</Form.Label>
@@ -784,17 +913,37 @@ const AppointmentBooking = () => {
                                 onChange={(e) => handleCustomerInfoChange('email', e.target.value)}
                               />
                             </Col>
+
                             <Col md={6} className="mb-3">
                               <Form.Label>CCCD/CMND <span className="text-danger">*</span></Form.Label>
                               <Form.Control
                                 type="text"
+                                inputMode="numeric"
+                                maxLength={12}
                                 placeholder="Nhập số CCCD/CMND"
                                 value={bookingData.customerInfo.idNumber}
-                                onChange={(e) => handleCustomerInfoChange('idNumber', e.target.value)}
+                                onChange={(e) => {
+                                  const value = e.target.value.replace(/\D/g, '');
+                                  if (value.length <= 12) {
+                                    handleCustomerInfoChange('idNumber', value);
+                                    const error =
+                                      !value
+                                        ? 'CCCD không được để trống'
+                                        : value.length !== 12
+                                          ? 'CCCD phải gồm đúng 12 chữ số'
+                                          : '';
+                                    setCustomerErrors(prev => ({ ...prev, idNumber: error }));
+                                  }
+                                }}
+                                isInvalid={!!customerErrors.idNumber}
                                 required
                               />
+                              <Form.Control.Feedback type="invalid">
+                                {customerErrors.idNumber}
+                              </Form.Control.Feedback>
                             </Col>
                           </Row>
+
                           <Form.Group className="mb-3">
                             <Form.Label>Địa chỉ <span className="text-danger">*</span></Form.Label>
                             <Form.Control
@@ -802,66 +951,130 @@ const AppointmentBooking = () => {
                               rows={2}
                               placeholder="Nhập địa chỉ đầy đủ"
                               value={bookingData.customerInfo.address}
-                              onChange={(e) => handleCustomerInfoChange('address', e.target.value)}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                handleCustomerInfoChange('address', value);
+                                setCustomerErrors(prev => ({
+                                  ...prev,
+                                  address: value.trim() ? '' : 'Địa chỉ không được để trống'
+                                }));
+                              }}
+                              isInvalid={!!customerErrors.address}
                               required
                             />
+                            <Form.Control.Feedback type="invalid">
+                              {customerErrors.address}
+                            </Form.Control.Feedback>
                           </Form.Group>
                         </Form>
                       </Card.Body>
                     </Card>
 
-                    {/* Participants Information */}
-                    {bookingData.customerInfo.participants.length > 0 && (
-                      <Card className="mt-4 shadow-sm">
-                        <Card.Header className="bg-info text-white">
-                          <h5 className="mb-0">
-                            <i className="bi bi-people me-2"></i>
-                            Thông tin người tham gia xét nghiệm
-                          </h5>
-                        </Card.Header>
-                        <Card.Body className="p-4">
-                          {bookingData.customerInfo.participants.map((participant, index) => (
-                            <div key={index} className="mb-4 p-3 border rounded bg-light">
-                              <h6 className="text-primary mb-3">
-                                <i className="bi bi-person-badge me-2"></i>
-                                {participant.role}
-                              </h6>
-                              <Row>
-                                <Col md={6} className="mb-2">
-                                  <Form.Label>Họ và tên <span className="text-danger">*</span></Form.Label>
-                                  <Form.Control
-                                    type="text"
-                                    placeholder="Nhập họ và tên"
-                                    value={participant.name}
-                                    onChange={(e) => handleParticipantChange(index, 'name', e.target.value)}
-                                    required
-                                  />
-                                </Col>
-                                <Col md={6} className="mb-2">
-                                  <Form.Label>CCCD/CMND <span className="text-danger">*</span></Form.Label>
-                                  <Form.Control
-                                    type="text"
-                                    placeholder="Nhập số CCCD/CMND"
-                                    value={participant.idNumber}
-                                    onChange={(e) => handleParticipantChange(index, 'idNumber', e.target.value)}
-                                    required
-                                  />
-                                </Col>
-                              </Row>
-                              <Form.Group>
-                                <Form.Label>Số điện thoại</Form.Label>
-                                <Form.Control
-                                  type="tel"
-                                  placeholder="Nhập số điện thoại"
-                                  value={participant.phone}
-                                  onChange={(e) => handleParticipantChange(index, 'phone', e.target.value)}
-                                />
-                              </Form.Group>
-                            </div>
+                    {/* Participants Information - Modern Form for 2 people */}
+                    <Card className="mt-4 shadow-sm">
+                      <Card.Header className="bg-info text-white">
+                        <h5 className="mb-0">
+                          <i className="bi bi-people me-2"></i>
+                          Thông tin người tham gia xét nghiệm
+                        </h5>
+                      </Card.Header>
+                      <Card.Body className="p-4">
+                        <Row>
+                          {[0, 1].map((idx) => (
+                            <Col md={6} key={idx} className="mb-4">
+                              <Card className="h-100 border-0 bg-light">
+                                <Card.Body>
+                                  <h6 className="text-primary mb-3">
+                                    <i className="bi bi-person-badge me-2"></i>
+                                    Người tham gia {idx + 1}
+                                  </h6>
+                                  <Form.Group className="mb-3">
+                                    <Form.Label>Họ và tên <span className="text-danger">*</span></Form.Label>
+                                    <Form.Control
+                                      type="text"
+                                      placeholder="Nhập họ và tên"
+                                      value={bookingData.customerInfo.participants[idx]?.name || ''}
+                                      onChange={e => handleParticipantChange(idx, 'name', e.target.value)}
+                                      required
+                                    />
+                                  </Form.Group>
+                                  <Form.Group className="mb-3">
+                                    <Form.Label>CCCD/CMND</Form.Label>
+                                    <Form.Control
+                                      type="text"
+                                      inputMode="numeric"
+                                      maxLength={12}
+                                      placeholder="Nhập số CCCD/CMND"
+                                      value={bookingData.customerInfo.participants[idx]?.idNumber || ''}
+                                      onChange={(e) => {
+                                        const value = e.target.value.replace(/\D/g, ''); // Chỉ cho số
+                                        if (value.length <= 12) {
+                                          handleParticipantChange(idx, 'idNumber', value);
+
+                                          if (value && value.length !== 12) {
+                                            setIdNumberErrors(prev => ({
+                                              ...prev,
+                                              [idx]: 'CCCD phải gồm đúng 12 chữ số',
+                                            }));
+                                          } else {
+                                            setIdNumberErrors(prev => ({ ...prev, [idx]: '' }));
+                                          }
+                                        }
+                                      }}
+                                      isInvalid={!!idNumberErrors[idx]}
+                                    />
+                                    <Form.Control.Feedback type="invalid">
+                                      {idNumberErrors[idx]}
+                                    </Form.Control.Feedback>
+                                  </Form.Group>
+                                  <Form.Group className="mb-3">
+                                    <Form.Label>Số điện thoại</Form.Label>
+                                    <Form.Control
+                                      type="tel"
+                                      inputMode="numeric"
+                                      maxLength={10}
+                                      placeholder="Nhập số điện thoại"
+                                      value={bookingData.customerInfo.participants[idx]?.phone || ''}
+                                      onChange={(e) => {
+                                        const value = e.target.value.replace(/\D/g, ''); // Chỉ cho số
+                                        if (value.length <= 10) {
+                                          handleParticipantChange(idx, 'phone', value);
+
+                                          if (value && !/^0\d{9}$/.test(value)) {
+                                            setPhoneErrors(prev => ({
+                                              ...prev,
+                                              [idx]: 'Số điện thoại phải có 10 chữ số và bắt đầu bằng 0',
+                                            }));
+                                          } else {
+                                            setPhoneErrors(prev => ({ ...prev, [idx]: '' }));
+                                          }
+                                        }
+                                      }}
+                                      isInvalid={!!phoneErrors[idx]}
+                                    />
+                                    <Form.Control.Feedback type="invalid">
+                                      {phoneErrors[idx]}
+                                    </Form.Control.Feedback>
+                                  </Form.Group>
+
+
+                                  <Form.Group className="mb-3">
+                                    <Form.Label>Mối quan hệ <span className="text-danger">*</span></Form.Label>
+                                    <Form.Control
+                                      type="text"
+                                      placeholder="Nhập mối quan hệ với người đặt lịch (ví dụ: Cha, Con, Mẹ, ... )"
+                                      value={bookingData.customerInfo.participants[idx]?.relation || ''}
+                                      onChange={e => handleParticipantChange(idx, 'relation', e.target.value)}
+                                      required
+                                    />
+                                  </Form.Group>
+                                </Card.Body>
+                              </Card>
+                            </Col>
                           ))}
-                        </Card.Body>
-                      </Card>
-                    )}
+                        </Row>
+                      </Card.Body>
+                    </Card>
                   </Col>
 
                   {/* Appointment Date & Time */}
@@ -875,21 +1088,22 @@ const AppointmentBooking = () => {
                             Chọn ngày và giờ hẹn
                           </h5>
                         </Card.Header>
+
                         <Card.Body className="p-4">
                           <Form.Group className="mb-4">
-                            <Form.Label>Ngày hẹn <span className="text-danger">*</span></Form.Label>
-                            <Form.Select
+                            <Form.Label>
+                              Ngày hẹn <span className="text-danger">*</span>
+                            </Form.Label>
+                            <Form.Control
+                              type="date"
+                              min={getDateOptions()[0]}
+                              max={getDateOptions()[getDateOptions().length - 1]}
                               value={bookingData.appointmentDate}
-                              onChange={(e) => setBookingData({ ...bookingData, appointmentDate: e.target.value })}
+                              onChange={(e) =>
+                                setBookingData({ ...bookingData, appointmentDate: e.target.value })
+                              }
                               required
-                            >
-                              <option value="">Chọn ngày hẹn</option>
-                              {generateDateOptions().map(date => (
-                                <option key={date} value={date}>
-                                  {formatDate(date)}
-                                </option>
-                              ))}
-                            </Form.Select>
+                            />
                             <Form.Text className="text-muted">
                               <i className="bi bi-info-circle me-1"></i>
                               Không làm việc vào Chủ nhật
@@ -898,17 +1112,29 @@ const AppointmentBooking = () => {
 
                           {bookingData.appointmentDate && (
                             <Form.Group className="mb-3">
-                              <Form.Label>Giờ hẹn <span className="text-danger">*</span></Form.Label>
-                              <Row>
-                                {timeSlots.map(time => (
-                                  <Col key={time} xs={4} className="mb-2">
+                              <Form.Label>
+                                Giờ hẹn <span className="text-danger">*</span>
+                              </Form.Label>
+                              <Row className="g-2">
+                                {timeSlots.map((slot) => (
+                                  <Col key={slot.value} xs={6} md={3}>
                                     <Button
-                                      variant={bookingData.appointmentTime === time ? 'warning' : 'outline-warning'}
-                                      size="sm"
-                                      className="w-100"
-                                      onClick={() => setBookingData({ ...bookingData, appointmentTime: time })}
+                                      variant={
+                                        bookingData.appointmentTime === slot.value
+                                          ? 'warning'
+                                          : 'outline-warning'
+                                      }
+                                      size="md"
+                                      className="w-100 fw-bold py-2"
+                                      style={{ borderRadius: 12, fontSize: 16 }}
+                                      onClick={() =>
+                                        setBookingData({
+                                          ...bookingData,
+                                          appointmentTime: slot.value,
+                                        })
+                                      }
                                     >
-                                      {time}
+                                      {slot.label}
                                     </Button>
                                   </Col>
                                 ))}
@@ -1061,7 +1287,7 @@ const AppointmentBooking = () => {
                                 </div>
                                 <div>
                                   <h5 className="mb-1">{selectedService.title}</h5>
-                                  {getServiceTypeBadge(selectedService.serviceType)}
+                                  {renderServiceTypeBadge(selectedService.serviceType)}
                                 </div>
                               </div>
 
@@ -1173,7 +1399,7 @@ const AppointmentBooking = () => {
                                   <h5 className="text-primary mb-3">Thông tin lịch hẹn</h5>
                                   <div className="mb-3">
                                     <strong>Ngày hẹn:</strong>
-                                    <div className="h5 text-primary mt-1">{formatDate(bookingData.appointmentDate)}</div>
+                                    <div className="h5 text-primary mt-1">{renderDate(bookingData.appointmentDate)}</div>
                                   </div>
                                   <div className="mb-3">
                                     <strong>Giờ hẹn:</strong>
