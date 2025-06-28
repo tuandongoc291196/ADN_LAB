@@ -9,11 +9,20 @@ const BookingConfirmation = () => {
   const [bookingId, setBookingId] = useState('');
 
   useEffect(() => {
-    if (location.state && location.state.bookingData) {
-      setBookingData(location.state.bookingData);
-      // Generate booking ID (in real app, this would come from server)
-      const id = 'ADN' + Date.now().toString().slice(-6);
-      setBookingId(id);
+    if (location.state) {
+      if (location.state.bookingData) {
+        setBookingData(location.state.bookingData);
+        console.log('Booking data received:', location.state.bookingData);
+        console.log('Selected service:', location.state.bookingData.selectedService);
+        console.log('Selected method:', location.state.bookingData.selectedMethod);
+      }
+      if (location.state.bookingId) {
+        setBookingId(location.state.bookingId);
+      } else {
+        // Fallback: Generate booking ID nếu không có từ backend
+        const id = 'ADN' + Date.now().toString().slice(-6);
+        setBookingId(id);
+      }
     }
   }, [location.state]);
 
@@ -49,19 +58,38 @@ const BookingConfirmation = () => {
     return new Date(dateString).toLocaleDateString('vi-VN', options);
   };
 
-  const getServiceTypeBadge = (serviceType) => {
+  const getServiceTypeBadge = (serviceType, category) => {
+    // Ưu tiên lấy từ category nếu có
+    if (category) {
+      if (category.hasLegalValue) {
+        return <Badge bg="warning" text="dark">ADN Hành chính</Badge>;
+      } else {
+        return <Badge bg="success">ADN Dân sự</Badge>;
+      }
+    }
+    
+    // Fallback về serviceType cũ
     return serviceType === 'administrative' 
-      ? <Badge bg="warning" text="dark">Có giá trị pháp lý</Badge>
-      : <Badge bg="success">Dân sự</Badge>;
+      ? <Badge bg="warning" text="dark">ADN Hành chính</Badge>
+      : <Badge bg="success">ADN Dân sự</Badge>;
   };
 
-  const getCollectionMethodName = (method) => {
+  const getCollectionMethodName = (methodId, methodInfo) => {
+    // Ưu tiên lấy tên từ methodInfo nếu có
+    if (methodInfo && methodInfo.name) {
+      return methodInfo.name;
+    }
+    
+    // Fallback về mapping cũ
     const methods = {
+      '0': 'Tự lấy mẫu tại nhà',
+      '1': 'Nhân viên tới nhà lấy mẫu',
+      '2': 'Tới cơ sở lấy mẫu',
       'self-sample': 'Tự lấy mẫu tại nhà',
       'home-visit': 'Nhân viên tới nhà lấy mẫu',
       'at-facility': 'Tới cơ sở lấy mẫu'
     };
-    return methods[method] || method;
+    return methods[methodId] || methodId;
   };
 
   return (
@@ -106,15 +134,25 @@ const BookingConfirmation = () => {
                     Thông tin dịch vụ
                   </h6>
                   <div className="mb-2">
+                    <strong>Tên dịch vụ:</strong>
+                    <div className="text-muted">
+                      {(() => {
+                        const serviceTitle = bookingData?.selectedService?.title;
+                        console.log('Rendering service title:', serviceTitle);
+                        return serviceTitle || 'Không có thông tin';
+                      })()}
+                    </div>
+                  </div>
+                  <div className="mb-2">
                     <strong>Loại dịch vụ:</strong>
                     <div className="mt-1">
-                      {getServiceTypeBadge(bookingData.serviceType)}
+                      {getServiceTypeBadge(bookingData.serviceType, bookingData?.selectedService?.category)}
                     </div>
                   </div>
                   <div className="mb-2">
                     <strong>Phương thức thu mẫu:</strong>
                     <div className="text-muted">
-                      {getCollectionMethodName(bookingData.collectionMethod)}
+                      {getCollectionMethodName(bookingData.collectionMethod, bookingData?.selectedMethod)}
                     </div>
                   </div>
                 </Col>

@@ -196,8 +196,14 @@ const Home = () => {
         }
       });
     } else {
-      // Nếu đã đăng nhập, chuyển đến trang appointment với serviceId
-      navigate('/appointment', { state: { selectedService: serviceId } });
+      // Nếu đã đăng nhập, chuyển đến trang appointment
+      if (serviceId) {
+        // Nếu có serviceId cụ thể (từ service cards)
+        navigate('/appointment', { state: { selectedService: serviceId } });
+      } else {
+        // Nếu không có serviceId (từ hero section)
+        navigate('/appointment');
+      }
     }
   };
 
@@ -407,7 +413,12 @@ const Home = () => {
                   </Button>
                 </Col>
                 <Col sm={6}>
-                  <Button size="lg" variant="outline-light" as={Link} to="/appointment" className="w-100">
+                  <Button 
+                    size="lg" 
+                    variant="outline-light" 
+                    onClick={(e) => handleBookingClick(e, null)}
+                    className="w-100"
+                  >
                     <i className="bi bi-calendar-plus me-2"></i>
                     Đặt lịch ngay
                   </Button>

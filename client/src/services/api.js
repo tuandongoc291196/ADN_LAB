@@ -236,6 +236,8 @@ export const getServiceCategories = async () => {
 // Tạo mới booking
 export const createBooking = async (bookingData) => {
   try {
+    console.log('Sending booking data:', bookingData);
+    
     const response = await fetch(`${API_BASE_URL}/bookings/add`, {
       method: 'POST',
       headers: {
@@ -243,12 +245,31 @@ export const createBooking = async (bookingData) => {
       },
       body: JSON.stringify(bookingData),
     });
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
+    
+    console.log('Booking response status:', response.status);
+    
     const data = await response.json();
-    return data.data;
+    console.log('Booking response data:', data);
+    
+    // Kiểm tra cả response status và response data
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${data.message || 'Network response was not ok'}`);
+    }
+    
+    // Kiểm tra nếu response có error message
+    if (data.error || data.message?.toLowerCase().includes('error')) {
+      throw new Error(data.message || data.error || 'Booking creation failed');
+    }
+    
+    // Kiểm tra nếu không có data hoặc booking_insert
+    if (!data.data && !data.booking_insert && !data.id) {
+      throw new Error('No booking data returned from server');
+    }
+    
+    // Return data với priority: data.data > data > data.booking_insert
+    return data.data || data;
   } catch (error) {
+    console.error('createBooking error:', error);
     throw new Error('Failed to create booking: ' + error.message);
   }
 };
