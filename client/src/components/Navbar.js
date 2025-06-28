@@ -4,15 +4,50 @@ import { Navbar, Nav, NavDropdown, Container, Button, Badge, Image } from 'react
 import { auth, logout } from './config/firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import Swal from 'sweetalert2';
+import { getServiceCategories } from '../services/api';
 
 const MainNavbar = ({ setUser }) => {
   const [expanded, setExpanded] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const [userAuth, loadingAuth] = useAuthState(auth);
   const [userData, setUserData] = useState(null);
   const [logoUrl] = useState('https://firebasestorage.googleapis.com/v0/b/su25-swp391-g8.firebasestorage.app/o/assets%2Flogo.png?alt=media&token=1c903ba1-852a-4f5b-b498-97c31ffbb742');
 
+  // Fetch categories from API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoadingCategories(true);
+        const response = await getServiceCategories();
+        console.log('Categories API response:', response);
+        
+        if (response && Array.isArray(response)) {
+          setCategories(response);
+        } else {
+          setCategories([]);
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        setCategories([]);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  // Helper function để phân loại categories
+  const getAdministrativeCategories = () => {
+    return categories.filter(category => category.hasLegalValue);
+  };
+
+  const getCivilCategories = () => {
+    return categories.filter(category => !category.hasLegalValue);
+  };
 
   const getRoleBadge = (role) => {
     const roleConfig = {
@@ -248,63 +283,90 @@ const MainNavbar = ({ setUser }) => {
 
                 <NavDropdown.Divider />
 
-                <NavDropdown.Header className="text-warning">
-                  <i className="bi bi-award me-2"></i>
-                  ADN Hành chính
-                </NavDropdown.Header>
-                <NavDropdown.Item
-                  as={Link}
-                  to="/services?type=administrative"
-                  onClick={handleNavClick}
-                  className="py-2"
-                >
-                  <i className="bi bi-file-earmark-text me-2 text-warning"></i>
-                  <strong>Xét nghiệm ADN khai sinh</strong>
-                  <Badge bg="warning" text="dark" className="ms-2 small">Có giá trị pháp lý</Badge>
-                  <div className="small text-muted">Phục vụ làm giấy khai sinh</div>
-                </NavDropdown.Item>
+                {/* ADN Hành chính - Dynamic từ API */}
+                {getAdministrativeCategories().length > 0 && (
+                  <>
+                    <NavDropdown.Header className="text-warning">
+                      <i className="bi bi-award me-2"></i>
+                      ADN Hành chính
+                    </NavDropdown.Header>
+                    {getAdministrativeCategories().map(category => (
+                      <NavDropdown.Item
+                        key={category.id}
+                        as={Link}
+                        to="/services?type=administrative"
+                        onClick={handleNavClick}
+                        className="py-2"
+                      >
+                        <i className="bi bi-file-earmark-text me-2 text-warning"></i>
+                        <strong>{category.name}</strong>
+                        <Badge bg="warning" text="dark" className="ms-2 small">Có giá trị pháp lý</Badge>
+                        <div className="small text-muted">{category.description || 'Dịch vụ hành chính'}</div>
+                      </NavDropdown.Item>
+                    ))}
+                  </>
+                )}
 
-                <NavDropdown.Item
-                  as={Link}
-                  to="/services?type=administrative"
-                  onClick={handleNavClick}
-                  className="py-2"
-                >
-                  <i className="bi bi-building me-2 text-warning"></i>
-                  <strong>Xét nghiệm ADN pháp lý</strong>
-                  <Badge bg="warning" text="dark" className="ms-2 small">Có giá trị pháp lý</Badge>
-                  <div className="small text-muted">Thừa kế, nhập tịch, visa...</div>
-                </NavDropdown.Item>
+                {/* ADN Dân sự - Dynamic từ API */}
+                {getCivilCategories().length > 0 && (
+                  <>
+                    <NavDropdown.Header className="text-success">
+                      <i className="bi bi-house me-2"></i>
+                      ADN Dân sự
+                    </NavDropdown.Header>
+                    {getCivilCategories().map(category => (
+                      <NavDropdown.Item
+                        key={category.id}
+                        as={Link}
+                        to="/services?type=civil"
+                        onClick={handleNavClick}
+                        className="py-2"
+                      >
+                        <i className="bi bi-people me-2 text-success"></i>
+                        <strong>{category.name}</strong>
+                        <Badge bg="success" className="ms-2 small">Tham khảo cá nhân</Badge>
+                        <div className="small text-muted">{category.description || 'Dịch vụ dân sự'}</div>
+                      </NavDropdown.Item>
+                    ))}
+                  </>
+                )}
 
-                <NavDropdown.Divider />
+                {/* Fallback nếu không có categories */}
+                {categories.length === 0 && !loadingCategories && (
+                  <>
+                    <NavDropdown.Item
+                      as={Link}
+                      to="/services?type=administrative"
+                      onClick={handleNavClick}
+                      className="py-2"
+                    >
+                      <i className="bi bi-award me-2 text-warning"></i>
+                      <strong>ADN Hành chính</strong>
+                      <Badge bg="warning" text="dark" className="ms-2 small">Có giá trị pháp lý</Badge>
+                      <div className="small text-muted">Khai sinh, pháp lý, thừa kế...</div>
+                    </NavDropdown.Item>
 
-                <NavDropdown.Header className="text-success">
-                  <i className="bi bi-house me-2"></i>
-                  ADN Dân sự
-                </NavDropdown.Header>
-                <NavDropdown.Item
-                  as={Link}
-                  to="/services?type=civil"
-                  onClick={handleNavClick}
-                  className="py-2"
-                >
-                  <i className="bi bi-people me-2 text-success"></i>
-                  <strong>Xét nghiệm ADN huyết thống</strong>
-                  <Badge bg="success" className="ms-2 small">Tham khảo cá nhân</Badge>
-                  <div className="small text-muted">Tìm hiểu quan hệ cha con, anh em</div>
-                </NavDropdown.Item>
+                    <NavDropdown.Item
+                      as={Link}
+                      to="/services?type=civil"
+                      onClick={handleNavClick}
+                      className="py-2"
+                    >
+                      <i className="bi bi-house me-2 text-success"></i>
+                      <strong>ADN Dân sự</strong>
+                      <Badge bg="success" className="ms-2 small">Tham khảo cá nhân</Badge>
+                      <div className="small text-muted">Huyết thống, trước sinh...</div>
+                    </NavDropdown.Item>
+                  </>
+                )}
 
-                <NavDropdown.Item
-                  as={Link}
-                  to="/services?type=civil"
-                  onClick={handleNavClick}
-                  className="py-2"
-                >
-                  <i className="bi bi-heart me-2 text-success"></i>
-                  <strong>Xét nghiệm ADN trước sinh</strong>
-                  <Badge bg="success" className="ms-2 small">Tham khảo cá nhân</Badge>
-                  <div className="small text-muted">An toàn cho mẹ và bé</div>
-                </NavDropdown.Item>
+                {/* Loading state */}
+                {loadingCategories && (
+                  <NavDropdown.Item disabled className="py-2">
+                    <i className="bi bi-hourglass-split me-2 text-muted"></i>
+                    <span className="text-muted">Đang tải...</span>
+                  </NavDropdown.Item>
+                )}
               </NavDropdown>
 
               {/* Information Dropdown */}

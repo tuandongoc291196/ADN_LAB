@@ -24,13 +24,13 @@ const ServiceList = () => {
     fetchMethods();
   }, []);
 
+  // Sync URL params với filterType
   useEffect(() => {
-    if (filterType) {
-      setSearchParams({ type: filterType });
-    } else {
-      setSearchParams({});
+    const typeFromUrl = searchParams.get('type');
+    if (typeFromUrl !== filterType) {
+      setFilterType(typeFromUrl || '');
     }
-  }, [filterType, setSearchParams]);
+  }, [searchParams]);
 
   const fetchServices = async () => {
     try {
@@ -179,6 +179,12 @@ const ServiceList = () => {
     if (type === 'serviceType') {
       setFilterType(value);
       setFilterMethod(''); // Reset method filter when service type changes
+      // Cập nhật URL
+      if (value) {
+        setSearchParams({ type: value });
+      } else {
+        setSearchParams({});
+      }
     } else if (type === 'method') {
       setFilterMethod(value);
     }
