@@ -25,7 +25,7 @@ const addParticipant = async(bookingId, name, age, identification, gender, relat
         `;
 
         const variables = {
-            id: `${bookingId}_${Date.now()}`,
+            id: `${bookingId}_PARTICIPANT_${Date.now()}`,
             bookingId,
             name,
             age: parseInt(age, 10),

@@ -142,6 +142,19 @@ type Participant @table {
   updatedAt: Timestamp
 }
 
+type Information @table {
+  id: String! @col(name: "information_id")
+  bookingId: String!
+  booking: Booking! @ref(fields: "bookingId")
+  name: String!
+  identification: String!
+  address: String!
+  phone: String!
+  email: String
+  createdAt: Timestamp! @default(expr: "request.time")
+  updatedAt: Timestamp
+}
+
 # DNA samples collected from bookings
 type Sample @table {
   id: String! @col(name: "sample_id")

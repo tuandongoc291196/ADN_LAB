@@ -2,6 +2,7 @@ const { dataConnect } = require("../../config/firebase.js");
 const { checkBookingExists } = require("./bookingUtils.js");
 const {getBookingHistoryByBookingId} = require("../bookingHistory/getBookingHistory.js");
 const {getParticipantsByBookingId} = require("../participants/getParticipants.js");
+const {getInformationByBookingId} = require("../information/getInformations.js");
 const {checkUserExists} = require("../users/userUtils.js");
 const {checkStaffExists} = require("../users/userUtils.js");
 const {checkTimeSlotExists} = require("../timeSlots/timeSlotUtils.js");
@@ -131,11 +132,13 @@ const getOneBooking = async (req, res) => {
     const responseBookingData = responseBooking.data.booking;
     const responseHistoryData = await getBookingHistoryByBookingId(bookingId);
     const responseParticipantsData = await getParticipantsByBookingId(bookingId);
+    const responseInformationData = await getInformationByBookingId(bookingId);
 
     const responseData = {
       booking: responseBookingData,
       history: responseHistoryData,
       participants: responseParticipantsData,
+      information: responseInformationData,
     };
 
     res.status(200).json({
@@ -404,10 +407,107 @@ const getBookingByTimeSlotId = async (req, res) => {
   }
 }
 
+const getOneBookingById = async (bookingId) => {
+  try {
+    if (!bookingId) {
+      throw new Error("bookingId is required");
+    }
+    const existingBooking = await checkBookingExists(bookingId);
+    if (!existingBooking) {
+      throw new Error("Booking not found");
+    }
+    const variables = {
+      bookingId: bookingId,
+    };
+    const GET_BOOKING_BY_ID_QUERY = `
+      query GetBookingById($bookingId: String!) @auth(level: USER) {
+        booking(key: { id: $bookingId }) {
+          id
+          userId
+          staffId
+          timeSlotId
+          serviceId
+          methodId
+          totalAmount
+          createdAt
+          updatedAt
+          user {
+            id
+          }
+          staff {
+            id
+          }
+          service {
+            id
+          }
+          timeSlot {
+            id
+          }
+          method {
+            id
+          }
+        }
+      }
+    `;
+
+    const response = await dataConnect.executeGraphql(GET_BOOKING_BY_ID_QUERY, {
+      variables: variables,
+    });
+    
+    const responseData = response.data.booking;
+    if (!responseData) {
+      throw new Error("Booking not found");
+    }
+    return responseData;
+  } catch (error) {
+    console.error("Error fetching booking by ID:", error);
+    throw new Error(`Failed to retrieve booking: ${error.message}`);
+  }
+};
+
+const getExpiredBookings = async (currentTime) => {
+  try {
+    if (!currentTime) {
+      throw new Error("currentTime is required");
+    }
+
+    const GET_EXPIRED_BOOKINGS_QUERY = `
+      query GetExpiredBookings($currentTime: Timestamp!) @auth(level: USER) {
+        bookings(where: {expiresAt: {lt: $currentTime}}) {
+          id
+          staffId
+          timeSlotId
+        }
+      }
+    `;
+
+    const variables = {
+      currentTime: currentTime
+    };
+
+    console.log("Fetching expired bookings for time:", currentTime);
+    const response = await dataConnect.executeGraphql(GET_EXPIRED_BOOKINGS_QUERY, {
+      variables: variables
+    });
+
+    const responseData = response.data.bookings;
+    if (!responseData || responseData.length === 0) {
+      console.log("No expired bookings found");
+      return [];
+    } else {
+      return responseData;
+    }
+  } catch (error) {
+    throw new Error(`Failed to fetch expired bookings: ${error.message}`);
+  }
+};
+
 module.exports = {
   getAllBookings,
   getOneBooking,
   getBookingByUserId,
   getBookingbyStaffId,
   getBookingByTimeSlotId,
+  getOneBookingById,
+  getExpiredBookings
 };

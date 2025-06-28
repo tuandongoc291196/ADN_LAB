@@ -26,9 +26,15 @@ const {addRole} = require('./controllers/roles/addRole');
 
 const {addBooking} = require('./controllers/bookings/addBooking');
 const {getAllBookings, getOneBooking, getBookingByTimeSlotId, getBookingByUserId, getBookingbyStaffId} = require('./controllers/bookings/getBookings');
+const {deleteBookingById} = require('./controllers/bookings/deleteBooking');
+
+const {getBookingHistories} = require('./controllers/bookingHistory/getBookingHistory');
 
 const {getUnavailableTimeSlots, getOneTimeSlot} = require('./controllers/timeSlots/getTimeSlot');
+
 const {addPayment} = require('./controllers/payments/addPayment');
+const {getAllPayments, getBookingPayments} = require('./controllers/payments/getPayments');
+const {refundPayment} = require('./controllers/payments/refundPayment');
 
 const app = express();
 
@@ -82,11 +88,17 @@ app.post('/bookings', getOneBooking);
 app.post('/bookings/timeslot', getBookingByTimeSlotId);
 app.post('/bookings/user', getBookingByUserId);
 app.post('/bookings/staff', getBookingbyStaffId);
+app.delete('/bookings', deleteBookingById);
+
+app.post('/booking/history', getBookingHistories);
 
 app.post('/timeslots/unavailable', getUnavailableTimeSlots);
 app.post('/timeslots/one', getOneTimeSlot);
 
 app.post('/payments/add', addPayment);
+app.get('/payments', getAllPayments);
+app.post('/payments/booking', getBookingPayments);
+app.post('/payments/refund', refundPayment);
 
 exports.app = functions.https.onRequest(app);
 exports.cleanupExpiredBookings = onSchedule('every 15 minutes', async (event) => {

@@ -1,29 +1,23 @@
 const { dataConnect } = require("../../config/firebase.js");
-const { processMomoPayment, getPaymentDataMOMO} = require('./momoPayment');
+const { processMomoPayment} = require('./momoPayment');
 const { processVnpayPayment } = require('./vnpayPayment');
 const { processZaloPayPayment } = require('./zaloPayment');
 const { checkPaymentStatus } = require('./paymentUtils');
 const {checkBookingExists} = require('../bookings/bookingUtils');
 const {addBookingHistory} = require('../bookingHistory/addBookingHistory');
-const momo = require('../../config/momo');
+const {getOneBookingById} = require('../bookings/getBookings');
+const {getBookingHistoryByBookingId} = require('../bookingHistory/getBookingHistory');
+
 
 const addPayment = async (req, res) => {
   try {
-    const {bookingId, amount, paymentMethod} = req.body;
+    const {bookingId, paymentMethod} = req.body;
 
     if (!bookingId) {
       return res.status(400).json({
         statusCode: 400,
         status: "error",
         message: "bookingId is required"
-      });
-    }
-
-    if (!amount) {
-      return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "amount is required"
       });
     }
 
@@ -43,11 +37,38 @@ const addPayment = async (req, res) => {
       });
     }
 
+    const bookingHistory = await getBookingHistoryByBookingId(bookingId);
+    if (bookingHistory && bookingHistory.length > 0) {
+      const latestStatus = bookingHistory[0].status;
+      console.log("Latest booking status:", latestStatus);
+      if (latestStatus === "expired") {
+        return res.status(400).json({
+          statusCode: 400,
+          status: "error",
+          message: "Cannot process payment for expired booking"
+        });
+      }
+    }
+
     const ADD_PAYMENT_MUTATION = `
       mutation CreatePayment($id: String!, $bookingId: String!, $amount: Float!, $paymentMethod: String!, $status: String, $paymentDate: Date, $refundDetail: String, $otherDetails: [String!]) @auth(level: USER) {
         payment_insert(data: {id: $id, bookingId: $bookingId, amount: $amount, paymentMethod: $paymentMethod, status: $status, paymentDate: $paymentDate, refundDetail: $refundDetail, otherDetails: $otherDetails})
       }
     `;
+
+    const record = await getOneBookingById(bookingId);
+    console.log("Data for booking:", record);
+
+    const amount = record.totalAmount;
+    if (!amount) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "Booking does not have a valid total amount"
+      });
+    }
+    
+    console.log("Booking amount:", amount);
     let result;
 
     if (paymentMethod === "MOMO") {
@@ -94,8 +115,8 @@ const addPayment = async (req, res) => {
       return res.status(200).json({
         statusCode: 200,
         status: "success",
-        essage: "Payment initiated. Status will be checked automatically for 15 minutes.",
-        data: result
+        message: "Payment initiated. Status will be checked automatically for 15 minutes.",
+        data: result.payUrl
       });
       
     } else {

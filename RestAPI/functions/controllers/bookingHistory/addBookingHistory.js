@@ -15,7 +15,7 @@ const addBookingHistory = async (bookingId, status, description) => {
         }
         
         const bookingHistoryData = {
-            id: `${bookingId}_${Date.now()}`,
+            id: `${bookingId}_HISTORY_${Date.now()}`,
             bookingId: bookingId,
             description: description,
             status: status,
