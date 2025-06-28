@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Badge } from 'react-bootstrap';
 import { getAllServices, getServicesByCategory, getAllMethods, getMethodsByServiceId } from '../services/api';
 import { enrichMethodData } from './data/services-data';
+import Swal from 'sweetalert2';
 
 const Home = () => {
   const [services, setServices] = useState([]);
@@ -10,6 +11,9 @@ const Home = () => {
   const [serviceMethods, setServiceMethods] = useState({}); // { serviceId: [methods] }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [hoveredService, setHoveredService] = useState(null);
+  const navigate = useNavigate();
+  const storedUserData = localStorage.getItem('userData');
 
   // Enhanced inline styles
   const styles = {
@@ -24,7 +28,32 @@ const Home = () => {
     serviceCard: {
       transition: 'all 0.3s ease',
       border: '0',
-      borderLeft: '4px solid transparent'
+      borderLeft: '4px solid transparent',
+      cursor: 'pointer'
+    },
+    serviceCardHover: {
+      transform: 'translateY(-5px)',
+      boxShadow: '0 10px 25px rgba(0,0,0,0.15)'
+    },
+    serviceCardAdmin: {
+      transition: 'all 0.3s ease',
+      border: '0',
+      borderLeft: '4px solid #ffc107'
+    },
+    serviceCardCivil: {
+      transition: 'all 0.3s ease',
+      border: '0',
+      borderLeft: '4px solid #198754'
+    },
+    serviceCardAdminHover: {
+      transform: 'translateY(-5px)',
+      boxShadow: '0 10px 25px rgba(255, 193, 7, 0.2)',
+      borderLeft: '4px solid #ffc107'
+    },
+    serviceCardCivilHover: {
+      transform: 'translateY(-5px)',
+      boxShadow: '0 10px 25px rgba(25, 135, 84, 0.2)',
+      borderLeft: '4px solid #198754'
     },
     serviceIcon: {
       width: '60px',
@@ -149,6 +178,33 @@ const Home = () => {
       return new Intl.NumberFormat('vi-VN').format(price) + ' VNĐ';
     }
     return price || 'Liên hệ';
+  };
+
+  // Handler for booking button
+  const handleBookingClick = (e, serviceId) => {
+    if (!storedUserData) {
+      e.preventDefault(); // chặn click chuyển trang
+      Swal.fire({
+        icon: 'info',
+        title: 'Bạn chưa đăng nhập',
+        text: 'Vui lòng đăng nhập để đặt lịch xét nghiệm',
+        confirmButtonText: 'Đăng nhập ngay',
+        confirmButtonColor: '#3085d6',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate('/login', { state: { redirectTo: '/appointment' } });
+        }
+      });
+    } else {
+      // Nếu đã đăng nhập, chuyển đến trang appointment
+      if (serviceId) {
+        // Nếu có serviceId cụ thể (từ service cards)
+        navigate('/appointment', { state: { selectedService: serviceId } });
+      } else {
+        // Nếu không có serviceId (từ hero section)
+        navigate('/appointment');
+      }
+    }
   };
 
   // Get featured services from each category
@@ -357,7 +413,12 @@ const Home = () => {
                   </Button>
                 </Col>
                 <Col sm={6}>
-                  <Button size="lg" variant="outline-light" as={Link} to="/appointment" className="w-100">
+                  <Button 
+                    size="lg" 
+                    variant="outline-light" 
+                    onClick={(e) => handleBookingClick(e, null)}
+                    className="w-100"
+                  >
                     <i className="bi bi-calendar-plus me-2"></i>
                     Đặt lịch ngay
                   </Button>
@@ -597,11 +658,20 @@ const Home = () => {
               <Row>
                 {featuredAdminServices.map(service => (
                   <Col key={service.id} lg={6} className="mb-4">
-                    <Card className="h-100 border-0 shadow-sm" style={styles.serviceCard}>
+                    <Card 
+                      className="h-100 border-0 shadow-sm" 
+                      style={{
+                        ...styles.serviceCardAdmin,
+                        ...(hoveredService === service.id ? styles.serviceCardAdminHover : {})
+                      }}
+                      onMouseEnter={() => setHoveredService(service.id)}
+                      onMouseLeave={() => setHoveredService(null)}
+                    >
+                      <Card.Header className="bg-warning text-dark text-center py-3">
+                        <h5 className="mb-0 fw-bold">{service.title}</h5>
+                        <Badge bg="dark" className="mt-2">Có giá trị pháp lý</Badge>
+                      </Card.Header>
                       <Card.Body>
-                        <div className="text-center mb-3">
-                          <Card.Title className="mb-1">{service.title}</Card.Title>
-                        </div>
                         <Card.Text className="mb-3">{service.description}</Card.Text>
                         <div className="text-center mb-3">
                           <div className="text-warning fw-bold h5">{formatPrice(service.price)}</div>
@@ -621,7 +691,10 @@ const Home = () => {
                           <Button variant="outline-warning" as={Link} to={`/services/${encodeURIComponent(service.id)}`}>
                             Xem chi tiết
                           </Button>
-                          <Button variant="warning" as={Link} to="/appointment" state={{ selectedService: service.id }}>
+                          <Button 
+                            variant="warning" 
+                            onClick={(e) => handleBookingClick(e, service.id)}
+                          >
                             Đặt lịch ngay
                           </Button>
                         </div>
@@ -644,11 +717,20 @@ const Home = () => {
               <Row>
                 {featuredCivilServices.map(service => (
                   <Col key={service.id} lg={6} className="mb-4">
-                    <Card className="h-100 border-0 shadow-sm" style={styles.serviceCard}>
+                    <Card 
+                      className="h-100 border-0 shadow-sm" 
+                      style={{
+                        ...styles.serviceCardCivil,
+                        ...(hoveredService === service.id ? styles.serviceCardCivilHover : {})
+                      }}
+                      onMouseEnter={() => setHoveredService(service.id)}
+                      onMouseLeave={() => setHoveredService(null)}
+                    >
+                      <Card.Header className="bg-success text-white text-center py-3">
+                        <h5 className="mb-0 fw-bold">{service.title}</h5>
+                        <Badge bg="light" text="dark" className="mt-2">Mục đích cá nhân</Badge>
+                      </Card.Header>
                       <Card.Body>
-                        <div className="text-center mb-3">
-                          <Card.Title className="mb-1">{service.title}</Card.Title>
-                        </div>
                         <Card.Text className="mb-3">{service.description}</Card.Text>
                         <div className="text-center mb-3">
                           <div className="text-success fw-bold h5">{formatPrice(service.price)}</div>
@@ -668,7 +750,10 @@ const Home = () => {
                           <Button variant="outline-success" as={Link} to={`/services/${encodeURIComponent(service.id)}`}>
                             Xem chi tiết
                           </Button>
-                          <Button variant="success" as={Link} to="/appointment" state={{ selectedService: service.id }}>
+                          <Button 
+                            variant="success" 
+                            onClick={(e) => handleBookingClick(e, service.id)}
+                          >
                             Đặt lịch ngay
                           </Button>
                         </div>

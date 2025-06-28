@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Badge, Form, Alert } from 'react-bootstrap';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { getAllServices, getAllMethods, getServicesByCategory, getMethodsByServiceId } from '../../services/api';
 import { enrichMethodData } from '../data/services-data';
+import Swal from 'sweetalert2';
 
 const ServiceList = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -14,26 +15,29 @@ const ServiceList = () => {
   const [filterType, setFilterType] = useState(searchParams.get('type') || '');
   const [filterMethod, setFilterMethod] = useState('');
   const [sortBy, setSortBy] = useState('name');
+  const navigate = useNavigate();
+  const [expanded, setExpanded] = useState(false);
+  const storedUserData = localStorage.getItem('userData');
 
   useEffect(() => {
     fetchServices();
     fetchMethods();
   }, []);
 
+  // Sync URL params với filterType
   useEffect(() => {
-    if (filterType) {
-      setSearchParams({ type: filterType });
-    } else {
-      setSearchParams({});
+    const typeFromUrl = searchParams.get('type');
+    if (typeFromUrl !== filterType) {
+      setFilterType(typeFromUrl || '');
     }
-  }, [filterType, setSearchParams]);
+  }, [searchParams]);
 
   const fetchServices = async () => {
     try {
       setLoading(true);
       const response = await getAllServices();
       console.log('Services API response:', response);
-      
+
       if (response && Array.isArray(response)) {
         setServices(response);
         // Fetch methods for each service
@@ -54,7 +58,7 @@ const ServiceList = () => {
     try {
       const response = await getAllMethods();
       console.log('Methods API response:', response);
-      
+
       if (response && Array.isArray(response)) {
         setMethods(response);
       } else {
@@ -69,13 +73,13 @@ const ServiceList = () => {
   const fetchMethodsForServices = async (servicesList) => {
     try {
       const methodsMap = {};
-      
+
       // Fetch methods for each service
       for (const service of servicesList) {
         try {
           const serviceMethods = await getMethodsByServiceId(service.id);
           console.log(`Methods for service ${service.id}:`, serviceMethods);
-          
+
           if (serviceMethods && Array.isArray(serviceMethods)) {
             methodsMap[service.id] = serviceMethods;
           } else {
@@ -86,7 +90,7 @@ const ServiceList = () => {
           methodsMap[service.id] = [];
         }
       }
-      
+
       console.log('Final serviceMethods map:', methodsMap);
       setServiceMethods(methodsMap);
     } catch (err) {
@@ -110,14 +114,14 @@ const ServiceList = () => {
   };
 
   const getServiceTypeBadge = (serviceType) => {
-    return serviceType === 'administrative' 
+    return serviceType === 'administrative'
       ? <Badge bg="warning" text="dark" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}>ADN Hành chính</Badge>
       : <Badge bg="success" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}>ADN Dân sự</Badge>;
   };
 
   const getMethodBadges = (serviceId) => {
     const serviceMethodsList = serviceMethods[serviceId] || [];
-    
+
     if (serviceMethodsList.length === 0) {
       return (
         <Badge bg="secondary" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}>
@@ -126,14 +130,14 @@ const ServiceList = () => {
         </Badge>
       );
     }
-    
+
     // Enrich methods với icon và color từ METHOD_MAPPING
     const enrichedMethods = enrichMethodData(serviceMethodsList);
-    
+
     return enrichedMethods.map(method => (
-      <Badge 
-        key={method.id} 
-        bg={method.color || 'secondary'} 
+      <Badge
+        key={method.id}
+        bg={method.color || 'secondary'}
         className="me-2 mb-2"
         style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}
       >
@@ -147,12 +151,12 @@ const ServiceList = () => {
   const filteredServices = services.filter(service => {
     const serviceType = getServiceTypeFromCategory(service.category);
     const matchesType = !filterType || serviceType === filterType;
-    
+
     // Filter theo method nếu có
-    const matchesMethod = !filterMethod || 
-      (serviceMethods[service.id] && 
-       serviceMethods[service.id].some(method => method.id === filterMethod));
-    
+    const matchesMethod = !filterMethod ||
+      (serviceMethods[service.id] &&
+        serviceMethods[service.id].some(method => method.id === filterMethod));
+
     return matchesType && matchesMethod;
   });
 
@@ -175,6 +179,12 @@ const ServiceList = () => {
     if (type === 'serviceType') {
       setFilterType(value);
       setFilterMethod(''); // Reset method filter when service type changes
+      // Cập nhật URL
+      if (value) {
+        setSearchParams({ type: value });
+      } else {
+        setSearchParams({});
+      }
     } else if (type === 'method') {
       setFilterMethod(value);
     }
@@ -202,6 +212,29 @@ const ServiceList = () => {
     );
   }
 
+  const handleNavClick = () => {
+    setExpanded(false);
+  };
+  // Kiểm tra xem người dùng đã đăng nhập chưa
+  const handleBookingClick = (e) => {
+    if (!storedUserData) {
+      e.preventDefault(); // chặn click chuyển trang
+      Swal.fire({
+        icon: 'info',
+        title: 'Bạn chưa đăng nhập',
+        text: 'Vui lòng đăng nhập để đặt lịch xét nghiệm',
+        confirmButtonText: 'Đăng nhập ngay',
+        confirmButtonColor: '#3085d6',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate('/login', { state: { redirectTo: '/appointment' } });
+        }
+      });
+    } else {
+      handleNavClick(); // vẫn xử lý bình thường nếu đã login
+    }
+  };
+
   return (
     <>
       {/* Hero Section - Style giống ServiceDetail */}
@@ -215,11 +248,11 @@ const ServiceList = () => {
               <p className="lead mb-4">
                 Chọn dịch vụ phù hợp với nhu cầu của bạn - Độ chính xác 99.9999% với công nghệ hiện đại
               </p>
-              
+
             </Col>
             <Col lg={4} className="text-end d-none d-lg-block">
               <i className="bi bi-grid-3x3" style={{
-                fontSize: '10rem', 
+                fontSize: '10rem',
                 color: 'rgb(255, 255, 255)'
               }}></i>
             </Col>
@@ -239,10 +272,10 @@ const ServiceList = () => {
               style={{ borderRadius: '12px', padding: '12px 16px', fontWeight: '500' }}
             />
           </Col>
-          
+
           <Col lg={2} md={6} className="mb-3">
-            <Form.Select 
-              value={filterType} 
+            <Form.Select
+              value={filterType}
               onChange={(e) => handleFilterChange('serviceType', e.target.value)}
               className="border-2 h-100"
               style={{ borderRadius: '12px', padding: '12px 16px', fontWeight: '500' }}
@@ -252,10 +285,10 @@ const ServiceList = () => {
               <option value="administrative">ADN Hành chính</option>
             </Form.Select>
           </Col>
-          
+
           <Col lg={3} md={6} className="mb-3">
-            <Form.Select 
-              value={filterMethod} 
+            <Form.Select
+              value={filterMethod}
               onChange={(e) => handleFilterChange('method', e.target.value)}
               className="border-2 h-100"
               style={{ borderRadius: '12px', padding: '12px 16px', fontWeight: '500' }}
@@ -268,10 +301,10 @@ const ServiceList = () => {
               ))}
             </Form.Select>
           </Col>
-          
+
           <Col lg={3} md={6} className="mb-3">
-            <Form.Select 
-              value={sortBy} 
+            <Form.Select
+              value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
               className="border-2 h-100"
               style={{ borderRadius: '12px', padding: '12px 16px', fontWeight: '500' }}
@@ -282,10 +315,10 @@ const ServiceList = () => {
               <option value="duration">Thời gian</option>
             </Form.Select>
           </Col>
-          
+
           <Col lg={1} md={6} className="mb-3">
-            <Button 
-              variant="outline-secondary" 
+            <Button
+              variant="outline-secondary"
               onClick={() => {
                 setFilterType('');
                 setFilterMethod('');
@@ -317,8 +350,8 @@ const ServiceList = () => {
             <i className="bi bi-info-circle fs-1 mb-3 d-block"></i>
             <h4>Không tìm thấy dịch vụ phù hợp</h4>
             <p className="mb-3">Hãy thử thay đổi bộ lọc hoặc liên hệ với chúng tôi để được tư vấn</p>
-            <Button 
-              variant="primary" 
+            <Button
+              variant="primary"
               onClick={() => {
                 setFilterType('');
                 setFilterMethod('');
@@ -336,9 +369,9 @@ const ServiceList = () => {
               const serviceType = getServiceTypeFromCategory(service.category);
               return (
                 <Col key={service.id} lg={4} md={6} className="mb-4">
-                  <Card 
+                  <Card
                     className="h-100 border-0 shadow-sm"
-                    style={{ 
+                    style={{
                       borderRadius: '16px',
                       boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
                       transition: 'all 0.3s ease',
@@ -353,18 +386,17 @@ const ServiceList = () => {
                       e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.08)';
                     }}
                   >
-                    <Card.Header className={`border-0 ${
-                      serviceType === 'administrative' ? 'bg-warning bg-opacity-10' : 'bg-success bg-opacity-10'
-                    }`}>
+                    <Card.Header className={`border-0 ${serviceType === 'administrative' ? 'bg-warning bg-opacity-10' : 'bg-success bg-opacity-10'
+                      }`}>
                       {/* Service Type - Căn giữa */}
                       <div className="text-center mb-3">
                         {getServiceTypeBadge(serviceType)}
                       </div>
-                      
+
                       {/* Service Name và Featured - Cùng hàng */}
                       <div className="d-flex align-items-center">
-                        <i className={`bi ${service.featured ? 'bi-star-fill' : 'bi-star'} text-danger me-2`} 
-                           title={service.featured ? 'Dịch vụ nổi bật' : 'Dịch vụ thường'}></i>
+                        <i className={`bi ${service.featured ? 'bi-star-fill' : 'bi-star'} text-danger me-2`}
+                          title={service.featured ? 'Dịch vụ nổi bật' : 'Dịch vụ thường'}></i>
                         <h6 className="mb-0 fw-bold text-dark flex-grow-1">{service.title}</h6>
                       </div>
                     </Card.Header>
@@ -376,7 +408,7 @@ const ServiceList = () => {
                           {service.description}
                         </Card.Text>
                       </div>
-                      
+
                       {/* Price and Duration - Fixed height */}
                       <div className="mb-3 text-center" style={{ minHeight: '50px' }}>
                         <div className="h5 text-primary mb-1">{formatPrice(service.price)}</div>
@@ -385,7 +417,7 @@ const ServiceList = () => {
                           Thời gian: {service.duration}
                         </small>
                       </div>
-                      
+
                       {/* Collection Methods - Fixed height */}
                       <div className="mb-3" style={{ minHeight: '80px' }}>
                         <small className="text-muted d-block mb-2">Phương thức lấy mẫu:</small>
@@ -396,9 +428,9 @@ const ServiceList = () => {
 
                       {/* Buttons - Fixed at bottom */}
                       <div className="d-grid gap-2 mt-auto">
-                        <Button 
-                          variant="outline-primary" 
-                          as={Link} 
+                        <Button
+                          variant="outline-primary"
+                          as={Link}
                           to={`/services/${encodeURIComponent(service.id)}`}
                           className="fw-bold"
                           style={{ borderRadius: '12px', padding: '12px 24px', fontWeight: '600' }}
@@ -406,10 +438,11 @@ const ServiceList = () => {
                           <i className="bi bi-eye me-2"></i>
                           Xem chi tiết
                         </Button>
-                        <Button 
-                          variant="primary" 
-                          as={Link} 
-                          to="/appointment" 
+                        <Button
+                          variant="primary"
+                          as={Link}
+                          to="/appointment"
+                          onClick={handleBookingClick}
                           state={{ selectedService: service.id }}
                           className="fw-bold"
                           style={{ borderRadius: '12px', padding: '12px 24px', fontWeight: '600' }}
@@ -434,10 +467,10 @@ const ServiceList = () => {
               Đội ngũ chuyên gia của chúng tôi sẵn sàng tư vấn và hỗ trợ bạn 24/7
             </p>
             <div className="d-flex justify-content-center gap-3 flex-wrap">
-              <Button 
-                variant="primary" 
+              <Button
+                variant="primary"
                 size="lg"
-                as={Link} 
+                as={Link}
                 to="/appointment"
                 className="fw-bold"
                 style={{ borderRadius: '12px', padding: '12px 24px', fontWeight: '600' }}
@@ -445,8 +478,8 @@ const ServiceList = () => {
                 <i className="bi bi-calendar-plus me-2"></i>
                 Đặt lịch ngay
               </Button>
-              <Button 
-                variant="outline-primary" 
+              <Button
+                variant="outline-primary"
                 size="lg"
                 className="fw-bold"
                 style={{ borderRadius: '12px', padding: '12px 24px', fontWeight: '600' }}

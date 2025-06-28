@@ -30,6 +30,7 @@
     "react-google-button": "^0.8.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
+    "sweetalert2": "^11.22.1",
     "vnpay": "^2.2.0",
     "yup": "^1.6.1"
   }

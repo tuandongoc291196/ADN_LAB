@@ -8,6 +8,7 @@ const {checkMethodExists} = require("../methods/methodUtils.js");
 const {checkBookingExists} = require("./bookingUtils.js");
 const {addBookingHistory} = require("../bookingHistory/addBookingHistory.js");
 const {addParticipant} = require("../participants/addParticipant.js");
+const {addInformation} = require("../information/addInformation.js");
 
 const addBooking = async (req, res) => {
   try {
@@ -20,6 +21,7 @@ const addBooking = async (req, res) => {
         serviceId,
         totalAmount,
         participants,
+        information,
     } = req.body;
 
     if (!userId) {
@@ -51,6 +53,14 @@ const addBooking = async (req, res) => {
         statusCode: 400,
         status: "error",
         message: "endTime is required",
+      });
+    }
+
+    if (startTime >= endTime) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "endTime must be later than startTime",
       });
     }
 
@@ -94,6 +104,46 @@ const addBooking = async (req, res) => {
       });
     }
 
+    if (!information) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "information is required",
+      });
+    }
+
+    if (!information.name) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "information.name is required",
+      });
+    }
+
+    if (!information.identification) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "information.identification is required",
+      });
+    }
+
+    if (!information.address) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "information.address is required",
+      });
+    }
+
+    if (!information.phone) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "information.phone is required",
+      });
+    }
+
     for (let i = 0; i < participants.length; i++) {
       const participant = participants[i];
       
@@ -105,11 +155,11 @@ const addBooking = async (req, res) => {
         });
       }
       
-      if (!participant.age || isNaN(participant.age) || participant.age < 0) {
+      if (!participant.age || isNaN(participant.age) || participant.age < 0 || participant.age > 150) {
         return res.status(400).json({
           statusCode: 400,
           status: "error",
-          message: `Participant at index ${i} has invalid age`,
+          message: `Participant at index ${i} has invalid age. Age must be between 0 and 150`,
         });
       }
       
@@ -203,13 +253,28 @@ const addBooking = async (req, res) => {
       }
     }
 
+    let informationResult = null;
+    try {
+      informationResult = await addInformation(
+        bookingVariables.id,
+        information.name,
+        information.identification,
+        information.address,
+        information.phone,
+        information.email
+      );
+    } catch (informationError) {
+      console.error("Error adding information:", informationError);
+    }
+
     console.log({
       updateStaffResponse,
       updateTimeSlotResponse,
       responseData, 
       createBooking,
       pendingBooking,
-      participantResults
+      participantResults,
+      informationResult
     })
 
     return res.status(201).json({

@@ -59,7 +59,29 @@ const getOneUser = async (req, res) => {
       userId: userId,
     };
     
-    const GET_ONE_USER = "query GetUserById($userId: String!) @auth(level: USER) { user(key: {id: $userId}) { id fullname gender avatar email accountStatus authProvider phone shippingAddress roleId role { id name description } dailySlotCount maxDailySlots createdAt lastLogin } }";
+    const GET_ONE_USER = `
+        query GetUserById($userId: String!) @auth(level: USER) {
+      user(key: {id: $userId}) {
+        id
+        fullname
+        gender
+        avatar
+        email
+        accountStatus
+        authProvider
+        phone
+        address
+        roleId
+        role {
+          id
+          name
+          description
+        }
+        createdAt
+        lastLogin
+      }
+    }
+    `;
     console.log("Executing GraphQL query:", GET_ONE_USER);
     const response = await dataConnect.executeGraphql(GET_ONE_USER, {
         variables: variables,});

@@ -9,11 +9,20 @@ const BookingConfirmation = () => {
   const [bookingId, setBookingId] = useState('');
 
   useEffect(() => {
-    if (location.state && location.state.bookingData) {
-      setBookingData(location.state.bookingData);
-      // Generate booking ID (in real app, this would come from server)
-      const id = 'ADN' + Date.now().toString().slice(-6);
-      setBookingId(id);
+    if (location.state) {
+      if (location.state.bookingData) {
+        setBookingData(location.state.bookingData);
+        console.log('Booking data received:', location.state.bookingData);
+        console.log('Selected service:', location.state.bookingData.selectedService);
+        console.log('Selected method:', location.state.bookingData.selectedMethod);
+      }
+      if (location.state.bookingId) {
+        setBookingId(location.state.bookingId);
+      } else {
+        // Fallback: Generate booking ID nếu không có từ backend
+        const id = 'ADN' + Date.now().toString().slice(-6);
+        setBookingId(id);
+      }
     }
   }, [location.state]);
 
@@ -49,19 +58,50 @@ const BookingConfirmation = () => {
     return new Date(dateString).toLocaleDateString('vi-VN', options);
   };
 
-  const getServiceTypeBadge = (serviceType) => {
+  const getServiceTypeBadge = (serviceType, category) => {
+    // Ưu tiên lấy từ category nếu có
+    if (category) {
+      if (category.hasLegalValue) {
+        return <Badge bg="warning" text="dark">ADN Hành chính</Badge>;
+      } else {
+        return <Badge bg="success">ADN Dân sự</Badge>;
+      }
+    }
+    
+    // Fallback về serviceType cũ
     return serviceType === 'administrative' 
-      ? <Badge bg="warning" text="dark">Có giá trị pháp lý</Badge>
-      : <Badge bg="success">Dân sự</Badge>;
+      ? <Badge bg="warning" text="dark">ADN Hành chính</Badge>
+      : <Badge bg="success">ADN Dân sự</Badge>;
   };
 
-  const getCollectionMethodName = (method) => {
+  const getCollectionMethodName = (methodId, methodInfo) => {
+    // Ưu tiên lấy tên từ methodInfo nếu có
+    if (methodInfo && methodInfo.name) {
+      return methodInfo.name;
+    }
+    
+    // Fallback về mapping cũ
     const methods = {
+      '0': 'Tự lấy mẫu tại nhà',
+      '1': 'Nhân viên tới nhà lấy mẫu',
+      '2': 'Tới cơ sở lấy mẫu',
       'self-sample': 'Tự lấy mẫu tại nhà',
       'home-visit': 'Nhân viên tới nhà lấy mẫu',
       'at-facility': 'Tới cơ sở lấy mẫu'
     };
-    return methods[method] || method;
+    return methods[methodId] || methodId;
+  };
+
+  const getMethodColor = (methodId) => {
+    const methodColors = {
+      'self-sample': 'success',
+      'home-visit': 'warning', 
+      'at-facility': 'primary',
+      '0': 'success',
+      '1': 'warning',
+      '2': 'primary'
+    };
+    return methodColors[methodId] || 'secondary';
   };
 
   return (
@@ -99,22 +139,29 @@ const BookingConfirmation = () => {
               </Row>
             </Card.Header>
             <Card.Body>
-              <Row>
-                <Col md={6} className="mb-4">
+              {/* Thông tin dịch vụ và thời gian hẹn */}
+              <Row className="mb-4">
+                <Col md={6} className="mb-4 border-end">
                   <h6 className="text-primary mb-3">
                     <i className="bi bi-gear me-2"></i>
                     Thông tin dịch vụ
                   </h6>
-                  <div className="mb-2">
-                    <strong>Loại dịch vụ:</strong>
-                    <div className="mt-1">
-                      {getServiceTypeBadge(bookingData.serviceType)}
+                  <div className="text-start">
+                    <div className="mb-2">
+                      <strong>Tên dịch vụ:</strong> {(() => {
+                        const serviceTitle = bookingData?.selectedService?.title;
+                        console.log('Rendering service title:', serviceTitle);
+                        return serviceTitle || 'Không có thông tin';
+                      })()}
                     </div>
-                  </div>
-                  <div className="mb-2">
-                    <strong>Phương thức thu mẫu:</strong>
-                    <div className="text-muted">
-                      {getCollectionMethodName(bookingData.collectionMethod)}
+                    <div className="mb-2">
+                      <strong>Loại dịch vụ:</strong> {getServiceTypeBadge(bookingData.serviceType, bookingData?.selectedService?.category)}
+                    </div>
+                    <div className="mb-2">
+                      <strong>Phương thức thu mẫu:</strong> 
+                      <Badge bg={getMethodColor(bookingData.collectionMethod)} className="ms-2">
+                        {getCollectionMethodName(bookingData.collectionMethod, bookingData?.selectedMethod)}
+                      </Badge>
                     </div>
                   </div>
                 </Col>
@@ -124,60 +171,56 @@ const BookingConfirmation = () => {
                     <i className="bi bi-calendar me-2"></i>
                     Thời gian hẹn
                   </h6>
-                  {bookingData.collectionMethod === 'self-sample' ? (
-                    <div>
-                      <div className="mb-2">
-                        <strong>Phương thức:</strong>
-                        <div className="text-muted">Tự lấy mẫu tại nhà</div>
+                  <div className="text-start">
+                    {bookingData.collectionMethod === 'self-sample' ? (
+                      <div>
+                        <div className="mb-2">
+                          <strong>Phương thức:</strong> Tự lấy mẫu tại nhà
+                        </div>
+                        <div className="mb-2">
+                          <strong>Kit sẽ được gửi đến:</strong> {bookingData.customerInfo.address}
+                        </div>
                       </div>
-                      <div className="mb-2">
-                        <strong>Kit sẽ được gửi đến:</strong>
-                        <div className="text-muted">{bookingData.customerInfo.address}</div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <div className="mb-2">
-                        <strong>Ngày hẹn:</strong>
-                        <div className="text-muted">{formatDate(bookingData.appointmentDate)}</div>
-                      </div>
-                      <div className="mb-2">
-                        <strong>Giờ hẹn:</strong>
-                        <div className="text-muted">{bookingData.appointmentTime}</div>
-                      </div>
-                      <div className="mb-2">
-                        <strong>Địa điểm:</strong>
-                        <div className="text-muted">
-                          {bookingData.collectionMethod === 'at-facility' ? 
-                            'Trung tâm xét nghiệm ADN - 123 Đường ABC, Quận XYZ' :
-                            bookingData.customerInfo.address
+                    ) : (
+                      <div>
+                        <div className="mb-2">
+                          <strong>Giờ hẹn:</strong> {bookingData.appointmentTime}
+                        </div>
+                        <div className="mb-2">
+                          <strong>Ngày hẹn:</strong> {formatDate(bookingData.appointmentDate)}
+                        </div>
+                        <div className="mb-2">
+                          <strong>Địa điểm:</strong> {
+                            bookingData.collectionMethod === 'at-facility' ? 
+                              'Trung tâm xét nghiệm ADN - 123 Đường ABC, Quận XYZ' :
+                              bookingData.customerInfo.address
                           }
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </Col>
               </Row>
 
               <hr />
 
-              <Row>
-                <Col md={6} className="mb-4">
+              {/* Thông tin liên hệ và người tham gia */}
+              <Row className="mb-4">
+                <Col md={6} className="mb-4 border-end">
                   <h6 className="text-primary mb-3">
                     <i className="bi bi-person me-2"></i>
                     Thông tin liên hệ
                   </h6>
-                  <div className="mb-2">
-                    <strong>Họ tên:</strong>
-                    <div className="text-muted">{bookingData.customerInfo.fullName}</div>
-                  </div>
-                  <div className="mb-2">
-                    <strong>Điện thoại:</strong>
-                    <div className="text-muted">{bookingData.customerInfo.phone}</div>
-                  </div>
-                  <div className="mb-2">
-                    <strong>Email:</strong>
-                    <div className="text-muted">{bookingData.customerInfo.email || 'Không có'}</div>
+                  <div className="text-start">
+                    <div className="mb-2">
+                      <strong>Họ tên:</strong> {bookingData.customerInfo.fullName}
+                    </div>
+                    <div className="mb-2">
+                      <strong>Điện thoại:</strong> {bookingData.customerInfo.phone}
+                    </div>
+                    <div className="mb-2">
+                      <strong>Email:</strong> {bookingData.customerInfo.email || 'Không có'}
+                    </div>
                   </div>
                 </Col>
 
@@ -186,101 +229,80 @@ const BookingConfirmation = () => {
                     <i className="bi bi-people me-2"></i>
                     Người tham gia
                   </h6>
-                  {bookingData.customerInfo.participants.length > 0 ? (
-                    bookingData.customerInfo.participants.map((participant, index) => (
-                      <div key={index} className="mb-2 p-2 bg-light rounded">
-                        <div><strong>{participant.role}:</strong> {participant.name}</div>
-                        <small className="text-muted">CCCD: {participant.idNumber}</small>
+                  <div className="text-start">
+                    {bookingData.customerInfo.participants.length > 0 ? (
+                      bookingData.customerInfo.participants.map((participant, index) => (
+                        <div key={index} className="mb-2 p-2 bg-light rounded">
+                          <div className="mb-1">
+                            <strong>Họ tên:</strong> {participant.name}
+                          </div>
+                          <div>
+                            <strong>Điện thoại:</strong> {participant.phone}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-muted">
+                        Thông tin sẽ được cập nhật khi thanh toán
                       </div>
-                    ))
-                  ) : (
-                    <div className="text-muted">
-                      Thông tin sẽ được cập nhật khi thanh toán
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </Col>
               </Row>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
 
-      {/* Next Steps */}
-      <Row className="mb-4">
-        <Col lg={8} className="mx-auto">
-          <Card className="border-info">
-            <Card.Header className="bg-info text-white">
-              <h5 className="mb-0">
-                <i className="bi bi-list-check me-2"></i>
-                Các bước tiếp theo
-              </h5>
-            </Card.Header>
-            <Card.Body>
-              <div className="mb-4">
-                <Alert variant="warning" className="mb-3">
-                  <i className="bi bi-exclamation-triangle me-2"></i>
-                  <strong>Quan trọng:</strong> Vui lòng hoàn tất thanh toán trong vòng 30 phút để giữ lịch hẹn.
-                </Alert>
+              <hr />
 
-                <div className="d-flex align-items-start mb-3">
-                  <div className="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" 
-                       style={{ width: '40px', height: '40px', fontSize: '1.1rem', fontWeight: 'bold' }}>
-                    1
+              {/* Thông tin chi phí */}
+              <Row className="mb-4">
+                <Col>
+                  <h6 className="text-primary mb-3">
+                    <i className="bi bi-cash-coin me-2"></i>
+                    Thông tin chi phí
+                  </h6>
+                  <div className="bg-light p-3 rounded">
+                    <div className="d-flex justify-content-between mb-2">
+                      <span>Giá dịch vụ:</span>
+                      <span className="text-muted">
+                        {(() => {
+                          const servicePrice = bookingData?.selectedService?.price;
+                          if (servicePrice && servicePrice > 0) {
+                            return `${new Intl.NumberFormat('vi-VN').format(servicePrice)} VNĐ`;
+                          }
+                          return 'Liên hệ để biết giá';
+                        })()}
+                      </span>
+                    </div>
+                    <div className="d-flex justify-content-between mb-2">
+                      <span>Phí dịch vụ (theo phương thức thu mẫu):</span>
+                      <span className="text-muted">
+                        {(() => {
+                          const methodPrice = bookingData?.selectedMethod?.price;
+                          if (methodPrice && methodPrice > 0) {
+                            return `${new Intl.NumberFormat('vi-VN').format(methodPrice)} VNĐ`;
+                          }
+                          return 'Miễn phí';
+                        })()}
+                      </span>
+                    </div>
+                    <hr />
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                      <h5 className="mb-0">Tổng cộng:</h5>
+                      <h4 className="text-primary mb-0">
+                        {(() => {
+                          const servicePrice = bookingData?.selectedService?.price || 0;
+                          const methodPrice = bookingData?.selectedMethod?.price || 0;
+                          const totalAmount = servicePrice + methodPrice;
+                          
+                          if (totalAmount > 0) {
+                            return `${new Intl.NumberFormat('vi-VN').format(totalAmount)} VNĐ`;
+                          }
+                          return 'Liên hệ để biết giá';
+                        })()}
+                      </h4>
+                    </div>
                   </div>
-                  <div>
-                    <h6 className="mb-2">Thanh toán dịch vụ</h6>
-                    <p className="text-muted mb-0">
-                      Chọn phương thức thanh toán phù hợp và hoàn tất giao dịch
-                    </p>
-                  </div>
-                </div>
-
-                <div className="d-flex align-items-start mb-3">
-                  <div className="bg-light text-muted rounded-circle d-flex align-items-center justify-content-center me-3" 
-                       style={{ width: '40px', height: '40px', fontSize: '1.1rem', fontWeight: 'bold' }}>
-                    2
-                  </div>
-                  <div>
-                    <h6 className="mb-2">Nhận xác nhận</h6>
-                    <p className="text-muted mb-0">
-                      Bạn sẽ nhận email và SMS xác nhận sau khi thanh toán thành công
-                    </p>
-                  </div>
-                </div>
-
-                <div className="d-flex align-items-start mb-3">
-                  <div className="bg-light text-muted rounded-circle d-flex align-items-center justify-content-center me-3" 
-                       style={{ width: '40px', height: '40px', fontSize: '1.1rem', fontWeight: 'bold' }}>
-                    3
-                  </div>
-                  <div>
-                    <h6 className="mb-2">
-                      {bookingData.collectionMethod === 'self-sample' ? 'Nhận kit' : 'Chuẩn bị xét nghiệm'}
-                    </h6>
-                    <p className="text-muted mb-0">
-                      {bookingData.collectionMethod === 'self-sample' ? 
-                        'Kit sẽ được gửi đến địa chỉ của bạn trong 1-2 ngày làm việc' :
-                        'Chuẩn bị giấy tờ và có mặt đúng giờ hẹn'
-                      }
-                    </p>
-                  </div>
-                </div>
-
-                <div className="d-flex align-items-start">
-                  <div className="bg-light text-muted rounded-circle d-flex align-items-center justify-content-center me-3" 
-                       style={{ width: '40px', height: '40px', fontSize: '1.1rem', fontWeight: 'bold' }}>
-                    4
-                  </div>
-                  <div>
-                    <h6 className="mb-2">Nhận kết quả</h6>
-                    <p className="text-muted mb-0">
-                      Kết quả sẽ có trong <strong>
-                      {bookingData.serviceType === 'civil' ? '5-7 ngày' : '3-5 ngày'} làm việc
-                      </strong> kể từ khi nhận được mẫu
-                    </p>
-                  </div>
-                </div>
-              </div>
+                </Col>
+              </Row>
             </Card.Body>
           </Card>
         </Col>
@@ -291,31 +313,46 @@ const BookingConfirmation = () => {
         <Col lg={8} className="mx-auto">
           <Card className="border-warning bg-warning bg-opacity-10">
             <Card.Body className="text-center py-4">
+              <Alert variant="warning" className="mb-4">
+                <i className="bi bi-exclamation-triangle me-2"></i>
+                <strong>Quan trọng:</strong> Vui lòng hoàn tất thanh toán trong vòng 30 phút để giữ lịch hẹn.
+              </Alert>
+              
               <h4 className="text-warning mb-3">
                 <i className="bi bi-credit-card me-2"></i>
                 Hoàn tất thanh toán
               </h4>
               <p className="mb-4">
-                Tiến hành thanh toán để xác nhận đặt lịch và bắt đầu quy trình xét nghiệm ADN
+                Tiến hành thanh toán để đặt lịch thành công và bắt đầu quy trình xét nghiệm ADN
               </p>
-              <div className="d-flex justify-content-center gap-3">
+              
+              {/* Total Amount Display */}
+              <div className="bg-white p-3 rounded mb-4">
+                <div className="d-flex justify-content-between align-items-center">
+                  <span className="fs-5">Tổng tiền cần thanh toán:</span>
+                  <span className="fs-4 fw-bold text-primary">
+                    {(() => {
+                      const servicePrice = bookingData?.selectedService?.price || 0;
+                      const methodPrice = bookingData?.selectedMethod?.price || 0;
+                      const totalAmount = servicePrice + methodPrice;
+                      
+                      if (totalAmount > 0) {
+                        return `${new Intl.NumberFormat('vi-VN').format(totalAmount)} VNĐ`;
+                      }
+                      return 'Liên hệ để biết giá';
+                    })()}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="d-flex justify-content-center">
                 <Button 
                   variant="warning" 
                   size="lg"
                   onClick={handleProceedToPayment}
                   className="px-4"
                 >
-                  <i className="bi bi-arrow-right me-2"></i>
                   Tiến hành thanh toán
-                </Button>
-                <Button 
-                  variant="outline-secondary" 
-                  size="lg"
-                  as={Link}
-                  to="/appointment"
-                >
-                  <i className="bi bi-arrow-left me-2"></i>
-                  Quay lại chỉnh sửa
                 </Button>
               </div>
             </Card.Body>
@@ -330,7 +367,7 @@ const BookingConfirmation = () => {
             <Card.Header className="bg-primary text-white">
               <h5 className="mb-0">
                 <i className="bi bi-telephone me-2"></i>
-                Thông tin liên hệ
+                Liên hệ hỗ trợ
               </h5>
             </Card.Header>
             <Card.Body>
@@ -363,20 +400,143 @@ const BookingConfirmation = () => {
       {/* Save/Print Options */}
       <Row>
         <Col className="text-center">
-          <div className="d-flex justify-content-center gap-2 flex-wrap">
-            <Button variant="outline-success" onClick={() => window.print()}>
-              <i className="bi bi-printer me-2"></i>
-              In thông tin
-            </Button>
-            <Button variant="outline-info" onClick={() => {
-              const content = `Mã đặt lịch: ${bookingId}\nDịch vụ: ${bookingData.serviceType === 'civil' ? 'ADN Dân sự' : 'ADN Hành chính'}\nKhách hàng: ${bookingData.customerInfo.fullName}`;
-              navigator.clipboard.writeText(content);
-              alert('Đã copy thông tin vào clipboard!');
-            }}>
-              <i className="bi bi-clipboard me-2"></i>
-              Copy thông tin
-            </Button>
-          </div>
+          <Button variant="outline-success" onClick={() => {
+            // Tạo nội dung chỉ in phần Booking Details
+            const printContent = `
+              <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+                <h2 style="text-align: center; color: #198754; margin-bottom: 20px;">
+                  <i class="bi bi-clipboard-check"></i> Chi tiết đặt lịch
+                </h2>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                  <strong>Mã đặt lịch:</strong> ${bookingId}
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                  <div>
+                    <h4 style="color: #0d6efd; margin-bottom: 15px;">
+                      <i class="bi bi-gear"></i> Thông tin dịch vụ
+                    </h4>
+                    <p><strong>Tên dịch vụ:</strong> ${bookingData?.selectedService?.title || 'Không có thông tin'}</p>
+                    <p><strong>Loại dịch vụ:</strong> ${bookingData.serviceType === 'civil' ? 'ADN Dân sự' : 'ADN Hành chính'}</p>
+                    <p><strong>Phương thức thu mẫu:</strong> ${getCollectionMethodName(bookingData.collectionMethod, bookingData?.selectedMethod)}</p>
+                  </div>
+                  
+                  <div>
+                    <h4 style="color: #0d6efd; margin-bottom: 15px;">
+                      <i class="bi bi-calendar"></i> Thời gian hẹn
+                    </h4>
+                    ${bookingData.collectionMethod === 'self-sample' ? `
+                      <p><strong>Phương thức:</strong> Tự lấy mẫu tại nhà</p>
+                      <p><strong>Kit sẽ được gửi đến:</strong> ${bookingData.customerInfo.address}</p>
+                    ` : `
+                      <p><strong>Giờ hẹn:</strong> ${bookingData.appointmentTime}</p>
+                      <p><strong>Ngày hẹn:</strong> ${formatDate(bookingData.appointmentDate)}</p>
+                      <p><strong>Địa điểm:</strong> ${bookingData.collectionMethod === 'at-facility' ? 'Trung tâm xét nghiệm ADN - 123 Đường ABC, Quận XYZ' : bookingData.customerInfo.address}</p>
+                    `}
+                  </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                  <div>
+                    <h4 style="color: #0d6efd; margin-bottom: 15px;">
+                      <i class="bi bi-person"></i> Thông tin liên hệ
+                    </h4>
+                    <p><strong>Họ tên:</strong> ${bookingData.customerInfo.fullName}</p>
+                    <p><strong>Điện thoại:</strong> ${bookingData.customerInfo.phone}</p>
+                    <p><strong>Email:</strong> ${bookingData.customerInfo.email || 'Không có'}</p>
+                  </div>
+                  
+                  <div>
+                    <h4 style="color: #0d6efd; margin-bottom: 15px;">
+                      <i class="bi bi-people"></i> Người tham gia
+                    </h4>
+                    ${bookingData.customerInfo.participants.length > 0 ? 
+                      bookingData.customerInfo.participants.map((participant, index) => `
+                        <div style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                          <p><strong>Họ tên:</strong> ${participant.name}</p>
+                          <p><strong>Điện thoại:</strong> ${participant.phone}</p>
+                        </div>
+                      `).join('') : 
+                      '<p style="color: #6c757d;">Thông tin sẽ được cập nhật khi thanh toán</p>'
+                    }
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 style="color: #0d6efd; margin-bottom: 15px;">
+                    <i class="bi bi-cash-coin"></i> Thông tin chi phí
+                  </h4>
+                  <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                      <span>Giá dịch vụ:</span>
+                      <span>${(() => {
+                        const servicePrice = bookingData?.selectedService?.price;
+                        if (servicePrice && servicePrice > 0) {
+                          return `${new Intl.NumberFormat('vi-VN').format(servicePrice)} VNĐ`;
+                        }
+                        return 'Liên hệ để biết giá';
+                      })()}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                      <span>Phí dịch vụ (theo phương thức thu mẫu):</span>
+                      <span>${(() => {
+                        const methodPrice = bookingData?.selectedMethod?.price;
+                        if (methodPrice && methodPrice > 0) {
+                          return `${new Intl.NumberFormat('vi-VN').format(methodPrice)} VNĐ`;
+                        }
+                        return 'Miễn phí';
+                      })()}</span>
+                    </div>
+                    <hr style="margin: 15px 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <h5 style="margin: 0;">Tổng cộng:</h5>
+                      <h4 style="color: #0d6efd; margin: 0;">
+                        ${(() => {
+                          const servicePrice = bookingData?.selectedService?.price || 0;
+                          const methodPrice = bookingData?.selectedMethod?.price || 0;
+                          const totalAmount = servicePrice + methodPrice;
+                          
+                          if (totalAmount > 0) {
+                            return `${new Intl.NumberFormat('vi-VN').format(totalAmount)} VNĐ`;
+                          }
+                          return 'Liên hệ để biết giá';
+                        })()}
+                      </h4>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `;
+            
+            // Tạo cửa sổ in mới
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+              <html>
+                <head>
+                  <title>Chi tiết đặt lịch - ${bookingId}</title>
+                  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+                  <style>
+                    @media print {
+                      body { margin: 0; }
+                      .no-print { display: none; }
+                    }
+                  </style>
+                </head>
+                <body>
+                  ${printContent}
+                </body>
+              </html>
+            `);
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => {
+              printWindow.print();
+              printWindow.close();
+            }, 500);
+          }}>
+            <i className="bi bi-printer me-2"></i>
+            In thông tin
+          </Button>
         </Col>
       </Row>
     </Container>

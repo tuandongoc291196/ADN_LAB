@@ -77,11 +77,11 @@ const AdminDashboard = ({ user }) => {
     },
     {
       key: 'settings',
-      label: 'Cài đặt hệ thống',
+      label: 'Cài đặt',
       icon: 'bi-gear',
       path: '/admin/settings',
       color: 'dark',
-      description: 'Cấu hình hệ thống'
+      description: 'Cấu hình giao diện và xóa cache'
     }
   ];
 

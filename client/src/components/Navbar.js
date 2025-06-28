@@ -1,33 +1,64 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Navbar, Nav, NavDropdown, Container, Button, Badge, Image } from 'react-bootstrap';
-import { auth, logout, adminEmails, staffEmails, managerEmails } from './config/firebase';
+import { auth, logout } from './config/firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
+import Swal from 'sweetalert2';
+import { getServiceCategories } from '../services/api';
 
 const MainNavbar = ({ setUser }) => {
   const [expanded, setExpanded] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const [userAuth, loadingAuth] = useAuthState(auth);
   const [userData, setUserData] = useState(null);
   const [logoUrl] = useState('https://firebasestorage.googleapis.com/v0/b/su25-swp391-g8.firebasestorage.app/o/assets%2Flogo.png?alt=media&token=1c903ba1-852a-4f5b-b498-97c31ffbb742');
 
-  const getUserRole = (email) => {
-    if (adminEmails.includes(email)) return 'admin';
-    if (staffEmails.includes(email)) return 'staff';
-    if (managerEmails.includes(email)) return 'manager';
-    return 'customer';
+  // Fetch categories from API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoadingCategories(true);
+        const response = await getServiceCategories();
+        console.log('Categories API response:', response);
+        
+        if (response && Array.isArray(response)) {
+          setCategories(response);
+        } else {
+          setCategories([]);
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        setCategories([]);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  // Helper function để phân loại categories
+  const getAdministrativeCategories = () => {
+    return categories.filter(category => category.hasLegalValue);
+  };
+
+  const getCivilCategories = () => {
+    return categories.filter(category => !category.hasLegalValue);
   };
 
   const getRoleBadge = (role) => {
     const roleConfig = {
-      admin: { bg: 'danger', icon: 'bi-crown', text: 'Admin' },
-      staff: { bg: 'info', icon: 'bi-person-badge', text: 'Staff' },
-      manager: { bg: 'warning', icon: 'bi-briefcase', text: 'Manager' },
+      admin: { bg: 'danger', icon: 'bi-crown', text: 'Quản trị viên' },
+      staff: { bg: 'info', icon: 'bi-person-badge', text: 'Nhân viên' },
+      manager: { bg: 'warning', icon: 'bi-briefcase', text: 'Quản lí' },
       customer: { bg: 'primary', icon: 'bi-person', text: 'Khách hàng' }
     };
-
-    const config = roleConfig[role] || roleConfig.customer;
+    // Normalize role string
+    const normalizedRole = (role || '').toLowerCase().trim();
+    const config = roleConfig[normalizedRole] || roleConfig.customer;
     return (
       <Badge bg={config.bg} className="ms-2">
         <i className={`${config.icon} me-1`}></i>
@@ -45,56 +76,73 @@ const MainNavbar = ({ setUser }) => {
       default: return '/user';
     }
   };
-
+  const storedUserData = localStorage.getItem('userData');
   useEffect(() => {
-    if (userAuth) {
-      const storedUserData = localStorage.getItem('userData');
-      let enhancedUserData = null;
-
-      if (storedUserData) {
-        const parsed = JSON.parse(storedUserData);
-        const detectedRole = getUserRole(userAuth.email);
-
-        // Enhance user data with role detection
-        enhancedUserData = {
-          ...parsed,
-          role_string: detectedRole,
-          role: ['admin', 'staff', 'manager'].includes(detectedRole), // Keep boolean for backward compatibility
-          email: userAuth.email,
-          displayName: userAuth.displayName,
-          photoURL: userAuth.photoURL
-        };
-
-        setUserData(enhancedUserData);
-        setUser(enhancedUserData);
-
-        // Update localStorage with enhanced data
-        localStorage.setItem('isAuthenticated', 'true');
-      } else {
-        // Create user data if not exists
-        const detectedRole = getUserRole(userAuth.email);
-        enhancedUserData = {
-          user_id: userAuth.uid,
-          fullname: userAuth.displayName || userAuth.email.split('@')[0],
-          email: userAuth.email,
-          role_string: detectedRole,
-          role: ['admin', 'staff', 'manager'].includes(detectedRole),
-          avatar: userAuth.photoURL,
-          verified: userAuth.emailVerified,
-          authProvider: 'firebase'
-        };
-
-        setUserData(enhancedUserData);
-        setUser(enhancedUserData);
-        localStorage.setItem('isAuthenticated', 'true');
-      }
-    } else {
-      setUserData(null);
-      setUser(null);
-      localStorage.removeItem('user');
-      localStorage.removeItem('isAuthenticated');
+    const justLoggedOut = sessionStorage.getItem('justLoggedOut') === 'true';
+    if (justLoggedOut) {
+      // Nếu vừa đăng xuất, reset userData và user
+      sessionStorage.removeItem('justLoggedOut');
+      return;
     }
-  }, [userAuth, setUser]);
+    // Lấy userData mới nhất từ localStorage mỗi lần render
+    if (storedUserData) {
+      const parsed = JSON.parse(storedUserData);
+      // Ưu tiên lấy role từ role.name nếu có
+      let role = '';
+      // Nếu userId là 0 thì role là customer
+      if (parsed.user_id === 0 || parsed.user_id === '0') {
+        role = 'customer';
+      } else if (parsed.role && typeof parsed.role === 'object' && parsed.role.name) {
+        role = parsed.role.name;
+      } else if (typeof parsed.role === 'string') {
+        role = parsed.role;
+      } else if (parsed.role_string) {
+        role = parsed.role_string;
+      }
+      // Normalize role
+      role = (role || '').toLowerCase().trim();
+      const enhancedUser = {
+        ...parsed,
+        role_string: role,
+        isAdmin: ['admin', 'manager', 'staff'].includes(role),
+      };
+      setUserData(enhancedUser);
+      setUser(enhancedUser);
+    } else if (auth.currentUser) {
+      // 🔥 Nếu không có localStorage nhưng đã login Firebase → gọi API lấy user
+      const fetchUserData = async () => {
+        try {
+          const res = await fetch(`https://app-bggwpxm32a-uc.a.run.app/users`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ userId: auth.currentUser.uid }),
+          });
+          const result = await res.json();
+          const userInfo = result.data;
+          const role = userInfo?.role?.name?.toLowerCase() || 'customer';
+
+          const enhancedUser = {
+            ...userInfo,
+            role_string: role,
+            isAdmin: ['admin', 'manager', 'staff'].includes(role),
+          };
+
+          localStorage.setItem('userData', JSON.stringify(enhancedUser));
+          localStorage.setItem('isAuthenticated', 'true');
+          setUserData(enhancedUser);
+          setUser(enhancedUser);
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+          // setUserData(null);
+          // setUser(null);
+        }
+      };
+      fetchUserData();
+    }
+  }, [storedUserData, setUser]);
+  console.log('userData', userData);
 
   const handleLogout = () => {
     logout();
@@ -102,6 +150,8 @@ const MainNavbar = ({ setUser }) => {
     localStorage.removeItem('userData');
     localStorage.removeItem('user');
     localStorage.removeItem('isAuthenticated');
+    sessionStorage.setItem('justLoggedOut', 'true');
+    // Reset user state
     setUser(null);
     navigate('/');
   };
@@ -120,7 +170,27 @@ const MainNavbar = ({ setUser }) => {
 
   // Check if user has admin/staff/manager access
   const hasAdminAccess = () => {
-    return userData?.role || userData?.role_string === 'admin' || userData?.role_string === 'staff' || userData?.role_string === 'manager';
+    return userData?.isAdmin === true;
+  };
+
+  // Handler for booking button
+  const handleBookingClick = (e) => {
+    if (!storedUserData) {
+      e.preventDefault(); // chặn click chuyển trang
+      Swal.fire({
+        icon: 'info',
+        title: 'Bạn chưa đăng nhập',
+        text: 'Vui lòng đăng nhập để đặt lịch xét nghiệm',
+        confirmButtonText: 'Đăng nhập ngay',
+        confirmButtonColor: '#3085d6',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate('/login', { state: { redirectTo: '/appointment' } });
+        }
+      });
+    } else {
+      handleNavClick(); // vẫn xử lý bình thường nếu đã login
+    }
   };
 
   return (
@@ -213,63 +283,90 @@ const MainNavbar = ({ setUser }) => {
 
                 <NavDropdown.Divider />
 
-                <NavDropdown.Header className="text-warning">
-                  <i className="bi bi-award me-2"></i>
-                  ADN Hành chính
-                </NavDropdown.Header>
-                <NavDropdown.Item
-                  as={Link}
-                  to="/services?type=administrative"
-                  onClick={handleNavClick}
-                  className="py-2"
-                >
-                  <i className="bi bi-file-earmark-text me-2 text-warning"></i>
-                  <strong>Xét nghiệm ADN khai sinh</strong>
-                  <Badge bg="warning" text="dark" className="ms-2 small">Có giá trị pháp lý</Badge>
-                  <div className="small text-muted">Phục vụ làm giấy khai sinh</div>
-                </NavDropdown.Item>
+                {/* ADN Hành chính - Dynamic từ API */}
+                {getAdministrativeCategories().length > 0 && (
+                  <>
+                    <NavDropdown.Header className="text-warning">
+                      <i className="bi bi-award me-2"></i>
+                      ADN Hành chính
+                    </NavDropdown.Header>
+                    {getAdministrativeCategories().map(category => (
+                      <NavDropdown.Item
+                        key={category.id}
+                        as={Link}
+                        to="/services?type=administrative"
+                        onClick={handleNavClick}
+                        className="py-2"
+                      >
+                        <i className="bi bi-file-earmark-text me-2 text-warning"></i>
+                        <strong>{category.name}</strong>
+                        <Badge bg="warning" text="dark" className="ms-2 small">Có giá trị pháp lý</Badge>
+                        <div className="small text-muted">{category.description || 'Dịch vụ hành chính'}</div>
+                      </NavDropdown.Item>
+                    ))}
+                  </>
+                )}
 
-                <NavDropdown.Item
-                  as={Link}
-                  to="/services?type=administrative"
-                  onClick={handleNavClick}
-                  className="py-2"
-                >
-                  <i className="bi bi-building me-2 text-warning"></i>
-                  <strong>Xét nghiệm ADN pháp lý</strong>
-                  <Badge bg="warning" text="dark" className="ms-2 small">Có giá trị pháp lý</Badge>
-                  <div className="small text-muted">Thừa kế, nhập tịch, visa...</div>
-                </NavDropdown.Item>
+                {/* ADN Dân sự - Dynamic từ API */}
+                {getCivilCategories().length > 0 && (
+                  <>
+                    <NavDropdown.Header className="text-success">
+                      <i className="bi bi-house me-2"></i>
+                      ADN Dân sự
+                    </NavDropdown.Header>
+                    {getCivilCategories().map(category => (
+                      <NavDropdown.Item
+                        key={category.id}
+                        as={Link}
+                        to="/services?type=civil"
+                        onClick={handleNavClick}
+                        className="py-2"
+                      >
+                        <i className="bi bi-people me-2 text-success"></i>
+                        <strong>{category.name}</strong>
+                        <Badge bg="success" className="ms-2 small">Tham khảo cá nhân</Badge>
+                        <div className="small text-muted">{category.description || 'Dịch vụ dân sự'}</div>
+                      </NavDropdown.Item>
+                    ))}
+                  </>
+                )}
 
-                <NavDropdown.Divider />
+                {/* Fallback nếu không có categories */}
+                {categories.length === 0 && !loadingCategories && (
+                  <>
+                    <NavDropdown.Item
+                      as={Link}
+                      to="/services?type=administrative"
+                      onClick={handleNavClick}
+                      className="py-2"
+                    >
+                      <i className="bi bi-award me-2 text-warning"></i>
+                      <strong>ADN Hành chính</strong>
+                      <Badge bg="warning" text="dark" className="ms-2 small">Có giá trị pháp lý</Badge>
+                      <div className="small text-muted">Khai sinh, pháp lý, thừa kế...</div>
+                    </NavDropdown.Item>
 
-                <NavDropdown.Header className="text-success">
-                  <i className="bi bi-house me-2"></i>
-                  ADN Dân sự
-                </NavDropdown.Header>
-                <NavDropdown.Item
-                  as={Link}
-                  to="/services?type=civil"
-                  onClick={handleNavClick}
-                  className="py-2"
-                >
-                  <i className="bi bi-people me-2 text-success"></i>
-                  <strong>Xét nghiệm ADN huyết thống</strong>
-                  <Badge bg="success" className="ms-2 small">Tham khảo cá nhân</Badge>
-                  <div className="small text-muted">Tìm hiểu quan hệ cha con, anh em</div>
-                </NavDropdown.Item>
+                    <NavDropdown.Item
+                      as={Link}
+                      to="/services?type=civil"
+                      onClick={handleNavClick}
+                      className="py-2"
+                    >
+                      <i className="bi bi-house me-2 text-success"></i>
+                      <strong>ADN Dân sự</strong>
+                      <Badge bg="success" className="ms-2 small">Tham khảo cá nhân</Badge>
+                      <div className="small text-muted">Huyết thống, trước sinh...</div>
+                    </NavDropdown.Item>
+                  </>
+                )}
 
-                <NavDropdown.Item
-                  as={Link}
-                  to="/services?type=civil"
-                  onClick={handleNavClick}
-                  className="py-2"
-                >
-                  <i className="bi bi-heart me-2 text-success"></i>
-                  <strong>Xét nghiệm ADN trước sinh</strong>
-                  <Badge bg="success" className="ms-2 small">Tham khảo cá nhân</Badge>
-                  <div className="small text-muted">An toàn cho mẹ và bé</div>
-                </NavDropdown.Item>
+                {/* Loading state */}
+                {loadingCategories && (
+                  <NavDropdown.Item disabled className="py-2">
+                    <i className="bi bi-hourglass-split me-2 text-muted"></i>
+                    <span className="text-muted">Đang tải...</span>
+                  </NavDropdown.Item>
+                )}
               </NavDropdown>
 
               {/* Information Dropdown */}
@@ -340,7 +437,7 @@ const MainNavbar = ({ setUser }) => {
                   variant="warning"
                   as={Link}
                   to="/appointment"
-                  onClick={handleNavClick}
+                  onClick={handleBookingClick}
                   className="fw-medium"
                 >
                   <i className="bi bi-calendar-plus me-1"></i>
@@ -391,6 +488,7 @@ const MainNavbar = ({ setUser }) => {
                           Dashboard
                           {userData?.role_string && (
                             <Badge bg="secondary" className="ms-2 small">
+                              {/* Sửa lỗi: chỉ hiển thị nếu role_string tồn tại */}
                               {userData.role_string.charAt(0).toUpperCase() + userData.role_string.slice(1)}
                             </Badge>
                           )}
