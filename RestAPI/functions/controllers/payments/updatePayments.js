@@ -1,35 +1,23 @@
 const { dataConnect } = require("../../config/firebase.js");
 
-const updatePaymentStatus = async (paymentId, status, otherDetails) => {
+const updatePaymentStatus = async (bookingId, status, otherDetails) => {
   try {
 
-    if (!paymentId) {
-      return res.status(400).json({
-        statusCode: 400,
-        success: false,
-        message: "Payment ID is required"
-      });
+    if (!bookingId) {
+      throw new Error("bookingId is required");
     }
 
     if (!status) {
-      return res.status(400).json({
-        statusCode: 400,
-        success: false,
-        message: "Status is required"
-      });
+      throw new Error("status is required");
     }
 
-    if (!otherDetails || !Array.isArray(otherDetails)) {
-      return res.status(400).json({
-        statusCode: 400,
-        success: false,
-        message: "otherDetails must be an array"
-      });
+    if (!otherDetails) {
+      throw new Error("otherDetails is required");
     }
 
     const UPDATE_PAYMENT_STATUS = `
-      mutation UpdatePaymentStatus($paymentId: String!, $status: String!, $otherDetails: [String]) {
-        payment_update(id: $paymentId, data: {
+      mutation UpdatePaymentStatus($bookingId: String!, $status: String!, $otherDetails: [String!]) {
+        payment_updateMany(where: {bookingId: {eq: $bookingId}}, data: {
           status: $status,
           otherDetails: $otherDetails,
           updatedAt_expr: "request.time"
@@ -37,23 +25,23 @@ const updatePaymentStatus = async (paymentId, status, otherDetails) => {
       }
     `;
 
-    console.log("Executing mutation to update payment status:", UPDATE_PAYMENT_STATUS, "with", {
-      paymentId: paymentId,
+    const variables = {
+      bookingId: bookingId,
       status: status,
-      otherDetails: otherDetails
-    });
+      otherDetails: [JSON.stringify(otherDetails)]
+    };
+    console.log("Executing mutation to update payment status:", UPDATE_PAYMENT_STATUS, "with", variables);
     const response = await dataConnect.executeGraphql(UPDATE_PAYMENT_STATUS, {
-      paymentId: paymentId,
-      status: status,
-      otherDetails: otherDetails
+      variables: variables
     });
     
-    const responseData = response.data.payment_update;
+    console.log("Response from update payment status:", response);
+    const responseData = response.data.payment_updateMany;
     console.log("Response data:", responseData);    
     if (!responseData || responseData.length === 0) {
         throw new Error("Payment update failed");
     }
-
+    return responseData;
   } catch (error) {
     console.error("Error updating payment status:", error);
     throw new Error("Failed to update payment status due to an internal error");

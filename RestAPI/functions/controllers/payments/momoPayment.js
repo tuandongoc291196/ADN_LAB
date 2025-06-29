@@ -120,13 +120,15 @@ const getPaymentDataMOMO = async (orderId, requestId) => {
 
 const processMomoRefund = async (paymentDetails) => {
   try {
+    console.log("Processing MOMO refund for payment details:", paymentDetails);
+    const payment = JSON.parse(paymentDetails);
     const accessKey = momo.accessKey;
     const secretKey = momo.secretKey;
-    const partnerCode = paymentDetails.partnerCode;
-    const orderId = `${paymentDetails.orderId}_REFUND`;
-    const requestId = `${paymentDetails.orderId}_REFUND`;
-    const transId = paymentDetails.transId;
-    const amount = paymentDetails.amount;
+    const partnerCode = payment.partnerCode;
+    const orderId = `${payment.orderId}_REFUND`;
+    const requestId = `${payment.orderId}_REFUND`;
+    const transId = payment.transId;
+    const amount = payment.amount;
     const lang = "en";
     const description = "REFUND";
 
@@ -148,6 +150,7 @@ const processMomoRefund = async (paymentDetails) => {
         signature : signature,
     });
     
+    console.log("MOMO Refund Request Body:", requestBodyPayment);
     const paymentRequestBody = {
       method: "POST",
       url: "https://test-payment.momo.vn/v2/gateway/api/refund",
@@ -157,6 +160,11 @@ const processMomoRefund = async (paymentDetails) => {
       },
       data: requestBodyPayment 
     }
+    
+    let result;
+    result = await axios (paymentRequestBody);
+    console.log("MOMO Refund Response:", result.data);
+    return result.data;
   } catch (error) {
     console.error("Error processing MOMO refund:", error);
     throw error;

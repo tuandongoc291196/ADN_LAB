@@ -7,7 +7,7 @@ const {checkBookingExists} = require('../bookings/bookingUtils');
 const {addBookingHistory} = require('../bookingHistory/addBookingHistory');
 const {getOneBookingById} = require('../bookings/getBookings');
 const {getBookingHistoryByBookingId} = require('../bookingHistory/getBookingHistory');
-
+const {getPaymentDataMOMO} = require("./momoPayment.js");
 
 const addPayment = async (req, res) => {
   try {
@@ -48,6 +48,14 @@ const addPayment = async (req, res) => {
           message: "Cannot process payment for expired booking"
         });
       }
+
+      if (latestStatus === "booked") {
+        return res.status(400).json({
+          statusCode: 400,
+          status: "error",
+          message: "Payment has already been made for this booking"
+        });
+      }
     }
 
     const ADD_PAYMENT_MUTATION = `
@@ -83,7 +91,8 @@ const addPayment = async (req, res) => {
           if (isSuccessful) {
             console.log('Payment confirmed successfully');
             await addBookingHistory(bookingId, "booked", "Booking placed successfully");
-
+            const otherDetails = await getPaymentDataMOMO(result.orderId, result.requestId);
+            console.log("Other details from MOMO:", otherDetails);
             const paymentVariables = {
               id: paymentId,
               bookingId: bookingId,
@@ -92,7 +101,7 @@ const addPayment = async (req, res) => {
               status: "success",
               paymentDate: new Date().toISOString(),
               refundDetail: null,
-              otherDetails: [JSON.stringify(result)]
+              otherDetails: [JSON.stringify(otherDetails)]
             };
 
             const response = await dataConnect.executeGraphql(ADD_PAYMENT_MUTATION, {
@@ -119,7 +128,11 @@ const addPayment = async (req, res) => {
         data: result.payUrl
       });
       
-    } else {
+    } else if (paymentMethod === "CASH") {
+      console.log("Making CASH payment");
+      await addBookingHistory(bookingId, "booked", "Booking placed successfully");
+    }
+    else {
       return res.status(400).json({
         statusCode: 400,
         status: "error",

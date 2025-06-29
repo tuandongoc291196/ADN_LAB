@@ -1,67 +1,68 @@
 openapi: 3.0.0
 info:
-  title: ADN LAB API
-  description: API documentation for ADN Laboratory Management System
+  title: DNA Testing Lab API
+  description: API for managing DNA testing lab operations including bookings, services, users, payments, and more
   version: 1.0.0
   contact:
-    name: ADN Lab Team
-    email: support@adnlab.com
-
+    name: DNA Lab API Support
+    email: support@dnalab.com
 servers:
-  - url: http://localhost:5001/su25-swp391-g8/us-central1/app/
+  - url: http://localhost:5001
     description: Local development server
-  - url: https://app-bggwpxm32a-uc.a.run.app/
+  - url: https://app-bggwpxm32a-uc.a.run.app
     description: Production server
+
+tags:
+  - name: Services
+    description: DNA testing services management
+  - name: Methods
+    description: Testing methods management
+  - name: Method Service
+    description: Service-method relationships
+  - name: Users
+    description: User management and authentication
+  - name: Roles
+    description: User roles management
+  - name: Bookings
+    description: Service booking management
+  - name: Booking History
+    description: Booking status tracking
+  - name: Time Slots
+    description: Available time slot management
+  - name: Payments
+    description: Payment processing and management
 
 components:
   schemas:
-    ApiResponse:
-      type: object
-      properties:
-        statusCode:
-          type: integer
-          example: 200
-        status:
-          type: string
-          enum: [success, error]
-          example: success
-        message:
-          type: string
-          example: Operation completed successfully
-        data:
-          type: object
-
-    ErrorResponse:
-      type: object
-      properties:
-        statusCode:
-          type: integer
-          example: 400
-        status:
-          type: string
-          enum: [error]
-          example: error
-        message:
-          type: string
-          example: Validation error occurred
-
+    # Core Models
     User:
       type: object
       properties:
         id:
           type: string
-          example: user_123
+          description: Firebase Auth UID
         fullname:
           type: string
-          example: John Doe
+        gender:
+          type: string
+        avatar:
+          type: string
         email:
           type: string
           format: email
-          example: john.doe@example.com
         accountStatus:
           type: string
-          enum: [active, inactive, suspended]
-          example: active
+          enum: [active, inactive]
+          default: inactive
+        authProvider:
+          type: string
+        phone:
+          type: string
+        address:
+          type: string
+        roleId:
+          type: string
+          default: "0"
         role:
           $ref: '#/components/schemas/Role'
         createdAt:
@@ -76,13 +77,58 @@ components:
       properties:
         id:
           type: string
-          example: role_1
         name:
           type: string
-          example: Administrator
         description:
           type: string
-          example: Full system access
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Staff:
+      type: object
+      properties:
+        id:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+        hireDate:
+          type: string
+          format: date
+        slot:
+          type: integer
+          default: 0
+        specification:
+          type: array
+          items:
+            type: string
+        certifications:
+          type: array
+          items:
+            type: string
+        positionId:
+          type: string
+        position:
+          $ref: '#/components/schemas/Position'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Position:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
         createdAt:
           type: string
           format: date-time
@@ -95,34 +141,26 @@ components:
       properties:
         id:
           type: string
-          example: service_1
         title:
           type: string
-          example: Blood Test
         description:
           type: string
-          example: Complete blood count analysis
         fullDescription:
           type: string
-          example: Comprehensive blood analysis including CBC, chemistry panel, and more
         price:
           type: number
           format: float
-          example: 99.99
         duration:
-          type: integer
-          example: 30
+          type: string
         categoryId:
           type: string
-          example: category_1
         category:
-          $ref: '#/components/schemas/Category'
+          $ref: '#/components/schemas/ServiceCategory'
         icon:
           type: string
-          example: blood-test-icon
         featured:
           type: boolean
-          example: true
+          default: false
         createdAt:
           type: string
           format: date-time
@@ -130,21 +168,17 @@ components:
           type: string
           format: date-time
 
-    Category:
+    ServiceCategory:
       type: object
       properties:
         id:
           type: string
-          example: category_1
         name:
           type: string
-          example: Blood Tests
         description:
           type: string
-          example: Various blood analysis services
         hasLegalValue:
           type: boolean
-          example: true
         createdAt:
           type: string
           format: date-time
@@ -157,17 +191,13 @@ components:
       properties:
         id:
           type: string
-          example: method_1
         name:
           type: string
-          example: ELISA
         description:
           type: string
-          example: Enzyme-linked immunosorbent assay
         price:
           type: number
           format: float
-          example: 50.00
         createdAt:
           type: string
           format: date-time
@@ -175,41 +205,17 @@ components:
           type: string
           format: date-time
 
-    Booking:
+    ServiceMethod:
       type: object
       properties:
-        id:
-          type: string
-          example: booking_1
-        userId:
-          type: string
-          example: user_123
-        user:
-          $ref: '#/components/schemas/User'
-        staffId:
-          type: string
-          example: staff_456
-        staff:
-          $ref: '#/components/schemas/User'
-        timeSlotId:
-          type: string
-          example: timeslot_789
-        timeSlot:
-          $ref: '#/components/schemas/TimeSlot'
         serviceId:
           type: string
-          example: service_1
         service:
           $ref: '#/components/schemas/Service'
         methodId:
           type: string
-          example: method_1
         method:
           $ref: '#/components/schemas/Method'
-        totalAmount:
-          type: number
-          format: float
-          example: 149.99
         createdAt:
           type: string
           format: date-time
@@ -222,46 +228,130 @@ components:
       properties:
         id:
           type: string
-          example: 2024-01-15_09:00_10:00
         slotDate:
           type: string
           format: date
-          example: 2024-01-15
         startTime:
           type: string
-          example: 09:00
         endTime:
           type: string
-          example: 10:00
         currentBookings:
           type: integer
-          example: 3
+          default: 0
         notes:
           type: string
-          example: Regular operating hours
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Booking:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+        staffId:
+          type: string
+        staff:
+          $ref: '#/components/schemas/Staff'
+        timeSlotId:
+          type: string
+        timeSlot:
+          $ref: '#/components/schemas/TimeSlot'
+        serviceId:
+          type: string
+        service:
+          $ref: '#/components/schemas/Service'
+        methodId:
+          type: string
+        method:
+          $ref: '#/components/schemas/Method'
+        totalAmount:
+          type: number
+          format: float
+        expiresAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    BookingHistory:
+      type: object
+      properties:
+        id:
+          type: string
+        bookingId:
+          type: string
+        booking:
+          $ref: '#/components/schemas/Booking'
+        description:
+          type: string
+        status:
+          type: string
+          default: pending
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
 
     Participant:
       type: object
       properties:
         id:
           type: string
-          example: participant_1
+        bookingId:
+          type: string
+        booking:
+          $ref: '#/components/schemas/Booking'
         name:
           type: string
-          example: Jane Smith
         age:
           type: integer
-          example: 30
         identification:
           type: string
-          example: ID123456789
         gender:
           type: string
-          enum: [male, female, other]
-          example: female
         relationship:
           type: string
-          example: spouse
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Information:
+      type: object
+      properties:
+        id:
+          type: string
+        bookingId:
+          type: string
+        booking:
+          $ref: '#/components/schemas/Booking'
+        name:
+          type: string
+        identification:
+          type: string
+        address:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
         createdAt:
           type: string
           format: date-time
@@ -274,108 +364,321 @@ components:
       properties:
         id:
           type: string
-          example: payment_1
         bookingId:
           type: string
-          example: booking_1
+        booking:
+          $ref: '#/components/schemas/Booking'
         amount:
           type: number
           format: float
-          example: 149.99
         paymentMethod:
           type: string
-          enum: [MOMO, VNPAY, ZALOPAY]
-          example: MOMO
         status:
           type: string
-          enum: [pending, completed, failed]
-          example: completed
+          default: pending
+        paymentDate:
+          type: string
+          format: date
+        refundDetail:
+          type: string
+        otherDetails:
+          type: array
+          items:
+            type: string
         createdAt:
           type: string
           format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # Request/Response Models
+    ApiResponse:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+        status:
+          type: string
+          enum: [success, error]
+        message:
+          type: string
+        data:
+          type: object
+        error:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+        status:
+          type: string
+          enum: [error]
+        message:
+          type: string
+        error:
+          type: string
+
+    # Input Models
+    CreateUserRequest:
+      type: object
+      required:
+        - email
+        - password
+        - name
+        - roleId
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        name:
+          type: string
+        roleId:
+          type: string
+
+    UpdateUserRequest:
+      type: object
+      required:
+        - userId
+        - fullname
+        - gender
+        - avatar
+        - phone
+        - address
+      properties:
+        userId:
+          type: string
+        fullname:
+          type: string
+        gender:
+          type: string
+        avatar:
+          type: string
+        phone:
+          type: string
+        address:
+          type: string
+
+    CreateServiceRequest:
+      type: object
+      required:
+        - title
+        - description
+        - fullDescription
+        - price
+        - duration
+        - categoryId
+        - icon
+        - featured
+        - methods
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        fullDescription:
+          type: string
+        price:
+          type: number
+          format: float
+        duration:
+          type: string
+        categoryId:
+          type: string
+        icon:
+          type: string
+        featured:
+          type: boolean
+        methods:
+          type: array
+          items:
+            type: string
+
+    UpdateServiceRequest:
+      type: object
+      required:
+        - serviceId
+      properties:
+        serviceId:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        fullDescription:
+          type: string
+        price:
+          type: number
+          format: float
+        duration:
+          type: string
+        categoryId:
+          type: string
+        icon:
+          type: string
+        featured:
+          type: boolean
+        methods:
+          type: array
+          items:
+            type: string
+
+    CreateBookingRequest:
+      type: object
+      required:
+        - userId
+        - slotDate
+        - startTime
+        - endTime
+        - methodId
+        - serviceId
+        - totalAmount
+        - participants
+        - information
+      properties:
+        userId:
+          type: string
+        slotDate:
+          type: string
+          format: date
+        startTime:
+          type: string
+        endTime:
+          type: string
+        methodId:
+          type: string
+        serviceId:
+          type: string
+        totalAmount:
+          type: number
+          format: float
+        participants:
+          type: array
+          items:
+            type: object
+            required:
+              - name
+              - age
+              - gender
+            properties:
+              name:
+                type: string
+              age:
+                type: integer
+                minimum: 0
+                maximum: 150
+              identification:
+                type: string
+              gender:
+                type: string
+              relationship:
+                type: string
+        information:
+          type: object
+          required:
+            - name
+            - identification
+            - address
+            - phone
+          properties:
+            name:
+              type: string
+            identification:
+              type: string
+            address:
+              type: string
+            phone:
+              type: string
+            email:
+              type: string
+              format: email
+
+    CreateRoleRequest:
+      type: object
+      required:
+        - id
+        - name
+        - description
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+
+    CreatePaymentRequest:
+      type: object
+      required:
+        - bookingId
+        - amount
+        - paymentMethod
+      properties:
+        bookingId:
+          type: string
+        amount:
+          type: number
+          format: float
+        paymentMethod:
+          type: string
+        paymentDate:
+          type: string
+          format: date
+        otherDetails:
+          type: array
+          items:
+            type: string
 
 paths:
   /:
     get:
-      summary: API Health Check
-      description: Returns a welcome message and API status
+      summary: API Welcome Message
+      description: Returns a welcome message and API documentation link
       responses:
         '200':
-          description: API is running
+          description: Welcome message
           content:
             text/plain:
               schema:
                 type: string
-                example: "Hey there. We've been trying to reach you concerning your vehicle's extended warrant. For Swagger, visit /api-docs"
 
+  # Services Endpoints
   /services/add:
     post:
       tags:
         - Services
-      summary: Add a new service
-      description: Create a new laboratory service
+      summary: Create a new service
+      description: Add a new DNA testing service to the system
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - title
-                - description
-                - fullDescription
-                - price
-                - duration
-                - categoryId
-                - icon
-                - featured
-                - methods
-              properties:
-                title:
-                  type: string
-                  example: Blood Test Analysis
-                description:
-                  type: string
-                  example: Complete blood count and analysis
-                fullDescription:
-                  type: string
-                  example: Comprehensive blood analysis including complete blood count, chemistry panel, and lipid profile
-                price:
-                  type: number
-                  format: float
-                  example: 99.99
-                duration:
-                  type: integer
-                  example: 30
-                categoryId:
-                  type: string
-                  example: category_1
-                icon:
-                  type: string
-                  example: blood-test-icon
-                featured:
-                  type: boolean
-                  example: true
-                methods:
-                  type: array
-                  items:
-                    type: string
-                  example: ["method_1", "method_2"]
+              $ref: '#/components/schemas/CreateServiceRequest'
       responses:
         '201':
           description: Service created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Service'
         '400':
-          description: Validation error
+          description: Bad request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
+        '409':
+          description: Service already exists
           content:
             application/json:
               schema:
@@ -386,7 +689,7 @@ paths:
       tags:
         - Services
       summary: Get all services
-      description: Retrieve a list of all available services
+      description: Retrieve all available DNA testing services
       responses:
         '200':
           description: Services retrieved successfully
@@ -401,18 +704,17 @@ paths:
                         type: array
                         items:
                           $ref: '#/components/schemas/Service'
-        '500':
-          description: Internal server error
+        '404':
+          description: No services found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
     post:
       tags:
         - Services
-      summary: Get a specific service
-      description: Retrieve details of a specific service by ID
+      summary: Get service by ID
+      description: Retrieve a specific service by its ID
       requestBody:
         required: true
         content:
@@ -424,7 +726,6 @@ paths:
               properties:
                 serviceId:
                   type: string
-                  example: service_1
       responses:
         '200':
           description: Service retrieved successfully
@@ -436,7 +737,14 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/Service'
+                        type: object
+                        properties:
+                          service:
+                            $ref: '#/components/schemas/Service'
+                          methods:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/ServiceMethod'
         '400':
           description: Service ID is required
           content:
@@ -449,63 +757,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
     put:
       tags:
         - Services
       summary: Update a service
-      description: Update an existing service
+      description: Update an existing DNA testing service
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - serviceId
-              properties:
-                serviceId:
-                  type: string
-                  example: service_1
-                title:
-                  type: string
-                  example: Updated Blood Test Analysis
-                description:
-                  type: string
-                  example: Updated description
-                fullDescription:
-                  type: string
-                  example: Updated full description
-                price:
-                  type: number
-                  format: float
-                  example: 109.99
-                duration:
-                  type: integer
-                  example: 45
-                categoryId:
-                  type: string
-                  example: category_1
-                icon:
-                  type: string
-                  example: updated-icon
-                featured:
-                  type: boolean
-                  example: false
-                methods:
-                  type: array
-                  items:
-                    type: string
-                  example: ["method_1", "method_3"]
+              $ref: '#/components/schemas/UpdateServiceRequest'
       responses:
         '200':
           description: Service updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Service'
         '400':
-          description: Validation error
+          description: Bad request
           content:
             application/json:
               schema:
@@ -516,12 +792,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
     delete:
       tags:
         - Services
       summary: Delete a service
-      description: Delete an existing service
+      description: Delete a DNA testing service from the system
       requestBody:
         required: true
         content:
@@ -533,7 +808,6 @@ paths:
               properties:
                 serviceId:
                   type: string
-                  example: service_1
       responses:
         '200':
           description: Service deleted successfully
@@ -571,7 +845,6 @@ paths:
               properties:
                 categoryId:
                   type: string
-                  example: category_1
       responses:
         '200':
           description: Services retrieved successfully
@@ -593,18 +866,19 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Category not found
+          description: Category not found or no services in category
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  # Methods Endpoints
   /methods:
     get:
       tags:
         - Methods
       summary: Get all methods
-      description: Retrieve a list of all available laboratory methods
+      description: Retrieve all available testing methods
       responses:
         '200':
           description: Methods retrieved successfully
@@ -619,18 +893,17 @@ paths:
                         type: array
                         items:
                           $ref: '#/components/schemas/Method'
-        '500':
-          description: Internal server error
+        '404':
+          description: No methods found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
     post:
       tags:
         - Methods
-      summary: Get a specific method
-      description: Retrieve details of a specific method by ID
+      summary: Get method by ID
+      description: Retrieve a specific testing method by its ID
       requestBody:
         required: true
         content:
@@ -642,7 +915,6 @@ paths:
               properties:
                 methodId:
                   type: string
-                  example: method_1
       responses:
         '200':
           description: Method retrieved successfully
@@ -668,44 +940,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  # Method Service Relationships
   /method/services:
     post:
       tags:
-        - Method Services
+        - Method Service
       summary: Get services by method
-      description: Retrieve all services that use a specific method
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - serviceId
-              properties:
-                serviceId:
-                  type: string
-                  example: service_1
-      responses:
-        '200':
-          description: Method services retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponse'
-        '400':
-          description: Service ID is required
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /service/methods:
-    post:
-      tags:
-        - Method Services
-      summary: Get methods by service
-      description: Retrieve all methods available for a specific service
+      description: Retrieve all services that use a specific testing method
       requestBody:
         required: true
         content:
@@ -717,27 +958,39 @@ paths:
               properties:
                 methodId:
                   type: string
-                  example: method_1
       responses:
         '200':
-          description: Service methods retrieved successfully
+          description: Services retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ServiceMethod'
         '400':
           description: Method ID is required
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Method not found or no services for this method
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
-  /users/add:
+  /service/methods:
     post:
       tags:
-        - Users
-      summary: Add a new user
-      description: Create a new user account
+        - Method Service
+      summary: Get methods by service
+      description: Retrieve all testing methods available for a specific service
       requestBody:
         required: true
         content:
@@ -745,34 +998,69 @@ paths:
             schema:
               type: object
               required:
-                - email
-                - password
-                - name
-                - roleId
+                - serviceId
               properties:
-                email:
+                serviceId:
                   type: string
-                  format: email
-                  example: john.doe@example.com
-                password:
-                  type: string
-                  format: password
-                  example: securePassword123
-                name:
-                  type: string
-                  example: John Doe
-                roleId:
-                  type: string
-                  example: role_1
+      responses:
+        '200':
+          description: Methods retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ServiceMethod'
+        '400':
+          description: Service ID is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Service not found or no methods for this service
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Users Endpoints
+  /users/add:
+    post:
+      tags:
+        - Users
+      summary: Create a new user
+      description: Add a new user to the system with Firebase authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
       responses:
         '201':
           description: User created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          responseAuthData:
+                            type: object
+                          responseStaffData:
+                            type: object
         '400':
-          description: Validation error
+          description: Bad request - missing required fields
           content:
             application/json:
               schema:
@@ -783,19 +1071,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
 
   /users:
     get:
       tags:
         - Users
       summary: Get all users
-      description: Retrieve a list of all users
+      description: Retrieve all users in the system
       responses:
         '200':
           description: Users retrieved successfully
@@ -810,18 +1092,17 @@ paths:
                         type: array
                         items:
                           $ref: '#/components/schemas/User'
-        '500':
-          description: Internal server error
+        '404':
+          description: No users found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
     post:
       tags:
         - Users
-      summary: Get a specific user
-      description: Retrieve details of a specific user by ID
+      summary: Get user by ID
+      description: Retrieve a specific user by their ID
       requestBody:
         required: true
         content:
@@ -833,7 +1114,6 @@ paths:
               properties:
                 userId:
                   type: string
-                  example: user_123
       responses:
         '200':
           description: User retrieved successfully
@@ -858,35 +1138,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
     put:
       tags:
         - Users
-      summary: Update a user
-      description: Update user information
+      summary: Update user profile
+      description: Update user profile information
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - userId
-              properties:
-                userId:
-                  type: string
-                  example: user_123
-                fullname:
-                  type: string
-                  example: John Updated Doe
-                email:
-                  type: string
-                  format: email
-                  example: john.updated@example.com
-                accountStatus:
-                  type: string
-                  enum: [active, inactive, suspended]
-                  example: active
+              $ref: '#/components/schemas/UpdateUserRequest'
       responses:
         '200':
           description: User updated successfully
@@ -895,13 +1157,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
         '400':
-          description: Validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: User not found
+          description: Bad request - missing required fields
           content:
             application/json:
               schema:
@@ -924,7 +1180,6 @@ paths:
               properties:
                 roleId:
                   type: string
-                  example: role_1
       responses:
         '200':
           description: Users retrieved successfully
@@ -946,7 +1201,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Role not found
+          description: No users found with this role
           content:
             application/json:
               schema:
@@ -966,29 +1221,27 @@ paths:
               type: object
               required:
                 - userId
-                - roleId
+                - positionId
               properties:
                 userId:
                   type: string
-                  example: user_123
-                roleId:
+                positionId:
                   type: string
-                  example: staff_role_id
       responses:
         '200':
-          description: User role updated to staff successfully
+          description: User role updated successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
         '400':
-          description: Validation error
+          description: Bad request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: User or role not found
+          description: User not found
           content:
             application/json:
               schema:
@@ -1008,29 +1261,27 @@ paths:
               type: object
               required:
                 - userId
-                - roleId
+                - positionId
               properties:
                 userId:
                   type: string
-                  example: user_123
-                roleId:
+                positionId:
                   type: string
-                  example: admin_role_id
       responses:
         '200':
-          description: User role updated to admin successfully
+          description: User role updated successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
         '400':
-          description: Validation error
+          description: Bad request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: User or role not found
+          description: User not found
           content:
             application/json:
               schema:
@@ -1041,7 +1292,7 @@ paths:
       tags:
         - Users
       summary: Update user account status
-      description: Update the account status of a user
+      description: Update user account status (active/inactive)
       requestBody:
         required: true
         content:
@@ -1054,20 +1305,18 @@ paths:
               properties:
                 userId:
                   type: string
-                  example: user_123
                 accountStatus:
                   type: string
-                  enum: [active, inactive, suspended]
-                  example: active
+                  enum: [active, inactive]
       responses:
         '200':
-          description: User account status updated successfully
+          description: User status updated successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
         '400':
-          description: Validation error
+          description: Bad request
           content:
             application/json:
               schema:
@@ -1079,12 +1328,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  # Roles Endpoints
   /roles:
     get:
       tags:
         - Roles
       summary: Get all roles
-      description: Retrieve a list of all roles
+      description: Retrieve all system roles
       responses:
         '200':
           description: Roles retrieved successfully
@@ -1099,18 +1349,17 @@ paths:
                         type: array
                         items:
                           $ref: '#/components/schemas/Role'
-        '500':
-          description: Internal server error
+        '404':
+          description: No roles found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
     post:
       tags:
         - Roles
-      summary: Get a specific role
-      description: Retrieve details of a specific role by ID
+      summary: Get role by ID
+      description: Retrieve a specific role by its ID
       requestBody:
         required: true
         content:
@@ -1122,7 +1371,6 @@ paths:
               properties:
                 roleId:
                   type: string
-                  example: role_1
       responses:
         '200':
           description: Role retrieved successfully
@@ -1147,12 +1395,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
     put:
       tags:
         - Roles
       summary: Update a role
-      description: Update role information
+      description: Update an existing role
       requestBody:
         required: true
         content:
@@ -1164,13 +1411,10 @@ paths:
               properties:
                 roleId:
                   type: string
-                  example: role_1
                 name:
                   type: string
-                  example: Updated Role Name
                 description:
                   type: string
-                  example: Updated role description
       responses:
         '200':
           description: Role updated successfully
@@ -1179,7 +1423,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiResponse'
         '400':
-          description: Validation error
+          description: Bad request
           content:
             application/json:
               schema:
@@ -1190,12 +1434,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
     delete:
       tags:
         - Roles
       summary: Delete a role
-      description: Delete an existing role
+      description: Delete a role from the system
       requestBody:
         required: true
         content:
@@ -1207,7 +1450,6 @@ paths:
               properties:
                 roleId:
                   type: string
-                  example: role_1
       responses:
         '200':
           description: Role deleted successfully
@@ -1232,37 +1474,28 @@ paths:
     post:
       tags:
         - Roles
-      summary: Add a new role
-      description: Create a new role
+      summary: Create a new role
+      description: Add a new role to the system
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - id
-                - name
-                - description
-              properties:
-                id:
-                  type: string
-                  example: role_new
-                name:
-                  type: string
-                  example: New Role
-                description:
-                  type: string
-                  example: Description for the new role
+              $ref: '#/components/schemas/CreateRoleRequest'
       responses:
         '201':
           description: Role created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Role'
         '400':
-          description: Validation error
+          description: Bad request - missing required fields
           content:
             application/json:
               schema:
@@ -1274,87 +1507,39 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  # Bookings Endpoints
   /bookings/add:
     post:
       tags:
         - Bookings
-      summary: Add a new booking
-      description: Create a new appointment booking
+      summary: Create a new booking
+      description: Create a new service booking with participants and information
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - userId
-                - slotDate
-                - startTime
-                - endTime
-                - methodId
-                - serviceId
-                - totalAmount
-                - participants
-              properties:
-                userId:
-                  type: string
-                  example: user_123
-                slotDate:
-                  type: string
-                  format: date
-                  example: 2024-01-15
-                startTime:
-                  type: string
-                  example: "09:00"
-                endTime:
-                  type: string
-                  example: "10:00"
-                methodId:
-                  type: string
-                  example: method_1
-                serviceId:
-                  type: string
-                  example: service_1
-                totalAmount:
-                  type: number
-                  format: float
-                  example: 149.99
-                participants:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      name:
-                        type: string
-                        example: Jane Smith
-                      age:
-                        type: integer
-                        example: 30
-                      identification:
-                        type: string
-                        example: ID123456789
-                      gender:
-                        type: string
-                        enum: [male, female, other]
-                        example: female
-                      relationship:
-                        type: string
-                        example: spouse
+              $ref: '#/components/schemas/CreateBookingRequest'
       responses:
         '201':
           description: Booking created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Booking'
         '400':
-          description: Validation error
+          description: Bad request - validation failed
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: User, service, or method not found
+        '409':
+          description: Booking conflict - time slot unavailable
           content:
             application/json:
               schema:
@@ -1365,7 +1550,7 @@ paths:
       tags:
         - Bookings
       summary: Get all bookings
-      description: Retrieve a list of all bookings
+      description: Retrieve all bookings in the system
       responses:
         '200':
           description: Bookings retrieved successfully
@@ -1380,18 +1565,17 @@ paths:
                         type: array
                         items:
                           $ref: '#/components/schemas/Booking'
-        '500':
-          description: Internal server error
+        '404':
+          description: No bookings found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
     post:
       tags:
         - Bookings
-      summary: Get a specific booking
-      description: Retrieve details of a specific booking by ID
+      summary: Get booking by ID
+      description: Retrieve a specific booking with its history, participants, and information
       requestBody:
         required: true
         content:
@@ -1403,7 +1587,6 @@ paths:
               properties:
                 bookingId:
                   type: string
-                  example: booking_1
       responses:
         '200':
           description: Booking retrieved successfully
@@ -1415,7 +1598,57 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/Booking'
+                        type: object
+                        properties:
+                          booking:
+                            $ref: '#/components/schemas/Booking'
+                          history:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/BookingHistory'
+                          participants:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Participant'
+                          information:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Information'
+        '400':
+          description: Booking ID is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Booking not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Bookings
+      summary: Delete a booking
+      description: Delete a booking from the system
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - bookingId
+              properties:
+                bookingId:
+                  type: string
+      responses:
+        '200':
+          description: Booking deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
         '400':
           description: Booking ID is required
           content:
@@ -1446,7 +1679,6 @@ paths:
               properties:
                 timeSlotId:
                   type: string
-                  example: 2024-01-15_09:00_10:00
       responses:
         '200':
           description: Bookings retrieved successfully
@@ -1463,6 +1695,12 @@ paths:
                           $ref: '#/components/schemas/Booking'
         '400':
           description: Time slot ID is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No bookings found for this time slot
           content:
             application/json:
               schema:
@@ -1485,7 +1723,6 @@ paths:
               properties:
                 userId:
                   type: string
-                  example: user_123
       responses:
         '200':
           description: Bookings retrieved successfully
@@ -1502,6 +1739,12 @@ paths:
                           $ref: '#/components/schemas/Booking'
         '400':
           description: User ID is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found or no bookings found
           content:
             application/json:
               schema:
@@ -1524,7 +1767,6 @@ paths:
               properties:
                 staffId:
                   type: string
-                  example: staff_456
       responses:
         '200':
           description: Bookings retrieved successfully
@@ -1545,13 +1787,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No bookings found for this staff member
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
-  /timeslots/unavailable:
+  # Booking History
+  /booking/history:
     post:
       tags:
-        - Time Slots
-      summary: Get unavailable time slots
-      description: Retrieve time slots that are fully booked for a specific date
+        - Booking History
+      summary: Get booking history
+      description: Retrieve the status history for a specific booking
       requestBody:
         required: true
         content:
@@ -1559,12 +1808,56 @@ paths:
             schema:
               type: object
               required:
-                - slotDate
+                - bookingId
               properties:
-                slotDate:
+                bookingId:
+                  type: string
+      responses:
+        '200':
+          description: Booking history retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/BookingHistory'
+        '400':
+          description: Booking ID is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No history found for this booking
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Time Slots
+  /timeslots/unavailable:
+    post:
+      tags:
+        - Time Slots
+      summary: Get unavailable time slots
+      description: Retrieve time slots that are fully booked or unavailable
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                date:
                   type: string
                   format: date
-                  example: 2024-01-15
+                staffId:
+                  type: string
       responses:
         '200':
           description: Unavailable time slots retrieved successfully
@@ -1579,19 +1872,13 @@ paths:
                         type: array
                         items:
                           $ref: '#/components/schemas/TimeSlot'
-        '400':
-          description: Slot date is required
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
 
   /timeslots/one:
     post:
       tags:
         - Time Slots
-      summary: Get a specific time slot
-      description: Retrieve details of a specific time slot by ID
+      summary: Get time slot by ID
+      description: Retrieve a specific time slot by its ID
       requestBody:
         required: true
         content:
@@ -1603,7 +1890,6 @@ paths:
               properties:
                 timeSlotId:
                   type: string
-                  example: 2024-01-15_09:00_10:00
       responses:
         '200':
           description: Time slot retrieved successfully
@@ -1629,37 +1915,22 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  # Payments
   /payments/add:
     post:
       tags:
         - Payments
-      summary: Add a new payment
-      description: Process a payment for a booking
+      summary: Create a payment
+      description: Process a new payment for a booking
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - bookingId
-                - amount
-                - paymentMethod
-              properties:
-                bookingId:
-                  type: string
-                  example: booking_1
-                amount:
-                  type: number
-                  format: float
-                  example: 149.99
-                paymentMethod:
-                  type: string
-                  enum: [MOMO, VNPAY, ZALOPAY]
-                  example: MOMO
+              $ref: '#/components/schemas/CreatePaymentRequest'
       responses:
         '201':
-          description: Payment processed successfully
+          description: Payment created successfully
           content:
             application/json:
               schema:
@@ -1668,14 +1939,9 @@ paths:
                   - type: object
                     properties:
                       data:
-                        type: object
-                        properties:
-                          paymentUrl:
-                            type: string
-                            description: URL to redirect user for payment
-                            example: https://payment.gateway.com/pay?token=abc123
+                        $ref: '#/components/schemas/Payment'
         '400':
-          description: Validation error
+          description: Bad request - validation failed
           content:
             application/json:
               schema:
@@ -1686,27 +1952,121 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Payment processing error
+
+  /payments:
+    get:
+      tags:
+        - Payments
+      summary: Get all payments
+      description: Retrieve all payments in the system
+      responses:
+        '200':
+          description: Payments retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Payment'
+        '404':
+          description: No payments found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-tags:
-  - name: Services
-    description: Laboratory services management
-  - name: Methods
-    description: Laboratory testing methods
-  - name: Method Services
-    description: Relationship between methods and services
-  - name: Users
-    description: User account management
-  - name: Roles
-    description: User role management
-  - name: Bookings
-    description: Appointment booking management
-  - name: Time Slots
-    description: Available time slot management
-  - name: Payments
-    description: Payment processing
+  /payments/booking:
+    post:
+      tags:
+        - Payments
+      summary: Get payments by booking
+      description: Retrieve all payments for a specific booking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - bookingId
+              properties:
+                bookingId:
+                  type: string
+      responses:
+        '200':
+          description: Payments retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Payment'
+        '400':
+          description: Booking ID is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No payments found for this booking
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /payments/refund:
+    post:
+      tags:
+        - Payments
+      summary: Process payment refund
+      description: Process a refund for a payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - paymentId
+              properties:
+                paymentId:
+                  type: string
+                refundReason:
+                  type: string
+                refundAmount:
+                  type: number
+                  format: float
+      responses:
+        '200':
+          description: Refund processed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Payment'
+        '400':
+          description: Payment ID is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Payment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
