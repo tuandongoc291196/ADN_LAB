@@ -56,7 +56,7 @@ const AppointmentBooking = () => {
     "Anh", "Chị", "Em trai", "Em gái",
     "Cháu nội", "Cháu ngoại", "Cháu",
     "Cô", "Dì", "Chú", "Bác", "Cậu",
-    "Chồng", "Vợ"
+    "Chồng", "Vợ", "Chưa xác định"
   ];
 
   const validRelationPairs = [
@@ -80,6 +80,8 @@ const AppointmentBooking = () => {
     ['Bác', 'Cháu'],
     []
   ];
+
+
 
   const getValidRelationsForOther = (currentRelation) => {
     const valid = validRelationPairs
@@ -1203,7 +1205,7 @@ const AppointmentBooking = () => {
                                       {idNumberErrors[idx]}
                                     </Form.Control.Feedback>
                                   </Form.Group>
-                                  <Form.Group className="mb-3">
+                                  {/* <Form.Group className="mb-3">
                                     <Form.Label>Số điện thoại</Form.Label>
                                     <Form.Control
                                       type="tel"
@@ -1231,7 +1233,7 @@ const AppointmentBooking = () => {
                                     <Form.Control.Feedback type="invalid">
                                       {phoneErrors[idx]}
                                     </Form.Control.Feedback>
-                                  </Form.Group>
+                                  </Form.Group> */}
                                   {/* Tuổi (Age) */}
                                   <Form.Group className="mb-3">
                                     <Form.Label>Tuổi <span className="text-danger">*</span></Form.Label>
@@ -1288,8 +1290,8 @@ const AppointmentBooking = () => {
                                       const value = e.target.value;
                                       const otherIdx = idx === 0 ? 1 : 0;
                                       const otherRelation = bookingData.customerInfo.participants[otherIdx]?.relation;
-
-                                      if (value === otherRelation) {
+                                      const allowDuplicate = value === 'Chưa xác định' || otherRelation === 'Chưa xác định';
+                                      if (!allowDuplicate && value === otherRelation) {
                                         setErrors(prev => ({
                                           ...prev,
                                           [`relation_${idx}`]: `Mối quan hệ này đã được chọn cho người kia`
@@ -1298,6 +1300,7 @@ const AppointmentBooking = () => {
                                         setErrors(prev => ({ ...prev, [`relation_${idx}`]: '' }));
                                         handleParticipantChange(idx, 'relation', value);
                                       }
+
                                     }}
                                     isInvalid={!!errors?.[`relation_${idx}`]}
                                     required
@@ -1327,7 +1330,6 @@ const AppointmentBooking = () => {
                       </Card.Body>
                     </Card>
                   </Col>
-
                   {/* Appointment Date & Time */}
                   <Col lg={6}>
                     {/* Only show date/time selection if not self-sample */}
@@ -1419,49 +1421,8 @@ const AppointmentBooking = () => {
                       </Card>
                     )}
 
-                    {/* Special Requests */}
-                    {/* <Card className="mb-4 shadow-sm">
-                      <Card.Header className="bg-success text-white">
-                        <h5 className="mb-0">
-                          <i className="bi bi-chat-text me-2"></i>
-                          Yêu cầu đặc biệt
-                        </h5>
-                      </Card.Header>
-                      <Card.Body>
-                        <Form.Control
-                          as="textarea"
-                          rows={3}
-                          placeholder="Nhập yêu cầu đặc biệt (nếu có)..."
-                          value={bookingData.specialRequests}
-                          onChange={(e) => setBookingData({ ...bookingData, specialRequests: e.target.value })}
-                        />
-                      </Card.Body>
-                    </Card>
-
-                    {/* Required Documents Reminder 
-                    {selectedService && (
-                      <Card className="border-info shadow-sm">
-                        <Card.Header className="bg-info text-white">
-                          <h6 className="mb-0">
-                            <i className="bi bi-file-text me-2"></i>
-                            Giấy tờ cần chuẩn bị
-                          </h6>
-                        </Card.Header>
-                        <Card.Body>
-                          <ul className="list-unstyled mb-0">
-                            {selectedService?.requiredDocuments?.map((doc, index) => (
-                              <li key={index} className="small mb-2">
-                                <i className="bi bi-check text-info me-2"></i>
-                                {doc}
-                              </li>
-                            ))}
-                          </ul>
-                        </Card.Body>
-                      </Card>
-                    )} */}
                   </Col>
                 </Row>
-
                 <Row className="mt-4">
                   <Col>
                     <Button variant="outline-secondary" size="lg" onClick={prevStep}>
