@@ -1,95 +1,91 @@
 const { dataConnect } = require("../../config/firebase.js");
+const {getSamples} = require("../sample/getSamples.js");
+const {getActiveStaffWithLowestSlotCount} = require("../users/userUtils.js");
 
-const createTestResult = async (req, res) => {
+const createTestResult = async (bookingId) => {
   try {
-    const { id, bookingId, sampleId, serviceId, staffId, testDate, resultData, notes } = req.body;
-
-    // Validate input
-    if (!id) {
-      return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "Test Result ID is required",
-      });
-    }
-
     if (!bookingId) {
-      return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "Booking ID is required",
-      });
+      throw new Error("bookingId is required");
     }
 
-    if (!sampleId) {
-      return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "Sample ID is required",
-      });
-    }
-
-    if (!serviceId) {
-      return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "serviceId is required",
-      });
-    }
+    const samples = await getSamples(bookingId);
+    const managerId = await getActiveStaffWithLowestSlotCount("2");
 
     const CREATE_TEST_RESULT_MUTATION = `
-      mutation CreateTestResult($id: String!, $bookingId: String!, $sampleId: String!, $serviceId: String!, $staffId: String, $testDate: Date, $resultData: String, $notes: String) @auth(level: USER) {
-        testResult_insert(data: { id: $id, bookingId: $bookingId, sampleId: $sampleId, serviceId: $serviceId, staffId: $staffId, testDate: $testDate, resultData: $resultData, notes: $notes, status: "pending" }) {
-          id
-          bookingId
-          sampleId
-          serviceId
-          staffId
-          testDate
-          resultData
-          notes
-          status
-        }
+      mutation CreateTestResult(
+        $id: String!,
+        $bookingId: String!,
+        $sampleId: String!,
+        $staffId: String!,
+        $managerId: String!,
+        $testMethod: String!,
+        $positive: Boolean!,
+        $accuracy: Float!,
+        $testType: String!,
+        $testDate: Date,
+        $reportDate: Date,
+        $resultData: String,
+        $resultNotes: String,
+        $status: String
+      ) @auth(level: USER) {
+        testResult_insert(data: {
+          id: $id,
+          bookingId: $bookingId,
+          sampleId: $sampleId,
+          staffId: $staffId,
+          managerId: $managerId,
+          testMethod: $testMethod,
+          positive: $positive,
+          accuracy: $accuracy,
+          testType: $testType,
+          testDate: $testDate,
+          reportDate: $reportDate,
+          resultData: $resultData,
+          resultNotes: $resultNotes,
+          status: $status
+        })
       }
     `;
 
-    const variables = {
-      id,
-      bookingId,
-      sampleId,
-      serviceId,
-      staffId: staffId || null,
-      testDate: testDate || null,
-      resultData: resultData || null,
-      notes: notes || null,
-    };
+    const testResults = [];
 
-    console.log("Executing GraphQL mutation:", CREATE_TEST_RESULT_MUTATION, "with variables:", variables);
+    // Create test result for each sample
+    for (const sample of samples) {
+      const testResultId = `${sample.id}RESULT`;
+      
+      const variables = {
+        id: testResultId,
+        bookingId: bookingId,
+        sampleId: sample.id,
+        staffId: sample.staffId,
+        managerId: managerId,
+        testMethod: "Standard Analysis",
+        positive: false,
+        accuracy: 0,
+        testType: "",
+        testDate: new Date().toISOString().split('T')[0],
+        reportDate: null,
+        resultData: null,
+        resultNotes: `Test result for sample ${sample.id}`,
+        status: "pending"
+      };
 
-    const response = await dataConnect.executeGraphql(CREATE_TEST_RESULT_MUTATION, {
-      variables,
-    });
+      console.log("Creating test result for sample:", sample.id, "with variables:", variables);
+      
+      const response = await dataConnect.executeGraphql(CREATE_TEST_RESULT_MUTATION, {
+        variables: variables
+      });
 
-    const testResult = response.data?.testResult_insert;
-
-    if (!testResult) {
-      throw new Error("Failed to create test result");
+      const testResult = response.data.testResult_insert;
+      testResults.push(testResult);
     }
 
-    res.status(201).json({
-      statusCode: 201,
-      status: "success",
-      message: "Test result created successfully",
-      data: testResult,
-    });
+    console.log(`Successfully created ${testResults.length} test results for booking ${bookingId}`);
+    return testResults;
+    
   } catch (error) {
     console.error("Error creating test result:", error);
-    res.status(500).json({
-      statusCode: 500,
-      status: "error",
-      message: "Failed to create test result",
-      error: error.message,
-    });
+    throw new Error("Failed to create test result: " + error.message);
   }
 };
 

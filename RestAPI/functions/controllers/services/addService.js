@@ -15,6 +15,7 @@ const addService = async (req, res) => {
             categoryId,
             icon,
             featured,
+            isActive,
             methods
         } = req.body;
         
@@ -82,6 +83,14 @@ const addService = async (req, res) => {
             });
         }
 
+        if (isActive !== undefined && typeof isActive !== 'boolean') {
+            return res.status(400).json({
+                statusCode: 400,
+                status: "error",
+                message: "isActive must be a boolean value",
+            });
+        }
+
         if (!methods || !Array.isArray(methods) || methods.length === 0) {
             return res.status(400).json({
                 statusCode: 400,
@@ -100,6 +109,7 @@ const addService = async (req, res) => {
             categoryId: categoryId,
             icon: icon,
             featured: featured,
+            isActive: isActive !== undefined ? isActive : true,
         };
 
         if (!(await checkCatergoryExists(categoryId))) {
@@ -129,8 +139,8 @@ const addService = async (req, res) => {
         }
 
         const ADD_SERVICE_MUTATION = `
-            mutation CreateService($id: String!, $title: String!, $description: String!, $fullDescription: String, $price: Float!, $duration: String!, $categoryId: String!, $icon: String, $featured: Boolean!) @auth(level: USER) {
-                service_insert(data: {id: $id, title: $title, description: $description, fullDescription: $fullDescription, price: $price, duration: $duration, categoryId: $categoryId, icon: $icon, featured: $featured})
+            mutation CreateService($id: String!, $title: String!, $description: String!, $fullDescription: String, $price: Float!, $duration: String!, $categoryId: String!, $icon: String, $featured: Boolean!, $isActive: Boolean!) @auth(level: USER) {
+                service_insert(data: {id: $id, title: $title, description: $description, fullDescription: $fullDescription, price: $price, duration: $duration, categoryId: $categoryId, icon: $icon, featured: $featured, isActive: $isActive})
             }
         `;
 

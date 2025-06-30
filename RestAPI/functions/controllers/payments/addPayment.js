@@ -90,7 +90,8 @@ const addPayment = async (req, res) => {
         .then(async (isSuccessful) => {
           if (isSuccessful) {
             console.log('Payment confirmed successfully');
-            await addBookingHistory(bookingId, "booked", "Booking placed successfully");
+            await addBookingHistory(bookingId, "PAYMENT_CONFIRMED", "Payment is successful");
+            await addBookingHistory(bookingId, "BOOKED", "Booking placed successfully");
             const otherDetails = await getPaymentDataMOMO(result.orderId, result.requestId);
             console.log("Other details from MOMO:", otherDetails);
             const paymentVariables = {
@@ -114,7 +115,7 @@ const addPayment = async (req, res) => {
             console.log("Payment record added successfully:", responseData);
           } else {
             console.log('Payment failed or timed out');
-            await addBookingHistory(bookingId, "pending", "Payment failed or timed out");
+            await addBookingHistory(bookingId, "PAYMENT_FAILED", "Payment failed or timed out");
           }
         })
         .catch(error => {

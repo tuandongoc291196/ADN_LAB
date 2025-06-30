@@ -1,4 +1,7 @@
 const { dataConnect } = require("../../config/firebase.js");
+const {addSample} = require("../sample/addSample.js");
+const {createTestResult} = require("../testResult/addTestResult.js");
+const {checkBookingExists} = require("../bookings/bookingUtils.js");
 
 const addBookingHistory = async (bookingId, status, description) => {
     try {
@@ -54,6 +57,70 @@ const addBookingHistory = async (bookingId, status, description) => {
     }
 };
 
+const addBookingHistoryById = async (req, res) => {
+    try {
+        const { bookingId, status, description } = req.body;
+
+        if (!bookingId) {
+            return res.status(400).json({
+                statusCode: 400,
+                status: "error",
+                message: "bookingId is required"
+            });
+        }
+
+        if (!status) {
+            return res.status(400).json({
+                statusCode: 400,
+                status: "error",
+                message: "status is required"
+            });
+        }
+
+        if (!description) {
+            return res.status(400).json({
+                statusCode: 400,
+                status: "error",
+                message: "description is required"
+            });
+        }
+
+        if (!(await checkBookingExists(bookingId))) {
+            return res.status(404).json({
+                statusCode: 404,
+                status: "error",
+                message: "Booking does not exist"
+            });
+        }
+
+        const result = await addBookingHistory(bookingId, status, description);
+
+        if (status === "SAMPLE_RECEIVED") {
+            console.log("Adding sample for booking ID:", bookingId);
+            await addSample(bookingId);
+        }
+
+        if (status === "RESULT_PENDING") {
+            console.log("Adding test result for booking ID:", bookingId);
+            await createTestResult(bookingId);
+        }
+        return res.status(201).json({
+            statusCode: 201,
+            status: "success",
+            message: "Booking history added successfully",
+            data: result.data
+        });
+    } catch (error) {
+        console.error("Error in addBookingHistoryById:", error);
+        return res.status(500).json({
+            statusCode: 500,
+            status: "error",
+            message: "Internal server error"
+        });
+    }
+}
+
 module.exports = {
-    addBookingHistory
+    addBookingHistory,
+    addBookingHistoryById
 };

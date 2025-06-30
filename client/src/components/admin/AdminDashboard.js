@@ -188,13 +188,6 @@ const AdminDashboard = ({ user }) => {
 
         {/* Main Content */}
         <Col lg={9} md={8}>
-          {!user && (
-            <Alert variant="warning" className="mb-4">
-              <i className="bi bi-exclamation-triangle me-2"></i>
-              Bạn đang xem giao diện Admin demo. Đăng nhập với quyền Admin để truy cập đầy đủ chức năng.
-            </Alert>
-          )}
-
           <Routes>
             <Route path="/" element={<AdminOverview user={adminUser} />} />
             <Route path="/overview" element={<AdminOverview user={adminUser} />} />

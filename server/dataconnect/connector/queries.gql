@@ -408,6 +408,7 @@ query GetServices @auth(level: USER) {
     }
     icon
     featured
+    isActive
     createdAt
     updatedAt
   }
@@ -431,6 +432,7 @@ query GetServiceById($serviceId: String!) @auth(level: USER) {
     }
     icon
     featured
+    isActive
     createdAt
     updatedAt
   }
@@ -452,6 +454,7 @@ query GetServicesByCategory($categoryId: String!) @auth(level: USER) {
     }
     icon
     featured
+    isActive
     createdAt
     updatedAt
   }
@@ -473,6 +476,7 @@ query GetFeaturedServices @auth(level: USER) {
     }
     icon
     featured
+    isActive
     createdAt
     updatedAt
   }

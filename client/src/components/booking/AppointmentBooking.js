@@ -1158,6 +1158,7 @@ const AppointmentBooking = () => {
                       </Card.Header>
                       <Card.Body className="p-4">
                         <Row>
+<<<<<<< HEAD
                           {[0, 1].map((idx) => ( //Add commentMore actions
                             < Col md={6} key={idx} className="mb-4" >
                               <Card className="h-100 border-0 bg-light">
@@ -1326,6 +1327,66 @@ const AppointmentBooking = () => {
                               </Card>
                             </Col>
                           ))}
+=======
+                          <Col md={6} className="mb-3">
+                            <Card className="border-light">
+                              <Card.Header className="bg-light">
+                                <h6 className="mb-0 text-success">Người tham gia 1</h6>
+                              </Card.Header>
+                              <Card.Body className="p-3">
+                                {bookingData.customerInfo.participants[0] ? (
+                                  <div className="d-flex flex-wrap align-items-center justify-content-center text-center">
+                                    <span className="me-3 mb-1">
+                                      <strong>Tên:</strong> {bookingData.customerInfo.participants[0].name}
+                                    </span>
+                                    <span className="me-3 mb-1">
+                                      <strong>CCCD:</strong> {bookingData.customerInfo.participants[0].idNumber}
+                                    </span>
+                                    {bookingData.customerInfo.participants[0].phone && (
+                                      <span className="me-3 mb-1">
+                                        <strong>SĐT:</strong> {bookingData.customerInfo.participants[0].phone}
+                                      </span>
+                                    )}
+                                    <span className="mb-1">
+                                      <strong>Quan hệ:</strong> {bookingData.customerInfo.participants[0].relation || 'N/A'}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div className="text-muted text-center">Chưa có thông tin</div>
+                                )}
+                                </Card.Body>
+                              </Card>
+                            </Col>
+                          <Col md={6} className="mb-3">
+                            <Card className="border-light">
+                              <Card.Header className="bg-light">
+                                <h6 className="mb-0 text-success">Người tham gia 2</h6>
+                              </Card.Header>
+                              <Card.Body className="p-3">
+                                {bookingData.customerInfo.participants[1] ? (
+                                  <div className="d-flex flex-wrap align-items-center justify-content-center text-center">
+                                    <span className="me-3 mb-1">
+                                      <strong>Tên:</strong> {bookingData.customerInfo.participants[1].name}
+                                    </span>
+                                    <span className="me-3 mb-1">
+                                      <strong>CCCD:</strong> {bookingData.customerInfo.participants[1].idNumber}
+                                    </span>
+                                    {bookingData.customerInfo.participants[1].phone && (
+                                      <span className="me-3 mb-1">
+                                        <strong>SĐT:</strong> {bookingData.customerInfo.participants[1].phone}
+                                      </span>
+                                    )}
+                                    <span className="mb-1">
+                                      <strong>Quan hệ:</strong> {bookingData.customerInfo.participants[1].relation || 'N/A'}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div className="text-muted text-center">Chưa có thông tin</div>
+                                )}
+                              </Card.Body>
+                            </Card>
+                          </Col>
+>>>>>>> ec6d2bf27b536b89c9917c4a7503a247c26531cf
                         </Row>
                       </Card.Body>
                     </Card>
@@ -1495,21 +1556,21 @@ const AppointmentBooking = () => {
                                 <div className="text-muted">
                                   {selectedService.title || 'Không có thông tin'}
                                 </div>
-                              </div>
+                                </div>
                               <div className="mb-2">
                                 <strong>Mô tả dịch vụ:</strong>
                                 <div className="text-muted">
                                   {selectedService.description || 'Không có mô tả'}
-                                </div>
                               </div>
+                                </div>
                               <Row className="mb-2">
                                 <Col md={6}>
                                   <strong>Loại dịch vụ:</strong>
                                   <div className="mt-1">
                                     {renderServiceTypeBadge(selectedService.category?.hasLegalValue ? 'administrative' : 'civil', selectedService.category)}
-                                  </div>
-                                </Col>
-                                <Col md={6}>
+                              </div>
+                            </Col>
+                            <Col md={6}>
                                   <strong>Phương thức thu mẫu:</strong>
                                   <div className="mt-1">
                                     <Badge bg={getMethodColor(bookingData.collectionMethod)}>
@@ -1582,7 +1643,7 @@ const AppointmentBooking = () => {
                               <i className="bi bi-person me-2"></i>
                               Thông tin khách hàng
                             </h6>
-                            <Row>
+                          <Row>
                               <Col md={3} className="mb-2">
                                 <strong>Họ tên:</strong> {bookingData.customerInfo.fullName}
                               </Col>
@@ -1596,7 +1657,7 @@ const AppointmentBooking = () => {
                                 <strong>CCCD/CMND:</strong> {bookingData.customerInfo.idNumber}
                               </Col>
                             </Row>
-                          </div>
+                              </div>
 
                           {/* Thông tin lịch hẹn */}
                           <div className="mb-4">
@@ -1623,7 +1684,7 @@ const AppointmentBooking = () => {
                                 <Row className="mb-2">
                                   <Col md={3}>
                                     <strong>Giờ hẹn:</strong> {bookingData.appointmentTime}
-                                  </Col>
+                            </Col>
                                   <Col md={4}>
                                     <strong>Ngày hẹn:</strong> {renderDate(bookingData.appointmentDate)}
                                   </Col>
@@ -1640,7 +1701,7 @@ const AppointmentBooking = () => {
                           </div>
 
                           {/* Người tham gia xét nghiệm */}
-                          {bookingData.customerInfo.participants.length > 0 && (
+                              {bookingData.customerInfo.participants.length > 0 && (
                             <div className="mb-4">
                               <h6 className="text-primary mb-3">
                                 <i className="bi bi-people me-2"></i>
@@ -1652,7 +1713,7 @@ const AppointmentBooking = () => {
                                     <Card.Header className="bg-light">
                                       <h6 className="mb-0 text-success">Người tham gia 1</h6>
                                     </Card.Header>
-                                    <Card.Body className="p-3">
+                                      <Card.Body className="p-3">
                                       {bookingData.customerInfo.participants[0] ? (
                                         <div className="d-flex flex-wrap align-items-center justify-content-center text-center">
                                           <span className="me-3 mb-1">
@@ -1673,9 +1734,9 @@ const AppointmentBooking = () => {
                                       ) : (
                                         <div className="text-muted text-center">Chưa có thông tin</div>
                                       )}
-                                    </Card.Body>
-                                  </Card>
-                                </Col>
+                                      </Card.Body>
+                                    </Card>
+                            </Col>
                                 <Col md={6} className="mb-3">
                                   <Card className="border-light">
                                     <Card.Header className="bg-light">
@@ -1698,16 +1759,16 @@ const AppointmentBooking = () => {
                                           <span className="mb-1">
                                             <strong>Quan hệ:</strong> {bookingData.customerInfo.participants[1].relation || 'N/A'}
                                           </span>
-                                        </div>
-                                      ) : (
+                                </div>
+                              ) : (
                                         <div className="text-muted text-center">Chưa có thông tin</div>
                                       )}
                                     </Card.Body>
                                   </Card>
-                                </Col>
+                            </Col>
                               </Row>
-                            </div>
-                          )}
+                                </div>
+                              )}
                         </Tab.Pane>
                       </Tab.Content>
                     </Tab.Container>
