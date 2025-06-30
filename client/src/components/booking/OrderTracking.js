@@ -1,3 +1,17 @@
+/**
+ * COMPONENT: OrderTracking
+ * MỤC ĐÍCH: Tra cứu và theo dõi trạng thái đặt lịch/đơn hàng xét nghiệm ADN
+ * CHỨC NĂNG:
+ * - Form tìm kiếm theo mã đặt lịch
+ * - Hiển thị timeline tiến độ thực hiện (khác nhau theo từng phương thức)
+ * - Progress bar và status badges
+ * - Modal xác nhận gửi lại kit cho self-sample orders
+ * - Actions nhanh (tải kết quả, hướng dẫn, in thông tin)
+ * - Thông tin hỗ trợ khách hàng
+ * - Mock data cho demo với multiple order types
+ * - Responsive UI cho mobile và desktop
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Alert, Badge, Form, InputGroup, ProgressBar, Modal } from 'react-bootstrap';

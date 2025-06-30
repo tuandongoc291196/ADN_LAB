@@ -1,3 +1,14 @@
+/**
+ * COMPONENT: Register
+ * MỤC ĐÍCH: Form đăng ký tài khoản mới với Firebase Authentication
+ * CHỨC NĂNG:
+ * - Đăng ký tài khoản bằng email/password hoặc Google
+ * - Validation form đầy đủ (email, phone, password strength)
+ * - Tích hợp Firebase Authentication
+ * - Hiển thị benefits khi đăng ký tài khoản
+ * - UX/UI thân thiện với feedback rõ ràng
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Form, Alert, InputGroup } from 'react-bootstrap';
@@ -5,58 +16,66 @@ import {
   auth, 
   registerWithEmailAndPassword, 
   signInWithGoogle 
-} from '../config/firebase';
-import { useAuthState } from 'react-firebase-hooks/auth';
+} from '../config/firebase'; // Firebase configuration
+import { useAuthState } from 'react-firebase-hooks/auth'; // Hook theo dõi auth state
 
 const Register = ({ setUser }) => {
+  // Hook theo dõi trạng thái authentication của Firebase
   const [user, loading] = useAuthState(auth);
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // Hook điều hướng React Router
+  
+  // State quản lý dữ liệu form đăng ký
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirmPassword: '',
-    agreeTerms: false
+    fullName: '',         // Họ và tên đầy đủ
+    email: '',            // Địa chỉ email
+    phone: '',            // Số điện thoại
+    password: '',         // Mật khẩu
+    confirmPassword: '',  // Xác nhận mật khẩu
+    agreeTerms: false     // Đồng ý điều khoản
   });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  
+  // State quản lý UI
+  const [showPassword, setShowPassword] = useState(false); // Hiện/ẩn mật khẩu
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false); // Hiện/ẩn confirm password
+  const [error, setError] = useState(''); // Thông báo lỗi
+  const [isLoading, setIsLoading] = useState(false); // Trạng thái đang xử lý
+  const [success, setSuccess] = useState(false); // Trạng thái đăng ký thành công
 
+  // Effect xử lý sau khi đăng ký thành công
   useEffect(() => {
-    if (loading) return;
+    if (loading) return; // Đợi Firebase Auth hoàn tất
     if (user) {
-      // Set the user in the parent component
+      // Cập nhật thông tin user cho component cha
       if (setUser) {
         setUser({
           id: user.uid,
           name: user.displayName || user.email?.split('@')[0] || 'User',
           email: user.email,
-          role: 'user'
+          role: 'user' // Role mặc định cho user mới đăng ký
         });
       }
-      navigate('/user');
+      navigate('/user'); // Chuyển đến trang user dashboard
     }
   }, [user, loading, navigate, setUser]);
 
+  // Hàm xử lý thay đổi input form
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({
       ...formData,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : value // Xử lý riêng cho checkbox
     });
     
-    // Clear error when user starts typing again
+    // Xóa thông báo lỗi khi user bắt đầu nhập lại
     if (error) setError('');
   };
 
+  // Hàm xử lý đăng ký bằng Google
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
       setError('');
-      await signInWithGoogle();
+      await signInWithGoogle(); // Gọi hàm đăng ký Google từ Firebase config
     } catch (error) {
       setError('Đăng ký Google thất bại. Vui lòng thử lại.');
       console.error('Google sign in error:', error);
@@ -65,46 +84,48 @@ const Register = ({ setUser }) => {
     }
   };
 
+  // Hàm validation form trước khi submit
   const validateForm = () => {
-    // Full name validation
+    // Validation họ và tên
     if (!formData.fullName || formData.fullName.length < 2) {
       setError('Họ và tên phải có ít nhất 2 ký tự');
       return false;
     }
 
-    // Email validation
+    // Validation email với regex
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       setError('Email không hợp lệ');
       return false;
     }
 
-    // Phone number validation
+    // Validation số điện thoại (10-11 số)
     const phoneRegex = /^[0-9]{10,11}$/;
     if (!phoneRegex.test(formData.phone)) {
       setError('Số điện thoại không hợp lệ');
       return false;
     }
     
-    // Password validation
+    // Validation độ dài mật khẩu
     if (formData.password.length < 6) {
       setError('Mật khẩu phải có ít nhất 6 ký tự');
       return false;
     }
 
+    // Validation độ mạnh mật khẩu (chữ hoa, chữ thường, số)
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
     if (!passwordRegex.test(formData.password)) {
       setError('Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường và 1 số');
       return false;
     }
     
-    // Passwords should match
+    // Validation khớp mật khẩu
     if (formData.password !== formData.confirmPassword) {
       setError('Mật khẩu xác nhận không khớp');
       return false;
     }
     
-    // Terms should be accepted
+    // Validation đồng ý điều khoản
     if (!formData.agreeTerms) {
       setError('Bạn phải đồng ý với điều khoản sử dụng');
       return false;
@@ -113,10 +134,11 @@ const Register = ({ setUser }) => {
     return true;
   };
 
+  // Hàm xử lý submit form đăng ký
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validate form before submission
+    // Validate form trước khi gửi
     if (!validateForm()) {
       return;
     }
@@ -125,7 +147,7 @@ const Register = ({ setUser }) => {
     setError('');
 
     try {
-      // Use Firebase authentication
+      // Gọi hàm đăng ký với Firebase Authentication
       await registerWithEmailAndPassword(
         formData.fullName,
         formData.phone,
@@ -133,10 +155,10 @@ const Register = ({ setUser }) => {
         formData.password
       );
       
-      // Show success message
+      // Hiển thị thông báo thành công
       setSuccess(true);
       
-      // Reset form
+      // Reset form về trạng thái ban đầu
       setFormData({
         fullName: '',
         email: '',
@@ -147,7 +169,7 @@ const Register = ({ setUser }) => {
       });
       
     } catch (err) {
-      // Handle Firebase authentication errors
+      // Xử lý các lỗi từ Firebase Authentication
       let errorMessage = 'Đăng ký thất bại. Email có thể đã được sử dụng.';
       
       if (err.code) {
@@ -181,7 +203,7 @@ const Register = ({ setUser }) => {
       <Container>
         <Row className="justify-content-center">
           <Col lg={6} md={8} sm={10}>
-            {/* Header */}
+            {/* HEADER - Tiêu đề và mô tả */}
             <div className="text-center mb-4">
               <div className="bg-success rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" 
                    style={{ width: '80px', height: '80px' }}>
@@ -192,6 +214,7 @@ const Register = ({ setUser }) => {
             </div>
 
             <Card className="shadow-lg border-0">
+              {/* CARD HEADER */}
               <Card.Header className="bg-success text-white text-center py-4">
                 <h4 className="mb-0 fw-bold">
                   <i className="bi bi-person-plus me-2"></i>
@@ -203,7 +226,7 @@ const Register = ({ setUser }) => {
               </Card.Header>
 
               <Card.Body className="p-4">
-                {/* Error Alert */}
+                {/* ALERT LỖI */}
                 {error && (
                   <Alert variant="danger" className="mb-4">
                     <i className="bi bi-exclamation-circle me-2"></i>
@@ -211,7 +234,7 @@ const Register = ({ setUser }) => {
                   </Alert>
                 )}
 
-                {/* Success Alert */}
+                {/* ALERT THÀNH CÔNG */}
                 {success && (
                   <Alert variant="success" className="mb-4">
                     <i className="bi bi-check-circle me-2"></i>
@@ -219,8 +242,9 @@ const Register = ({ setUser }) => {
                   </Alert>
                 )}
 
-                {/* Register Form */}
+                {/* FORM ĐĂNG KÝ */}
                 <Form onSubmit={handleSubmit}>
+                  {/* Input Họ và tên */}
                   <Form.Group className="mb-3">
                     <Form.Label className="fw-medium">
                       <i className="bi bi-person me-2"></i>
@@ -240,6 +264,7 @@ const Register = ({ setUser }) => {
 
                   <Row>
                     <Col md={6}>
+                      {/* Input Email */}
                       <Form.Group className="mb-3">
                         <Form.Label className="fw-medium">
                           <i className="bi bi-envelope me-2"></i>
@@ -258,6 +283,7 @@ const Register = ({ setUser }) => {
                       </Form.Group>
                     </Col>
                     <Col md={6}>
+                      {/* Input Số điện thoại */}
                       <Form.Group className="mb-3">
                         <Form.Label className="fw-medium">
                           <i className="bi bi-telephone me-2"></i>
@@ -279,6 +305,7 @@ const Register = ({ setUser }) => {
 
                   <Row>
                     <Col md={6}>
+                      {/* Input Mật khẩu với toggle hiện/ẩn */}
                       <Form.Group className="mb-3">
                         <Form.Label className="fw-medium">
                           <i className="bi bi-lock me-2"></i>
@@ -294,6 +321,7 @@ const Register = ({ setUser }) => {
                             required
                             disabled={isLoading || success}
                           />
+                          {/* Button toggle hiện/ẩn mật khẩu */}
                           <Button 
                             variant="outline-secondary"
                             onClick={() => setShowPassword(!showPassword)}
@@ -309,6 +337,7 @@ const Register = ({ setUser }) => {
                       </Form.Group>
                     </Col>
                     <Col md={6}>
+                      {/* Input Xác nhận mật khẩu */}
                       <Form.Group className="mb-3">
                         <Form.Label className="fw-medium">
                           <i className="bi bi-lock-fill me-2"></i>
@@ -324,6 +353,7 @@ const Register = ({ setUser }) => {
                             required
                             disabled={isLoading || success}
                           />
+                          {/* Button toggle hiện/ẩn confirm password */}
                           <Button 
                             variant="outline-secondary"
                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -337,6 +367,7 @@ const Register = ({ setUser }) => {
                     </Col>
                   </Row>
 
+                  {/* Checkbox đồng ý điều khoản */}
                   <Form.Group className="mb-4">
                     <Form.Check 
                       type="checkbox"
@@ -362,6 +393,7 @@ const Register = ({ setUser }) => {
                     />
                   </Form.Group>
 
+                  {/* Button submit đăng ký */}
                   <div className="d-grid gap-2 mb-4">
                     <Button
                       type="submit"
@@ -385,7 +417,7 @@ const Register = ({ setUser }) => {
                   </div>
                 </Form>
 
-                {/* Divider */}
+                {/* DIVIDER - Phân cách giữa form đăng ký và Google Sign Up */}
                 <div className="text-center mb-4">
                   <div className="position-relative">
                     <hr />
@@ -395,7 +427,7 @@ const Register = ({ setUser }) => {
                   </div>
                 </div>
 
-                {/* Google Sign In */}
+                {/* GOOGLE SIGN UP - Đăng ký bằng tài khoản Google */}
                 <div className="d-grid gap-2 mb-4">
                   <Button
                     variant="outline-danger"
@@ -418,7 +450,7 @@ const Register = ({ setUser }) => {
                   </Button>
                 </div>
 
-                {/* Login Link */}
+                {/* LINK ĐĂNG NHẬP - Chuyển đến trang đăng nhập */}
                 <div className="text-center">
                   <p className="text-muted mb-0">
                     Đã có tài khoản?{' '}
@@ -430,7 +462,7 @@ const Register = ({ setUser }) => {
               </Card.Body>
             </Card>
 
-            {/* Footer Info */}
+            {/* FOOTER INFO - Thông tin liên hệ và bảo mật */}
             <div className="text-center mt-4">
               <div className="mb-3">
                 <small className="text-muted">
@@ -452,7 +484,7 @@ const Register = ({ setUser }) => {
           </Col>
         </Row>
 
-        {/* Why Register Section */}
+        {/* BENEFITS SECTION - Lợi ích khi đăng ký tài khoản */}
         <Row className="justify-content-center mt-5">
           <Col lg={10}>
             <Card className="border-0 bg-light">
@@ -462,6 +494,7 @@ const Register = ({ setUser }) => {
                   Tại sao nên tạo tài khoản ADN LAB?
                 </h5>
                 <Row>
+                  {/* Benefit 1: Đặt lịch nhanh */}
                   <Col md={3} className="text-center mb-3">
                     <i className="bi bi-speedometer2 text-primary fs-1 mb-2 d-block"></i>
                     <h6>Đặt lịch nhanh chóng</h6>
@@ -469,6 +502,7 @@ const Register = ({ setUser }) => {
                       Đặt lịch xét nghiệm chỉ trong 2 phút
                     </small>
                   </Col>
+                  {/* Benefit 2: Quản lý lịch hẹn */}
                   <Col md={3} className="text-center mb-3">
                     <i className="bi bi-calendar-check text-success fs-1 mb-2 d-block"></i>
                     <h6>Quản lý lịch hẹn</h6>
@@ -476,6 +510,7 @@ const Register = ({ setUser }) => {
                       Theo dõi tất cả lịch hẹn của bạn
                     </small>
                   </Col>
+                  {/* Benefit 3: Nhận kết quả online */}
                   <Col md={3} className="text-center mb-3">
                     <i className="bi bi-file-earmark-check text-info fs-1 mb-2 d-block"></i>
                     <h6>Nhận kết quả trực tuyến</h6>
@@ -483,6 +518,7 @@ const Register = ({ setUser }) => {
                       Xem và tải kết quả ngay khi có
                     </small>
                   </Col>
+                  {/* Benefit 4: Ưu đãi độc quyền */}
                   <Col md={3} className="text-center mb-3">
                     <i className="bi bi-percent text-warning fs-1 mb-2 d-block"></i>
                     <h6>Ưu đãi độc quyền</h6>
