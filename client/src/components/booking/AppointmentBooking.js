@@ -281,153 +281,155 @@ const AppointmentBooking = () => {
       userId = userDataFromStorage?.uid || userDataFromStorage?.user_id || userDataFromStorage?.id || '';
     } catch (e) {
       console.error('Error parsing userData:', e);
-    }
 
-    // Lấy service/method info
-    const service = selectedService;
-    const method = selectedMethod;
+      // Lấy service/method info
+      const service = selectedService;
+      const method = selectedMethod;
 
-    // Validation trước khi submit
-    if (!service) {
-      alert('Vui lòng chọn dịch vụ!');
-      return;
-    }
-    if (!bookingData.collectionMethod) {
-      alert('Vui lòng chọn phương thức lấy mẫu!');
-      return;
-    }
+      // Validation trước khi submit
+      if (!service) {
+        alert('Vui lòng chọn dịch vụ!');
+        return;
+      }
 
-    if (!bookingData.appointmentDate || !bookingData.appointmentTime) {
-      alert('Vui lòng chọn ngày và giờ hẹn!');
-      return;
-    }
+      if (!bookingData.collectionMethod) {
+        alert('Vui lòng chọn phương thức lấy mẫu!');
+        return;
+      }
 
-    if (!bookingData.customerInfo.fullName || !bookingData.customerInfo.phone) {
-      alert('Vui lòng điền đầy đủ thông tin liên hệ!');
-      return;
-    }
+      if (!bookingData.appointmentDate || !bookingData.appointmentTime) {
+        alert('Vui lòng chọn ngày và giờ hẹn!');
+        return;
+      }
 
-    console.log('Selected service:', service);
-    console.log('Service ID type:', typeof service.id);
-    console.log('Service ID value:', service.id);
+      if (!bookingData.customerInfo.fullName || !bookingData.customerInfo.phone) {
+        alert('Vui lòng điền đầy đủ thông tin liên hệ!');
+        return;
+      }
 
-    // Tính toán startTime, endTime từ slot
-    let startTime = bookingData.appointmentTime || '';
-    let endTime = '';
-    if (startTime) {
-      const [h, m] = startTime.split(':');
-      const start = new Date(0, 0, 0, parseInt(h), parseInt(m));
-      start.setHours(start.getHours() + 1);
-      endTime = start.toTimeString().slice(0, 5);
-    }
+      console.log('Selected service:', service);
+      console.log('Service ID type:', typeof service.id);
+      console.log('Service ID value:', service.id);
 
-    // Map participants
-    const participants = (bookingData.customerInfo.participants || []).map((p) => ({
-      name: p.name || '',
-      age: p.age || null,
-      identification: p.idNumber || '',
-      gender: p.gender || '',
-      relationship: p.relation || p.role || '',
-    }));
+      // Tính toán startTime, endTime từ slot
+      let startTime = bookingData.appointmentTime || '';
+      let endTime = '';
+      if (startTime) {
+        const [h, m] = startTime.split(':');
+        const start = new Date(0, 0, 0, parseInt(h), parseInt(m));
+        start.setHours(start.getHours() + 1);
+        endTime = start.toTimeString().slice(0, 5);
+      }
 
-    // Thông tin người đặt lịch
-    const information = {
-      name: bookingData.customerInfo.fullName,
-      identification: bookingData.customerInfo.idNumber,
-      address: bookingData.customerInfo.address,
-      phone: bookingData.customerInfo.phone,
-      email: bookingData.customerInfo.email
-    };
+      // Map participants
+      const participants = (bookingData.customerInfo.participants || []).map((p) => ({
+        name: p.name || '',
+        age: p.age || null,
+        identification: p.idNumber || '',
+        gender: p.gender || '',
+        relationship: p.relation || p.role || '',
+      }));
 
-    // Tổng tiền
-    let totalAmount = 0;
-    if (service && typeof service.price === 'number') totalAmount = service.price;
-
-    // Chuẩn bị payload
-    // Chuẩn bị payloadMore actions
-    const payload = {
-      userId: userId, // Sử dụng userId đã lấy từ localStorage
-      slotDate: bookingData.appointmentDate,
-      startTime: bookingData.appointmentTime,
-      endTime: calculateEndTime(bookingData.appointmentTime),
-      methodId: bookingData.collectionMethod,
-      serviceId: service.id, // phải là ID từ backend
-      totalAmount,
-      information: {
+      // Thông tin người đặt lịch
+      const information = {
         name: bookingData.customerInfo.fullName,
         identification: bookingData.customerInfo.idNumber,
         address: bookingData.customerInfo.address,
         phone: bookingData.customerInfo.phone,
-        email: bookingData.customerInfo.email,
-      },
-      participants: bookingData.customerInfo.participants.map((p) => ({
-        name: p.name,
-        identification: p.idNumber,
-        relationship: p.relation,
-        age: p.age,
-        gender: p.gender
-      }))
-    };
+        email: bookingData.customerInfo.email
+      };
 
-    // Kiểm tra nếu serviceId là title thay vì ID thực
-    if (service.id === service.title) {
-      console.warn('Service ID is same as title, this might be an issue with backend data structure');
-      // Có thể cần điều chỉnh logic này tùy theo yêu cầu backend
-    }
+      // Tổng tiền
+      let totalAmount = 0;
+      if (service && typeof service.price === 'number') totalAmount = service.price;
 
-    console.log('Final payload before API call:', payload);
+      // Chuẩn bị payload
+      // Chuẩn bị payloadMore actions
+      const payload = {
+        userId: userId, // Sử dụng userId đã lấy từ localStorage
+        slotDate: bookingData.appointmentDate,
+        startTime: bookingData.appointmentTime,
+        endTime: calculateEndTime(bookingData.appointmentTime),
+        methodId: bookingData.collectionMethod,
+        serviceId: service.id, // phải là ID từ backend
+        totalAmount,
+        information: {
+          name: bookingData.customerInfo.fullName,
+          identification: bookingData.customerInfo.idNumber,
+          address: bookingData.customerInfo.address,
+          phone: bookingData.customerInfo.phone,
+          email: bookingData.customerInfo.email,
+        },
+        participants: bookingData.customerInfo.participants.map((p) => ({
+          name: p.name,
+          identification: p.idNumber,
+          relationship: p.relation,
+          age: p.age,
+          gender: p.gender
+        }))
+      };
 
-    try {
-      console.log('Submitting booking with payload:', payload);
-      const res = await createBooking(payload);
-      console.log('Booking response:', res);
-
-
-      // Kiểm tra response có hợp lệ không - handle cả booking_insert.id
-      let bookingId = null;
-      if (res) {
-        bookingId = res.id || res.bookingId || res.data?.id || res.booking_insert?.id || res.data?.booking_insert?.id || null;
+      // Kiểm tra nếu serviceId là title thay vì ID thực
+      if (service.id === service.title) {
+        console.warn('Service ID is same as title, this might be an issue with backend data structure');
+        // Có thể cần điều chỉnh logic này tùy theo yêu cầu backend
       }
 
-      if (bookingId) {
-        console.log('Success! Booking ID:', bookingId);
-        console.log('Navigating to booking-confirmation with state:', {
-          bookingData: {
-            ...bookingData,
-            selectedService: service,
-            selectedMethod: method
-          },
-          bookingId: bookingId
-        });
-        try {
-          navigate('/booking-confirmation', {
-            state: {
-              bookingData: {
-                ...bookingData,
-                selectedService: service,
-                selectedMethod: method
-              },
-              bookingId: bookingId
-            }
-          });
-          console.log('Navigation successful');
-        } catch (navError) {
-          console.error('Navigation error:', navError);
-          // Fallback: redirect to confirmation page
-          window.location.href = '/booking-confirmation';
+      console.log('Final payload before API call:', payload);
+
+      try {
+        console.log('Submitting booking with payload:', payload);
+        const res = await createBooking(payload);
+        console.log('Booking response:', res);
+
+
+        // Kiểm tra response có hợp lệ không - handle cả booking_insert.id
+        let bookingId = null;
+        if (res) {
+          bookingId = res.id || res.bookingId || res.data?.id || res.booking_insert?.id || res.data?.booking_insert?.id || null;
         }
-      } else {
-        throw new Error('No booking ID returned from server');
+
+        if (bookingId) {
+          console.log('Success! Booking ID:', bookingId);
+          console.log('Navigating to booking-confirmation with state:', {
+            bookingData: {
+              ...bookingData,
+              selectedService: service,
+              selectedMethod: method
+            },
+            bookingId: bookingId
+          });
+          try {
+            navigate('/booking-confirmation', {
+              state: {
+                bookingData: {
+                  ...bookingData,
+                  selectedService: service,
+                  selectedMethod: method
+                },
+                bookingId: bookingId
+              }
+            });
+            console.log('Navigation successful');
+          } catch (navError) {
+            console.error('Navigation error:', navError);
+            // Fallback: redirect to confirmation page
+            window.location.href = '/booking-confirmation';
+          }
+        } else {
+          throw new Error('No booking ID returned from server');
+        }
+      } catch (err) {
+        console.error('Booking error details:', err);
+
+
+        // Hiển thị thông báo lỗi chi tiết hơn
+        const errorMessage = err.message || 'Đặt lịch thất bại! Vui lòng thử lại hoặc liên hệ hỗ trợ.';
+        alert(`Lỗi đặt lịch: ${errorMessage}`);
       }
-    } catch (err) {
-      console.error('Booking error details:', err);
-
-
-      // Hiển thị thông báo lỗi chi tiết hơn
-      const errorMessage = err.message || 'Đặt lịch thất bại! Vui lòng thử lại hoặc liên hệ hỗ trợ.';
-      alert(`Lỗi đặt lịch: ${errorMessage}`);
-    }
+    };
   };
+
 
   const selectedService = bookingData.serviceId ? getServiceById(services, bookingData.serviceId) : null;
   const selectedMethod = bookingData.collectionMethod ?
