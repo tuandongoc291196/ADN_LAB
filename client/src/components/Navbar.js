@@ -144,16 +144,36 @@ const MainNavbar = ({ setUser }) => {
   }, [storedUserData, setUser]);
   console.log('userData', userData);
 
-  const handleLogout = () => {
-    logout();
-    localStorage.removeItem('user_id');
-    localStorage.removeItem('userData');
-    localStorage.removeItem('user');
-    localStorage.removeItem('isAuthenticated');
-    sessionStorage.setItem('justLoggedOut', 'true');
-    // Reset user state
-    setUser(null);
-    navigate('/');
+  const handleLogout = async () => {
+    try {
+      // Đăng xuất Firebase trước
+      await logout();
+      
+      // Clear localStorage
+      localStorage.removeItem('user_id');
+      localStorage.removeItem('userData');
+      localStorage.removeItem('user');
+      localStorage.removeItem('isAuthenticated');
+      sessionStorage.setItem('justLoggedOut', 'true');
+      
+      // Reset user state
+      setUser(null);
+      setUserData(null);
+      
+      // Chuyển về trang chủ
+      navigate('/', { replace: true });
+      
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Nếu có lỗi, vẫn clear data và chuyển trang
+      localStorage.removeItem('user_id');
+      localStorage.removeItem('userData');
+      localStorage.removeItem('user');
+      localStorage.removeItem('isAuthenticated');
+      setUser(null);
+      setUserData(null);
+      navigate('/', { replace: true });
+    }
   };
 
   const handleNavClick = () => {
@@ -171,6 +191,11 @@ const MainNavbar = ({ setUser }) => {
   // Check if user has admin/staff/manager access
   const hasAdminAccess = () => {
     return userData?.isAdmin === true;
+  };
+
+  // Check if user is customer (for showing customer-specific menus)
+  const isCustomer = () => {
+    return userData?.role_string === 'customer' || !userData?.role_string;
   };
 
   // Handler for booking button
@@ -247,204 +272,213 @@ const MainNavbar = ({ setUser }) => {
           <Navbar.Toggle aria-controls="navbar-nav" />
 
           <Navbar.Collapse id="navbar-nav">
-            {/* Main Navigation */}
-            <Nav className="me-auto">
-              <Nav.Link
-                as={Link}
-                to="/"
-                className={`fw-medium ${isActive('/') ? 'active text-primary' : ''}`}
-                onClick={handleNavClick}
-              >
-                <i className="bi bi-house me-2"></i>
-                Trang chủ
-              </Nav.Link>
-
-              {/* Services Dropdown */}
-              <NavDropdown
-                title={
-                  <span className={`fw-medium ${isServiceActive() ? 'text-primary' : ''}`}>
-                    <i className="bi bi-grid-3x3-gap me-2"></i>
-                    Dịch vụ ADN
-                  </span>
-                }
-                id="services-dropdown"
-                className={isServiceActive() ? 'active' : ''}
-              >
-                <NavDropdown.Item
+            {/* Main Navigation - Only show for customers */}
+            {isCustomer() && (
+              <Nav className="me-auto">
+                <Nav.Link
                   as={Link}
-                  to="/services"
+                  to="/"
+                  className={`fw-medium ${isActive('/') ? 'active text-primary' : ''}`}
                   onClick={handleNavClick}
-                  className="py-2"
                 >
-                  <i className="bi bi-list-ul me-2 text-primary"></i>
-                  <strong>Tất cả dịch vụ</strong>
-                  <div className="small text-muted">Xem toàn bộ danh sách</div>
-                </NavDropdown.Item>
+                  <i className="bi bi-house me-2"></i>
+                  Trang chủ
+                </Nav.Link>
 
-                <NavDropdown.Divider />
+                {/* Services Dropdown */}
+                <NavDropdown
+                  title={
+                    <span className={`fw-medium ${isServiceActive() ? 'text-primary' : ''}`}>
+                      <i className="bi bi-grid-3x3-gap me-2"></i>
+                      Dịch vụ ADN
+                    </span>
+                  }
+                  id="services-dropdown"
+                  className={isServiceActive() ? 'active' : ''}
+                >
+                  <NavDropdown.Item
+                    as={Link}
+                    to="/services"
+                    onClick={handleNavClick}
+                    className="py-2"
+                  >
+                    <i className="bi bi-list-ul me-2 text-primary"></i>
+                    <strong>Tất cả dịch vụ</strong>
+                    <div className="small text-muted">Xem toàn bộ danh sách</div>
+                  </NavDropdown.Item>
 
-                {/* ADN Hành chính - Dynamic từ API */}
-                {getAdministrativeCategories().length > 0 && (
-                  <>
-                    <NavDropdown.Header className="text-warning">
-                      <i className="bi bi-award me-2"></i>
-                      ADN Hành chính
-                    </NavDropdown.Header>
-                    {getAdministrativeCategories().map(category => (
+                  <NavDropdown.Divider />
+
+                  {/* ADN Hành chính - Dynamic từ API */}
+                  {getAdministrativeCategories().length > 0 && (
+                    <>
+                      <NavDropdown.Header className="text-warning">
+                        <i className="bi bi-award me-2"></i>
+                        ADN Hành chính
+                      </NavDropdown.Header>
+                      {getAdministrativeCategories().map(category => (
+                        <NavDropdown.Item
+                          key={category.id}
+                          as={Link}
+                          to="/services?type=administrative"
+                          onClick={handleNavClick}
+                          className="py-2"
+                        >
+                          <i className="bi bi-file-earmark-text me-2 text-warning"></i>
+                          <strong>{category.name}</strong>
+                          <Badge bg="warning" text="dark" className="ms-2 small">Có giá trị pháp lý</Badge>
+                          <div className="small text-muted">{category.description || 'Dịch vụ hành chính'}</div>
+                        </NavDropdown.Item>
+                      ))}
+                    </>
+                  )}
+
+                  {/* ADN Dân sự - Dynamic từ API */}
+                  {getCivilCategories().length > 0 && (
+                    <>
+                      <NavDropdown.Header className="text-success">
+                        <i className="bi bi-house me-2"></i>
+                        ADN Dân sự
+                      </NavDropdown.Header>
+                      {getCivilCategories().map(category => (
+                        <NavDropdown.Item
+                          key={category.id}
+                          as={Link}
+                          to="/services?type=civil"
+                          onClick={handleNavClick}
+                          className="py-2"
+                        >
+                          <i className="bi bi-people me-2 text-success"></i>
+                          <strong>{category.name}</strong>
+                          <Badge bg="success" className="ms-2 small">Tham khảo cá nhân</Badge>
+                          <div className="small text-muted">{category.description || 'Dịch vụ dân sự'}</div>
+                        </NavDropdown.Item>
+                      ))}
+                    </>
+                  )}
+
+                  {/* Fallback nếu không có categories */}
+                  {categories.length === 0 && !loadingCategories && (
+                    <>
                       <NavDropdown.Item
-                        key={category.id}
                         as={Link}
                         to="/services?type=administrative"
                         onClick={handleNavClick}
                         className="py-2"
                       >
-                        <i className="bi bi-file-earmark-text me-2 text-warning"></i>
-                        <strong>{category.name}</strong>
+                        <i className="bi bi-award me-2 text-warning"></i>
+                        <strong>ADN Hành chính</strong>
                         <Badge bg="warning" text="dark" className="ms-2 small">Có giá trị pháp lý</Badge>
-                        <div className="small text-muted">{category.description || 'Dịch vụ hành chính'}</div>
+                        <div className="small text-muted">Khai sinh, pháp lý, thừa kế...</div>
                       </NavDropdown.Item>
-                    ))}
-                  </>
-                )}
 
-                {/* ADN Dân sự - Dynamic từ API */}
-                {getCivilCategories().length > 0 && (
-                  <>
-                    <NavDropdown.Header className="text-success">
-                      <i className="bi bi-house me-2"></i>
-                      ADN Dân sự
-                    </NavDropdown.Header>
-                    {getCivilCategories().map(category => (
                       <NavDropdown.Item
-                        key={category.id}
                         as={Link}
                         to="/services?type=civil"
                         onClick={handleNavClick}
                         className="py-2"
                       >
-                        <i className="bi bi-people me-2 text-success"></i>
-                        <strong>{category.name}</strong>
+                        <i className="bi bi-house me-2 text-success"></i>
+                        <strong>ADN Dân sự</strong>
                         <Badge bg="success" className="ms-2 small">Tham khảo cá nhân</Badge>
-                        <div className="small text-muted">{category.description || 'Dịch vụ dân sự'}</div>
+                        <div className="small text-muted">Huyết thống, trước sinh...</div>
                       </NavDropdown.Item>
-                    ))}
-                  </>
-                )}
+                    </>
+                  )}
 
-                {/* Fallback nếu không có categories */}
-                {categories.length === 0 && !loadingCategories && (
-                  <>
-                    <NavDropdown.Item
-                      as={Link}
-                      to="/services?type=administrative"
-                      onClick={handleNavClick}
-                      className="py-2"
-                    >
-                      <i className="bi bi-award me-2 text-warning"></i>
-                      <strong>ADN Hành chính</strong>
-                      <Badge bg="warning" text="dark" className="ms-2 small">Có giá trị pháp lý</Badge>
-                      <div className="small text-muted">Khai sinh, pháp lý, thừa kế...</div>
+                  {/* Loading state */}
+                  {loadingCategories && (
+                    <NavDropdown.Item disabled className="py-2">
+                      <i className="bi bi-hourglass-split me-2 text-muted"></i>
+                      <span className="text-muted">Đang tải...</span>
                     </NavDropdown.Item>
+                  )}
+                </NavDropdown>
 
-                    <NavDropdown.Item
-                      as={Link}
-                      to="/services?type=civil"
-                      onClick={handleNavClick}
-                      className="py-2"
-                    >
-                      <i className="bi bi-house me-2 text-success"></i>
-                      <strong>ADN Dân sự</strong>
-                      <Badge bg="success" className="ms-2 small">Tham khảo cá nhân</Badge>
-                      <div className="small text-muted">Huyết thống, trước sinh...</div>
-                    </NavDropdown.Item>
-                  </>
-                )}
-
-                {/* Loading state */}
-                {loadingCategories && (
-                  <NavDropdown.Item disabled className="py-2">
-                    <i className="bi bi-hourglass-split me-2 text-muted"></i>
-                    <span className="text-muted">Đang tải...</span>
+                {/* Information Dropdown */}
+                <NavDropdown
+                  title={
+                    <span className="fw-medium">
+                      <i className="bi bi-book me-2"></i>
+                      Thông tin
+                    </span>
+                  }
+                  id="info-dropdown"
+                >
+                  <NavDropdown.Item
+                    as={Link}
+                    to="/about"
+                    onClick={handleNavClick}
+                    className="py-2"
+                  >
+                    <i className="bi bi-building me-2 text-primary"></i>
+                    Về chúng tôi
                   </NavDropdown.Item>
-                )}
-              </NavDropdown>
 
-              {/* Information Dropdown */}
-              <NavDropdown
-                title={
-                  <span className="fw-medium">
-                    <i className="bi bi-book me-2"></i>
-                    Thông tin
-                  </span>
-                }
-                id="info-dropdown"
-              >
-                <NavDropdown.Item
+                  <NavDropdown.Item
+                    as={Link}
+                    to="/guides"
+                    onClick={handleNavClick}
+                    className="py-2"
+                  >
+                    <i className="bi bi-question-circle me-2 text-warning"></i>
+                    Hướng dẫn xét nghiệm
+                  </NavDropdown.Item>
+                </NavDropdown>
+
+                <Nav.Link
                   as={Link}
-                  to="/about"
+                  to="/blog"
+                  className={`fw-medium ${location.pathname.startsWith('/blog') ? 'active text-primary' : ''}`}
                   onClick={handleNavClick}
-                  className="py-2"
                 >
-                  <i className="bi bi-building me-2 text-primary"></i>
-                  Về chúng tôi
-                </NavDropdown.Item>
+                  <i className="bi bi-newspaper me-2"></i>
+                  Blog
+                </Nav.Link>
 
-                <NavDropdown.Item
+                <Nav.Link
                   as={Link}
-                  to="/guides"
+                  to="/tracking"
+                  className={`fw-medium ${isActive('/tracking') ? 'active text-primary' : ''}`}
                   onClick={handleNavClick}
-                  className="py-2"
                 >
-                  <i className="bi bi-question-circle me-2 text-warning"></i>
-                  Hướng dẫn xét nghiệm
-                </NavDropdown.Item>
-              </NavDropdown>
+                  <i className="bi bi-search me-2"></i>
+                  Tra cứu
+                </Nav.Link>
+              </Nav>
+            )}
 
-              <Nav.Link
-                as={Link}
-                to="/blog"
-                className={`fw-medium ${location.pathname.startsWith('/blog') ? 'active text-primary' : ''}`}
-                onClick={handleNavClick}
-              >
-                <i className="bi bi-newspaper me-2"></i>
-                Blog
-              </Nav.Link>
-
-              <Nav.Link
-                as={Link}
-                to="/tracking"
-                className={`fw-medium ${isActive('/tracking') ? 'active text-primary' : ''}`}
-                onClick={handleNavClick}
-              >
-                <i className="bi bi-search me-2"></i>
-                Tra cứu
-              </Nav.Link>
-            </Nav>
+            {/* Spacer for admin/staff/manager to push user menu to right */}
+            {!isCustomer() && <div className="me-auto"></div>}
 
             {/* Right Side Actions */}
             <Nav className="align-items-lg-center">
-              {/* Hotline Info - Desktop only */}
-              <Nav.Item className="d-none d-lg-block me-3">
-                <div className="text-center">
-                  <div className="small text-muted">Hotline 24/7</div>
-                  <strong className="text-primary">1900 1234</strong>
-                </div>
-              </Nav.Item>
+              {/* Hotline Info - Desktop only - Only show for customers */}
+              {isCustomer() && (
+                <Nav.Item className="d-none d-lg-block me-3">
+                  <div className="text-center">
+                    <div className="small text-muted">Hotline 24/7</div>
+                    <strong className="text-primary">1900 1234</strong>
+                  </div>
+                </Nav.Item>
+              )}
 
-              {/* Booking Button */}
-              <Nav.Item className="me-lg-3">
-                <Button
-                  variant="warning"
-                  as={Link}
-                  to="/appointment"
-                  onClick={handleBookingClick}
-                  className="fw-medium"
-                >
-                  <i className="bi bi-calendar-plus me-1"></i>
-                  <span className="d-lg-none">Đặt lịch xét nghiệm</span>
-                  <span className="d-none d-lg-inline">Đặt lịch</span>
-                </Button>
-              </Nav.Item>
+              {/* Booking Button - Only show for customers */}
+              {isCustomer() && (
+                <Nav.Item className="me-lg-3">
+                  <Button
+                    variant="warning"
+                    as={Link}
+                    to="/appointment"
+                    onClick={handleBookingClick}
+                    className="fw-medium"
+                  >
+                    <i className="bi bi-calendar-plus me-1"></i>
+                    <span className="d-lg-none">Đặt lịch xét nghiệm</span>
+                    <span className="d-none d-lg-inline">Đặt lịch</span>
+                  </Button>
+                </Nav.Item>
+              )}
 
               {/* User Authentication */}
               <Nav>
@@ -549,17 +583,19 @@ const MainNavbar = ({ setUser }) => {
                 )}
               </Nav>
 
-              {/* Mobile Hotline */}
-              <Nav.Item className="d-lg-none mt-3 pt-3 border-top">
-                <div className="text-center">
-                  <div className="mb-2">
-                    <i className="bi bi-telephone text-primary me-2"></i>
-                    <span className="text-muted">Hotline:</span>
-                    <strong className="text-primary ms-1">1900 1234</strong>
+              {/* Mobile Hotline - Only show for customers */}
+              {isCustomer() && (
+                <Nav.Item className="d-lg-none mt-3 pt-3 border-top">
+                  <div className="text-center">
+                    <div className="mb-2">
+                      <i className="bi bi-telephone text-primary me-2"></i>
+                      <span className="text-muted">Hotline:</span>
+                      <strong className="text-primary ms-1">1900 1234</strong>
+                    </div>
+                    <div className="small text-muted">Hỗ trợ 24/7 - Tư vấn miễn phí</div>
                   </div>
-                  <div className="small text-muted">Hỗ trợ 24/7 - Tư vấn miễn phí</div>
-                </div>
-              </Nav.Item>
+                </Nav.Item>
+              )}
             </Nav>
           </Navbar.Collapse>
         </Container>
