@@ -12,7 +12,7 @@ const {updateUserRoleToStaff, updateUserRoleToAdmin, updateUser, updateUserAccou
 
 const {addService} = require('./controllers/services/addService');
 const {getOneService, getAllServices, getServiceByCategoryId} = require('./controllers/services/getServices');
-const {updateService} = require('./controllers/services/updateService');
+const {updateService, updateServiceStatus} = require('./controllers/services/updateService');
 const {deleteService} = require('./controllers/services/deleteService');
 
 const {getMethodServices, getServicesByMethodId} = require('./controllers/methodService/getMethodServices');
@@ -28,9 +28,16 @@ const {addBooking} = require('./controllers/bookings/addBooking');
 const {getAllBookings, getOneBooking, getBookingByTimeSlotId, getBookingByUserId, getBookingbyStaffId} = require('./controllers/bookings/getBookings');
 const {deleteBookingById} = require('./controllers/bookings/deleteBooking');
 
+const {addBookingHistoryById} = require('./controllers/bookingHistory/addBookingHistory');
 const {getBookingHistories} = require('./controllers/bookingHistory/getBookingHistory');
 
 const {getUnavailableTimeSlots, getOneTimeSlot} = require('./controllers/timeSlots/getTimeSlot');
+
+const {getSampleBybookingId} = require('./controllers/sample/getSamples');
+const {updateSample} = require('./controllers/sample/updateSample');
+
+const {getTestResultByBookingId, getTestResultByUserId, getTestResultByStaffId} = require('./controllers/testResult/getTestResult');
+const {updateTestResult} = require('./controllers/testResult/updateTestResult');
 
 const {addPayment} = require('./controllers/payments/addPayment');
 const {getAllPayments, getBookingPayments} = require('./controllers/payments/getPayments');
@@ -59,6 +66,7 @@ app.get('/services', getAllServices);
 app.post('/services', getOneService);
 app.post('/services/category', getServiceByCategoryId);
 app.put('/services', updateService);
+app.put('/services/status', updateServiceStatus);
 app.delete('/services', deleteService);
 
 app.post('/method/services', getMethodServices);
@@ -90,10 +98,19 @@ app.post('/bookings/user', getBookingByUserId);
 app.post('/bookings/staff', getBookingbyStaffId);
 app.delete('/bookings', deleteBookingById);
 
+app.post('/booking/history/add', addBookingHistoryById);
 app.post('/booking/history', getBookingHistories);
 
 app.post('/timeslots/unavailable', getUnavailableTimeSlots);
 app.post('/timeslots/one', getOneTimeSlot);
+
+app.post('/samples/booking', getSampleBybookingId);
+app.put('/samples', updateSample);
+
+app.post('/testresult/booking', getTestResultByBookingId);
+app.post('/testresult/user', getTestResultByUserId);
+app.post('/testresult/staff', getTestResultByStaffId);
+app.put('/testresult', updateTestResult);
 
 app.post('/payments/add', addPayment);
 app.get('/payments', getAllPayments);

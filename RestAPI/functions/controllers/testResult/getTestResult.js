@@ -1,267 +1,284 @@
 const { dataConnect } = require("../../config/firebase.js");
+const {checkBookingExists} = require("../bookings/bookingUtils.js");
+const {checkUserExists} = require("../users/userUtils.js");
+const {checkStaffExists} = require("../users/userUtils.js");
 
-const getTestResultById = async (req, res) => {
+const getTestResultByBookingId = async (req, res) => {
     try {
-      const { resultId } = req.params;
+        const { bookingId } = req.body;
+        if (!bookingId) {
+            return res.status(400).json({
+                statusCode: 400,
+                status: "error",
+                message: "bookingId is required"
+            });
+        }
 
-      // Validate input
-      if (!resultId) {
-        return res.status(400).json({
-          statusCode: 400,
-          status: "error",
-          message: "Test Result ID is required",
-        });
-      }
+        if (!(await checkBookingExists(bookingId))) {
+            return res.status(404).json({
+                statusCode: 404,
+                status: "error",
+                message: "Booking not found"
+            });
+        }
 
-      const GET_TEST_RESULT_BY_ID_QUERY = `
-        query GetTestResultById($resultId: String!) @auth(level: USER) {
-          testResult(key: { id: $resultId }) {
-            id
-            booking {
-              id
-              user {
-                fullname
-                email
+        const GET_TEST_RESULT_QUERY = `
+            query GetBookingTestResults($bookingId: String!) @auth(level: USER) {
+              testResults(where: {bookingId: {eq: $bookingId}}) {
+                id
+                sample {
+                  id
+                  participant {
+                    name
+                  }
+                }
+                booking {
+                  service {
+                    title
+                  }
+                }
+                staff {
+                  user {
+                    fullname
+                  }
+                  position {
+                    name
+                  }
+                }
+                manager {
+                  user {
+                    fullname
+                  }
+                  position {
+                    name
+                  }
+                }
+                testMethod
+                positive
+                accuracy
+                testType
+                testDate
+                reportDate
+                status
+                createdAt
+                updatedAt
               }
             }
-            sample {
-              id
-              collectionDate
-            }
-            service {
-              title
-              description
-            }
-            staff {
-              fullname
-            }
-            verifier {
-              fullname
-            }
-            testDate
-            reportDate
-            resultData
-            status
-            reportUrl
-            notes
-          }
+        `;
+
+        const variables = { 
+          bookingId: bookingId 
+        };
+
+        const response = await dataConnect.executeGraphql(GET_TEST_RESULT_QUERY, {
+            variables: variables
+        });
+
+        const responseData = response.data.testResults;
+        if (!responseData || responseData.length === 0) {
+            return res.status(404).json({
+                statusCode: 404,
+                status: "error",
+                message: "No test results found for this booking"
+            });
         }
-      `;
-
-      const variables = { resultId };
-
-      console.log("Executing GraphQL query:", GET_TEST_RESULT_BY_ID_QUERY, "with variables:", variables);
-
-      const response = await dataConnect.executeGraphql(GET_TEST_RESULT_BY_ID_QUERY, { variables });
-
-      const testResult = response.data?.testResult;
-
-      if (!testResult) {
-        return res.status(404).json({
-          statusCode: 404,
-          status: "error",
-          message: "Test result not found",
+        return res.status(200).json({
+            statusCode: 200,
+            status: "success",
+            data: responseData
         });
-      }
-
-      res.status(200).json({
-        statusCode: 200,
-        status: "success",
-        message: "Test result retrieved successfully",
-        data: testResult,
-      });
     } catch (error) {
-      console.error("Error fetching test result:", error);
-      res.status(500).json({
-        statusCode: 500,
-        status: "error",
-        message: "Failed to retrieve test result",
-        error: error.message,
-      });
-    }
-  }
-
-  //GET /api/test-results?status(status=completed)
-  const getTestResultsByStatus = async (req, res) => {
-    try {
-      const { status } = req.query;
-
-      // Validate input
-      if (!status) {
-        return res.status(400).json({
-          statusCode: 400,
-          status: "error",
-          message: "Status is required",
+        console.error("Error fetching test results by bookingId:", error);
+        return res.status(500).json({
+            statusCode: 500,
+            status: "error",
+            message: "Internal server error"
         });
-      }
+    }
+};
 
-      const GET_TEST_RESULTS_BY_STATUS_QUERY = `
-        query GetTestResultsByStatus($status: String!) @auth(level: USER) {
-          testResults(where: { status: { eq: $status } }) {
-            id
-            booking {
-              user {
-                fullname
+const getTestResultByUserId = async (req, res) => {
+    try {
+        const { userId } = req.body;
+        if (!userId) {
+            return res.status(400).json({
+                statusCode: 400,
+                status: "error",
+                message: "userId is required"
+            });
+        }
+
+        if (!(await checkUserExists(userId))) {
+            return res.status(404).json({
+                statusCode: 404,
+                status: "error",
+                message: "User not found"
+            });
+        }
+
+        const GET_TEST_RESULT_BY_USER_QUERY = `
+          query GetUserTestResults($userId: String!) @auth(level: USER) {
+            testResults(where: {booking: {userId: {eq: $userId}}}, orderBy: {testDate: DESC}) {
+              id
+              booking {
+                service {
+                  title
+                }
               }
+              staff {
+                user {
+                  fullname
+                }
+                position {
+                  name
+                }
+              }
+              manager {
+                user {
+                  fullname
+                }
+                position {
+                  name
+                }
+              }
+              testMethod
+              positive
+              accuracy
+              testType
+              testDate
+              reportDate
+              status
+              createdAt
             }
-            service {
-              title
-            }
-            staff {
-              fullname
-            }
-            testDate
-            status
           }
-        }
       `;
 
-      const variables = { status };
+        const variables = { 
+          userId: userId
+        };
 
-      console.log("Executing GraphQL query:", GET_TEST_RESULTS_BY_STATUS_QUERY, "with variables:", variables);
-
-      const response = await dataConnect.executeGraphql(GET_TEST_RESULTS_BY_STATUS_QUERY, { variables });
-
-      const testResults = response.data?.testResults || [];
-
-      res.status(200).json({
-        statusCode: 200,
-        status: "success",
-        message: "Test results retrieved successfully",
-        data: testResults,
-      });
-    } catch (error) {
-      console.error("Error fetching test results by status:", error);
-      res.status(500).json({
-        statusCode: 500,
-        status: "error",
-        message: "Failed to retrieve test results",
-        error: error.message,
-      });
-    }
-  }
-
-  //GET /api/test-results/user/userId(user-001)
-  const getUserTestResults = async (req, res) => {
-    try {
-      const { userId } = req.params;
-
-      // Validate input
-      if (!userId) {
-        return res.status(400).json({
-          statusCode: 400,
-          status: "error",
-          message: "User ID is required",
+        const response = await dataConnect.executeGraphql(GET_TEST_RESULT_BY_USER_QUERY, {
+            variables: variables
         });
-      }
-
-      const GET_USER_TEST_RESULTS_QUERY = `
-        query GetUserTestResults($userId: String!) @auth(level: USER) {
-          testResults(where: { booking: { userId: { eq: $userId } } }, orderBy: { testDate: DESC }) {
-            id
-            service {
-              title
-            }
-            testDate
-            reportDate
-            status
-            reportUrl
-          }
+        const responseData = response.data.testResults;
+        if (!responseData || responseData.length === 0) {
+            return res.status(404).json({
+                statusCode: 404,
+                status: "error",
+                message: "No test results found for this user"
+            });
         }
-      `;
-
-      const variables = { userId };
-
-      console.log("Executing GraphQL query:", GET_USER_TEST_RESULTS_QUERY, "with variables:", variables);
-
-      const response = await dataConnect.executeGraphql(GET_USER_TEST_RESULTS_QUERY, { variables });
-
-      const testResults = response.data?.testResults || [];
-
-      res.status(200).json({
-        statusCode: 200,
-        status: "success",
-        message: "User test results retrieved successfully",
-        data: testResults,
-      });
-    } catch (error) {
-      console.error("Error fetching user test results:", error);
-      res.status(500).json({
-        statusCode: 500,
-        status: "error",
-        message: "Failed to retrieve user test results",
-        error: error.message,
-      });
-    }
-  }
-
-  //GET /api/test-results/booking/bookingId(booking-001)
-  const getBookingTestResults = async (req, res) => {
-    try {
-      const { bookingId } = req.params;
-
-      // Validate input
-      if (!bookingId) {
-        return res.status(400).json({
-          statusCode: 400,
-          status: "error",
-          message: "Booking ID is required",
+        return res.status(200).json({
+            statusCode: 200,
+            status: "success",
+            data: responseData
         });
-      }
+    } catch (error) {
+        console.error("Error fetching test results by userId:", error);
+        return res.status(500).json({
+            statusCode: 500,
+            status: "error",
+            message: "Internal server error"
+        });
+    }
+};
 
-      const GET_BOOKING_TEST_RESULTS_QUERY = `
-        query GetBookingTestResults($bookingId: String!) @auth(level: USER) {
-          testResults(where: { bookingId: { eq: $bookingId } }) {
-            id
-            sample {
+const getTestResultByStaffId = async (req, res) => {
+    try {
+        const { staffId } = req.body;
+        if (!staffId) {
+            return res.status(400).json({
+                statusCode: 400,
+                status: "error",
+                message: "staffId is required"
+            });
+        }
+
+        if (!(await checkStaffExists(staffId))) {
+            return res.status(404).json({
+                statusCode: 404,
+                status: "error",
+                message: "Staff member not found"
+            });
+        }
+        
+        const GET_TEST_RESULT_BY_STAFF_QUERY = `
+          query GetStaffTestResults($staffId: String!) @auth(level: USER) {
+            testResults(where: {staffId: {eq: $staffId}}, orderBy: {createdAt: DESC}) {
               id
+              booking {
+                user {
+                  fullname
+                }
+                service {
+                  title
+                }
+              }
+              sample {
+                participant {
+                  name
+                }
+              }
+              staff {
+                user {
+                  fullname
+                }
+                position {
+                  name
+                }
+              }
+              manager {
+                user {
+                  fullname
+                }
+                position {
+                  name
+                }
+              }
+              testMethod
+              positive
+              accuracy
+              testType
+              testDate
+              reportDate
+              status
+              createdAt
             }
-            service {
-              title
-            }
-            staff {
-              fullname
-            }
-            verifier {
-              fullname
-            }
-            testDate
-            reportDate
-            status
-            reportUrl
-            notes
           }
+        `;
+
+        const variables = { 
+          staffId: staffId
+        };
+
+        const response = await dataConnect.executeGraphql(GET_TEST_RESULT_BY_STAFF_QUERY, {
+            variables: variables
+        });
+        const responseData = response.data.testResults;
+        if (!responseData || responseData.length === 0) {
+            return res.status(404).json({
+                statusCode: 404,
+                status: "error",
+                message: "No test results found for this staff member"
+            });
         }
-      `;
-
-      const variables = { bookingId };
-
-      console.log("Executing GraphQL query:", GET_BOOKING_TEST_RESULTS_QUERY, "with variables:", variables);
-
-      const response = await dataConnect.executeGraphql(GET_BOOKING_TEST_RESULTS_QUERY, { variables });
-
-      const testResults = response.data?.testResults || [];
-
-      res.status(200).json({
-        statusCode: 200,
-        status: "success",
-        message: "Test results retrieved successfully",
-        data: testResults,
-      });
+        return res.status(200).json({
+            statusCode: 200,
+            status: "success",
+            data: responseData
+        });
     } catch (error) {
-      console.error("Error fetching test results:", error);
-      res.status(500).json({
-        statusCode: 500,
-        status: "error",
-        message: "Failed to retrieve test results",
-        error: error.message,
-      });
+        console.error("Error fetching test results by staffId:", error);
+        return res.status(500).json({
+            statusCode: 500,
+            status: "error",
+            message: "Internal server error"
+        });
     }
-  }
+};
 
 module.exports = {
-  getTestResultById,
-  getTestResultsByStatus,
-  getUserTestResults,
-  getBookingTestResults
+    getTestResultByBookingId, 
+    getTestResultByUserId,
+    getTestResultByStaffId
 };

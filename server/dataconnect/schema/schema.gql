@@ -56,6 +56,7 @@ type Service @table {
   categoryId: String!
   category: ServiceCategory! @ref(fields: "categoryId")
   icon: String
+  isActive: Boolean! @default(value: true)
   featured: Boolean! @default(value: false)
   createdAt: Timestamp! @default(expr: "request.time")
   updatedAt: Timestamp
@@ -177,8 +178,8 @@ type TestResult @table {
   id: String! @col(name: "result_id")
   bookingId: String!
   booking: Booking! @ref(fields: "bookingId")
-  sampleId: String!
-  sample: Sample! @ref(fields: "sampleId")
+  sampleId: String
+  sample: Sample @ref(fields: "sampleId")
   staffId: String!
   staff: Staff! @ref(fields: "staffId")
   managerId: String!

@@ -122,6 +122,73 @@ const updateService = async (req, res) => {
     }
 }
 
+const updateServiceStatus = async (req, res) => {
+    try {
+        const { serviceId, status } = req.body;
+
+        if (!serviceId) {
+            return res.status(400).json({
+                statusCode: 400,
+                status: "error",
+                message: "serviceId is required",
+            });
+        }
+
+        if (!(await checkServiceExists(serviceId))) {
+            return res.status(404).json({
+                statusCode: 404,
+                status: "error",
+                message: "Service does not exist",
+            });
+        }
+   
+        if (typeof status !== 'boolean') {
+            return res.status(400).json({
+                statusCode: 400,
+                status: "error",
+                message: "Status must be a boolean value",
+            });
+        }
+
+        const variables = {
+            serviceId: serviceId,
+            status: status,
+        };
+
+        const UPDATE_SERVICE_STATUS_MUTATION = `
+            mutation UpdateServiceStatus($serviceId: String!, $status: Boolean!) @auth(level: USER) {
+                service_update(key: {id: $serviceId}, data: {isActive: $status, updatedAt_expr: "request.time"})
+            }
+        `;
+
+        const response = await dataConnect.executeGraphql(UPDATE_SERVICE_STATUS_MUTATION, { 
+            variables: variables 
+        });
+        const responseData = response.data.service_update;
+        if (!responseData) {
+            return res.status(404).json({
+                statusCode: 404,
+                status: "error",
+                message: "Failed to update service status",
+            });
+        }
+        res.status(200).json({
+            statusCode: 200,
+            status: "success",
+            message: "Service status updated successfully",
+            data: responseData,
+        });
+    } catch (error) {
+        console.error("Error updating service status:", error);
+        res.status(500).json({
+            statusCode: 500,
+            status: "error",
+            message: "Failed to update service status",
+            error: error.message,
+        });
+    }
+}
 module.exports = {
     updateService,
+    updateServiceStatus
 };
