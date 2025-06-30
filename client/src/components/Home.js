@@ -210,6 +210,11 @@ const Home = () => {
   // Get featured services from each category
   const featuredAdminServices = services
     .filter(service => {
+      // Chỉ hiển thị dịch vụ đang active
+      if (service.isActive === false) {
+        return false;
+      }
+      
       const serviceType = getServiceTypeFromCategory(service.category);
       const isFeatured = service.featured === true;
       // Chỉ log khi cần debug
@@ -222,6 +227,11 @@ const Home = () => {
   
   const featuredCivilServices = services
     .filter(service => {
+      // Chỉ hiển thị dịch vụ đang active
+      if (service.isActive === false) {
+        return false;
+      }
+      
       const serviceType = getServiceTypeFromCategory(service.category);
       const isFeatured = service.featured === true;
       // Chỉ log khi cần debug

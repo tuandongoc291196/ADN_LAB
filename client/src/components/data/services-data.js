@@ -51,13 +51,16 @@ export const getServiceById = (services, id) => {
 export const getServicesByType = (services, type) => {
   if (!services || !Array.isArray(services)) return [];
   
+  // Lọc dịch vụ active trước
+  const activeServices = services.filter(service => service.isActive !== false);
+  
   if (type === 'administrative') {
-    return services.filter(service => service.category?.hasLegalValue === true);
+    return activeServices.filter(service => service.category?.hasLegalValue === true);
   } else if (type === 'civil') {
-    return services.filter(service => service.category?.hasLegalValue === false);
+    return activeServices.filter(service => service.category?.hasLegalValue === false);
   }
   
-  return [];
+  return activeServices; // Trả về tất cả dịch vụ active nếu không có type
 };
 
 export const getAvailableMethodsForService = (serviceId, methods) => {

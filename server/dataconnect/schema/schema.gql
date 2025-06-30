@@ -57,6 +57,7 @@ type Service @table {
   category: ServiceCategory! @ref(fields: "categoryId")
   icon: String
   featured: Boolean! @default(value: false)
+  isActive: Boolean! @default(value: true)
   createdAt: Timestamp! @default(expr: "request.time")
   updatedAt: Timestamp
 }

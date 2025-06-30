@@ -19,6 +19,8 @@ const {getMethodServices, getServicesByMethodId} = require('./controllers/method
 
 const {getAllMethods, getOneMethod} = require('./controllers/methods/getMethods');
 
+const {getAllCategories, getCategoryById} = require('./controllers/categories/getCategories');
+
 const {getAllRoles, getOneRole} = require('./controllers/roles/getRoles');
 const {updateRole} = require('./controllers/roles/updateRole');
 const {deleteRole} = require('./controllers/roles/deleteRole');
