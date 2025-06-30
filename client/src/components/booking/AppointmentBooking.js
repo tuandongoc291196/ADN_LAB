@@ -896,7 +896,9 @@ const AppointmentBooking = () => {
                 <Row>
                   {enrichedMethods.length > 0 ? (
                     enrichedMethods.map(method => {
-                      const isDisabled = isMethodDisabled(method.id, selectedService);
+                      // Kiểm tra method có thuộc serviceMethods không
+                      const isAvailable = serviceMethods.some(sm => sm.id === method.id);
+                      const isDisabled = !isAvailable || isMethodDisabled(method.id, selectedService);
                       const restrictionReason = getMethodRestrictionReason(method.id, selectedService);
 
                       return (
@@ -934,7 +936,7 @@ const AppointmentBooking = () => {
                               {isDisabled ? (
                                 <Alert variant="danger" className="small">
                                   <i className="bi bi-x-circle me-2"></i>
-                                  {restrictionReason}
+                                  {restrictionReason || 'Phương thức này không áp dụng cho dịch vụ đã chọn.'}
                                 </Alert>
                               ) : (
                                 <>
@@ -981,10 +983,9 @@ const AppointmentBooking = () => {
                       );
                     })
                   ) : (
-                    <Col className="text-center">
-                      <Alert variant="info">
-                        <i className="bi bi-info-circle me-2"></i>
-                        Đang tải thông tin phương thức lấy mẫu...
+                    <Col>
+                      <Alert variant="secondary" className="text-center">
+                        Không có phương thức lấy mẫu nào khả dụng cho dịch vụ này.
                       </Alert>
                     </Col>
                   )}
