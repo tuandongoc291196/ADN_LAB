@@ -149,6 +149,11 @@ const ServiceList = () => {
 
   // Filter services theo category và method
   const filteredServices = services.filter(service => {
+    // Chỉ hiển thị dịch vụ đang active
+    if (service.isActive === false) {
+      return false;
+    }
+
     const serviceType = getServiceTypeFromCategory(service.category);
     const matchesType = !filterType || serviceType === filterType;
 

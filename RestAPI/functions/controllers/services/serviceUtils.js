@@ -25,6 +25,7 @@ const checkServiceExists = async (serviceId) => {
                     }
                     icon
                     featured
+                    isActive
                     createdAt
                     updatedAt
                 }

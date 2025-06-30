@@ -194,13 +194,6 @@ const StaffDashboard = ({ user }) => {
 
         {/* Main Content */}
         <Col lg={9} md={8}>
-          {!user && (
-            <Alert variant="info" className="mb-4">
-              <i className="bi bi-info-circle me-2"></i>
-              Bạn đang xem dashboard demo. <a href="/login">Đăng nhập</a> để truy cập thông tin thực tế.
-            </Alert>
-          )}
-
           <Routes>
             <Route path="/" element={<StaffOverview user={currentUser} />} />
             <Route path="/kit-preparation" element={<KitPreparation user={currentUser} />} />

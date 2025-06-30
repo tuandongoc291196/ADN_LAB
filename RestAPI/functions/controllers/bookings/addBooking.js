@@ -5,10 +5,11 @@ const {getActiveStaffWithLowestSlotCount} = require("../users/userUtils.js");
 const {checkUserExists} = require("../users/userUtils.js");
 const {updateStaffSlotCount} = require("../users/updateUser.js");
 const {checkMethodExists} = require("../methods/methodUtils.js");
-const {checkBookingExists} = require("./bookingUtils.js");
+const {checkUserBookingExists} = require("./bookingUtils.js");
 const {addBookingHistory} = require("../bookingHistory/addBookingHistory.js");
 const {addParticipant} = require("../participants/addParticipant.js");
 const {addInformation} = require("../information/addInformation.js");
+const {randomAlphanumeric} = require("../utils/utilities.js");
 
 const addBooking = async (req, res) => {
   try {
@@ -180,9 +181,10 @@ const addBooking = async (req, res) => {
 
     const staffId = await getActiveStaffWithLowestSlotCount("1");
     const timeSlotId = `${slotDate}_${startTime}_${endTime}`;
+    const bookingId = `ADNLAB${await randomAlphanumeric(6, 6)}`;
 
     const bookingVariables = {
-      id : `${userId}_${timeSlotId}`,
+      id : bookingId,
       userId,
       staffId: staffId,
       timeSlotId: timeSlotId,
@@ -192,11 +194,11 @@ const addBooking = async (req, res) => {
       expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString()
     };
 
-    if (await checkBookingExists(bookingVariables.id)) {
+    if (await checkUserBookingExists(userId, timeSlotId)) {
       return res.status(409).json({
         statusCode: 409,
         status: "error",
-        message: "Booking with this ID already exists",
+        message: "User already has a booking for this time slot",
       });
     }
 
@@ -233,8 +235,8 @@ const addBooking = async (req, res) => {
     const responseData = response.data;
 
     const updateStaffResponse = await updateStaffSlotCount(staffId, "increase");
-    const createBooking = await addBookingHistory(bookingVariables.id, "created", "Booking saved successfully");
-    const pendingBooking = await addBookingHistory(bookingVariables.id, "pending", "Booking is pending confirmation");
+    const createBooking = await addBookingHistory(bookingVariables.id, "CREATED", "Booking saved successfully");
+    const pendingBooking = await addBookingHistory(bookingVariables.id, "PENDING_PAYMENT", "Booking is pending confirmation");
 
     const participantResults = [];
     for (const participant of participants) {

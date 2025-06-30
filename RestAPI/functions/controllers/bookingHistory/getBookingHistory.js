@@ -1,5 +1,4 @@
 const { dataConnect } = require("../../config/firebase.js");
-const {checkBookingExists} = require("../bookings/bookingUtils.js");
 
 const getBookingHistoryByBookingId = async (bookingId) => {
     try {
@@ -41,6 +40,7 @@ const getBookingHistoryByBookingId = async (bookingId) => {
 }
 
 const getBookingHistories = async (req, res) => {
+    const {checkBookingExists} = require("../bookings/bookingUtils.js");
     const {bookingId} = req.body;    
     try {
         if (!bookingId) {
