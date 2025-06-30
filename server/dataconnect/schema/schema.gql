@@ -58,6 +58,7 @@ type Service @table {
   icon: String
   isActive: Boolean! @default(value: true)
   featured: Boolean! @default(value: false)
+  isActive: Boolean! @default(value: true)
   createdAt: Timestamp! @default(expr: "request.time")
   updatedAt: Timestamp
 }

@@ -311,6 +311,7 @@ mutation CreateService(
   $categoryId: String!
   $icon: String
   $featured: Boolean!
+  $isActive: Boolean!
 ) @auth(level: USER) {
   service_insert(data: {
     id: $id
@@ -322,6 +323,7 @@ mutation CreateService(
     categoryId: $categoryId
     icon: $icon
     featured: $featured
+    isActive: $isActive
   })
 }
 
@@ -336,6 +338,7 @@ mutation UpdateService(
   $categoryId: String
   $icon: String
   $featured: Boolean
+  $isActive: Boolean
 ) @auth(level: USER) {
   service_update(
     key: { id: $serviceId }
@@ -348,6 +351,7 @@ mutation UpdateService(
       categoryId: $categoryId
       icon: $icon
       featured: $featured
+      isActive: $isActive
       updatedAt_expr: "request.time"
     }
   )

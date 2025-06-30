@@ -246,13 +246,6 @@ const ManagerDashboard = ({ user }) => {
             </div>
           </div>
 
-          {!user && (
-            <Alert variant="info" className="mb-4">
-              <i className="bi bi-info-circle me-2"></i>
-              Bạn đang xem dashboard demo. <a href="/login">Đăng nhập</a> để truy cập thông tin thực tế.
-            </Alert>
-          )}
-
           <Routes>
             <Route path="/" element={<ManagerOverview user={currentUser} />} />
             <Route path="/services" element={<ServiceManagement user={currentUser} />} />

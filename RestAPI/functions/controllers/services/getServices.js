@@ -46,6 +46,7 @@ const getOneService = async (req, res) => {
                     icon
                     isActive
                     featured
+                    isActive
                     createdAt
                     updatedAt
                 }
@@ -100,6 +101,7 @@ const getAllServices = async (req, res) => {
                     icon
                     isActive
                     featured
+                    isActive
                     createdAt
                     updatedAt
                 }
@@ -173,6 +175,7 @@ const getServiceByCategoryId = async (req, res) => {
                     icon
                     isActive
                     featured
+                    isActive
                     createdAt
                     updatedAt
                 }
