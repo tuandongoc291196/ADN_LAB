@@ -1402,7 +1402,6 @@ const AppointmentBooking = () => {
                             Chọn ngày và giờ hẹn
                           </h5>
                         </Card.Header>
-
                         <Card.Body className="p-4">
                           <Form.Group className="mb-4">
                             <Form.Label>
