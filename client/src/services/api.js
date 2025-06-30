@@ -273,3 +273,187 @@ export const createBooking = async (bookingData) => {
     throw new Error('Failed to create booking: ' + error.message);
   }
 };
+
+
+// Lấy user theo id
+export const getUserById = async (userId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId }),
+    });
+    if (!response.ok) throw new Error('Network response was not ok');
+    const data = await response.json();
+    // Tùy response BE, có thể là data.data.user hoặc data.data
+    return data.data?.user || data.data || null;
+  } catch (error) {
+    throw new Error('Failed to fetch user by id: ' + error.message);
+  }
+};
+
+// Cập nhật thông tin user theo id
+export const updateUserById = async (userId, updateData) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/users`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId, ...updateData }),
+    });
+    if (!response.ok) throw new Error('Network response was not ok');
+    const data = await response.json();
+    // Tùy response BE, có thể là data.data.user hoặc data.data
+    return data.data?.user || data.data || null;
+  } catch (error) {
+    throw new Error('Failed to update user by id: ' + error.message);
+  }
+};
+// Thêm mới service
+export const addService = async (serviceData) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/services/add`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(serviceData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to add service');
+    }
+
+    const data = await response.json();
+    return data.data || data;
+  } catch (error) {
+    throw new Error('Failed to add service: ' + error.message);
+  }
+};
+
+// Cập nhật service
+export const updateService = async (serviceId, serviceData) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/services`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        serviceId,
+        ...serviceData
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to update service');
+    }
+
+    const data = await response.json();
+    return data.data || data;
+  } catch (error) {
+    throw new Error('Failed to update service: ' + error.message);
+  }
+};
+
+// Xóa service
+export const deleteService = async (serviceId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/services`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ serviceId }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to delete service');
+    }
+
+    const data = await response.json();
+    return data.data || data;
+  } catch (error) {
+    throw new Error('Failed to delete service: ' + error.message);
+  }
+};
+
+// Thêm method cho service (sử dụng function từ backend)
+export const addMethodToService = async (serviceId, methodId) => {
+  try {
+    // Gọi trực tiếp function addServiceMethod từ backend
+    const response = await fetch(`${API_BASE_URL}/method/services/add`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ serviceId, methodId }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to add method to service');
+    }
+
+    const data = await response.json();
+    return data.data || data;
+  } catch (error) {
+    throw new Error('Failed to add method to service: ' + error.message);
+  }
+};
+
+// Xóa method khỏi service (sử dụng function từ backend)
+export const removeMethodFromService = async (serviceId, methodId) => {
+  try {
+    // Gọi trực tiếp function deleteOneMethodService từ backend
+    const response = await fetch(`${API_BASE_URL}/method/services/delete`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ serviceId, methodId }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to remove method from service');
+    }
+
+    const data = await response.json();
+    return data.data || data;
+  } catch (error) {
+    throw new Error('Failed to remove method from service: ' + error.message);
+  }
+};
+
+// Cập nhật trạng thái featured của service
+export const updateServiceFeatured = async (serviceId, featured) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/services`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        serviceId,
+        featured
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to update service featured status');
+    }
+
+    const data = await response.json();
+    return data.data || data;
+  } catch (error) {
+    throw new Error('Failed to update service featured status: ' + error.message);
+  }
+};

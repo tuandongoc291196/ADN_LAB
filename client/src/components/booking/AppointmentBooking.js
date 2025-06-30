@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Badge, Form, Alert, Tab, Nav } from 'react-bootstrap';
 import { getAllServices, getAllMethods, getMethodsByServiceId, createBooking } from '../../services/api';
 import { getServiceById, getServicesByType, canServiceUseSelfSample, isAdministrativeService, enrichMethodData, isMethodDisabled, getMethodRestrictionReason } from '../data/services-data';
-
 const AppointmentBooking = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -80,8 +79,6 @@ const AppointmentBooking = () => {
     ['Bác', 'Cháu'],
     []
   ];
-
-
 
   const getValidRelationsForOther = (currentRelation) => {
     const valid = validRelationPairs
@@ -209,6 +206,7 @@ const AppointmentBooking = () => {
   const handleServiceSelect = (serviceId) => {
     const selectedService = getServiceById(services, serviceId);
 
+
     console.log('handleServiceSelect called with serviceId:', serviceId);
     console.log('Selected service object:', selectedService);
     console.log('Service ID from object:', selectedService?.id);
@@ -262,7 +260,6 @@ const AppointmentBooking = () => {
       }
     }));
   };
-
 
   const nextStep = () => {
     if (currentStep < 4) {
@@ -345,7 +342,14 @@ const AppointmentBooking = () => {
 
     // Tổng tiền
     let totalAmount = 0;
-    if (service && typeof service.price === 'number') totalAmount = service.price;
+    if (service && typeof service.price === 'number') {
+      totalAmount = service.price;
+    }
+    
+    // Cộng thêm phí phương thức thu mẫu
+    if (method && typeof method.price === 'number' && method.price > 0) {
+      totalAmount += method.price;
+    }
 
     // Chuẩn bị payload
     const payload = {
@@ -401,7 +405,6 @@ const AppointmentBooking = () => {
           },
           bookingId: bookingId
         });
-
         try {
           navigate('/booking-confirmation', {
             state: {
@@ -492,7 +495,6 @@ const AppointmentBooking = () => {
     }
     return dates;
   };
-
   // Helper: Format date to Vietnamese
   const renderDate = (dateString) => {
     if (!dateString) return '';
@@ -894,7 +896,9 @@ const AppointmentBooking = () => {
                 <Row>
                   {enrichedMethods.length > 0 ? (
                     enrichedMethods.map(method => {
-                      const isDisabled = isMethodDisabled(method.id, selectedService);
+                      // Kiểm tra method có thuộc serviceMethods không
+                      const isAvailable = serviceMethods.some(sm => sm.id === method.id);
+                      const isDisabled = !isAvailable || isMethodDisabled(method.id, selectedService);
                       const restrictionReason = getMethodRestrictionReason(method.id, selectedService);
 
                       return (
@@ -932,7 +936,7 @@ const AppointmentBooking = () => {
                               {isDisabled ? (
                                 <Alert variant="danger" className="small">
                                   <i className="bi bi-x-circle me-2"></i>
-                                  {restrictionReason}
+                                  {restrictionReason || 'Phương thức này không áp dụng cho dịch vụ đã chọn.'}
                                 </Alert>
                               ) : (
                                 <>
@@ -979,10 +983,9 @@ const AppointmentBooking = () => {
                       );
                     })
                   ) : (
-                    <Col className="text-center">
-                      <Alert variant="info">
-                        <i className="bi bi-info-circle me-2"></i>
-                        Đang tải thông tin phương thức lấy mẫu...
+                    <Col>
+                      <Alert variant="secondary" className="text-center">
+                        Không có phương thức lấy mẫu nào khả dụng cho dịch vụ này.
                       </Alert>
                     </Col>
                   )}
@@ -1158,8 +1161,7 @@ const AppointmentBooking = () => {
                       </Card.Header>
                       <Card.Body className="p-4">
                         <Row>
-<<<<<<< HEAD
-                          {[0, 1].map((idx) => ( //Add commentMore actions
+                          {[0, 1].map((idx) => ( //Add commentMore actionsAdd commentMore actions
                             < Col md={6} key={idx} className="mb-4" >
                               <Card className="h-100 border-0 bg-light">
                                 <Card.Body>
@@ -1206,7 +1208,7 @@ const AppointmentBooking = () => {
                                       {idNumberErrors[idx]}
                                     </Form.Control.Feedback>
                                   </Form.Group>
-                                  {/* <Form.Group className="mb-3">
+                                  <Form.Group className="mb-3">
                                     <Form.Label>Số điện thoại</Form.Label>
                                     <Form.Control
                                       type="tel"
@@ -1234,7 +1236,7 @@ const AppointmentBooking = () => {
                                     <Form.Control.Feedback type="invalid">
                                       {phoneErrors[idx]}
                                     </Form.Control.Feedback>
-                                  </Form.Group> */}
+                                  </Form.Group>
                                   {/* Tuổi (Age) */}
                                   <Form.Group className="mb-3">
                                     <Form.Label>Tuổi <span className="text-danger">*</span></Form.Label>
@@ -1291,6 +1293,7 @@ const AppointmentBooking = () => {
                                       const value = e.target.value;
                                       const otherIdx = idx === 0 ? 1 : 0;
                                       const otherRelation = bookingData.customerInfo.participants[otherIdx]?.relation;
+
                                       const allowDuplicate = value === 'Chưa xác định' || otherRelation === 'Chưa xác định';
                                       if (!allowDuplicate && value === otherRelation) {
                                         setErrors(prev => ({
@@ -1301,7 +1304,6 @@ const AppointmentBooking = () => {
                                         setErrors(prev => ({ ...prev, [`relation_${idx}`]: '' }));
                                         handleParticipantChange(idx, 'relation', value);
                                       }
-
                                     }}
                                     isInvalid={!!errors?.[`relation_${idx}`]}
                                     required
@@ -1327,66 +1329,6 @@ const AppointmentBooking = () => {
                               </Card>
                             </Col>
                           ))}
-=======
-                          <Col md={6} className="mb-3">
-                            <Card className="border-light">
-                              <Card.Header className="bg-light">
-                                <h6 className="mb-0 text-success">Người tham gia 1</h6>
-                              </Card.Header>
-                              <Card.Body className="p-3">
-                                {bookingData.customerInfo.participants[0] ? (
-                                  <div className="d-flex flex-wrap align-items-center justify-content-center text-center">
-                                    <span className="me-3 mb-1">
-                                      <strong>Tên:</strong> {bookingData.customerInfo.participants[0].name}
-                                    </span>
-                                    <span className="me-3 mb-1">
-                                      <strong>CCCD:</strong> {bookingData.customerInfo.participants[0].idNumber}
-                                    </span>
-                                    {bookingData.customerInfo.participants[0].phone && (
-                                      <span className="me-3 mb-1">
-                                        <strong>SĐT:</strong> {bookingData.customerInfo.participants[0].phone}
-                                      </span>
-                                    )}
-                                    <span className="mb-1">
-                                      <strong>Quan hệ:</strong> {bookingData.customerInfo.participants[0].relation || 'N/A'}
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <div className="text-muted text-center">Chưa có thông tin</div>
-                                )}
-                                </Card.Body>
-                              </Card>
-                            </Col>
-                          <Col md={6} className="mb-3">
-                            <Card className="border-light">
-                              <Card.Header className="bg-light">
-                                <h6 className="mb-0 text-success">Người tham gia 2</h6>
-                              </Card.Header>
-                              <Card.Body className="p-3">
-                                {bookingData.customerInfo.participants[1] ? (
-                                  <div className="d-flex flex-wrap align-items-center justify-content-center text-center">
-                                    <span className="me-3 mb-1">
-                                      <strong>Tên:</strong> {bookingData.customerInfo.participants[1].name}
-                                    </span>
-                                    <span className="me-3 mb-1">
-                                      <strong>CCCD:</strong> {bookingData.customerInfo.participants[1].idNumber}
-                                    </span>
-                                    {bookingData.customerInfo.participants[1].phone && (
-                                      <span className="me-3 mb-1">
-                                        <strong>SĐT:</strong> {bookingData.customerInfo.participants[1].phone}
-                                      </span>
-                                    )}
-                                    <span className="mb-1">
-                                      <strong>Quan hệ:</strong> {bookingData.customerInfo.participants[1].relation || 'N/A'}
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <div className="text-muted text-center">Chưa có thông tin</div>
-                                )}
-                              </Card.Body>
-                            </Card>
-                          </Col>
->>>>>>> ec6d2bf27b536b89c9917c4a7503a247c26531cf
                         </Row>
                       </Card.Body>
                     </Card>
@@ -1480,7 +1422,6 @@ const AppointmentBooking = () => {
                         </Card.Body>
                       </Card>
                     )}
-
                   </Col>
                 </Row>
                 <Row className="mt-4">
@@ -1507,7 +1448,6 @@ const AppointmentBooking = () => {
                 </Row>
               </>
             )}
-
             {/* Step 4: Confirmation - Same as before but with updated logic */}
             {currentStep === 4 && (
               <>
@@ -1517,7 +1457,6 @@ const AppointmentBooking = () => {
                     Vui lòng kiểm tra lại thông tin trước khi xác nhận đặt lịch
                   </p>
                 </div>
-
                 <Card className="shadow-lg">
                   <Card.Header className="bg-primary text-white">
                     <h5 className="mb-0">
@@ -1555,21 +1494,21 @@ const AppointmentBooking = () => {
                                 <div className="text-muted">
                                   {selectedService.title || 'Không có thông tin'}
                                 </div>
-                                </div>
+                              </div>
                               <div className="mb-2">
                                 <strong>Mô tả dịch vụ:</strong>
                                 <div className="text-muted">
                                   {selectedService.description || 'Không có mô tả'}
-                              </div>
                                 </div>
+                              </div>
                               <Row className="mb-2">
                                 <Col md={6}>
                                   <strong>Loại dịch vụ:</strong>
                                   <div className="mt-1">
                                     {renderServiceTypeBadge(selectedService.category?.hasLegalValue ? 'administrative' : 'civil', selectedService.category)}
-                              </div>
-                            </Col>
-                            <Col md={6}>
+                                  </div>
+                                </Col>
+                                <Col md={6}>
                                   <strong>Phương thức thu mẫu:</strong>
                                   <div className="mt-1">
                                     <Badge bg={getMethodColor(bookingData.collectionMethod)}>
@@ -1642,7 +1581,7 @@ const AppointmentBooking = () => {
                               <i className="bi bi-person me-2"></i>
                               Thông tin khách hàng
                             </h6>
-                          <Row>
+                            <Row>
                               <Col md={3} className="mb-2">
                                 <strong>Họ tên:</strong> {bookingData.customerInfo.fullName}
                               </Col>
@@ -1656,7 +1595,7 @@ const AppointmentBooking = () => {
                                 <strong>CCCD/CMND:</strong> {bookingData.customerInfo.idNumber}
                               </Col>
                             </Row>
-                              </div>
+                          </div>
 
                           {/* Thông tin lịch hẹn */}
                           <div className="mb-4">
@@ -1683,7 +1622,7 @@ const AppointmentBooking = () => {
                                 <Row className="mb-2">
                                   <Col md={3}>
                                     <strong>Giờ hẹn:</strong> {bookingData.appointmentTime}
-                            </Col>
+                                  </Col>
                                   <Col md={4}>
                                     <strong>Ngày hẹn:</strong> {renderDate(bookingData.appointmentDate)}
                                   </Col>
@@ -1700,7 +1639,7 @@ const AppointmentBooking = () => {
                           </div>
 
                           {/* Người tham gia xét nghiệm */}
-                              {bookingData.customerInfo.participants.length > 0 && (
+                          {bookingData.customerInfo.participants.length > 0 && (
                             <div className="mb-4">
                               <h6 className="text-primary mb-3">
                                 <i className="bi bi-people me-2"></i>
@@ -1712,7 +1651,7 @@ const AppointmentBooking = () => {
                                     <Card.Header className="bg-light">
                                       <h6 className="mb-0 text-success">Người tham gia 1</h6>
                                     </Card.Header>
-                                      <Card.Body className="p-3">
+                                    <Card.Body className="p-3">
                                       {bookingData.customerInfo.participants[0] ? (
                                         <div className="d-flex flex-wrap align-items-center justify-content-center text-center">
                                           <span className="me-3 mb-1">
@@ -1733,9 +1672,9 @@ const AppointmentBooking = () => {
                                       ) : (
                                         <div className="text-muted text-center">Chưa có thông tin</div>
                                       )}
-                                      </Card.Body>
-                                    </Card>
-                            </Col>
+                                    </Card.Body>
+                                  </Card>
+                                </Col>
                                 <Col md={6} className="mb-3">
                                   <Card className="border-light">
                                     <Card.Header className="bg-light">
@@ -1758,16 +1697,16 @@ const AppointmentBooking = () => {
                                           <span className="mb-1">
                                             <strong>Quan hệ:</strong> {bookingData.customerInfo.participants[1].relation || 'N/A'}
                                           </span>
-                                </div>
-                              ) : (
+                                        </div>
+                                      ) : (
                                         <div className="text-muted text-center">Chưa có thông tin</div>
                                       )}
                                     </Card.Body>
                                   </Card>
-                            </Col>
+                                </Col>
                               </Row>
-                                </div>
-                              )}
+                            </div>
+                          )}
                         </Tab.Pane>
                       </Tab.Content>
                     </Tab.Container>
@@ -1845,8 +1784,8 @@ const AppointmentBooking = () => {
           </Row>
         </Container>
       </section>
-    </div >
+    </div>
   );
-};
 
+};
 export default AppointmentBooking;
