@@ -13,6 +13,7 @@ const AppointmentBooking = () => {
   const [serviceMethods, setServiceMethods] = useState([]);
   const [enrichedMethods, setEnrichedMethods] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [errors, setErrors] = useState(null);
   const [bookingData, setBookingData] = useState({
     serviceType: '', // 'civil' or 'administrative'
     serviceId: '',
@@ -26,8 +27,7 @@ const AppointmentBooking = () => {
       address: '',
       idNumber: '',
       participants: []
-    },
-    specialRequests: ''
+    }
   });
   const [idNumberErrors, setIdNumberErrors] = useState({});
   const [phoneErrors, setPhoneErrors] = useState({});
@@ -45,6 +45,49 @@ const AppointmentBooking = () => {
     idNumber: '',
     address: ''
   });
+
+  const [relationshipBetween, setRelationshipBetween] = useState('');
+
+  const familyRelations = [
+    "Cha", "Mẹ",
+    "Ông nội", "Bà nội",
+    "Ông ngoại", "Bà ngoại",
+    "Con trai", "Con gái",
+    "Anh", "Chị", "Em trai", "Em gái",
+    "Cháu nội", "Cháu ngoại", "Cháu",
+    "Cô", "Dì", "Chú", "Bác", "Cậu",
+    "Chồng", "Vợ"
+  ];
+
+  const validRelationPairs = [
+    ['Cha', 'Con trai'],
+    ['Cha', 'Con gái'],
+    ['Mẹ', 'Con trai'],
+    ['Mẹ', 'Con gái'],
+    ['Anh', 'Em trai'],
+    ['Anh', 'Em gái'],
+    ['Chị', 'Em trai'],
+    ['Chị', 'Em gái'],
+    ['Ông nội', 'Cháu nội'],
+    ['Ông ngoại', 'Cháu ngoại'],
+    ['Bà nội', 'Cháu nội'],
+    ['Bà ngoại', 'Cháu ngoại'],
+    ['Chồng', 'Vợ'],
+    ['Cô', 'Cháu'],
+    ['Chú', 'Cháu'],
+    ['Dì', 'Cháu'],
+    ['Cậu', 'Cháu'],
+    ['Bác', 'Cháu'],
+    []
+  ];
+
+  const getValidRelationsForOther = (currentRelation) => {
+    const valid = validRelationPairs
+      .filter(pair => pair[0] === currentRelation)
+      .map(pair => pair[1]);
+
+    return valid.length > 0 ? valid : familyRelations; // nếu rỗng → trả lại toàn bộ
+  };
 
   // Fetch services and methods from API
   useEffect(() => {
@@ -163,7 +206,7 @@ const AppointmentBooking = () => {
 
   const handleServiceSelect = (serviceId) => {
     const selectedService = getServiceById(services, serviceId);
-    
+
     console.log('handleServiceSelect called with serviceId:', serviceId);
     console.log('Selected service object:', selectedService);
     console.log('Service ID from object:', selectedService?.id);
@@ -203,20 +246,21 @@ const AppointmentBooking = () => {
     });
   };
 
-  const handleParticipantChange = (index, field, value) => {
-    const updatedParticipants = [...bookingData.customerInfo.participants];
-    updatedParticipants[index] = {
-      ...updatedParticipants[index],
+  const handleParticipantChange = (idx, field, value) => {
+    const updated = [...bookingData.customerInfo.participants];
+    updated[idx] = {
+      ...updated[idx],
       [field]: value
     };
-    setBookingData({
-      ...bookingData,
+    setBookingData(prev => ({
+      ...prev,
       customerInfo: {
-        ...bookingData.customerInfo,
-        participants: updatedParticipants
+        ...prev.customerInfo,
+        participants: updated
       }
-    });
+    }));
   };
+
 
   const nextStep = () => {
     if (currentStep < 4) {
@@ -236,7 +280,7 @@ const AppointmentBooking = () => {
     try {
       const userDataFromStorage = JSON.parse(localStorage.getItem('userData'));
       userId = userDataFromStorage?.uid || userDataFromStorage?.user_id || userDataFromStorage?.id || '';
-    } catch (e) { 
+    } catch (e) {
       console.error('Error parsing userData:', e);
     }
 
@@ -321,8 +365,8 @@ const AppointmentBooking = () => {
         name: p.name,
         identification: p.idNumber,
         relationship: p.relation,
-        age: p.age || 30, // gán mặc định nếu thiếu
-        gender: p.gender || 'male' // hoặc female nếu có
+        age: p.age,
+        gender: p.gender
       }))
     };
 
@@ -338,34 +382,34 @@ const AppointmentBooking = () => {
       console.log('Submitting booking with payload:', payload);
       const res = await createBooking(payload);
       console.log('Booking response:', res);
-      
+
       // Kiểm tra response có hợp lệ không - handle cả booking_insert.id
       let bookingId = null;
       if (res) {
         bookingId = res.id || res.bookingId || res.data?.id || res.booking_insert?.id || res.data?.booking_insert?.id || null;
       }
-      
+
       if (bookingId) {
         console.log('Success! Booking ID:', bookingId);
-        console.log('Navigating to booking-confirmation with state:', { 
+        console.log('Navigating to booking-confirmation with state:', {
           bookingData: {
             ...bookingData,
             selectedService: service,
             selectedMethod: method
-          }, 
+          },
           bookingId: bookingId
         });
-        
+
         try {
-          navigate('/booking-confirmation', { 
-            state: { 
+          navigate('/booking-confirmation', {
+            state: {
               bookingData: {
                 ...bookingData,
                 selectedService: service,
                 selectedMethod: method
-              }, 
+              },
               bookingId: bookingId
-            } 
+            }
           });
           console.log('Navigation successful');
         } catch (navError) {
@@ -378,7 +422,7 @@ const AppointmentBooking = () => {
       }
     } catch (err) {
       console.error('Booking error details:', err);
-      
+
       // Hiển thị thông báo lỗi chi tiết hơn
       const errorMessage = err.message || 'Đặt lịch thất bại! Vui lòng thử lại hoặc liên hệ hỗ trợ.';
       alert(`Lỗi đặt lịch: ${errorMessage}`);
@@ -387,10 +431,10 @@ const AppointmentBooking = () => {
 
 
   const selectedService = bookingData.serviceId ? getServiceById(services, bookingData.serviceId) : null;
-  const selectedMethod = bookingData.collectionMethod ? 
-    (typeof bookingData.collectionMethod === 'string' 
+  const selectedMethod = bookingData.collectionMethod ?
+    (typeof bookingData.collectionMethod === 'string'
       ? enrichedMethods.find(m => m.id === bookingData.collectionMethod)
-      : bookingData.collectionMethod) 
+      : bookingData.collectionMethod)
     : null;
 
   // Helper: Render badge for service type
@@ -407,7 +451,7 @@ const AppointmentBooking = () => {
     if (methodInfo && methodInfo.name) {
       return methodInfo.name;
     }
-    
+
     // Fallback về mapping cũ
     const methods = {
       '0': 'Tự lấy mẫu tại nhà',
@@ -424,7 +468,7 @@ const AppointmentBooking = () => {
   const getMethodColor = (methodId) => {
     const methodColors = {
       'self-sample': 'success',
-      'home-visit': 'warning', 
+      'home-visit': 'warning',
       'at-facility': 'primary',
       '0': 'success',
       '1': 'warning',
@@ -1112,64 +1156,173 @@ const AppointmentBooking = () => {
                       </Card.Header>
                       <Card.Body className="p-4">
                         <Row>
-                          <Col md={6} className="mb-3">
-                            <Card className="border-light">
-                              <Card.Header className="bg-light">
-                                <h6 className="mb-0 text-success">Người tham gia 1</h6>
-                              </Card.Header>
-                              <Card.Body className="p-3">
-                                {bookingData.customerInfo.participants[0] ? (
-                                  <div className="d-flex flex-wrap align-items-center justify-content-center text-center">
-                                    <span className="me-3 mb-1">
-                                      <strong>Tên:</strong> {bookingData.customerInfo.participants[0].name}
-                                    </span>
-                                    <span className="me-3 mb-1">
-                                      <strong>CCCD:</strong> {bookingData.customerInfo.participants[0].idNumber}
-                                    </span>
-                                    {bookingData.customerInfo.participants[0].phone && (
-                                      <span className="me-3 mb-1">
-                                        <strong>SĐT:</strong> {bookingData.customerInfo.participants[0].phone}
-                                      </span>
-                                    )}
-                                    <span className="mb-1">
-                                      <strong>Quan hệ:</strong> {bookingData.customerInfo.participants[0].relation || 'N/A'}
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <div className="text-muted text-center">Chưa có thông tin</div>
-                                )}
-                              </Card.Body>
-                            </Card>
-                          </Col>
-                          <Col md={6} className="mb-3">
-                            <Card className="border-light">
-                              <Card.Header className="bg-light">
-                                <h6 className="mb-0 text-success">Người tham gia 2</h6>
-                              </Card.Header>
-                              <Card.Body className="p-3">
-                                {bookingData.customerInfo.participants[1] ? (
-                                  <div className="d-flex flex-wrap align-items-center justify-content-center text-center">
-                                    <span className="me-3 mb-1">
-                                      <strong>Tên:</strong> {bookingData.customerInfo.participants[1].name}
-                                    </span>
-                                    <span className="me-3 mb-1">
-                                      <strong>CCCD:</strong> {bookingData.customerInfo.participants[1].idNumber}
-                                    </span>
-                                    {bookingData.customerInfo.participants[1].phone && (
-                                      <span className="me-3 mb-1">
-                                        <strong>SĐT:</strong> {bookingData.customerInfo.participants[1].phone}
-                                      </span>
-                                    )}
-                                    <span className="mb-1">
-                                      <strong>Quan hệ:</strong> {bookingData.customerInfo.participants[1].relation || 'N/A'}
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <div className="text-muted text-center">Chưa có thông tin</div>
-                                )}
-                              </Card.Body>
-                            </Card>
-                          </Col>
+                          {[0, 1].map((idx) => ( //Add commentMore actions
+                            < Col md={6} key={idx} className="mb-4" >
+                              <Card className="h-100 border-0 bg-light">
+                                <Card.Body>
+                                  <h6 className="text-primary mb-3">
+                                    <i className="bi bi-person-badge me-2"></i>
+                                    Người tham gia {idx + 1}
+                                  </h6>
+                                  <Form.Group className="mb-3">
+                                    <Form.Label>Họ và tên <span className="text-danger">*</span></Form.Label>
+                                    <Form.Control
+                                      type="text"
+                                      placeholder="Nhập họ và tên"
+                                      value={bookingData.customerInfo.participants[idx]?.name || ''}
+                                      onChange={e => handleParticipantChange(idx, 'name', e.target.value)}
+                                      required
+                                    />
+                                  </Form.Group>
+                                  <Form.Group className="mb-3">
+                                    <Form.Label>CCCD/CMND</Form.Label>
+                                    <Form.Control
+                                      type="text"
+                                      inputMode="numeric"
+                                      maxLength={12}
+                                      placeholder="Nhập số CCCD/CMND"
+                                      value={bookingData.customerInfo.participants[idx]?.idNumber || ''}
+                                      onChange={(e) => {
+                                        const value = e.target.value.replace(/\D/g, ''); // Chỉ cho số
+                                        if (value.length <= 12) {
+                                          handleParticipantChange(idx, 'idNumber', value);
+
+                                          if (value && value.length !== 12) {
+                                            setIdNumberErrors(prev => ({
+                                              ...prev,
+                                              [idx]: 'CCCD phải gồm đúng 12 chữ số',
+                                            }));
+                                          } else {
+                                            setIdNumberErrors(prev => ({ ...prev, [idx]: '' }));
+                                          }
+                                        }
+                                      }}
+                                      isInvalid={!!idNumberErrors[idx]}
+                                    />
+                                    <Form.Control.Feedback type="invalid">
+                                      {idNumberErrors[idx]}
+                                    </Form.Control.Feedback>
+                                  </Form.Group>
+                                  <Form.Group className="mb-3">
+                                    <Form.Label>Số điện thoại</Form.Label>
+                                    <Form.Control
+                                      type="tel"
+                                      inputMode="numeric"
+                                      maxLength={10}
+                                      placeholder="Nhập số điện thoại"
+                                      value={bookingData.customerInfo.participants[idx]?.phone || ''}
+                                      onChange={(e) => {
+                                        const value = e.target.value.replace(/\D/g, ''); // Chỉ cho số
+                                        if (value.length <= 10) {
+                                          handleParticipantChange(idx, 'phone', value);
+
+                                          if (value && !/^0\d{9}$/.test(value)) {
+                                            setPhoneErrors(prev => ({
+                                              ...prev,
+                                              [idx]: 'Số điện thoại phải có 10 chữ số và bắt đầu bằng 0',
+                                            }));
+                                          } else {
+                                            setPhoneErrors(prev => ({ ...prev, [idx]: '' }));
+                                          }
+                                        }
+                                      }}
+                                      isInvalid={!!phoneErrors[idx]}
+                                    />
+                                    <Form.Control.Feedback type="invalid">
+                                      {phoneErrors[idx]}
+                                    </Form.Control.Feedback>
+                                  </Form.Group>
+                                  {/* Tuổi (Age) */}
+                                  <Form.Group className="mb-3">
+                                    <Form.Label>Tuổi <span className="text-danger">*</span></Form.Label>
+                                    <Form.Control
+                                      type="number"
+                                      min="1"
+                                      max="130"
+                                      placeholder="Nhập tuổi"
+                                      value={bookingData.customerInfo.participants[idx]?.age || ''}
+                                      onChange={e => {
+                                        const value = e.target.value;
+                                        const age = Number(value);
+
+                                        if (value === '' || (!isNaN(age) && age >= 1 && age <= 130)) {
+                                          // Nếu rỗng hoặc hợp lệ thì cập nhật
+                                          handleParticipantChange(idx, 'age', value);
+                                          setErrors((prev) => ({ ...prev, [`age_${idx}`]: '' }));
+                                        } else {
+                                          // Nếu sai, gán thông báo lỗi riêng từng người
+                                          setErrors((prev) => ({
+                                            ...prev,
+                                            [`age_${idx}`]: 'Tuổi phải từ 1 đến 130'
+                                          }));
+                                        }
+                                      }}
+                                      isInvalid={!!errors?.[`age_${idx}`]}
+                                      required
+                                    />
+                                    <Form.Control.Feedback type="invalid">
+                                      {errors?.[`age_${idx}`]}
+                                    </Form.Control.Feedback>
+                                  </Form.Group>
+
+                                  {/* Giới tính (Gender) */}
+                                  <Form.Group className="mb-3">
+                                    <Form.Label>Giới tính <span className="text-danger">*</span></Form.Label>
+                                    <Form.Select
+                                      value={bookingData.customerInfo.participants[idx]?.gender || ''}
+                                      onChange={e => handleParticipantChange(idx, 'gender', e.target.value)}
+                                      required
+                                    >
+                                      <option value="">-- Chọn giới tính --</option>
+                                      <option value="male">Nam</option>
+                                      <option value="female">Nữ</option>
+                                      <option value="other">Khác</option>
+                                    </Form.Select>
+                                  </Form.Group>
+
+                                  {/* Mối quan hệ (Relationship) */}
+                                  <Form.Label>Mối quan hệ <span className="text-danger">*</span></Form.Label>
+                                  <Form.Select
+                                    value={bookingData.customerInfo.participants[idx]?.relation || ''}
+                                    onChange={e => {
+                                      const value = e.target.value;
+                                      const otherIdx = idx === 0 ? 1 : 0;
+                                      const otherRelation = bookingData.customerInfo.participants[otherIdx]?.relation;
+
+                                      if (value === otherRelation) {
+                                        setErrors(prev => ({
+                                          ...prev,
+                                          [`relation_${idx}`]: `Mối quan hệ này đã được chọn cho người kia`
+                                        }));
+                                      } else {
+                                        setErrors(prev => ({ ...prev, [`relation_${idx}`]: '' }));
+                                        handleParticipantChange(idx, 'relation', value);
+                                      }
+                                    }}
+                                    isInvalid={!!errors?.[`relation_${idx}`]}
+                                    required
+                                  >
+                                    <option value="">-- Chọn mối quan hệ --</option>
+                                    {(() => {
+                                      const otherRelation = bookingData.customerInfo.participants[idx === 0 ? 1 : 0]?.relation;
+                                      const availableOptions = otherRelation
+                                        ? getValidRelationsForOther(otherRelation)
+                                        : familyRelations;
+
+                                      return availableOptions.map((relation) => (
+                                        <option key={relation} value={relation}>
+                                          {relation}
+                                        </option>
+                                      ));
+                                    })()}
+                                  </Form.Select>
+                                  <Form.Control.Feedback type="invalid">
+                                    {errors?.relation_1}
+                                  </Form.Control.Feedback>
+                                </Card.Body>
+                              </Card>
+                            </Col>
+                          ))}
                         </Row>
                       </Card.Body>
                     </Card>
@@ -1414,7 +1567,7 @@ const AppointmentBooking = () => {
                                 <div className="d-flex justify-content-between mb-2">
                                   <span>Giá dịch vụ:</span>
                                   <span className="text-muted">
-                                    {selectedService.price && selectedService.price > 0 
+                                    {selectedService.price && selectedService.price > 0
                                       ? `${new Intl.NumberFormat('vi-VN').format(selectedService.price)} VNĐ`
                                       : 'Liên hệ để biết giá'
                                     }
@@ -1440,7 +1593,7 @@ const AppointmentBooking = () => {
                                       const servicePrice = selectedService.price || 0;
                                       const methodPrice = selectedMethod?.price || 0;
                                       const totalAmount = servicePrice + methodPrice;
-                                      
+
                                       if (totalAmount > 0) {
                                         return `${new Intl.NumberFormat('vi-VN').format(totalAmount)} VNĐ`;
                                       }
@@ -1515,7 +1668,7 @@ const AppointmentBooking = () => {
                                   </Col>
                                   <Col md={5}>
                                     <strong>Địa điểm:</strong> {
-                                      bookingData.collectionMethod === 'at-facility' ? 
+                                      bookingData.collectionMethod === 'at-facility' ?
                                         'Trung tâm xét nghiệm ADN - 123 Đường ABC, Quận XYZ' :
                                         bookingData.customerInfo.address
                                     }
@@ -1671,7 +1824,7 @@ const AppointmentBooking = () => {
           </Row>
         </Container>
       </section>
-    </div>
+    </div >
   );
 };
 

@@ -237,7 +237,7 @@ export const getServiceCategories = async () => {
 export const createBooking = async (bookingData) => {
   try {
     console.log('Sending booking data:', bookingData);
-    
+
     const response = await fetch(`${API_BASE_URL}/bookings/add`, {
       method: 'POST',
       headers: {
@@ -245,31 +245,69 @@ export const createBooking = async (bookingData) => {
       },
       body: JSON.stringify(bookingData),
     });
-    
+
     console.log('Booking response status:', response.status);
-    
+
     const data = await response.json();
     console.log('Booking response data:', data);
-    
+
     // Kiểm tra cả response status và response data
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${data.message || 'Network response was not ok'}`);
     }
-    
+
     // Kiểm tra nếu response có error message
     if (data.error || data.message?.toLowerCase().includes('error')) {
       throw new Error(data.message || data.error || 'Booking creation failed');
     }
-    
+
     // Kiểm tra nếu không có data hoặc booking_insert
     if (!data.data && !data.booking_insert && !data.id) {
       throw new Error('No booking data returned from server');
     }
-    
+
     // Return data với priority: data.data > data > data.booking_insert
     return data.data || data;
   } catch (error) {
     console.error('createBooking error:', error);
     throw new Error('Failed to create booking: ' + error.message);
+  }
+};
+
+// Lấy user theo id
+export const getUserById = async (userId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId }),
+    });
+    if (!response.ok) throw new Error('Network response was not ok');
+    const data = await response.json();
+    // Tùy response BE, có thể là data.data.user hoặc data.data
+    return data.data?.user || data.data || null;
+  } catch (error) {
+    throw new Error('Failed to fetch user by id: ' + error.message);
+  }
+};
+
+// Cập nhật thông tin user theo id
+export const updateUserById = async (userId, updateData) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/users`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId, ...updateData }),
+    });
+    if (!response.ok) throw new Error('Network response was not ok');
+    const data = await response.json();
+    // Tùy response BE, có thể là data.data.user hoặc data.data
+    return data.data?.user || data.data || null;
+  } catch (error) {
+    throw new Error('Failed to update user by id: ' + error.message);
   }
 };

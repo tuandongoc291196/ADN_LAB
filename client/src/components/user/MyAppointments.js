@@ -136,7 +136,7 @@ const MyAppointments = ({ user }) => {
 
     // Filter by search term
     if (searchTerm) {
-      filtered = filtered.filter(apt => 
+      filtered = filtered.filter(apt =>
         apt.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
         apt.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         apt.participants.some(p => p.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -240,47 +240,47 @@ const MyAppointments = ({ user }) => {
           onSelect={(k) => setSelectedTab(k)}
           className="border-bottom"
         >
-          <Tab 
-            eventKey="all" 
+          <Tab
+            eventKey="all"
             title={
               <span>
-                Tất cả 
+                Tất cả
                 <Badge bg="secondary" className="ms-1">{tabCounts.all}</Badge>
               </span>
             }
           />
-          <Tab 
-            eventKey="confirmed" 
+          <Tab
+            eventKey="confirmed"
             title={
               <span>
-                Đã xác nhận 
+                Đã xác nhận
                 <Badge bg="primary" className="ms-1">{tabCounts.confirmed}</Badge>
               </span>
             }
           />
-          <Tab 
-            eventKey="in-progress" 
+          <Tab
+            eventKey="in-progress"
             title={
               <span>
-                Đang thực hiện 
+                Đang thực hiện
                 <Badge bg="warning" className="ms-1">{tabCounts['in-progress']}</Badge>
               </span>
             }
           />
-          <Tab 
-            eventKey="completed" 
+          <Tab
+            eventKey="completed"
             title={
               <span>
-                Hoàn thành 
+                Hoàn thành
                 <Badge bg="success" className="ms-1">{tabCounts.completed}</Badge>
               </span>
             }
           />
-          <Tab 
-            eventKey="cancelled" 
+          <Tab
+            eventKey="cancelled"
             title={
               <span>
-                Đã hủy 
+                Đã hủy
                 <Badge bg="danger" className="ms-1">{tabCounts.cancelled}</Badge>
               </span>
             }
@@ -293,7 +293,7 @@ const MyAppointments = ({ user }) => {
               {filteredAppointments.map((appointment, index) => {
                 const statusInfo = getStatusInfo(appointment.status);
                 const methodInfo = getMethodText(appointment.method);
-                
+
                 return (
                   <div key={appointment.id} className="list-group-item p-4">
                     <Row>
@@ -353,7 +353,7 @@ const MyAppointments = ({ user }) => {
                               <span className="small text-muted">Tiến độ thực hiện</span>
                               <span className="small fw-bold">{appointment.progress}%</span>
                             </div>
-                            <ProgressBar 
+                            <ProgressBar
                               now={appointment.progress}
                               variant={appointment.progress === 100 ? 'success' : 'primary'}
                               style={{ height: '6px' }}
@@ -379,9 +379,9 @@ const MyAppointments = ({ user }) => {
                       {/* Actions */}
                       <Col lg={4} className="mt-3 mt-lg-0">
                         <div className="d-grid gap-2">
-                          <Button 
-                            variant="outline-primary" 
-                            as={Link} 
+                          <Button
+                            variant="outline-primary"
+                            as={Link}
                             to={`/tracking/${appointment.id}`}
                           >
                             <i className="bi bi-eye me-2"></i>
@@ -396,7 +396,7 @@ const MyAppointments = ({ user }) => {
                           )}
 
                           {appointment.canReschedule && (
-                            <Button 
+                            <Button
                               variant="outline-warning"
                               onClick={() => handleRescheduleAppointment(appointment)}
                             >
@@ -406,7 +406,7 @@ const MyAppointments = ({ user }) => {
                           )}
 
                           {appointment.canCancel && (
-                            <Button 
+                            <Button
                               variant="outline-danger"
                               onClick={() => handleCancelAppointment(appointment)}
                             >
@@ -433,7 +433,7 @@ const MyAppointments = ({ user }) => {
                 {searchTerm ? 'Không tìm thấy lịch hẹn nào' : 'Chưa có lịch hẹn nào'}
               </h5>
               <p className="text-muted">
-                {searchTerm 
+                {searchTerm
                   ? 'Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc'
                   : 'Bắt đầu đặt lịch xét nghiệm đầu tiên của bạn'
                 }
@@ -502,7 +502,7 @@ const MyAppointments = ({ user }) => {
                 <br />
                 {formatDate(selectedAppointment.date)} lúc {selectedAppointment.time}
               </Alert>
-              
+
               <Form>
                 <Row>
                   <Col md={6}>
@@ -536,12 +536,12 @@ const MyAppointments = ({ user }) => {
                     </Form.Group>
                   </Col>
                 </Row>
-                
+
                 <Form.Group className="mb-3">
                   <Form.Label>Lý do đổi lịch</Form.Label>
-                  <Form.Control 
-                    as="textarea" 
-                    rows={3} 
+                  <Form.Control
+                    as="textarea"
+                    rows={3}
                     placeholder="Vui lòng cho biết lý do đổi lịch hẹn..."
                   />
                 </Form.Group>
