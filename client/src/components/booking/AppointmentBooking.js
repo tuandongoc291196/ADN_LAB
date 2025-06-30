@@ -163,7 +163,7 @@ const AppointmentBooking = () => {
 
   const handleServiceSelect = (serviceId) => {
     const selectedService = getServiceById(services, serviceId);
-    
+
     console.log('handleServiceSelect called with serviceId:', serviceId);
     console.log('Selected service object:', selectedService);
     console.log('Service ID from object:', selectedService?.id);
@@ -236,7 +236,7 @@ const AppointmentBooking = () => {
     try {
       const userDataFromStorage = JSON.parse(localStorage.getItem('userData'));
       userId = userDataFromStorage?.uid || userDataFromStorage?.user_id || userDataFromStorage?.id || '';
-    } catch (e) { 
+    } catch (e) {
       console.error('Error parsing userData:', e);
     }
 
@@ -338,34 +338,34 @@ const AppointmentBooking = () => {
       console.log('Submitting booking with payload:', payload);
       const res = await createBooking(payload);
       console.log('Booking response:', res);
-      
+
       // Kiểm tra response có hợp lệ không - handle cả booking_insert.id
       let bookingId = null;
       if (res) {
         bookingId = res.id || res.bookingId || res.data?.id || res.booking_insert?.id || res.data?.booking_insert?.id || null;
       }
-      
+
       if (bookingId) {
         console.log('Success! Booking ID:', bookingId);
-        console.log('Navigating to booking-confirmation with state:', { 
+        console.log('Navigating to booking-confirmation with state:', {
           bookingData: {
             ...bookingData,
             selectedService: service,
             selectedMethod: method
-          }, 
+          },
           bookingId: bookingId
         });
-        
+
         try {
-          navigate('/booking-confirmation', { 
-            state: { 
+          navigate('/booking-confirmation', {
+            state: {
               bookingData: {
                 ...bookingData,
                 selectedService: service,
                 selectedMethod: method
-              }, 
+              },
               bookingId: bookingId
-            } 
+            }
           });
           console.log('Navigation successful');
         } catch (navError) {
@@ -378,7 +378,7 @@ const AppointmentBooking = () => {
       }
     } catch (err) {
       console.error('Booking error details:', err);
-      
+
       // Hiển thị thông báo lỗi chi tiết hơn
       const errorMessage = err.message || 'Đặt lịch thất bại! Vui lòng thử lại hoặc liên hệ hỗ trợ.';
       alert(`Lỗi đặt lịch: ${errorMessage}`);
@@ -387,10 +387,10 @@ const AppointmentBooking = () => {
 
 
   const selectedService = bookingData.serviceId ? getServiceById(services, bookingData.serviceId) : null;
-  const selectedMethod = bookingData.collectionMethod ? 
-    (typeof bookingData.collectionMethod === 'string' 
+  const selectedMethod = bookingData.collectionMethod ?
+    (typeof bookingData.collectionMethod === 'string'
       ? enrichedMethods.find(m => m.id === bookingData.collectionMethod)
-      : bookingData.collectionMethod) 
+      : bookingData.collectionMethod)
     : null;
 
   // Helper: Render badge for service type
@@ -407,7 +407,7 @@ const AppointmentBooking = () => {
     if (methodInfo && methodInfo.name) {
       return methodInfo.name;
     }
-    
+
     // Fallback về mapping cũ
     const methods = {
       '0': 'Tự lấy mẫu tại nhà',
@@ -424,7 +424,7 @@ const AppointmentBooking = () => {
   const getMethodColor = (methodId) => {
     const methodColors = {
       'self-sample': 'success',
-      'home-visit': 'warning', 
+      'home-visit': 'warning',
       'at-facility': 'primary',
       '0': 'success',
       '1': 'warning',
@@ -1186,7 +1186,6 @@ const AppointmentBooking = () => {
                             Chọn ngày và giờ hẹn
                           </h5>
                         </Card.Header>
-
                         <Card.Body className="p-4">
                           <Form.Group className="mb-4">
                             <Form.Label>
@@ -1414,7 +1413,7 @@ const AppointmentBooking = () => {
                                 <div className="d-flex justify-content-between mb-2">
                                   <span>Giá dịch vụ:</span>
                                   <span className="text-muted">
-                                    {selectedService.price && selectedService.price > 0 
+                                    {selectedService.price && selectedService.price > 0
                                       ? `${new Intl.NumberFormat('vi-VN').format(selectedService.price)} VNĐ`
                                       : 'Liên hệ để biết giá'
                                     }
@@ -1440,7 +1439,7 @@ const AppointmentBooking = () => {
                                       const servicePrice = selectedService.price || 0;
                                       const methodPrice = selectedMethod?.price || 0;
                                       const totalAmount = servicePrice + methodPrice;
-                                      
+
                                       if (totalAmount > 0) {
                                         return `${new Intl.NumberFormat('vi-VN').format(totalAmount)} VNĐ`;
                                       }
@@ -1515,7 +1514,7 @@ const AppointmentBooking = () => {
                                   </Col>
                                   <Col md={5}>
                                     <strong>Địa điểm:</strong> {
-                                      bookingData.collectionMethod === 'at-facility' ? 
+                                      bookingData.collectionMethod === 'at-facility' ?
                                         'Trung tâm xét nghiệm ADN - 123 Đường ABC, Quận XYZ' :
                                         bookingData.customerInfo.address
                                     }

@@ -7,9 +7,6 @@ import {
   auth, 
   logInWithEmailAndPassword, 
   signInWithGoogle,
-  adminEmails,
-  staffEmails,
-  managerEmails,
   dataConnect
 } from '../config/firebase';
 import {
@@ -23,8 +20,6 @@ const Login = ({ setUser }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showQuickLogin, setShowQuickLogin] = useState(false);
-  const [isQuickLogin, setIsQuickLogin] = useState(false);
 
   // Function to get redirect path based on role
   const getRedirectPath = (role) => {
@@ -40,8 +35,6 @@ const Login = ({ setUser }) => {
   useEffect(() => {
     const handleUserLogin = async () => {
       if (loading) return;
-      
-      if (isQuickLogin) return;
       
       if (user) {
         try {
@@ -82,7 +75,7 @@ const Login = ({ setUser }) => {
     };
 
     handleUserLogin();
-  }, [user, loading, navigate, setUser, isQuickLogin]);
+  }, [user, loading, navigate, setUser]);
 
   const handleGoogleSignIn = async () => {
     try {
@@ -94,79 +87,6 @@ const Login = ({ setUser }) => {
       console.error('Google sign in error:', error);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  // Quick login for testing
-  const handleQuickLogin = async (role) => {
-    try {
-      setIsLoading(true);
-      setLoginError('');
-      setIsQuickLogin(true);
-      
-      const mockUsers = {
-        admin: {
-          id: 'admin-test-id',
-          name: 'Test Admin',
-          email: 'admin@adnlab.vn',
-          role: 'admin',
-          role_string: 'admin',
-          avatar: null,
-          verified: true,
-          phone: '0123456789',
-          department: 'Administration',
-          permissions: ['all']
-        },
-        staff: {
-          id: 'staff-test-id',
-          name: 'Test Staff',
-          email: 'staff@adnlab.vn',
-          role: 'staff',
-          role_string: 'staff',
-          avatar: null,
-          verified: true,
-          phone: '0123456788',
-          department: 'Laboratory',
-          permissions: ['tests', 'reports']
-        },
-        manager: {
-          id: 'manager-test-id',
-          name: 'Test Manager',
-          email: 'manager@adnlab.vn',
-          role: 'manager',
-          role_string: 'manager',
-          avatar: null,
-          verified: true,
-          phone: '0123456787',
-          department: 'Management',
-          permissions: ['users', 'reports', 'guides']
-        },
-        customer: {
-          id: 'customer-test-id',
-          name: 'Test Customer',
-          email: 'customer@adnlab.vn',
-          role: 'customer',
-          role_string: 'customer',
-          avatar: null,
-          verified: true,
-          phone: '0123456786',
-          department: null,
-          permissions: ['profile', 'tests']
-        }
-      };
-
-      const mockUser = mockUsers[role];
-      if (mockUser) {
-        localStorage.setItem('isAuthenticated', 'true');
-        
-        navigate(getRedirectPath(mockUser.role));
-      }
-    } catch (error) {
-      setLoginError(`Không thể mô phỏng đăng nhập với tài khoản ${role}.`);
-      console.error('Quick login error:', error);
-    } finally {
-      setIsLoading(false);
-      setTimeout(() => setIsQuickLogin(false), 1000);
     }
   };
 
@@ -248,86 +168,6 @@ const Login = ({ setUser }) => {
                   </Alert>
                 )}
 
-                {/* Quick Login Toggle */}
-                <div className="text-center mb-3">
-                  <Button 
-                    variant="outline-secondary" 
-                    size="sm"
-                    onClick={() => setShowQuickLogin(!showQuickLogin)}
-                  >
-                    <i className="bi bi-lightning me-1"></i>
-                    {showQuickLogin ? 'Ẩn' : 'Hiện'} Quick Login (Dev)
-                  </Button>
-                </div>
-
-                {/* Quick Login Section */}
-                {showQuickLogin && (
-                  <Card className="bg-light mb-4">
-                    <Card.Body className="p-3">
-                      <h6 className="text-center mb-3">
-                        <i className="bi bi-lightning text-warning me-1"></i>
-                        Quick Login for Testing
-                      </h6>
-                      <Row>
-                        <Col xs={6} className="mb-2">
-                          <Button 
-                            variant="outline-danger" 
-                            size="sm" 
-                            className="w-100"
-                            onClick={() => handleQuickLogin('admin')}
-                            disabled={isLoading || loading}
-                          >
-                            <i className="bi bi-crown me-1"></i>
-                            Admin
-                          </Button>
-                        </Col>
-                        <Col xs={6} className="mb-2">
-                          <Button 
-                            variant="outline-info" 
-                            size="sm" 
-                            className="w-100"
-                            onClick={() => handleQuickLogin('staff')}
-                            disabled={isLoading || loading}
-                          >
-                            <i className="bi bi-person-badge me-1"></i>
-                            Staff
-                          </Button>
-                        </Col>
-                        <Col xs={6} className="mb-2">
-                          <Button 
-                            variant="outline-warning" 
-                            size="sm" 
-                            className="w-100"
-                            onClick={() => handleQuickLogin('manager')}
-                            disabled={isLoading || loading}
-                          >
-                            <i className="bi bi-briefcase me-1"></i>
-                            Manager
-                          </Button>
-                        </Col>
-                        <Col xs={6} className="mb-2">
-                          <Button 
-                            variant="outline-primary" 
-                            size="sm" 
-                            className="w-100"
-                            onClick={() => handleQuickLogin('customer')}
-                            disabled={isLoading || loading}
-                          >
-                            <i className="bi bi-person me-1"></i>
-                            Customer
-                          </Button>
-                        </Col>
-                      </Row>
-                      <div className="mt-2">
-                        <small className="text-muted">
-                          <i className="bi bi-info-circle me-1"></i>
-                          Simulates login and direct redirect (bypasses Firebase)
-                        </small>
-                      </div>
-                    </Card.Body>
-                  </Card>
-                )}
-
                 {/* Login Form */}
                 <Form onSubmit={formik.handleSubmit}>
                   <Form.Group className="mb-3">
@@ -348,9 +188,6 @@ const Login = ({ setUser }) => {
                     <Form.Control.Feedback type="invalid">
                       {formik.errors.email}
                     </Form.Control.Feedback>
-                    <Form.Text className="text-muted">
-                      💡 Tip: Sử dụng admin@adnlab.vn để truy cập Admin Dashboard
-                    </Form.Text>
                   </Form.Group>
 
                   <Form.Group className="mb-3">
@@ -453,98 +290,6 @@ const Login = ({ setUser }) => {
                     </Link>
                   </p>
                 </div>
-              </Card.Body>
-            </Card>
-
-            {/* Admin Info Card */}
-            <Card className="border-0 bg-warning bg-opacity-10 mt-3">
-              <Card.Body className="p-3">
-                <h6 className="text-warning mb-2">
-                  <i className="bi bi-crown me-1"></i>
-                  Admin Access Information
-                </h6>
-                <div className="small text-muted">
-                  <div className="mb-1">
-                    <strong>Admin Emails:</strong> {adminEmails.join(', ')}
-                  </div>
-                  <div className="mb-1">
-                    <strong>Staff Emails:</strong> {staffEmails.join(', ')}
-                  </div>
-                  <div>
-                    <strong>Manager Emails:</strong> {managerEmails.join(', ')}
-                  </div>
-                  <hr className="my-2" />
-                  <div className="text-center">
-                    <small>
-                      <i className="bi bi-info-circle me-1"></i>
-                      Auto role assignment based on login email and Firestore data
-                    </small>
-                  </div>
-                </div>
-              </Card.Body>
-            </Card>
-
-            {/* Footer Info */}
-            <div className="text-center mt-4">
-              <div className="mb-3">
-                <small className="text-muted">
-                  <i className="bi bi-shield-check me-1"></i>
-                  Thông tin đăng nhập được bảo mật theo tiêu chuẩn quốc tế
-                </small>
-              </div>
-              <div className="d-flex justify-content-center gap-4 flex-wrap">
-                <Link to="/contact" className="text-decoration-none small text-muted">
-                  <i className="bi bi-telephone me-1"></i>
-                  Hỗ trợ: 1900 1234
-                </Link>
-                <Link to="/privacy" className="text-decoration-none small text-muted">
-                  <i className="bi bi-shield me-1"></i>
-                  Chính sách bảo mật
-                </Link>
-              </div>
-            </div>
-          </Col>
-        </Row>
-
-        {/* Benefits Section */}
-        <Row className="justify-content-center mt-5">
-          <Col lg={10}>
-            <Card className="border-0 bg-light">
-              <Card.Body className="p-4">
-                <h5 className="text-center mb-4 text-primary">
-                  <i className="bi bi-star me-2"></i>
-                  Lợi ích khi có tài khoản ADN LAB
-                </h5>
-                <Row>
-                  <Col md={3} className="text-center mb-3">
-                    <i className="bi bi-calendar-check text-success fs-1 mb-2 d-block"></i>
-                    <h6>Quản lý lịch hẹn</h6>
-                    <small className="text-muted">
-                      Theo dõi và quản lý tất cả lịch hẹn xét nghiệm của bạn
-                    </small>
-                  </Col>
-                  <Col md={3} className="text-center mb-3">
-                    <i className="bi bi-file-earmark-check text-info fs-1 mb-2 d-block"></i>
-                    <h6>Xem kết quả trực tuyến</h6>
-                    <small className="text-muted">
-                      Nhận và tải kết quả xét nghiệm ngay khi có
-                    </small>
-                  </Col>
-                  <Col md={3} className="text-center mb-3">
-                    <i className="bi bi-bell text-warning fs-1 mb-2 d-block"></i>
-                    <h6>Thông báo tự động</h6>
-                    <small className="text-muted">
-                      Nhận thông báo về lịch hẹn và kết quả qua email/SMS
-                    </small>
-                  </Col>
-                  <Col md={3} className="text-center mb-3">
-                    <i className="bi bi-shield-lock text-danger fs-1 mb-2 d-block"></i>
-                    <h6>Admin Dashboard</h6>
-                    <small className="text-muted">
-                      Quản lý hệ thống và dữ liệu (dành cho admin)
-                    </small>
-                  </Col>
-                </Row>
               </Card.Body>
             </Card>
           </Col>

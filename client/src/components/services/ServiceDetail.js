@@ -51,6 +51,12 @@ const ServiceDetail = () => {
         }
 
         if (foundService) {
+          // Kiểm tra xem dịch vụ có đang active không
+          if (foundService.isActive === false) {
+            setError('Dịch vụ này hiện không khả dụng');
+            return;
+          }
+          
           setService(foundService);
           // Fetch methods for this specific service
           await fetchServiceMethods(foundService.id); // Use the actual service ID from BE

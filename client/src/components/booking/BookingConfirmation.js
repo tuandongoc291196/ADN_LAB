@@ -11,7 +11,7 @@ const BookingConfirmation = () => {
   useEffect(() => {
     if (location.state) {
       if (location.state.bookingData) {
-        setBookingData(location.state.bookingData);
+      setBookingData(location.state.bookingData);
         console.log('Booking data received:', location.state.bookingData);
         console.log('Selected service:', location.state.bookingData.selectedService);
         console.log('Selected method:', location.state.bookingData.selectedMethod);
@@ -20,8 +20,8 @@ const BookingConfirmation = () => {
         setBookingId(location.state.bookingId);
       } else {
         // Fallback: Generate booking ID nếu không có từ backend
-        const id = 'ADN' + Date.now().toString().slice(-6);
-        setBookingId(id);
+      const id = 'ADN' + Date.now().toString().slice(-6);
+      setBookingId(id);
       }
     }
   }, [location.state]);
@@ -147,7 +147,7 @@ const BookingConfirmation = () => {
                     Thông tin dịch vụ
                   </h6>
                   <div className="text-start">
-                    <div className="mb-2">
+                  <div className="mb-2">
                       <strong>Tên dịch vụ:</strong> {(() => {
                         const serviceTitle = bookingData?.selectedService?.title;
                         console.log('Rendering service title:', serviceTitle);
@@ -156,9 +156,9 @@ const BookingConfirmation = () => {
                     </div>
                     <div className="mb-2">
                       <strong>Loại dịch vụ:</strong> {getServiceTypeBadge(bookingData.serviceType, bookingData?.selectedService?.category)}
-                    </div>
-                    <div className="mb-2">
-                      <strong>Phương thức thu mẫu:</strong> 
+                  </div>
+                  <div className="mb-2">
+                    <strong>Phương thức thu mẫu:</strong>
                       <Badge bg={getMethodColor(bookingData.collectionMethod)} className="ms-2">
                         {getCollectionMethodName(bookingData.collectionMethod, bookingData?.selectedMethod)}
                       </Badge>
@@ -172,33 +172,33 @@ const BookingConfirmation = () => {
                     Thời gian hẹn
                   </h6>
                   <div className="text-start">
-                    {bookingData.collectionMethod === 'self-sample' ? (
-                      <div>
-                        <div className="mb-2">
+                  {bookingData.collectionMethod === 'self-sample' ? (
+                    <div>
+                      <div className="mb-2">
                           <strong>Phương thức:</strong> Tự lấy mẫu tại nhà
-                        </div>
-                        <div className="mb-2">
+                      </div>
+                      <div className="mb-2">
                           <strong>Kit sẽ được gửi đến:</strong> {bookingData.customerInfo.address}
                         </div>
-                      </div>
-                    ) : (
-                      <div>
-                        <div className="mb-2">
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="mb-2">
                           <strong>Giờ hẹn:</strong> {bookingData.appointmentTime}
-                        </div>
-                        <div className="mb-2">
+                      </div>
+                      <div className="mb-2">
                           <strong>Ngày hẹn:</strong> {formatDate(bookingData.appointmentDate)}
-                        </div>
-                        <div className="mb-2">
+                      </div>
+                      <div className="mb-2">
                           <strong>Địa điểm:</strong> {
                             bookingData.collectionMethod === 'at-facility' ? 
-                              'Trung tâm xét nghiệm ADN - 123 Đường ABC, Quận XYZ' :
-                              bookingData.customerInfo.address
+                            'Trung tâm xét nghiệm ADN - 123 Đường ABC, Quận XYZ' :
+                            bookingData.customerInfo.address
                           }
                         </div>
                       </div>
                     )}
-                  </div>
+                    </div>
                 </Col>
               </Row>
 
@@ -212,13 +212,13 @@ const BookingConfirmation = () => {
                     Thông tin liên hệ
                   </h6>
                   <div className="text-start">
-                    <div className="mb-2">
+                  <div className="mb-2">
                       <strong>Họ tên:</strong> {bookingData.customerInfo.fullName}
-                    </div>
-                    <div className="mb-2">
+                  </div>
+                  <div className="mb-2">
                       <strong>Điện thoại:</strong> {bookingData.customerInfo.phone}
-                    </div>
-                    <div className="mb-2">
+                  </div>
+                  <div className="mb-2">
                       <strong>Email:</strong> {bookingData.customerInfo.email || 'Không có'}
                     </div>
                   </div>
@@ -230,22 +230,22 @@ const BookingConfirmation = () => {
                     Người tham gia
                   </h6>
                   <div className="text-start">
-                    {bookingData.customerInfo.participants.length > 0 ? (
-                      bookingData.customerInfo.participants.map((participant, index) => (
-                        <div key={index} className="mb-2 p-2 bg-light rounded">
+                  {bookingData.customerInfo.participants.length > 0 ? (
+                    bookingData.customerInfo.participants.map((participant, index) => (
+                      <div key={index} className="mb-2 p-2 bg-light rounded">
                           <div className="mb-1">
                             <strong>Họ tên:</strong> {participant.name}
                           </div>
                           <div>
                             <strong>Điện thoại:</strong> {participant.phone}
                           </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-muted">
-                        Thông tin sẽ được cập nhật khi thanh toán
                       </div>
-                    )}
+                    ))
+                  ) : (
+                    <div className="text-muted">
+                      Thông tin sẽ được cập nhật khi thanh toán
+                    </div>
+                  )}
                   </div>
                 </Col>
               </Row>
@@ -253,12 +253,12 @@ const BookingConfirmation = () => {
               <hr />
 
               {/* Thông tin chi phí */}
-              <Row className="mb-4">
+      <Row className="mb-4">
                 <Col>
                   <h6 className="text-primary mb-3">
                     <i className="bi bi-cash-coin me-2"></i>
                     Thông tin chi phí
-                  </h6>
+                    </h6>
                   <div className="bg-light p-3 rounded">
                     <div className="d-flex justify-content-between mb-2">
                       <span>Giá dịch vụ:</span>
@@ -271,7 +271,7 @@ const BookingConfirmation = () => {
                           return 'Liên hệ để biết giá';
                         })()}
                       </span>
-                    </div>
+                  </div>
                     <div className="d-flex justify-content-between mb-2">
                       <span>Phí dịch vụ (theo phương thức thu mẫu):</span>
                       <span className="text-muted">
@@ -283,7 +283,7 @@ const BookingConfirmation = () => {
                           return 'Miễn phí';
                         })()}
                       </span>
-                    </div>
+                </div>
                     <hr />
                     <div className="d-flex justify-content-between align-items-center mb-3">
                       <h5 className="mb-0">Tổng cộng:</h5>
@@ -299,7 +299,7 @@ const BookingConfirmation = () => {
                           return 'Liên hệ để biết giá';
                         })()}
                       </h4>
-                    </div>
+                  </div>
                   </div>
                 </Col>
               </Row>
@@ -534,9 +534,9 @@ const BookingConfirmation = () => {
               printWindow.close();
             }, 500);
           }}>
-            <i className="bi bi-printer me-2"></i>
-            In thông tin
-          </Button>
+              <i className="bi bi-printer me-2"></i>
+              In thông tin
+            </Button>
         </Col>
       </Row>
     </Container>

@@ -1,86 +1,67 @@
 const { dataConnect } = require("../../config/firebase.js");
+const {getParticipantsByBookingId} = require("../participants/getParticipants.js");
+const {getOneBookingById} = require("../bookings/getBookings.js");
 
-const createSample = async (req, res) => {
+const addSample = async (bookingId) => {
   try {
-    const { id, bookingId, serviceId, staffId, collectionDate, notes } = req.body;
-
-    // Validate input
-    if (!id) {
-      return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "Sample ID is required",
-      });
-    }
-
     if (!bookingId) {
-      return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "Booking ID is required",
-      });
+      throw new Error("bookingId is required");
     }
 
-    if (!serviceId) { 
-      return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "Service ID is required",
-      });
+    const participants = await getParticipantsByBookingId(bookingId);
+    
+    if (!participants || participants.length === 0) {
+      throw new Error("No participants found for this booking");
     }
 
-    const CREATE_SAMPLE_MUTATION = `
-      mutation CreateSample($id: String!, $bookingId: String!, $serviceId: String!, $staffId: String, $collectionDate: Date, $notes: String) @auth(level: USER) {
-        sample_insert(data: { id: $id, bookingId: $bookingId, serviceId: $serviceId, staffId: $staffId, collectionDate: $collectionDate, notes: $notes, status: "pending" }) {
-          id
-          bookingId
-          serviceId
-          staffId
-          collectionDate
-          notes
-          status
-        }
+    const booking = await getOneBookingById(bookingId);
+    const staffId = booking.staffId;
+
+    const ADD_SAMPLE = `
+      mutation CreateSample($id: String!, $bookingId: String!, $staffId: String, $participantId: String, $collectionDate: Date, $sampleQuality: String!, $sampleConcentration: Float, $notes: String) @auth(level: USER) {
+        sample_insert(data: {id: $id, bookingId: $bookingId, staffId: $staffId, participantId: $participantId, collectionDate: $collectionDate, sampleQuality: $sampleQuality, sampleConcentration: $sampleConcentration, notes: $notes})
       }
     `;
 
-    const variables = {
-      id,
-      bookingId,
-      serviceId,
-      staffId: staffId || null,
-      collectionDate: collectionDate || null,
-      notes: notes || null,
-    };
-
-    console.log("Executing GraphQL mutation:", CREATE_SAMPLE_MUTATION, "with variables:", variables);
-
-    const response = await dataConnect.executeGraphql(CREATE_SAMPLE_MUTATION, {
-      variables,
-    });
-
-    const sample = response.data?.sample_insert;
-
-    if (!sample) {
-      throw new Error("Failed to create sample");
+    const createdSamples = [];
+    
+    for (const participant of participants) {
+      const sampleId = participant.id + "_SAMPLE";
+      const variables = { 
+        id: sampleId,
+        bookingId: bookingId, 
+        participantId: participant.id,
+        staffId: staffId,
+        sampleQuality: "",
+        collectionDate: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' }),
+        sampleConcentration: 0
+      };
+      
+      const response = await dataConnect.executeGraphql(ADD_SAMPLE, { 
+        variables: variables
+      });
+      
+      const responseData = response.data.sample_insert;
+      
+      if (!responseData) {
+        throw new Error(`Sample creation failed for participant ${participant.id}`);
+      }
+      
+      createdSamples.push({
+        id: sampleId,
+        participantId: participant.id,
+        bookingId: bookingId,
+        success: true
+      });
     }
-
-    res.status(201).json({
-      statusCode: 201,
-      status: "success",
-      message: "Sample created successfully",
-      data: sample,
-    });
+    
+    return createdSamples;
   } catch (error) {
-    console.error("Error creating sample:", error);
-    res.status(500).json({
-      statusCode: 500,
-      status: "error",
-      message: "Failed to create sample",
-      error: error.message,
-    });
+    console.error("Error adding samples:", error);
+    throw new Error("Failed to add samples due to an internal error");
   }
-};
+}
 
 module.exports = {
-  createSample,
-};
+  addSample
+}; 

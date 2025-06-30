@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { getUserById, updateUserById } from '../../services/api';
 import { Row, Col, Card, Button, Form, Alert, Modal, Badge, Tab, Tabs } from 'react-bootstrap';
 
 const UserProfile = ({ user }) => {
@@ -8,45 +9,14 @@ const UserProfile = ({ user }) => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [message, setMessage] = useState({ type: '', content: '' });
-
-  // User profile state
   const [profileData, setProfileData] = useState({
-    // Personal Information
-    fullName: user?.name || 'Nguyễn Văn A',
-    email: user?.email || 'nguyenvana@example.com',
-    phone: user?.phone || '0123456789',
-    dateOfBirth: '1990-01-15',
-    gender: 'male',
-    idNumber: '001234567890',
-    idIssueDate: '2015-01-10',
-    idIssuePlace: 'Công an TP. Hà Nội',
-    
-    // Address Information
-    address: '123 Đường ABC, Phường XYZ',
-    ward: 'Phường Cầu Giấy',
-    district: 'Quận Cầu Giấy',
-    city: 'Hà Nội',
-    postalCode: '100000',
-    
-    // Contact Information
-    emergencyContact: 'Nguyễn Thị B',
-    emergencyPhone: '0987654321',
-    emergencyRelation: 'Vợ/Chồng',
-    
-    // Preferences
-    language: 'vi',
-    notifications: {
-      email: true,
-      sms: true,
-      appointment: true,
-      results: true,
-      promotions: false
-    },
-    privacy: {
-      shareData: false,
-      marketing: false,
-      analytics: true
-    }
+    fullName: '',
+    email: '',
+    phone: '',
+    dateOfBirth: '',
+    gender: '',
+    idNumber: '',
+    address: '',
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -54,6 +24,31 @@ const UserProfile = ({ user }) => {
     newPassword: '',
     confirmPassword: ''
   });
+
+  // Lấy userId từ props user hoặc localStorage
+  const userId = user?.id || user?.user_id || user?.uid || JSON.parse(localStorage.getItem('userData'))?.user_id || '';
+
+  // Fetch user info từ API và điền vào form
+  useEffect(() => {
+    if (userId) {
+      getUserById(userId)
+        .then(data => {
+          setProfileData(prev => ({
+            ...prev,
+            fullName: data.fullname || data.fullName || '',
+            email: data.email || '',
+            phone: data.phone || '',
+            dateOfBirth: data.dateOfBirth || data.dob || '',
+            gender: data.gender || '',
+            idNumber: data.id_number || data.idNumber || '',
+            address: data.address || ''
+          }));
+        })
+        .catch(err => {
+          // Có thể show thông báo lỗi nếu cần
+        });
+    }
+  }, [userId]);
 
   const handleInputChange = (section, field, value) => {
     if (section === 'notifications' || section === 'privacy') {
@@ -72,11 +67,22 @@ const UserProfile = ({ user }) => {
     }
   };
 
-  const handleSaveProfile = () => {
-    // TODO: API call to save profile
-    console.log('Saving profile:', profileData);
-    setMessage({ type: 'success', content: 'Thông tin cá nhân đã được cập nhật thành công!' });
-    setIsEditing(false);
+  const handleSaveProfile = async () => {
+    // Ghép địa chỉ chi tiết, xã, huyện, tỉnh thành 1 string
+    const fullAddress = [profileData.address, profileData.ward, profileData.district, profileData.city]
+      .filter(Boolean)
+      .join(', ');
+    const updateData = {
+      ...profileData,
+      address: fullAddress
+    };
+    try {
+      await updateUserById(userId, updateData);
+      setMessage({ type: 'success', content: 'Thông tin cá nhân đã được cập nhật thành công!' });
+      setIsEditing(false);
+    } catch (error) {
+      setMessage({ type: 'danger', content: 'Cập nhật thất bại: ' + error.message });
+    }
     setTimeout(() => setMessage({ type: '', content: '' }), 5000);
   };
 
@@ -86,7 +92,7 @@ const UserProfile = ({ user }) => {
       setMessage({ type: 'danger', content: 'Mật khẩu xác nhận không khớp!' });
       return;
     }
-    
+
     if (passwordData.newPassword.length < 6) {
       setMessage({ type: 'danger', content: 'Mật khẩu mới phải có ít nhất 6 ký tự!' });
       return;
@@ -200,7 +206,7 @@ const UserProfile = ({ user }) => {
                     />
                   </Col>
                 </Row>
-                
+
                 <Row>
                   <Col md={6} className="mb-3">
                     <Form.Label>Số điện thoại *</Form.Label>
@@ -221,7 +227,7 @@ const UserProfile = ({ user }) => {
                     />
                   </Col>
                 </Row>
-                
+
                 <Row>
                   <Col md={6} className="mb-3">
                     <Form.Label>Giới tính</Form.Label>
@@ -245,35 +251,6 @@ const UserProfile = ({ user }) => {
                     />
                   </Col>
                 </Row>
-                
-                <Row>
-                  <Col md={6} className="mb-3">
-                    <Form.Label>Ngày cấp CCCD/CMND</Form.Label>
-                    <Form.Control
-                      type="date"
-                      value={profileData.idIssueDate}
-                      onChange={(e) => handleInputChange('', 'idIssueDate', e.target.value)}
-                      disabled={!isEditing}
-                    />
-                  </Col>
-                  <Col md={6} className="mb-3">
-                    <Form.Label>Nơi cấp</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={profileData.idIssuePlace}
-                      onChange={(e) => handleInputChange('', 'idIssuePlace', e.target.value)}
-                      disabled={!isEditing}
-                    />
-                  </Col>
-                </Row>
-              </Form>
-            </Card.Body>
-          </Tab>
-
-          {/* Address Information Tab */}
-          <Tab eventKey="address" title={<><i className="bi bi-geo-alt me-2"></i>Địa chỉ liên hệ</>}>
-            <Card.Body>
-              <Form>
                 <Form.Group className="mb-3">
                   <Form.Label>Địa chỉ chi tiết *</Form.Label>
                   <Form.Control
@@ -284,7 +261,6 @@ const UserProfile = ({ user }) => {
                     disabled={!isEditing}
                   />
                 </Form.Group>
-                
                 <Row>
                   <Col md={6} className="mb-3">
                     <Form.Label>Phường/Xã</Form.Label>
@@ -305,7 +281,7 @@ const UserProfile = ({ user }) => {
                     />
                   </Col>
                 </Row>
-                
+
                 <Row>
                   <Col md={6} className="mb-3">
                     <Form.Label>Tỉnh/Thành phố</Form.Label>
@@ -316,7 +292,39 @@ const UserProfile = ({ user }) => {
                       disabled={!isEditing}
                     />
                   </Col>
+                </Row>
+                {/* <Row>
                   <Col md={6} className="mb-3">
+                    <Form.Label>Ngày cấp CCCD/CMND</Form.Label>
+                    <Form.Control
+                      type="date"
+                      value={profileData.idIssueDate}
+                      onChange={(e) => handleInputChange('', 'idIssueDate', e.target.value)}
+                      disabled={!isEditing}
+                    />
+                  </Col>
+                  <Col md={6} className="mb-3">
+                    <Form.Label>Nơi cấp</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={profileData.idIssuePlace}
+                      onChange={(e) => handleInputChange('', 'idIssuePlace', e.target.value)}
+                      disabled={!isEditing}
+                    />
+                  </Col>
+                </Row> */}
+              </Form>
+            </Card.Body>
+          </Tab>
+
+          {/* Address Information Tab */}
+          <Tab eventKey="address" title={<><i className="bi bi-geo-alt me-2"></i>Địa chỉ liên hệ</>}>
+            <Card.Body>
+              <Form>
+
+
+
+                {/* <Col md={6} className="mb-3">
                     <Form.Label>Mã bưu điện</Form.Label>
                     <Form.Control
                       type="text"
@@ -326,9 +334,9 @@ const UserProfile = ({ user }) => {
                     />
                   </Col>
                 </Row>
-                
+
                 <hr />
-                
+
                 <h6 className="mb-3">Liên hệ khẩn cấp</h6>
                 <Row>
                   <Col md={4} className="mb-3">
@@ -362,9 +370,9 @@ const UserProfile = ({ user }) => {
                       <option value="Anh/Chị/Em">Anh/Chị/Em</option>
                       <option value="Bạn bè">Bạn bè</option>
                       <option value="Khác">Khác</option>
-                    </Form.Select>
-                  </Col>
-                </Row>
+                    </Form.Select> */}
+                {/* </Col> */}
+                {/* </Row> */}
               </Form>
             </Card.Body>
           </Tab>
@@ -374,7 +382,7 @@ const UserProfile = ({ user }) => {
             <Card.Body>
               <h6 className="mb-3">Thông báo</h6>
               <div className="mb-4">
-                <Form.Check
+                {/* <Form.Check
                   type="switch"
                   id="notification-email"
                   label="Nhận thông báo qua Email"
@@ -417,14 +425,14 @@ const UserProfile = ({ user }) => {
                   checked={profileData.notifications.promotions}
                   onChange={(e) => handleInputChange('notifications', 'promotions', e.target.checked)}
                   disabled={!isEditing}
-                />
+                /> */}
               </div>
-              
+
               <hr />
-              
+
               <h6 className="mb-3">Quyền riêng tư</h6>
               <div className="mb-4">
-                <Form.Check
+                {/* <Form.Check
                   type="switch"
                   id="privacy-share"
                   label="Cho phép chia sẻ dữ liệu cho mục đích nghiên cứu"
@@ -449,11 +457,11 @@ const UserProfile = ({ user }) => {
                   checked={profileData.privacy.analytics}
                   onChange={(e) => handleInputChange('privacy', 'analytics', e.target.checked)}
                   disabled={!isEditing}
-                />
+                /> */}
               </div>
-              
+
               <hr />
-              
+
               <h6 className="mb-3">Ngôn ngữ</h6>
               <Form.Select
                 value={profileData.language}
@@ -464,19 +472,19 @@ const UserProfile = ({ user }) => {
                 <option value="vi">Tiếng Việt</option>
                 <option value="en">English</option>
               </Form.Select>
-              
+
               <hr />
-              
+
               <h6 className="mb-3 text-danger">Bảo mật & Tài khoản</h6>
               <div className="d-grid gap-2 d-md-flex">
-                <Button 
+                <Button
                   variant="outline-warning"
                   onClick={() => setShowPasswordModal(true)}
                 >
                   <i className="bi bi-key me-2"></i>
                   Đổi mật khẩu
                 </Button>
-                <Button 
+                <Button
                   variant="outline-danger"
                   onClick={() => setShowDeleteModal(true)}
                   disabled={!isEditing}
@@ -488,10 +496,10 @@ const UserProfile = ({ user }) => {
             </Card.Body>
           </Tab>
         </Tabs>
-      </Card>
+      </Card >
 
       {/* Change Password Modal */}
-      <Modal show={showPasswordModal} onHide={() => setShowPasswordModal(false)}>
+      < Modal show={showPasswordModal} onHide={() => setShowPasswordModal(false)}>
         <Modal.Header closeButton>
           <Modal.Title>Đổi mật khẩu</Modal.Title>
         </Modal.Header>
@@ -502,7 +510,7 @@ const UserProfile = ({ user }) => {
               <Form.Control
                 type="password"
                 value={passwordData.currentPassword}
-                onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})}
+                onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
                 placeholder="Nhập mật khẩu hiện tại"
               />
             </Form.Group>
@@ -511,7 +519,7 @@ const UserProfile = ({ user }) => {
               <Form.Control
                 type="password"
                 value={passwordData.newPassword}
-                onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
+                onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
                 placeholder="Nhập mật khẩu mới (ít nhất 6 ký tự)"
               />
             </Form.Group>
@@ -520,7 +528,7 @@ const UserProfile = ({ user }) => {
               <Form.Control
                 type="password"
                 value={passwordData.confirmPassword}
-                onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
+                onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
                 placeholder="Nhập lại mật khẩu mới"
               />
             </Form.Group>
@@ -534,10 +542,10 @@ const UserProfile = ({ user }) => {
             Đổi mật khẩu
           </Button>
         </Modal.Footer>
-      </Modal>
+      </Modal >
 
       {/* Delete Account Modal */}
-      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
+      < Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
         <Modal.Header closeButton>
           <Modal.Title className="text-danger">Xóa tài khoản</Modal.Title>
         </Modal.Header>
@@ -563,7 +571,7 @@ const UserProfile = ({ user }) => {
             Xác nhận xóa tài khoản
           </Button>
         </Modal.Footer>
-      </Modal>
+      </Modal >
     </>
   );
 };
