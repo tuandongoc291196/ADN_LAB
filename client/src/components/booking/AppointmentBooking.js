@@ -342,7 +342,14 @@ const AppointmentBooking = () => {
 
     // Tổng tiền
     let totalAmount = 0;
-    if (service && typeof service.price === 'number') totalAmount = service.price;
+    if (service && typeof service.price === 'number') {
+      totalAmount = service.price;
+    }
+    
+    // Cộng thêm phí phương thức thu mẫu
+    if (method && typeof method.price === 'number' && method.price > 0) {
+      totalAmount += method.price;
+    }
 
     // Chuẩn bị payload
     const payload = {
