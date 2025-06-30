@@ -1,3 +1,13 @@
+/**
+ * COMPONENT: UserManagement
+ * MỤC ĐÍCH: Quản lý tất cả người dùng trong hệ thống
+ * CHỨC NĂNG:
+ * - Quản lý người dùng (customers) và nhân viên
+ * - Phân quyền và thay đổi role
+ * - Theo dõi hoạt động và lịch sử người dùng
+ * - Quản lý trạng thái tài khoản (active/inactive/suspended)
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
   Card, Row, Col, Button, Table, Badge, Modal, Form,
@@ -8,22 +18,31 @@ import { getStaffListByRole, getAllRoles } from '../../services/api';
 import StaffManagementByAdmin from './StaffManagementByAdmin';
 
 const UserManagement = ({ user }) => {
-  const [activeTab, setActiveTab] = useState('users');
-  const [roles, setRoles] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [activities, setActivities] = useState([]); // Placeholder for activities
-  const [staffCount, setStaffCount] = useState(0);
-  const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState('edit'); // 'edit', 'create', 'view'
-  const [editingUser, setEditingUser] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterRole, setFilterRole] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  // State quản lý tabs và dữ liệu
+  const [activeTab, setActiveTab] = useState('users'); // Tab hiện tại: users/staff/activities
+  const [roles, setRoles] = useState([]); // Danh sách người dùng theo role
+  const [loading, setLoading] = useState(true); // Trạng thái loading
+  const [error, setError] = useState(null); // Lỗi khi fetch dữ liệu
+  const [activities, setActivities] = useState([]); // Lịch sử hoạt động
+  const [staffCount, setStaffCount] = useState(0); // Số lượng nhân viên
+  
+  // State quản lý modal
+  const [showModal, setShowModal] = useState(false); // Hiển thị modal
+  const [modalType, setModalType] = useState('edit'); // Loại modal: edit/create/view
+  const [editingUser, setEditingUser] = useState(null); // User đang được chỉnh sửa
+  
+  // State quản lý filter và search
+  const [searchTerm, setSearchTerm] = useState(''); // Từ khóa tìm kiếm
+  const [filterRole, setFilterRole] = useState('all'); // Lọc theo role
+  const [filterStatus, setFilterStatus] = useState('all'); // Lọc theo trạng thái
+  
+  // State quản lý UI
+  const [showToast, setShowToast] = useState(false); // Hiển thị thông báo
+  const [toastMessage, setToastMessage] = useState(''); // Nội dung thông báo
+  
+  // State quản lý pagination
+  const [currentPage, setCurrentPage] = useState(1); // Trang hiện tại
+  const [itemsPerPage] = useState(10); // Số items mỗi trang
 
   const [formData, setFormData] = useState({
     name: '',
