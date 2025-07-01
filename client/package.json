@@ -31,6 +31,7 @@
     "react-toastify": "^11.0.5",
     "sass": "^1.89.0",
     "sweetalert2": "^11.22.1",
+    "vietnam-provinces": "^0.0.4",
     "web-vitals": "^2.1.4",
     "yup": "^1.6.1"
   },

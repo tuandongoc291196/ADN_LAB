@@ -26,7 +26,7 @@ import {
   arrayUnion,
   deleteDoc
 } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { getDataConnect, connectDataConnectEmulator } from "firebase/data-connect";
 
 import {
@@ -680,6 +680,14 @@ const isAdmin = (userData) => {
 // Check if user is staff or higher
 const isStaff = (userData) => {
   return ['admin', 'staff', 'manager'].includes(userData?.roleString);
+};
+
+export const uploadAvatar = async (file, userId) => {
+  if (!file || !userId) throw new Error("Thiếu file hoặc userId");
+  const storageRef = ref(storage, `avatars/${userId}_${Date.now()}`);
+  await uploadBytes(storageRef, file);
+  const url = await getDownloadURL(storageRef);
+  return url;
 };
 
 export {

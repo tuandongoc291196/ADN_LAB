@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Container, Row, Col, Nav, Card, Alert } from 'react-bootstrap';
+import { getUserById } from '../../services/api';
 
 // Import dashboard components
 import DashboardOverview from './DashboardOverview';
@@ -13,6 +14,9 @@ import SupportCenter from './SupportCenter';
 const UserDashboard = ({ user }) => {
   const location = useLocation();
   const [activeTab, setActiveTab] = useState('overview');
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Get current tab from URL
   useEffect(() => {
@@ -24,27 +28,127 @@ const UserDashboard = ({ user }) => {
     }
   }, [location.pathname]);
 
-  // Mock user data if not provided
-  const currentUser = user || {
-    id: 1,
-    name: 'Nguyễn Văn A',
-    email: 'nguyenvana@example.com',
-    phone: '0123456789',
-    avatar: null,
-    role: 'user',
-    memberSince: '2023-01-15',
-    totalAppointments: 8,
-    completedTests: 5,
-    pendingResults: 2
-  };
+  // Fetch user data from API
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        setLoading(true);
+        
+        // Lấy userId từ props user hoặc localStorage
+        const userId = user?.id || user?.user_id || user?.uid || 
+                      JSON.parse(localStorage.getItem('userData'))?.user_id || 
+                      localStorage.getItem('user_id');
+        
+        if (!userId) {
+          console.warn('No user ID found, using mock data');
+          setCurrentUser({
+            id: 1,
+            fullname: 'Nguyễn Văn A',
+            email: 'nguyenvana@example.com',
+            phone: '0123456789',
+            avatar: null,
+            role: { name: 'customer' },
+            createdAt: '2023-01-15',
+            totalAppointments: 8,
+            completedTests: 5,
+            pendingResults: 2
+          });
+          return;
+        }
 
-  const menuItems = [    {
+        // Gọi API để lấy thông tin user
+        const userData = await getUserById(userId);
+        console.log('User data from API:', userData);
+        
+        if (userData) {
+          setCurrentUser({
+            ...userData,
+            // Map các field từ BE sang FE
+            fullname: userData.fullname || userData.name || 'Không có tên',
+            email: userData.email || '',
+            phone: userData.phone || '',
+            avatar: userData.avatar || null,
+            role: userData.role || { name: 'customer' },
+            createdAt: userData.createdAt || userData.memberSince || new Date().toISOString(),
+            // Mock data cho stats (sẽ được thay thế bằng API thực tế sau)
+            totalAppointments: 8,
+            completedTests: 5,
+            pendingResults: 2
+          });
+        } else {
+          throw new Error('Không thể lấy thông tin người dùng');
+        }
+      } catch (err) {
+        console.error('Error fetching user data:', err);
+        setError('Không thể tải thông tin người dùng');
+        // Fallback to mock data
+        setCurrentUser({
+          id: 1,
+          fullname: 'Nguyễn Văn A',
+          email: 'nguyenvana@example.com',
+          phone: '0123456789',
+          avatar: null,
+          role: { name: 'customer' },
+          createdAt: '2023-01-15',
+          totalAppointments: 8,
+          completedTests: 5,
+          pendingResults: 2
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [user]);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <Container fluid className="py-4">
+        <div className="text-center py-5">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Đang tải...</span>
+          </div>
+          <p className="mt-3">Đang tải thông tin người dùng...</p>
+        </div>
+      </Container>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <Container fluid className="py-4">
+        <Alert variant="danger">
+          <i className="bi bi-exclamation-triangle me-2"></i>
+          {error}
+        </Alert>
+      </Container>
+    );
+  }
+
+  // Fallback if no user data
+  if (!currentUser) {
+    return (
+      <Container fluid className="py-4">
+        <Alert variant="warning">
+          <i className="bi bi-exclamation-triangle me-2"></i>
+          Không tìm thấy thông tin người dùng
+        </Alert>
+      </Container>
+    );
+  }
+
+  const menuItems = [
+    {
       key: 'overview',
       label: 'Tổng quan',
       icon: 'bi-house',
       path: '/user',
       color: 'primary',
-    },{
+    },
+    {
       key: 'appointments',
       label: 'Lịch hẹn của tôi',
       icon: 'bi-calendar-event',
@@ -65,7 +169,7 @@ const UserDashboard = ({ user }) => {
       label: 'Hồ sơ cá nhân',
       icon: 'bi-person',
       path: '/user/profile',
-      badge: currentUser.pendingResults,
+      badge: currentUser,
       color: 'info'
     },
     {
@@ -107,12 +211,12 @@ const UserDashboard = ({ user }) => {
                   </div>
                 )}
               </div>
-              <h5 className="mb-1">{currentUser.name}</h5>
+              <h5 className="mb-1">{currentUser.fullname}</h5>
               <small className="opacity-75">{currentUser.email}</small>
               <div className="mt-2">
                 <small className="d-block">
                   <i className="bi bi-calendar me-1"></i>
-                  Thành viên từ {new Date(currentUser.memberSince).toLocaleDateString('vi-VN')}
+                  Thành viên từ {new Date(currentUser.createdAt).toLocaleDateString('vi-VN')}
                 </small>
               </div>
             </Card.Header>
