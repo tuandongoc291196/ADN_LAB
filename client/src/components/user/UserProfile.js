@@ -5,6 +5,12 @@ import { Row, Col, Card, Button, Form, Alert, Modal, Badge } from 'react-bootstr
 import { uploadAvatar } from '../config/firebase';
 import { getProvinces, getDistricts, getWards } from 'vietnam-provinces';
 
+function findCodeByName(list, name) {
+  if (!name) return '';
+  const normalize = str => str.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+  return (list.find(item => normalize(item.name) === normalize(name)) || {}).code || '';
+}
+
 const UserProfile = ({ user }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -44,18 +50,18 @@ const UserProfile = ({ user }) => {
           setLoading(true);
           const data = await getUserById(userId);
           if (data) {
-            // Xử lý địa chỉ an toàn
             let addressDetail = '', ward = '', district = '', city = '';
             if (data.address) {
               const parts = data.address.split(',').map(s => s.trim());
               if (parts.length === 4) {
                 addressDetail = parts[0];
-                // Không tự động map tên sang code, để user chọn lại
-                ward = '';
-                district = '';
-                city = '';
+                const cityCode = findCodeByName(getProvinces(), parts[3]);
+                const districtCode = findCodeByName(getDistricts().filter(d => d.province_code === cityCode), parts[2]);
+                const wardCode = findCodeByName(getWards().filter(w => w.district_code === districtCode), parts[1]);
+                city = cityCode;
+                district = districtCode;
+                ward = wardCode;
               } else {
-                // Địa chỉ không đúng chuẩn, chỉ điền vào chi tiết
                 addressDetail = data.address;
                 ward = '';
                 district = '';
@@ -115,6 +121,31 @@ const UserProfile = ({ user }) => {
 
     try {
       await updateUserById(userId, updateData);
+      // Fetch lại user mới nhất từ API để lấy đúng address
+      const updatedUser = await getUserById(userId);
+      if (updatedUser) {
+        // Chỉ giữ lại các trường cần thiết cho localStorage
+        const role = updatedUser?.role?.name?.toLowerCase() || 'customer';
+        const enhancedUser = {
+          id: updatedUser.id || updatedUser.user_id || '',
+          user_id: updatedUser.user_id || updatedUser.id || '',
+          email: updatedUser.email || '',
+          fullname: updatedUser.fullname || '',
+          avatar: updatedUser.avatar || '',
+          phone: updatedUser.phone || '',
+          role: updatedUser.role || { name: role },
+          accountStatus: updatedUser.accountStatus || '',
+          authProvider: updatedUser.authProvider || '',
+          createdAt: updatedUser.createdAt || '',
+          lastLogin: updatedUser.lastLogin || '',
+          gender: updatedUser.gender || '',
+          address: updatedUser.address || '',
+          role_string: role,
+          isAdmin: ['admin', 'manager', 'staff'].includes(role)
+        };
+        localStorage.setItem('userData', JSON.stringify(enhancedUser));
+        window.dispatchEvent(new Event('userDataUpdated'));
+      }
       setMessage({ type: 'success', content: 'Thông tin cá nhân đã được cập nhật thành công!' });
       setIsEditing(false);
     } catch (error) {

@@ -84,18 +84,17 @@ const MainNavbar = ({ setUser }) => {
   // Effect: Lấy userData từ localStorage hoặc Firebase, đồng bộ state user
   const storedUserData = localStorage.getItem('userData');
   useEffect(() => {
+    // Kiểm tra nếu vừa đăng xuất thì reset user
     const justLoggedOut = sessionStorage.getItem('justLoggedOut') === 'true';
     if (justLoggedOut) {
-      // Nếu vừa đăng xuất, reset userData và user
       sessionStorage.removeItem('justLoggedOut');
       return;
     }
     // Lấy userData mới nhất từ localStorage mỗi lần render
     if (storedUserData) {
       const parsed = JSON.parse(storedUserData);
-      // Ưu tiên lấy role từ role.name nếu có
+      // Ưu tiên lấy role từ role.name nếu có, chuẩn hóa role
       let role = '';
-      // Nếu userId là 0 thì role là customer
       if (parsed.user_id === 0 || parsed.user_id === '0') {
         role = 'customer';
       } else if (parsed.role && typeof parsed.role === 'object' && parsed.role.name) {
@@ -105,17 +104,29 @@ const MainNavbar = ({ setUser }) => {
       } else if (parsed.role_string) {
         role = parsed.role_string;
       }
-      // Normalize role
       role = (role || '').toLowerCase().trim();
+      // Chỉ giữ lại các trường user cần thiết cho UI, loại bỏ các trường cũ không còn dùng
       const enhancedUser = {
-        ...parsed,
-        role_string: role,
-        isAdmin: ['admin', 'manager', 'staff'].includes(role),
+        id: parsed.id || parsed.user_id || '',
+        user_id: parsed.user_id || parsed.id || '',
+        email: parsed.email || '',
+        fullname: parsed.fullname || '',
+        avatar: parsed.avatar || '',
+        phone: parsed.phone || '',
+        role: parsed.role || { name: role },
+        accountStatus: parsed.accountStatus || '',
+        authProvider: parsed.authProvider || '',
+        createdAt: parsed.createdAt || '',
+        lastLogin: parsed.lastLogin || '',
+        gender: parsed.gender || '',
+        address: parsed.address || '',
+        role_string: role, // role chuẩn hóa dạng string
+        isAdmin: ['admin', 'manager', 'staff'].includes(role) // flag phân quyền
       };
       setUserData(enhancedUser);
       setUser(enhancedUser);
     } else if (auth.currentUser) {
-      // 🔥 Nếu không có localStorage nhưng đã login Firebase → gọi API lấy user
+      // Nếu không có localStorage nhưng đã login Firebase → gọi API lấy user
       const fetchUserData = async () => {
         try {
           const res = await fetch(`https://app-bggwpxm32a-uc.a.run.app/users`, {
@@ -128,26 +139,79 @@ const MainNavbar = ({ setUser }) => {
           const result = await res.json();
           const userInfo = result.data;
           const role = userInfo?.role?.name?.toLowerCase() || 'customer';
-
+          // Chỉ giữ lại các trường user cần thiết cho UI, loại bỏ các trường cũ không còn dùng
           const enhancedUser = {
-            ...userInfo,
-            role_string: role,
-            isAdmin: ['admin', 'manager', 'staff'].includes(role),
+            id: userInfo.id || userInfo.user_id || '',
+            user_id: userInfo.user_id || userInfo.id || '',
+            email: userInfo.email || '',
+            fullname: userInfo.fullname || '',
+            avatar: userInfo.avatar || '',
+            phone: userInfo.phone || '',
+            role: userInfo.role || { name: role },
+            accountStatus: userInfo.accountStatus || '',
+            authProvider: userInfo.authProvider || '',
+            createdAt: userInfo.createdAt || '',
+            lastLogin: userInfo.lastLogin || '',
+            gender: userInfo.gender || '',
+            address: userInfo.address || '',
+            role_string: role, // role chuẩn hóa dạng string
+            isAdmin: ['admin', 'manager', 'staff'].includes(role) // flag phân quyền
           };
-
+          // Ghi đè localStorage chỉ với các trường mới nhất
           localStorage.setItem('userData', JSON.stringify(enhancedUser));
           localStorage.setItem('isAuthenticated', 'true');
           setUserData(enhancedUser);
           setUser(enhancedUser);
         } catch (error) {
           console.error('Error fetching user data:', error);
-          // setUserData(null);
-          // setUser(null);
         }
       };
       fetchUserData();
     }
   }, [storedUserData, setUser]);
+
+  useEffect(() => {
+    const handleUserDataUpdate = () => {
+      const storedUserData = localStorage.getItem('userData');
+      if (storedUserData) {
+        const parsed = JSON.parse(storedUserData);
+        // Ưu tiên lấy role từ role.name nếu có, chuẩn hóa role
+        let role = '';
+        if (parsed.user_id === 0 || parsed.user_id === '0') {
+          role = 'customer';
+        } else if (parsed.role && typeof parsed.role === 'object' && parsed.role.name) {
+          role = parsed.role.name;
+        } else if (typeof parsed.role === 'string') {
+          role = parsed.role;
+        } else if (parsed.role_string) {
+          role = parsed.role_string;
+        }
+        role = (role || '').toLowerCase().trim();
+        const enhancedUser = {
+          id: parsed.id || parsed.user_id || '',
+          user_id: parsed.user_id || parsed.id || '',
+          email: parsed.email || '',
+          fullname: parsed.fullname || '',
+          avatar: parsed.avatar || '',
+          phone: parsed.phone || '',
+          role: parsed.role || { name: role },
+          accountStatus: parsed.accountStatus || '',
+          authProvider: parsed.authProvider || '',
+          createdAt: parsed.createdAt || '',
+          lastLogin: parsed.lastLogin || '',
+          gender: parsed.gender || '',
+          address: parsed.address || '',
+          role_string: role,
+          isAdmin: ['admin', 'manager', 'staff'].includes(role)
+        };
+        setUserData(enhancedUser);
+        setUser(enhancedUser);
+      }
+    };
+    window.addEventListener('userDataUpdated', handleUserDataUpdate);
+    return () => window.removeEventListener('userDataUpdated', handleUserDataUpdate);
+  }, [setUser]);
+
   console.log('userData', userData);
 
   // Handler: Đăng xuất, clear localStorage, reset state, chuyển về trang chủ

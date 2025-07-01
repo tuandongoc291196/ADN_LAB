@@ -41,8 +41,8 @@ const BookingConfirmation = () => {
         setBookingId(location.state.bookingId);
       } else {
         // Fallback: Generate booking ID nếu không có từ backend
-        const id = 'ADN' + Date.now().toString().slice(-6);
-        setBookingId(id);
+      const id = 'ADN' + Date.now().toString().slice(-6);
+      setBookingId(id);
       }
     }
   }, [location.state]); // Chạy khi location.state thay đổi
@@ -211,7 +211,7 @@ const BookingConfirmation = () => {
                       </div>
                       <div className="mb-2">
                           <strong>Kit sẽ được gửi đến:</strong> {bookingData.customerInfo.address}
-                        </div>
+                      </div>
                     </div>
                   ) : (
                     <div>

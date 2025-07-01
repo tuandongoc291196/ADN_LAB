@@ -589,7 +589,7 @@ function ServiceManagement() {
                         return (
                           <span className={`badge bg-${isActive ? 'success' : 'secondary'}`}>
                             {isActive ? 'Đang hiển thị' : 'Đã ẩn'}
-                          </span>
+                      </span>
                         );
                       })()}
                     </td>
@@ -889,7 +889,7 @@ function ServiceManagement() {
                 ) : (
                   modalType === 'add' ? 'Thêm' : 'Cập nhật'
                 )}
-              </Button>
+            </Button>
             )}
           </Modal.Footer>
         </Form>

@@ -13,8 +13,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Badge, Form, Alert, Tab, Nav } from 'react-bootstrap';
-import { getAllServices, getAllMethods, getMethodsByServiceId, createBooking } from '../../services/api'; // API functions
+import { getAllServices, getAllMethods, getMethodsByServiceId, createBooking, getUserById } from '../../services/api'; // API functions
 import { getServiceById, getServicesByType, canServiceUseSelfSample, isAdministrativeService, enrichMethodData, isMethodDisabled, getMethodRestrictionReason } from '../data/services-data'; // Helper functions
+import { getProvinces, getDistricts, getWards } from 'vietnam-provinces';
 
 const AppointmentBooking = () => {
   // ROUTING & NAVIGATION
@@ -33,6 +34,7 @@ const AppointmentBooking = () => {
   // UI STATE
   const [loading, setLoading] = useState(true); // Trạng thái đang tải dữ liệu
   const [errors, setErrors] = useState(null); // Lỗi chung
+  const [userFromAPI, setUserFromAPI] = useState(null); // User data từ API
   
   // BOOKING DATA STATE
   const [bookingData, setBookingData] = useState({
@@ -63,13 +65,22 @@ const AppointmentBooking = () => {
   
   // RELATIONSHIP STATE
   const [relationshipBetween, setRelationshipBetween] = useState(''); // Quan hệ được chọn
+  const [isParticipant1Customer, setIsParticipant1Customer] = useState(false); // Checkbox người tham gia 1 là người đặt lịch
   
   // USER DATA
   const storedUserData = localStorage.getItem('userData');
   const userData = storedUserData ? JSON.parse(storedUserData) : null;
   
-  // HELPER FUNCTIONS
-  // Tính giờ kết thúc từ giờ bắt đầu (mỗi slot 1 tiếng)
+  // Fetch user profile từ API khi component mount
+  useEffect(() => {
+    if (userData && (userData.id || userData._id)) {
+      getUserById(userData.id || userData._id)
+        .then(user => setUserFromAPI(user))
+        .catch(err => console.error('Lỗi lấy thông tin user:', err));
+    }
+  }, []);
+
+  // Helper function: Tính toán giờ kết thúc từ giờ bắt đầu (mỗi slot 1 tiếng)
   const calculateEndTime = (startTime) => {
     const [hour, minute] = startTime.split(':').map(Number);
     const endHour = hour + 1;
@@ -208,24 +219,42 @@ const AppointmentBooking = () => {
     }
   }, [location.state, services]); // Chạy khi có service được chọn từ page trước
 
-  // EFFECT: Auto-fill thông tin khách hàng từ userData trong localStorage
+  // EFFECT: Auto-fill thông tin khách hàng từ userFromAPI (thay vì localStorage)
   useEffect(() => {
-    if (storedUserData) {
-      const parsed = JSON.parse(storedUserData);
+    if (userFromAPI) {
+      let addressDetail = '', ward = '', district = '', city = '';
+      if (userFromAPI.address) {
+        const parts = userFromAPI.address.split(',').map(s => s.trim());
+        if (parts.length === 4) {
+          addressDetail = parts[0];
+          // Map tên sang code (giống UserProfile)
+          const normalize = str => str.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+          const findCodeByName = (list, name) => (list.find(item => normalize(item.name) === normalize(name)) || {}).code || '';
+          city = findCodeByName(getProvinces(), parts[3]);
+          district = findCodeByName(getDistricts().filter(d => d.province_code === city), parts[2]);
+          ward = findCodeByName(getWards().filter(w => w.district_code === district), parts[1]);
+        } else {
+          addressDetail = userFromAPI.address;
+        }
+      }
+      
       setBookingData(prev => ({
         ...prev,
         customerInfo: {
           ...prev.customerInfo,
-          // Map các field từ userData structure khác nhau
-          fullName: parsed.fullname || parsed.fullName || '',
-          phone: parsed.phone || '',
-          email: parsed.email || '',
-          idNumber: parsed.id_number || parsed.idNumber || '',
-          address: parsed.address || '',
+          fullName: userFromAPI.fullname || '',
+          phone: userFromAPI.phone || '',
+          email: userFromAPI.email || '',
+          idNumber: userFromAPI.id_number || userFromAPI.idNumber || '',
+          address: userFromAPI.address || '',
+          addressDetail,
+          ward,
+          district,
+          city
         }
       }));
     }
-  }, [storedUserData]); // Chạy khi storedUserData thay đổi
+  }, [userFromAPI]);
 
   // Handler: Thay đổi loại dịch vụ (civil/administrative)
   const handleServiceTypeChange = (type) => {
@@ -564,6 +593,51 @@ const AppointmentBooking = () => {
     { label: '15:00 - 16:00', value: '15:00' },
     { label: '16:00 - 17:00', value: '16:00' }
   ];
+
+  // Handler: Auto-fill thông tin người tham gia 1 từ thông tin người đặt lịch
+  const handleParticipant1AsCustomer = (checked) => {
+    setIsParticipant1Customer(checked);
+    if (checked) {
+      // Auto-fill thông tin từ customerInfo
+      const updated = [...bookingData.customerInfo.participants];
+      updated[0] = {
+        ...updated[0],
+        name: bookingData.customerInfo.fullName || '',
+        idNumber: bookingData.customerInfo.idNumber || '',
+        phone: bookingData.customerInfo.phone || '',
+        // Tuổi và giới tính cần user nhập thêm
+        age: '',
+        gender: '',
+        relation: 'Chưa xác định' // Mặc định
+      };
+      setBookingData(prev => ({
+        ...prev,
+        customerInfo: {
+          ...prev.customerInfo,
+          participants: updated
+        }
+      }));
+    } else {
+      // Clear thông tin người tham gia 1
+      const updated = [...bookingData.customerInfo.participants];
+      updated[0] = {
+        ...updated[0],
+        name: '',
+        idNumber: '',
+        phone: '',
+        age: '',
+        gender: '',
+        relation: ''
+      };
+      setBookingData(prev => ({
+        ...prev,
+        customerInfo: {
+          ...prev.customerInfo,
+          participants: updated
+        }
+      }));
+    }
+  };
 
   return (
     <div>
@@ -1160,20 +1234,16 @@ const AppointmentBooking = () => {
                                 placeholder="Nhập số CCCD/CMND"
                                 value={bookingData.customerInfo.idNumber}
                                 onChange={(e) => {
-                                  const value = e.target.value.replace(/\D/g, '');
+                                  const value = e.target.value.replace(/\D/g, ''); // Chỉ cho số
                                   if (value.length <= 12) {
                                     handleCustomerInfoChange('idNumber', value);
-                                    const error =
-                                      !value
-                                        ? 'CCCD không được để trống'
-                                        : value.length !== 12
-                                          ? 'CCCD phải gồm đúng 12 chữ số'
-                                          : '';
-                                    setCustomerErrors(prev => ({ ...prev, idNumber: error }));
+                                    setCustomerErrors(prev => ({
+                                      ...prev,
+                                      idNumber: value.length === 12 ? '' : 'CCCD phải gồm đúng 12 chữ số'
+                                    }));
                                   }
                                 }}
                                 isInvalid={!!customerErrors.idNumber}
-                                required
                               />
                               <Form.Control.Feedback type="invalid">
                                 {customerErrors.idNumber}
@@ -1181,27 +1251,91 @@ const AppointmentBooking = () => {
                             </Col>
                           </Row>
 
-                          <Form.Group className="mb-3">
-                            <Form.Label>Địa chỉ <span className="text-danger">*</span></Form.Label>
-                            <Form.Control
-                              as="textarea"
-                              rows={2}
-                              placeholder="Nhập địa chỉ đầy đủ"
-                              value={bookingData.customerInfo.address}
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                handleCustomerInfoChange('address', value);
-                                setCustomerErrors(prev => ({
-                                  ...prev,
-                                  address: value.trim() ? '' : 'Địa chỉ không được để trống'
-                                }));
-                              }}
-                              isInvalid={!!customerErrors.address}
-                              required
-                            />
-                            <Form.Control.Feedback type="invalid">
-                              {customerErrors.address}
-                            </Form.Control.Feedback>
+
+
+                          <Form.Group>
+                            <Row>
+                              <Col md={6} className="mb-3">
+                                <Form.Label>Tỉnh/Thành phố</Form.Label>
+                                <Form.Select
+                                  value={bookingData.customerInfo.city}
+                                  onChange={e => {
+                                    setBookingData(prev => ({
+                                      ...prev,
+                                      customerInfo: {
+                                        ...prev.customerInfo,
+                                        city: e.target.value,
+                                        district: '',
+                                        ward: ''
+                                      }
+                                    }));
+                                  }}
+                                >
+                                  <option value="">Chọn tỉnh/thành phố</option>
+                                  {getProvinces().map(p => (
+                                    <option key={p.code} value={p.code}>{p.name}</option>
+                                  ))}
+                                </Form.Select>
+                              </Col>
+                              <Col md={6} className="mb-3">
+                                <Form.Label>Quận/Huyện</Form.Label>
+                                <Form.Select
+                                  value={bookingData.customerInfo.district}
+                                  onChange={e => {
+                                    setBookingData(prev => ({
+                                      ...prev,
+                                      customerInfo: {
+                                        ...prev.customerInfo,
+                                        district: e.target.value,
+                                        ward: ''
+                                      }
+                                    }));
+                                  }}
+                                  disabled={!bookingData.customerInfo.city}
+                                >
+                                  <option value="">Chọn quận/huyện</option>
+                                  {getDistricts().filter(d => d.province_code === bookingData.customerInfo.city).map(d => (
+                                    <option key={d.code} value={d.code}>{d.name}</option>
+                                  ))}
+                                </Form.Select>
+                              </Col>
+                            </Row>
+                            <Row>
+                              <Col md={6} className="mb-3">
+                                <Form.Label>Phường/Xã</Form.Label>
+                                <Form.Select
+                                  value={bookingData.customerInfo.ward}
+                                  onChange={e => setBookingData(prev => ({
+                                    ...prev,
+                                    customerInfo: {
+                                      ...prev.customerInfo,
+                                      ward: e.target.value
+                                    }
+                                  }))}
+                                  disabled={!bookingData.customerInfo.district}
+                                >
+                                  <option value="">Chọn phường/xã</option>
+                                  {getWards().filter(w => w.district_code === bookingData.customerInfo.district).map(w => (
+                                    <option key={w.code} value={w.code}>{w.name}</option>
+                                  ))}
+                                </Form.Select>
+                              </Col>
+                              <Col md={6} className="mb-3">
+                                <Form.Label>Địa chỉ chi tiết</Form.Label>
+                                <Form.Control
+                                  type="text"
+                                  value={bookingData.customerInfo.addressDetail}
+                                  onChange={e => setBookingData(prev => ({
+                                    ...prev,
+                                    customerInfo: {
+                                      ...prev.customerInfo,
+                                      addressDetail: e.target.value
+                                    }
+                                  }))}
+                                  placeholder="Số nhà, tên đường..."
+                                />
+                              </Col>
+                            </Row>
                           </Form.Group>
                         </Form>
                       </Card.Body>
@@ -1224,6 +1358,20 @@ const AppointmentBooking = () => {
                                   <h6 className="text-primary mb-3">
                                     <i className="bi bi-person-badge me-2"></i>
                                     Người tham gia {idx + 1}
+                                    {idx === 0 && (
+                                      <Form.Check
+                                        type="checkbox"
+                                        id="participant1-customer"
+                                        className="mt-0"
+                                        checked={isParticipant1Customer}
+                                        onChange={(e) => handleParticipant1AsCustomer(e.target.checked)}
+                                        label={
+                                          <small className="text-success">
+                                            Là người đặt lịch
+                                          </small>
+                                        }
+                                      />
+                                    )}
                                   </h6>
                                   <Form.Group className="mb-3">
                                     <Form.Label>Họ và tên <span className="text-danger">*</span></Form.Label>

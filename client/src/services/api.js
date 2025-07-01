@@ -215,7 +215,7 @@ export const getServicesByCategory = async (categoryId) => {
 // Lấy tất cả service categories
 export const getServiceCategories = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/categories`, {
+    const response = await fetch(`${API_BASE_URL}/services/category`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
