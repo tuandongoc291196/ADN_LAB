@@ -19,7 +19,7 @@ const BookingConfirmation = () => {
   // ROUTING & NAVIGATION
   const location = useLocation(); // Hook nhận state từ trang trước
   const navigate = useNavigate(); // Hook điều hướng
-  
+
   // BOOKING DATA STATE
   const [bookingData, setBookingData] = useState(null); // Dữ liệu booking từ navigation state
   const [bookingId, setBookingId] = useState(''); // ID booking từ backend
@@ -30,19 +30,19 @@ const BookingConfirmation = () => {
     if (location.state) {
       // Lấy booking data từ previous page
       if (location.state.bookingData) {
-      setBookingData(location.state.bookingData);
+        setBookingData(location.state.bookingData);
         console.log('Booking data received:', location.state.bookingData);
         console.log('Selected service:', location.state.bookingData.selectedService);
         console.log('Selected method:', location.state.bookingData.selectedMethod);
       }
-      
+
       // Lấy booking ID từ backend response hoặc generate fallback
       if (location.state.bookingId) {
         setBookingId(location.state.bookingId);
       } else {
         // Fallback: Generate booking ID nếu không có từ backend
-      const id = 'ADN' + Date.now().toString().slice(-6);
-      setBookingId(id);
+        const id = 'ADN' + Date.now().toString().slice(-6);
+        setBookingId(id);
       }
     }
   }, [location.state]); // Chạy khi location.state thay đổi
@@ -50,13 +50,13 @@ const BookingConfirmation = () => {
   // EVENT HANDLERS
   // Handler: Chuyển đến trang thanh toán với booking data
   const handleProceedToPayment = () => {
-    navigate('/payment', { 
-      state: { 
+    navigate('/payment', {
+      state: {
         bookingData: {
           ...bookingData,
           bookingId: bookingId // Kèm theo booking ID cho payment
         }
-      } 
+      }
     });
   };
 
@@ -95,9 +95,9 @@ const BookingConfirmation = () => {
         return <Badge bg="success">ADN Dân sự</Badge>;
       }
     }
-    
+
     // Fallback về serviceType cũ
-    return serviceType === 'administrative' 
+    return serviceType === 'administrative'
       ? <Badge bg="warning" text="dark">ADN Hành chính</Badge>
       : <Badge bg="success">ADN Dân sự</Badge>;
   };
@@ -108,7 +108,7 @@ const BookingConfirmation = () => {
     if (methodInfo && methodInfo.name) {
       return methodInfo.name;
     }
-    
+
     // Fallback về mapping cũ cho ID cố định
     const methods = {
       '0': 'Tự lấy mẫu tại nhà',
@@ -203,34 +203,34 @@ const BookingConfirmation = () => {
                     Thời gian hẹn
                   </h6>
                   <div className="text-start">
-                  {/* Conditional rendering dựa trên phương thức thu mẫu */}
-                  {bookingData.collectionMethod === 'self-sample' ? (
-                    <div>
-                      <div className="mb-2">
+                    {/* Conditional rendering dựa trên phương thức thu mẫu */}
+                    {bookingData.collectionMethod === 'self-sample' ? (
+                      <div>
+                        <div className="mb-2">
                           <strong>Phương thức:</strong> Tự lấy mẫu tại nhà
-                      </div>
-                      <div className="mb-2">
+                        </div>
+                        <div className="mb-2">
                           <strong>Kit sẽ được gửi đến:</strong> {bookingData.customerInfo.address}
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <div className="mb-2">
+                    ) : (
+                      <div>
+                        <div className="mb-2">
                           <strong>Giờ hẹn:</strong> {bookingData.appointmentTime}
-                      </div>
-                      <div className="mb-2">
+                        </div>
+                        <div className="mb-2">
                           <strong>Ngày hẹn:</strong> {formatDate(bookingData.appointmentDate)}
-                      </div>
-                      <div className="mb-2">
+                        </div>
+                        <div className="mb-2">
                           <strong>Địa điểm:</strong> {
-                            bookingData.collectionMethod === 'at-facility' ? 
-                            'Trung tâm xét nghiệm ADN - 123 Đường ABC, Quận XYZ' :
-                            bookingData.customerInfo.address
+                            bookingData.collectionMethod === 'at-facility' ?
+                              'Trung tâm xét nghiệm ADN - 123 Đường ABC, Quận XYZ' :
+                              bookingData.customerInfo.address
                           }
                         </div>
                       </div>
                     )}
-                    </div>
+                  </div>
                 </Col>
               </Row>
 
@@ -244,13 +244,13 @@ const BookingConfirmation = () => {
                     Thông tin liên hệ
                   </h6>
                   <div className="text-start">
-                  <div className="mb-2">
+                    <div className="mb-2">
                       <strong>Họ tên:</strong> {bookingData.customerInfo.fullName}
-                  </div>
-                  <div className="mb-2">
+                    </div>
+                    <div className="mb-2">
                       <strong>Điện thoại:</strong> {bookingData.customerInfo.phone}
-                  </div>
-                  <div className="mb-2">
+                    </div>
+                    <div className="mb-2">
                       <strong>Email:</strong> {bookingData.customerInfo.email || 'Không có'}
                     </div>
                   </div>
@@ -262,23 +262,29 @@ const BookingConfirmation = () => {
                     Người tham gia
                   </h6>
                   <div className="text-start">
-                  {/* Conditional rendering danh sách participants */}
-                  {bookingData.customerInfo.participants.length > 0 ? (
-                    bookingData.customerInfo.participants.map((participant, index) => (
-                      <div key={index} className="mb-2 p-2 bg-light rounded">
+                    {/* Conditional rendering danh sách participants */}
+                    {bookingData.customerInfo.participants.length > 0 ? (
+                      bookingData.customerInfo.participants.map((participant, index) => (
+                        <div key={index} className="mb-2 p-2 bg-light rounded">
                           <div className="mb-1">
                             <strong>Họ tên:</strong> {participant.name}
                           </div>
                           <div>
-                            <strong>Điện thoại:</strong> {participant.phone}
+                            <strong>CCCD:</strong> {participant.idNumber}
                           </div>
+                          <div>
+                            <strong>Tuổi:</strong> {participant.age}
+                          </div>
+                          <div>
+                            <strong>Mối quan hệ:</strong> {participant.relation}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-muted">
+                        Thông tin sẽ được cập nhật khi thanh toán
                       </div>
-                    ))
-                  ) : (
-                    <div className="text-muted">
-                      Thông tin sẽ được cập nhật khi thanh toán
-                    </div>
-                  )}
+                    )}
                   </div>
                 </Col>
               </Row>
@@ -286,12 +292,12 @@ const BookingConfirmation = () => {
               <hr />
 
               {/* SECTION 3: Thông tin chi phí với breakdown chi tiết */}
-      <Row className="mb-4">
+              <Row className="mb-4">
                 <Col>
                   <h6 className="text-primary mb-3">
                     <i className="bi bi-cash-coin me-2"></i>
                     Thông tin chi phí
-                    </h6>
+                  </h6>
                   <div className="bg-light p-3 rounded">
                     {/* Chi phí dịch vụ chính */}
                     <div className="d-flex justify-content-between mb-2">
@@ -305,7 +311,7 @@ const BookingConfirmation = () => {
                           return 'Liên hệ để biết giá';
                         })()}
                       </span>
-                  </div>
+                    </div>
                     {/* Phí phương thức thu mẫu */}
                     <div className="d-flex justify-content-between mb-2">
                       <span>Phí dịch vụ (theo phương thức thu mẫu):</span>
@@ -318,7 +324,7 @@ const BookingConfirmation = () => {
                           return 'Miễn phí';
                         })()}
                       </span>
-                </div>
+                    </div>
                     <hr />
                     {/* Tổng cộng với highlight */}
                     <div className="d-flex justify-content-between align-items-center mb-3">
@@ -328,14 +334,14 @@ const BookingConfirmation = () => {
                           const servicePrice = bookingData?.selectedService?.price || 0;
                           const methodPrice = bookingData?.selectedMethod?.price || 0;
                           const totalAmount = servicePrice + methodPrice;
-                          
+
                           if (totalAmount > 0) {
                             return `${new Intl.NumberFormat('vi-VN').format(totalAmount)} VNĐ`;
                           }
                           return 'Liên hệ để biết giá';
                         })()}
                       </h4>
-                  </div>
+                    </div>
                   </div>
                 </Col>
               </Row>
@@ -354,7 +360,7 @@ const BookingConfirmation = () => {
                 <i className="bi bi-exclamation-triangle me-2"></i>
                 <strong>Quan trọng:</strong> Vui lòng hoàn tất thanh toán trong vòng 30 phút để giữ lịch hẹn.
               </Alert>
-              
+
               <h4 className="text-warning mb-3">
                 <i className="bi bi-credit-card me-2"></i>
                 Hoàn tất thanh toán
@@ -362,7 +368,7 @@ const BookingConfirmation = () => {
               <p className="mb-4">
                 Tiến hành thanh toán để đặt lịch thành công và bắt đầu quy trình xét nghiệm ADN
               </p>
-              
+
               {/* Hiển thị tổng tiền cần thanh toán nổi bật */}
               <div className="bg-white p-3 rounded mb-4">
                 <div className="d-flex justify-content-between align-items-center">
@@ -372,7 +378,7 @@ const BookingConfirmation = () => {
                       const servicePrice = bookingData?.selectedService?.price || 0;
                       const methodPrice = bookingData?.selectedMethod?.price || 0;
                       const totalAmount = servicePrice + methodPrice;
-                      
+
                       if (totalAmount > 0) {
                         return `${new Intl.NumberFormat('vi-VN').format(totalAmount)} VNĐ`;
                       }
@@ -381,11 +387,11 @@ const BookingConfirmation = () => {
                   </span>
                 </div>
               </div>
-              
+
               {/* Button chính để chuyển đến trang thanh toán */}
               <div className="d-flex justify-content-center">
-                <Button 
-                  variant="warning" 
+                <Button
+                  variant="warning"
                   size="lg"
                   onClick={handleProceedToPayment}
                   className="px-4"
@@ -491,15 +497,15 @@ const BookingConfirmation = () => {
                     <h4 style="color: #0d6efd; margin-bottom: 15px;">
                       <i class="bi bi-people"></i> Người tham gia
                     </h4>
-                    ${bookingData.customerInfo.participants.length > 0 ? 
-                      bookingData.customerInfo.participants.map((participant, index) => `
+                    ${bookingData.customerInfo.participants.length > 0 ?
+                bookingData.customerInfo.participants.map((participant, index) => `
                         <div style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
                           <p><strong>Họ tên:</strong> ${participant.name}</p>
                           <p><strong>Điện thoại:</strong> ${participant.phone}</p>
                         </div>
-                      `).join('') : 
-                      '<p style="color: #6c757d;">Thông tin sẽ được cập nhật khi thanh toán</p>'
-                    }
+                      `).join('') :
+                '<p style="color: #6c757d;">Thông tin sẽ được cập nhật khi thanh toán</p>'
+              }
                   </div>
                 </div>
                 
@@ -511,44 +517,44 @@ const BookingConfirmation = () => {
                     <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                       <span>Giá dịch vụ:</span>
                       <span>${(() => {
-                        const servicePrice = bookingData?.selectedService?.price;
-                        if (servicePrice && servicePrice > 0) {
-                          return `${new Intl.NumberFormat('vi-VN').format(servicePrice)} VNĐ`;
-                        }
-                        return 'Liên hệ để biết giá';
-                      })()}</span>
+                const servicePrice = bookingData?.selectedService?.price;
+                if (servicePrice && servicePrice > 0) {
+                  return `${new Intl.NumberFormat('vi-VN').format(servicePrice)} VNĐ`;
+                }
+                return 'Liên hệ để biết giá';
+              })()}</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                       <span>Phí dịch vụ (theo phương thức thu mẫu):</span>
                       <span>${(() => {
-                        const methodPrice = bookingData?.selectedMethod?.price;
-                        if (methodPrice && methodPrice > 0) {
-                          return `${new Intl.NumberFormat('vi-VN').format(methodPrice)} VNĐ`;
-                        }
-                        return 'Miễn phí';
-                      })()}</span>
+                const methodPrice = bookingData?.selectedMethod?.price;
+                if (methodPrice && methodPrice > 0) {
+                  return `${new Intl.NumberFormat('vi-VN').format(methodPrice)} VNĐ`;
+                }
+                return 'Miễn phí';
+              })()}</span>
                     </div>
                     <hr style="margin: 15px 0;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                       <h5 style="margin: 0;">Tổng cộng:</h5>
                       <h4 style="color: #0d6efd; margin: 0;">
                         ${(() => {
-                          const servicePrice = bookingData?.selectedService?.price || 0;
-                          const methodPrice = bookingData?.selectedMethod?.price || 0;
-                          const totalAmount = servicePrice + methodPrice;
-                          
-                          if (totalAmount > 0) {
-                            return `${new Intl.NumberFormat('vi-VN').format(totalAmount)} VNĐ`;
-                          }
-                          return 'Liên hệ để biết giá';
-                        })()}
+                const servicePrice = bookingData?.selectedService?.price || 0;
+                const methodPrice = bookingData?.selectedMethod?.price || 0;
+                const totalAmount = servicePrice + methodPrice;
+
+                if (totalAmount > 0) {
+                  return `${new Intl.NumberFormat('vi-VN').format(totalAmount)} VNĐ`;
+                }
+                return 'Liên hệ để biết giá';
+              })()}
                       </h4>
                     </div>
                   </div>
                 </div>
               </div>
             `;
-            
+
             // Tạo cửa sổ in mới
             const printWindow = window.open('', '_blank');
             printWindow.document.write(`
@@ -575,9 +581,9 @@ const BookingConfirmation = () => {
               printWindow.close();
             }, 500);
           }}>
-              <i className="bi bi-printer me-2"></i>
-              In thông tin
-            </Button>
+            <i className="bi bi-printer me-2"></i>
+            In thông tin
+          </Button>
         </Col>
       </Row>
     </Container>

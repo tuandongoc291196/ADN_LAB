@@ -276,7 +276,7 @@ const Payment = () => {
             case 'adn dân sự':
                 return 'bg-success text-white px-2 py-1 rounded d-inline-block';
             case 'adn hành chính':
-                return 'bg-warning text-white px-2 py-1 rounded d-inline-block';
+                return 'bg-warning text-black px-2 py-1 rounded d-inline-block';
             default:
                 return 'bg-light text-dark px-2 py-1 rounded d-inline-block';
         }
@@ -360,13 +360,13 @@ const Payment = () => {
                                 </div>
                                 <hr />
                                 <div className="d-flex justify-content-between align-items-center mb-2">
-                                    <span className="text-primary mb-2"><strong>Giá dịch vụ:</strong></span>
-                                    <span>{bookingData?.selectedService?.price ? formatCurrency(bookingData.selectedService.price) : '—'}</span>
+                                    <span><strong>Giá dịch vụ:</strong></span>
+                                    <span className="text-primary mb-2">{bookingData?.selectedService?.price ? formatCurrency(bookingData.selectedService.price) : '—'}</span>
                                 </div>
 
                                 <div className="d-flex justify-content-between align-items-center mb-2">
-                                    <span className="text-primary mb-2"><strong>Phí thanh toán:</strong></span>
-                                    <span>{bookingData?.selectedMethod?.price ? formatCurrency(bookingData.selectedMethod.price) : '—'}</span>
+                                    <span><strong>Phí dịch vụ:</strong></span>
+                                    <span className="text-primary mb-2">{bookingData?.selectedMethod?.price ? formatCurrency(bookingData.selectedMethod.price) : 'Miễn phí'}</span>
                                 </div>
                                 <hr />
                                 <div className="d-flex justify-content-between align-items-center">
