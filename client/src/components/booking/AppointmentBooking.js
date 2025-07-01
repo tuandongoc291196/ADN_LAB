@@ -17,40 +17,41 @@ import { getAllServices, getAllMethods, getMethodsByServiceId, createBooking } f
 import { getServiceById, getServicesByType, canServiceUseSelfSample, isAdministrativeService, enrichMethodData, isMethodDisabled, getMethodRestrictionReason } from '../data/services-data'; // Helper functions
 
 const AppointmentBooking = () => {
+  // ROUTING & NAVIGATION
   const navigate = useNavigate(); // Hook điều hướng
   const location = useLocation(); // Hook nhận state từ page trước
   
-  // State quản lý flow đặt lịch
+  // BOOKING FLOW STATE
   const [currentStep, setCurrentStep] = useState(1); // Bước hiện tại (1-4)
   
-  // State quản lý dữ liệu từ API
+  // API DATA STATE
   const [services, setServices] = useState([]); // Danh sách dịch vụ từ API
   const [methods, setMethods] = useState([]); // Danh sách phương thức từ API
   const [serviceMethods, setServiceMethods] = useState([]); // Phương thức của dịch vụ được chọn
   const [enrichedMethods, setEnrichedMethods] = useState([]); // Methods với icon và color
   
-  // State quản lý UI
+  // UI STATE
   const [loading, setLoading] = useState(true); // Trạng thái đang tải dữ liệu
   const [errors, setErrors] = useState(null); // Lỗi chung
   
-  // State chính - Dữ liệu booking
+  // BOOKING DATA STATE
   const [bookingData, setBookingData] = useState({
-    serviceType: '',        // 'civil' hoặc 'administrative'
+    serviceType: '',        // Loại dịch vụ: 'civil' hoặc 'administrative'
     serviceId: '',          // ID dịch vụ được chọn
     collectionMethod: '',   // ID phương thức thu mẫu
     appointmentDate: '',    // Ngày hẹn (YYYY-MM-DD)
     appointmentTime: '',    // Giờ hẹn (HH:MM)
     customerInfo: {         // Thông tin khách hàng
-      fullName: '',
-      phone: '',
-      email: '',
-      address: '',
-      idNumber: '',
-      participants: []      // Danh sách người tham gia xét nghiệm
+      fullName: '',        // Họ tên đầy đủ
+      phone: '',           // Số điện thoại
+      email: '',           // Email liên hệ
+      address: '',         // Địa chỉ
+      idNumber: '',        // CMND/CCCD
+      participants: []     // Danh sách người tham gia xét nghiệm
     }
   });
   
-  // State validation errors
+  // VALIDATION STATE
   const [idNumberErrors, setIdNumberErrors] = useState({}); // Lỗi CMND/CCCD
   const [phoneErrors, setPhoneErrors] = useState({});       // Lỗi số điện thoại
   const [customerErrors, setCustomerErrors] = useState({    // Lỗi thông tin khách hàng
@@ -60,20 +61,22 @@ const AppointmentBooking = () => {
     address: ''
   });
   
-  // State cho quan hệ gia đình
+  // RELATIONSHIP STATE
   const [relationshipBetween, setRelationshipBetween] = useState(''); // Quan hệ được chọn
   
-  // Lấy dữ liệu user từ localStorage
+  // USER DATA
   const storedUserData = localStorage.getItem('userData');
   const userData = storedUserData ? JSON.parse(storedUserData) : null;
   
-  // Helper function: Tính toán giờ kết thúc từ giờ bắt đầu (mỗi slot 1 tiếng)
+  // HELPER FUNCTIONS
+  // Tính giờ kết thúc từ giờ bắt đầu (mỗi slot 1 tiếng)
   const calculateEndTime = (startTime) => {
     const [hour, minute] = startTime.split(':').map(Number);
     const endHour = hour + 1;
     return `${endHour < 10 ? '0' : ''}${endHour}:${minute < 10 ? '0' : ''}${minute}`;
   };
 
+  // CONSTANTS & DATA
   // Danh sách các mối quan hệ gia đình hợp lệ
   const familyRelations = [
     "Cha", "Mẹ",
@@ -86,30 +89,30 @@ const AppointmentBooking = () => {
     "Chồng", "Vợ", "Chưa xác định"
   ];
 
-  // Ma trận các cặp quan hệ hợp lệ (logic nghiệp vụ xét nghiệm ADN)
+  // Ma trận các cặp quan hệ hợp lệ cho xét nghiệm ADN
   const validRelationPairs = [
-    ['Cha', 'Con trai'],
-    ['Cha', 'Con gái'],
-    ['Mẹ', 'Con trai'],
-    ['Mẹ', 'Con gái'],
-    ['Anh', 'Em trai'],
-    ['Anh', 'Em gái'],
-    ['Chị', 'Em trai'],
-    ['Chị', 'Em gái'],
-    ['Ông nội', 'Cháu nội'],
-    ['Ông ngoại', 'Cháu ngoại'],
-    ['Bà nội', 'Cháu nội'],
-    ['Bà ngoại', 'Cháu ngoại'],
-    ['Chồng', 'Vợ'],
-    ['Cô', 'Cháu'],
-    ['Chú', 'Cháu'],
-    ['Dì', 'Cháu'],
-    ['Cậu', 'Cháu'],
-    ['Bác', 'Cháu'],
+    ['Cha', 'Con trai'],     // Xét nghiệm cha - con trai
+    ['Cha', 'Con gái'],      // Xét nghiệm cha - con gái
+    ['Mẹ', 'Con trai'],      // Xét nghiệm mẹ - con trai
+    ['Mẹ', 'Con gái'],       // Xét nghiệm mẹ - con gái
+    ['Anh', 'Em trai'],      // Xét nghiệm anh em trai
+    ['Anh', 'Em gái'],       // Xét nghiệm anh em gái
+    ['Chị', 'Em trai'],      // Xét nghiệm chị em trai
+    ['Chị', 'Em gái'],       // Xét nghiệm chị em gái
+    ['Ông nội', 'Cháu nội'], // Xét nghiệm ông nội - cháu
+    ['Ông ngoại', 'Cháu ngoại'], // Xét nghiệm ông ngoại - cháu
+    ['Bà nội', 'Cháu nội'],  // Xét nghiệm bà nội - cháu
+    ['Bà ngoại', 'Cháu ngoại'], // Xét nghiệm bà ngoại - cháu
+    ['Chồng', 'Vợ'],         // Xét nghiệm vợ chồng
+    ['Cô', 'Cháu'],          // Xét nghiệm cô - cháu
+    ['Chú', 'Cháu'],         // Xét nghiệm chú - cháu
+    ['Dì', 'Cháu'],          // Xét nghiệm dì - cháu
+    ['Cậu', 'Cháu'],         // Xét nghiệm cậu - cháu
+    ['Bác', 'Cháu'],         // Xét nghiệm bác - cháu
     []
   ];
 
-  // Helper function: Lấy danh sách quan hệ hợp lệ dựa trên quan hệ hiện tại
+  // Lấy danh sách quan hệ hợp lệ dựa trên quan hệ hiện tại
   const getValidRelationsForOther = (currentRelation) => {
     const valid = validRelationPairs
       .filter(pair => pair[0] === currentRelation)
@@ -118,7 +121,8 @@ const AppointmentBooking = () => {
     return valid.length > 0 ? valid : familyRelations; // Nếu rỗng → trả lại toàn bộ
   };
 
-  // EFFECT: Fetch dữ liệu services và methods từ API khi component mount
+  // EFFECTS & DATA FETCHING
+  // Effect: Fetch dữ liệu services và methods từ API khi component mount
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -162,7 +166,7 @@ const AppointmentBooking = () => {
     fetchData();
   }, []); // Chạy 1 lần khi component mount
 
-  // EFFECT: Fetch các phương thức của service được chọn
+  // Effect: Fetch các phương thức của service được chọn
   useEffect(() => {
     const fetchServiceMethods = async () => {
       if (bookingData.serviceId) {
@@ -179,7 +183,7 @@ const AppointmentBooking = () => {
     fetchServiceMethods();
   }, [bookingData.serviceId]); // Chạy khi serviceId thay đổi
 
-  // EFFECT: Load pre-selected service từ navigation state (từ page dịch vụ)
+  // Effect: Load pre-selected service từ navigation state
   useEffect(() => {
     if (location.state?.selectedService && services.length > 0) {
       const service = getServiceById(services, location.state.selectedService);
@@ -200,10 +204,9 @@ const AppointmentBooking = () => {
             })) : []
           }
         }));
-        setCurrentStep(2); // Skip service selection step
       }
     }
-  }, [location.state, services]);
+  }, [location.state, services]); // Chạy khi có service được chọn từ page trước
 
   // EFFECT: Auto-fill thông tin khách hàng từ userData trong localStorage
   useEffect(() => {

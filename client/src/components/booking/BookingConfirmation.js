@@ -16,14 +16,16 @@ import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Alert, Badge } from 'react-bootstrap';
 
 const BookingConfirmation = () => {
+  // ROUTING & NAVIGATION
   const location = useLocation(); // Hook nhận state từ trang trước
   const navigate = useNavigate(); // Hook điều hướng
   
-  // State quản lý dữ liệu booking
+  // BOOKING DATA STATE
   const [bookingData, setBookingData] = useState(null); // Dữ liệu booking từ navigation state
   const [bookingId, setBookingId] = useState(''); // ID booking từ backend
 
-  // EFFECT: Xử lý dữ liệu từ navigation state khi component mount
+  // EFFECTS & DATA HANDLING
+  // Effect: Xử lý dữ liệu từ navigation state khi component mount
   useEffect(() => {
     if (location.state) {
       // Lấy booking data từ previous page
@@ -39,12 +41,13 @@ const BookingConfirmation = () => {
         setBookingId(location.state.bookingId);
       } else {
         // Fallback: Generate booking ID nếu không có từ backend
-      const id = 'ADN' + Date.now().toString().slice(-6);
-      setBookingId(id);
+        const id = 'ADN' + Date.now().toString().slice(-6);
+        setBookingId(id);
       }
     }
   }, [location.state]); // Chạy khi location.state thay đổi
 
+  // EVENT HANDLERS
   // Handler: Chuyển đến trang thanh toán với booking data
   const handleProceedToPayment = () => {
     navigate('/payment', { 
@@ -57,6 +60,7 @@ const BookingConfirmation = () => {
     });
   };
 
+  // ERROR HANDLING
   // Early return: Hiển thị error nếu không có booking data
   if (!bookingData) {
     return (
@@ -74,13 +78,14 @@ const BookingConfirmation = () => {
     );
   }
 
-  // Helper function: Format ngày theo chuẩn Việt Nam
+  // HELPER FUNCTIONS
+  // Format ngày theo chuẩn Việt Nam
   const formatDate = (dateString) => {
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     return new Date(dateString).toLocaleDateString('vi-VN', options);
   };
 
-  // Helper function: Hiển thị badge loại dịch vụ với logic ưu tiên
+  // Hiển thị badge loại dịch vụ với logic ưu tiên
   const getServiceTypeBadge = (serviceType, category) => {
     // Ưu tiên lấy từ category nếu có (dữ liệu mới từ API)
     if (category) {
@@ -97,7 +102,7 @@ const BookingConfirmation = () => {
       : <Badge bg="success">ADN Dân sự</Badge>;
   };
 
-  // Helper function: Lấy tên phương thức thu mẫu
+  // Lấy tên phương thức thu mẫu với fallback
   const getCollectionMethodName = (methodId, methodInfo) => {
     // Ưu tiên lấy tên từ methodInfo nếu có (dữ liệu từ API)
     if (methodInfo && methodInfo.name) {
@@ -116,7 +121,7 @@ const BookingConfirmation = () => {
     return methods[methodId] || methodId;
   };
 
-  // Helper function: Lấy màu badge cho phương thức
+  // Lấy màu badge cho phương thức thu mẫu
   const getMethodColor = (methodId) => {
     const methodColors = {
       'self-sample': 'success',  // Xanh lá - Tiện lợi
@@ -129,6 +134,7 @@ const BookingConfirmation = () => {
     return methodColors[methodId] || 'secondary';
   };
 
+  // UI RENDERING
   return (
     <Container className="py-5">
       {/* SUCCESS HEADER - Banner xác nhận thành công */}
@@ -172,7 +178,7 @@ const BookingConfirmation = () => {
                     Thông tin dịch vụ
                   </h6>
                   <div className="text-start">
-                  <div className="mb-2">
+                    <div className="mb-2">
                       <strong>Tên dịch vụ:</strong> {(() => {
                         const serviceTitle = bookingData?.selectedService?.title;
                         console.log('Rendering service title:', serviceTitle);
@@ -181,9 +187,9 @@ const BookingConfirmation = () => {
                     </div>
                     <div className="mb-2">
                       <strong>Loại dịch vụ:</strong> {getServiceTypeBadge(bookingData.serviceType, bookingData?.selectedService?.category)}
-                  </div>
-                  <div className="mb-2">
-                    <strong>Phương thức thu mẫu:</strong>
+                    </div>
+                    <div className="mb-2">
+                      <strong>Phương thức thu mẫu:</strong>
                       <Badge bg={getMethodColor(bookingData.collectionMethod)} className="ms-2">
                         {getCollectionMethodName(bookingData.collectionMethod, bookingData?.selectedMethod)}
                       </Badge>
