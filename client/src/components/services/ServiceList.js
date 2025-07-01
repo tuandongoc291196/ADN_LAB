@@ -1,3 +1,17 @@
+/**
+ * COMPONENT: ServiceList
+ * MỤC ĐÍCH: Hiển thị danh sách dịch vụ xét nghiệm ADN với các tính năng lọc và sắp xếp
+ * CHỨC NĂNG:
+ * - Hiển thị dịch vụ dưới dạng grid cards
+ * - Filter theo loại dịch vụ (dân sự/hành chính)
+ * - Filter theo phương thức thu mẫu
+ * - Sắp xếp theo tên/giá/thời gian
+ * - Hiển thị badges cho loại dịch vụ và phương thức
+ * - Tích hợp với API để lấy dữ liệu services và methods
+ * - URL params sync cho filters
+ * - Responsive UI cho mobile và desktop
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Badge, Form, Alert } from 'react-bootstrap';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
@@ -6,25 +20,34 @@ import { enrichMethodData } from '../data/services-data';
 import Swal from 'sweetalert2';
 
 const ServiceList = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [services, setServices] = useState([]);
-  const [methods, setMethods] = useState([]);
-  const [serviceMethods, setServiceMethods] = useState({}); // { serviceId: [methods] }
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [filterType, setFilterType] = useState(searchParams.get('type') || '');
-  const [filterMethod, setFilterMethod] = useState('');
-  const [sortBy, setSortBy] = useState('name');
-  const navigate = useNavigate();
-  const [expanded, setExpanded] = useState(false);
-  const storedUserData = localStorage.getItem('userData');
+  // ROUTING & NAVIGATION
+  const [searchParams, setSearchParams] = useSearchParams(); // URL params cho filters
+  const navigate = useNavigate(); // Hook điều hướng
 
+  // COMPONENT STATE
+  const [services, setServices] = useState([]); // Danh sách dịch vụ từ API
+  const [methods, setMethods] = useState([]); // Danh sách phương thức từ API
+  const [serviceMethods, setServiceMethods] = useState({}); // Map { serviceId: [methods] }
+  const [loading, setLoading] = useState(true); // Loading state
+  const [error, setError] = useState(null); // Error message
+  const [expanded, setExpanded] = useState(false); // Trạng thái mở rộng card
+
+  // FILTER & SORT STATE
+  const [filterType, setFilterType] = useState(searchParams.get('type') || ''); // Filter theo loại dịch vụ
+  const [filterMethod, setFilterMethod] = useState(''); // Filter theo phương thức
+  const [sortBy, setSortBy] = useState('name'); // Sắp xếp theo tiêu chí
+
+  // USER DATA
+  const storedUserData = localStorage.getItem('userData'); // Thông tin user từ localStorage
+
+  // EFFECTS & DATA FETCHING
+  // Effect: Fetch dữ liệu khi component mount
   useEffect(() => {
     fetchServices();
     fetchMethods();
   }, []);
 
-  // Sync URL params với filterType
+  // Effect: Sync URL params với filterType
   useEffect(() => {
     const typeFromUrl = searchParams.get('type');
     if (typeFromUrl !== filterType) {
@@ -32,6 +55,8 @@ const ServiceList = () => {
     }
   }, [searchParams]);
 
+  // API CALLS
+  // Fetch danh sách dịch vụ từ API
   const fetchServices = async () => {
     try {
       setLoading(true);
@@ -40,7 +65,7 @@ const ServiceList = () => {
 
       if (response && Array.isArray(response)) {
         setServices(response);
-        // Fetch methods for each service
+        // Fetch methods cho từng service
         await fetchMethodsForServices(response);
       } else {
         setServices([]);
@@ -54,6 +79,7 @@ const ServiceList = () => {
     }
   };
 
+  // Fetch danh sách phương thức từ API
   const fetchMethods = async () => {
     try {
       const response = await getAllMethods();
@@ -70,11 +96,12 @@ const ServiceList = () => {
     }
   };
 
+  // Fetch phương thức cho từng dịch vụ
   const fetchMethodsForServices = async (servicesList) => {
     try {
       const methodsMap = {};
 
-      // Fetch methods for each service
+      // Fetch methods cho từng service
       for (const service of servicesList) {
         try {
           const serviceMethods = await getMethodsByServiceId(service.id);
@@ -99,13 +126,14 @@ const ServiceList = () => {
     }
   };
 
-  // Helper function để xác định service type từ category
+  // HELPER FUNCTIONS
+  // Xác định loại dịch vụ từ category
   const getServiceTypeFromCategory = (category) => {
     if (!category) return 'civil';
     return category.hasLegalValue ? 'administrative' : 'civil';
   };
 
-  // Helper function để format price
+  // Format giá tiền theo định dạng VNĐ
   const formatPrice = (price) => {
     if (typeof price === 'number') {
       return new Intl.NumberFormat('vi-VN').format(price) + ' VNĐ';
@@ -113,12 +141,14 @@ const ServiceList = () => {
     return price || 'Liên hệ';
   };
 
+  // Tạo badge cho loại dịch vụ
   const getServiceTypeBadge = (serviceType) => {
     return serviceType === 'administrative'
       ? <Badge bg="warning" text="dark" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}>ADN Hành chính</Badge>
       : <Badge bg="success" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}>ADN Dân sự</Badge>;
   };
 
+  // Tạo badges cho các phương thức thu mẫu
   const getMethodBadges = (serviceId) => {
     const serviceMethodsList = serviceMethods[serviceId] || [];
 
@@ -131,7 +161,7 @@ const ServiceList = () => {
       );
     }
 
-    // Enrich methods với icon và color từ METHOD_MAPPING
+    // Làm giàu methods với icon và color từ METHOD_MAPPING
     const enrichedMethods = enrichMethodData(serviceMethodsList);
 
     return enrichedMethods.map(method => (
@@ -147,6 +177,7 @@ const ServiceList = () => {
     ));
   };
 
+  // FILTERING & SORTING
   // Filter services theo category và method
   const filteredServices = services.filter(service => {
     // Chỉ hiển thị dịch vụ đang active
@@ -165,6 +196,7 @@ const ServiceList = () => {
     return matchesType && matchesMethod;
   });
 
+  // Sắp xếp services theo tiêu chí đã chọn
   const sortedServices = [...filteredServices].sort((a, b) => {
     switch (sortBy) {
       case 'name':
@@ -180,11 +212,13 @@ const ServiceList = () => {
     }
   });
 
+  // EVENT HANDLERS
+  // Xử lý thay đổi filter
   const handleFilterChange = (type, value) => {
     if (type === 'serviceType') {
       setFilterType(value);
-      setFilterMethod(''); // Reset method filter when service type changes
-      // Cập nhật URL
+      setFilterMethod(''); // Reset method filter khi đổi service type
+      // Cập nhật URL params
       if (value) {
         setSearchParams({ type: value });
       } else {
@@ -195,6 +229,7 @@ const ServiceList = () => {
     }
   };
 
+  // LOADING STATE
   if (loading) {
     return (
       <div className="text-center py-5">

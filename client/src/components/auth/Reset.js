@@ -18,27 +18,34 @@ import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../config/firebase';
 
 const Reset = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
-  const [emailSent, setEmailSent] = useState(false);
+  // STATE MANAGEMENT
+  const [isLoading, setIsLoading] = useState(false);    // Trạng thái loading
+  const [message, setMessage] = useState('');           // Thông báo thành công
+  const [error, setError] = useState('');              // Thông báo lỗi
+  const [emailSent, setEmailSent] = useState(false);   // Trạng thái đã gửi email
 
+  // FORM CONFIGURATION
   const formik = useFormik({
+    // Giá trị khởi tạo
     initialValues: {
       email: '',
     },
+    // Xử lý submit form
     onSubmit: async (values) => {
       try {
         setIsLoading(true);
         setError('');
         setMessage('');
         
+        // Gọi API Firebase gửi email reset
         await sendPasswordResetEmail(auth, values.email);
         
+        // Cập nhật UI khi thành công
         setEmailSent(true);
         setMessage('Email khôi phục mật khẩu đã được gửi. Vui lòng kiểm tra hộp thư của bạn.');
       } catch (error) {
         console.error('Password reset error:', error);
+        // Xử lý các loại lỗi từ Firebase
         if (error.code === 'auth/user-not-found') {
           setError('Không tìm thấy tài khoản với địa chỉ email này.');
         } else if (error.code === 'auth/invalid-email') {
@@ -50,6 +57,7 @@ const Reset = () => {
         setIsLoading(false);
       }
     },
+    // Validation schema với Yup
     validationSchema: Yup.object().shape({
       email: Yup.string()
         .required('Email là bắt buộc')
@@ -62,7 +70,7 @@ const Reset = () => {
       <Container>
         <Row className="justify-content-center">
           <Col lg={5} md={7} sm={9}>
-            {/* HEADER - Tiêu đề và mô tả */}
+            {/* HEADER - Logo và tiêu đề */}
             <div className="text-center mb-4">
               <div className="bg-warning rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" 
                    style={{ width: '80px', height: '80px' }}>
@@ -70,7 +78,7 @@ const Reset = () => {
               </div>
               <h2 className="text-warning fw-bold">Khôi phục mật khẩu</h2>
               <p className="text-muted">
-                {/* Dynamic description dựa trên trạng thái */}
+                {/* Mô tả động dựa trên trạng thái */}
                 {emailSent ? 
                   'Hướng dẫn đã được gửi đến email của bạn' : 
                   'Nhập email để nhận hướng dẫn đặt lại mật khẩu'
@@ -78,16 +86,17 @@ const Reset = () => {
               </p>
             </div>
 
+            {/* CARD - Form reset password */}
             <Card className="shadow-lg border-0">
-              {/* CARD HEADER */}
+              {/* Card header */}
               <Card.Header className="bg-warning text-dark text-center py-4">
                 <h4 className="mb-0 fw-bold">
                   <i className="bi bi-key me-2"></i>
-                  {/* Dynamic title dựa trên trạng thái */}
+                  {/* Tiêu đề động dựa trên trạng thái */}
                   {emailSent ? 'Email đã được gửi' : 'Quên mật khẩu'}
                 </h4>
                 <p className="mb-0 mt-2 opacity-75">
-                  {/* Dynamic subtitle dựa trên trạng thái */}
+                  {/* Phụ đề động dựa trên trạng thái */}
                   {emailSent ? 
                     'Kiểm tra hộp thư của bạn' : 
                     'Chúng tôi sẽ gửi link khôi phục qua email'
@@ -96,7 +105,7 @@ const Reset = () => {
               </Card.Header>
 
               <Card.Body className="p-4">
-                {/* ALERT THÀNH CÔNG */}
+                {/* Thông báo thành công */}
                 {message && (
                   <Alert variant="success" className="mb-4">
                     <i className="bi bi-check-circle me-2"></i>
@@ -104,7 +113,7 @@ const Reset = () => {
                   </Alert>
                 )}
 
-                {/* ALERT LỖI */}
+                {/* Thông báo lỗi */}
                 {error && (
                   <Alert variant="danger" className="mb-4">
                     <i className="bi bi-exclamation-circle me-2"></i>
@@ -112,10 +121,10 @@ const Reset = () => {
                   </Alert>
                 )}
 
-                {/* CONDITIONAL RENDERING - Form input hoặc success state */}
+                {/* CONDITIONAL RENDERING - Hiển thị form hoặc trạng thái thành công */}
                 {!emailSent ? (
                   <>
-                    {/* FORM RESET PASSWORD */}
+                    {/* Form nhập email */}
                     <Form onSubmit={formik.handleSubmit}>
                       <Form.Group className="mb-4">
                         <Form.Label className="fw-medium">
@@ -140,7 +149,7 @@ const Reset = () => {
                         </Form.Text>
                       </Form.Group>
 
-                      {/* Button gửi email reset */}
+                      {/* Button submit */}
                       <div className="d-grid gap-2 mb-4">
                         <Button
                           type="submit"
@@ -179,7 +188,7 @@ const Reset = () => {
                       </p>
                     </div>
 
-                    {/* HƯỚNG DẪN TIẾP THEO */}
+                    {/* INSTRUCTIONS - Hướng dẫn các bước tiếp theo */}
                     <Alert variant="info" className="mb-4">
                       <i className="bi bi-info-circle me-2"></i>
                       <strong>Hướng dẫn tiếp theo:</strong>
@@ -191,7 +200,7 @@ const Reset = () => {
                       </ol>
                     </Alert>
 
-                    {/* Button gửi lại với email khác */}
+                    {/* Button thử lại với email khác */}
                     <div className="d-grid gap-2 mb-3">
                       <Button
                         variant="outline-warning"

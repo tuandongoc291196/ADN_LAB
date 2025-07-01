@@ -1,3 +1,16 @@
+/**
+ * COMPONENT: ServiceDetail
+ * MỤC ĐÍCH: Hiển thị chi tiết một dịch vụ xét nghiệm ADN cụ thể
+ * CHỨC NĂNG:
+ * - Hiển thị thông tin chi tiết dịch vụ (tên, mô tả, giá, thời gian)
+ * - Hiển thị các phương thức thu mẫu có sẵn
+ * - Tab navigation cho: Quy trình → Yêu cầu → FAQ
+ * - Tích hợp API để lấy dữ liệu service và methods
+ * - Fallback UI cho loading và error states
+ * - Nút đặt lịch với validation trạng thái đăng nhập
+ * - Responsive UI cho mobile và desktop
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Badge, Alert, ListGroup, Nav, Tab } from 'react-bootstrap';
@@ -6,60 +19,69 @@ import { enrichMethodData } from '../data/services-data';
 import Swal from 'sweetalert2';
 
 const ServiceDetail = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const [service, setService] = useState(null);
-  const [methods, setMethods] = useState([]);
-  const [serviceMethods, setServiceMethods] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('process');
-  const [openFaq, setOpenFaq] = useState(null);
-  const storedUserData = JSON.parse(localStorage.getItem('userData'));
-  const [expanded, setExpanded] = useState(false);
+  // ROUTING & NAVIGATION
+  const { id } = useParams(); // ID dịch vụ từ URL params
+  const navigate = useNavigate(); // Hook điều hướng
 
+  // COMPONENT STATE
+  const [service, setService] = useState(null); // Thông tin dịch vụ
+  const [methods, setMethods] = useState([]); // Danh sách tất cả phương thức
+  const [serviceMethods, setServiceMethods] = useState([]); // Phương thức của dịch vụ này
+  const [loading, setLoading] = useState(true); // Loading state
+  const [error, setError] = useState(null); // Error message
+  const [expanded, setExpanded] = useState(false); // Trạng thái mở rộng mô tả
+
+  // UI STATE
+  const [activeTab, setActiveTab] = useState('process'); // Tab đang active
+  const [openFaq, setOpenFaq] = useState(null); // FAQ đang mở
+
+  // USER DATA
+  const storedUserData = JSON.parse(localStorage.getItem('userData')); // Thông tin user
+
+  // EFFECTS & DATA FETCHING
+  // Effect: Fetch dữ liệu khi ID thay đổi
   useEffect(() => {
     fetchServiceData();
   }, [id]);
 
+  // API CALLS
+  // Fetch dữ liệu dịch vụ và phương thức
   const fetchServiceData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Fetch services
+      // Fetch danh sách dịch vụ
       const servicesResponse = await getAllServices();
 
       if (servicesResponse && Array.isArray(servicesResponse)) {
         const decodedId = decodeURIComponent(id);
 
-        // Try exact match first
-        let foundService = servicesResponse.find(s => s.id === decodedId);
+        // Tìm dịch vụ theo ID - thử các cách khớp khác nhau
+        let foundService = servicesResponse.find(s => s.id === decodedId); // Khớp chính xác
 
-        // If not found, try case-insensitive match
-        if (!foundService) {
+        if (!foundService) { // Khớp không phân biệt hoa thường
           foundService = servicesResponse.find(s =>
             s.id.toLowerCase() === decodedId.toLowerCase()
           );
         }
 
-        // If still not found, try partial match
-        if (!foundService) {
+        if (!foundService) { // Khớp một phần
           foundService = servicesResponse.find(s =>
             s.id.includes(decodedId) || decodedId.includes(s.id)
           );
         }
 
         if (foundService) {
-          // Kiểm tra xem dịch vụ có đang active không
+          // Kiểm tra trạng thái active của dịch vụ
           if (foundService.isActive === false) {
             setError('Dịch vụ này hiện không khả dụng');
             return;
           }
           
           setService(foundService);
-          // Fetch methods for this specific service
-          await fetchServiceMethods(foundService.id); // Use the actual service ID from BE
+          // Fetch phương thức cho dịch vụ này
+          await fetchServiceMethods(foundService.id);
         } else {
           setError('Không tìm thấy dịch vụ');
         }
@@ -67,7 +89,7 @@ const ServiceDetail = () => {
         setError('Không thể tải thông tin dịch vụ');
       }
 
-      // Fetch all methods for reference
+      // Fetch tất cả phương thức để tham chiếu
       const methodsResponse = await getAllMethods();
 
       if (methodsResponse && Array.isArray(methodsResponse)) {
@@ -81,6 +103,7 @@ const ServiceDetail = () => {
     }
   };
 
+  // Fetch phương thức cho dịch vụ cụ thể
   const fetchServiceMethods = async (serviceId) => {
     try {
       const response = await getMethodsByServiceId(serviceId);
@@ -96,49 +119,50 @@ const ServiceDetail = () => {
     }
   };
 
-  // Helper function để lấy service icon
+  // HELPER FUNCTIONS
+  // Lấy icon cho dịch vụ với fallback
   const getServiceIcon = (service) => {
     if (service.icon) {
-      // Mapping các icon đặc biệt từ BE sang Bootstrap Icons
+      // Map các icon đặc biệt từ BE sang Bootstrap Icons
       const iconMapping = {
-        'siblings-icon': 'bi-people-fill',
-        'parent-child-icon': 'bi-person-heart',
-        'paternity-icon': 'bi-person-check',
-        'maternity-icon': 'bi-person-heart-fill',
-        'grandparent-icon': 'bi-people',
-        'twin-icon': 'bi-person-badge',
-        'ancestry-icon': 'bi-diagram-3',
-        'health-icon': 'bi-heart-pulse',
-        'forensic-icon': 'bi-shield-check',
-        'immigration-icon': 'bi-passport'
+        'siblings-icon': 'bi-people-fill',      // Icon anh chị em
+        'parent-child-icon': 'bi-person-heart', // Icon cha mẹ - con
+        'paternity-icon': 'bi-person-check',    // Icon huyết thống cha
+        'maternity-icon': 'bi-person-heart-fill', // Icon huyết thống mẹ
+        'grandparent-icon': 'bi-people',        // Icon ông bà
+        'twin-icon': 'bi-person-badge',         // Icon sinh đôi
+        'ancestry-icon': 'bi-diagram-3',        // Icon phả hệ
+        'health-icon': 'bi-heart-pulse',        // Icon sức khỏe
+        'forensic-icon': 'bi-shield-check',     // Icon pháp y
+        'immigration-icon': 'bi-passport'       // Icon nhập tịch
       };
 
-      // Kiểm tra xem có trong mapping không
+      // Kiểm tra trong mapping
       if (iconMapping[service.icon]) {
         return iconMapping[service.icon];
       }
 
-      // Nếu icon từ BE đã có prefix bi- thì giữ nguyên
+      // Giữ nguyên nếu đã có prefix bi-
       if (service.icon.startsWith('bi-')) {
         return service.icon;
       }
 
-      // Nếu chưa có prefix bi- thì thêm vào
+      // Thêm prefix bi- nếu chưa có
       const iconWithPrefix = `bi-${service.icon}`;
       return iconWithPrefix;
     }
 
-    // Icon mặc định cho ADN dân sự
+    // Icon mặc định cho dịch vụ ADN
     return 'bi-dna';
   };
 
-  // Helper function để xác định service type từ category
+  // Xác định loại dịch vụ từ category
   const getServiceTypeFromCategory = (category) => {
     if (!category) return 'civil';
     return category.hasLegalValue ? 'administrative' : 'civil';
   };
 
-  // Helper function để format price
+  // Format giá tiền theo định dạng VNĐ
   const formatPrice = (price) => {
     if (typeof price === 'number') {
       return new Intl.NumberFormat('vi-VN').format(price) + ' VNĐ';
@@ -146,12 +170,14 @@ const ServiceDetail = () => {
     return price || 'Liên hệ';
   };
 
+  // Tạo badge cho loại dịch vụ
   const getServiceTypeBadge = (serviceType) => {
     return serviceType === 'administrative'
       ? <Badge bg="warning" text="dark" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}>ADN Hành chính</Badge>
       : <Badge bg="success" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}>ADN Dân sự</Badge>;
   };
 
+  // Tạo badges cho các phương thức thu mẫu
   const getMethodBadges = () => {
     if (serviceMethods.length === 0) {
       return (
@@ -162,7 +188,7 @@ const ServiceDetail = () => {
       );
     }
 
-    // Enrich methods với icon và color từ METHOD_MAPPING
+    // Làm giàu methods với icon và color
     const enrichedMethods = enrichMethodData(serviceMethods);
 
     return enrichedMethods.map(method => (
@@ -178,14 +204,18 @@ const ServiceDetail = () => {
     ));
   };
 
+  // Lấy chi tiết của một phương thức
   const getMethodDetails = (methodId) => {
     return methods.find(m => m.id === methodId);
   };
 
+  // EVENT HANDLERS
+  // Toggle FAQ item
   const toggleFaq = (faqId) => {
     setOpenFaq(openFaq === faqId ? null : faqId);
   };
 
+  // LOADING STATE
   if (loading) {
     return (
       <div className="text-center py-5">
@@ -197,6 +227,7 @@ const ServiceDetail = () => {
     );
   }
 
+  // ERROR STATE
   if (error || !service) {
     return (
       <Container className="py-5">
