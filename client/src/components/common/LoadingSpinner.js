@@ -1,17 +1,30 @@
+/**
+ * Component hiển thị trạng thái loading với nhiều tùy chọn
+ * Hỗ trợ hiển thị dạng overlay (phủ toàn màn hình) hoặc inline
+ */
 import React from 'react';
 
+/**
+ * Component LoadingSpinner chính
+ * @param {string} size - Kích thước spinner: 'small', 'medium', 'large'
+ * @param {string} message - Thông điệp hiển thị bên dưới spinner
+ * @param {boolean} overlay - Hiển thị dạng overlay phủ toàn màn hình hay không
+ * @param {string} color - Màu sắc của spinner: 'primary', 'secondary', 'success', v.v.
+ */
 const LoadingSpinner = ({ 
   size = 'large', 
   message = 'Đang tải...', 
   overlay = true,
   color = 'primary' 
 }) => {
+  // Định nghĩa các lớp CSS cho kích thước khác nhau
   const sizeClass = {
     small: 'spinner-border-sm',
     medium: '',
     large: 'spinner-border-lg'
   };
 
+  // Style cho overlay phủ toàn màn hình
   const overlayStyle = {
     position: 'fixed',
     top: 0,
@@ -25,6 +38,7 @@ const LoadingSpinner = ({
     justifyContent: 'center'
   };
 
+  // Nội dung spinner và thông báo
   const spinnerContent = (
     <div className="text-center">
       <div 
@@ -42,6 +56,7 @@ const LoadingSpinner = ({
     </div>
   );
 
+  // Hiển thị dạng overlay nếu được yêu cầu
   if (overlay) {
     return (
       <div style={overlayStyle}>
@@ -50,6 +65,7 @@ const LoadingSpinner = ({
     );
   }
 
+  // Hiển thị dạng inline nếu không dùng overlay
   return (
     <div className="d-flex justify-content-center align-items-center py-5">
       {spinnerContent}
@@ -57,7 +73,11 @@ const LoadingSpinner = ({
   );
 };
 
-// Component for inline loading
+/**
+ * Component hiển thị spinner nhỏ gọn trong dòng văn bản
+ * @param {string} size - Kích thước spinner: 'small', 'medium', 'large'
+ * @param {string} color - Màu sắc của spinner
+ */
 export const InlineSpinner = ({ size = 'small', color = 'primary' }) => {
   return (
     <div 
@@ -69,7 +89,11 @@ export const InlineSpinner = ({ size = 'small', color = 'primary' }) => {
   );
 };
 
-// Component for button loading state
+/**
+ * Component hiển thị spinner trong nút bấm
+ * Thường dùng khi nút đang trong trạng thái xử lý
+ * @param {string} size - Kích thước spinner: 'sm', 'md', 'lg'
+ */
 export const ButtonSpinner = ({ size = 'sm' }) => {
   return (
     <span 

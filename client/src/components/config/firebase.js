@@ -1,3 +1,7 @@
+/**
+ * Cấu hình và kết nối Firebase cho ứng dụng
+ * Cung cấp các hàm xử lý xác thực, lưu trữ dữ liệu và quản lý chat
+ */
 import { initializeApp } from "firebase/app";
 import {
   GoogleAuthProvider,
@@ -37,6 +41,10 @@ import {
   updateUserRole as updateUserRoleAPI,
 } from "../../lib/dataconnect";
 
+/**
+ * Cấu hình kết nối Firebase
+ * Chứa các khóa API và thông tin cần thiết để kết nối đến Firebase project
+ */
 const firebaseConfig = {
   apiKey: "AIzaSyCW-imcNnBVVVs50ORbBIbUxKSGYxHfF2w",
   authDomain: "su25-swp391-g8.firebaseapp.com",
@@ -47,26 +55,38 @@ const firebaseConfig = {
   measurementId: "G-93VVG3XR2N"
 };
 
+// Khởi tạo Firebase app và các dịch vụ
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const storage = getStorage(app);
 const db = getFirestore(app);
 
+/**
+ * Khởi tạo Data Connect để tương tác với backend
+ * Sử dụng để truy vấn và cập nhật dữ liệu người dùng
+ */
 const dataConnect = getDataConnect(app, {
   connector: "default",
   service: "su25-swp391-g8-2-service",
   location: "asia-east2"
 });
 
+// Provider xác thực Google
 const googleProvider = new GoogleAuthProvider();
 
-// User cache to optimize getUserById calls
+/**
+ * Cache lưu trữ thông tin người dùng để tối ưu hiệu suất
+ * Giảm số lượng truy vấn đến server khi cần thông tin người dùng
+ */
 const userCache = new Map();
-const CACHE_EXPIRY_TIME = 5 * 60 * 1000; // 5 minutes
+const CACHE_EXPIRY_TIME = 5 * 60 * 1000; // 5 phút
 let lastUsersFetch = 0;
 let allUsersCache = null;
 
-// Admin email lists (for reference)
+/**
+ * Danh sách email có quyền admin (tham khảo)
+ * Dùng để xác định vai trò người dùng khi đăng ký
+ */
 const adminEmails = [
   'admin@adnlab.vn',
   'admin@gmail.com',
@@ -74,18 +94,28 @@ const adminEmails = [
   'adnlab.admin@gmail.com'
 ];
 
+/**
+ * Danh sách email có quyền nhân viên (tham khảo)
+ */
 const staffEmails = [
   'staff@adnlab.vn',
   'staff@gmail.com',
   'lab@adnlab.vn'
 ];
 
+/**
+ * Danh sách email có quyền quản lý (tham khảo)
+ */
 const managerEmails = [
   'manager@adnlab.vn',
   'manager@gmail.com'
 ];
 
-// Helper function to determine role based on email
+/**
+ * Xác định vai trò người dùng dựa trên email
+ * @param {string} email - Email người dùng
+ * @returns {string} - Mã vai trò: "0" (user), "1" (staff), "2" (manager), "3" (admin)
+ */
 const getRoleFromEmail = (email) => {
   if (adminEmails.includes(email)) {
     return "3";
@@ -98,6 +128,11 @@ const getRoleFromEmail = (email) => {
   }
 };
 
+/**
+ * Xử lý đăng nhập bằng Google
+ * Tạo hoặc cập nhật thông tin người dùng trong Data Connect
+ * @returns {Object} Thông tin người dùng đã đăng nhập
+ */
 const signInWithGoogle = async () => {
   try {
     const res = await signInWithPopup(auth, googleProvider);
@@ -109,6 +144,7 @@ const signInWithGoogle = async () => {
         console.log("User found in database");
       } else {
         console.log("User not found in database, creating new record");
+        // Tạo người dùng mới trong Data Connect nếu chưa tồn tại
         await createOrUpdateUser(dataConnect, {
           id : user.uid,
           fullname: user.displayName || "",
@@ -135,11 +171,18 @@ const signInWithGoogle = async () => {
   }
 };
 
+/**
+ * Xử lý đăng nhập bằng email và mật khẩu
+ * @param {string} email - Email người dùng
+ * @param {string} password - Mật khẩu
+ * @returns {Object} Kết quả đăng nhập từ Firebase Auth
+ */
 const logInWithEmailAndPassword = async (email, password) => {
   try {
     const res = await signInWithEmailAndPassword(auth, email, password);
     const user = res.user;
 
+    // Lấy thông tin người dùng từ Data Connect
     const { data: userData } = await getUser(dataConnect, { userId: user.uid });
     
     localStorage.setItem("user_id", user.uid);
@@ -152,14 +195,23 @@ const logInWithEmailAndPassword = async (email, password) => {
   }
 };
 
+/**
+ * Xử lý đăng ký tài khoản mới bằng email và mật khẩu
+ * @param {string} name - Tên người dùng
+ * @param {string} phone - Số điện thoại
+ * @param {string} email - Email
+ * @param {string} password - Mật khẩu
+ * @returns {Object} Kết quả đăng ký từ Firebase Auth
+ */
 const registerWithEmailAndPassword = async (name, phone, email, password) => {
   try {
     const res = await createUserWithEmailAndPassword(auth, email, password);
     const user = res.user;
     
-    // Create user in Data Connect with role based on email
+    // Xác định vai trò dựa trên email
     const roleInfo = getRoleFromEmail(email);
     
+    // Tạo người dùng mới trong Data Connect
     await createOrUpdateUser(dataConnect, {
       id : user.uid,
       fullname: name,
@@ -172,7 +224,7 @@ const registerWithEmailAndPassword = async (name, phone, email, password) => {
       roleId: "0"
     });
     
-    // Get user data and store in localStorage
+    // Lấy thông tin người dùng và lưu vào localStorage
     const { data: userData } = await getUser(dataConnect, { userId: user.uid });
     
     localStorage.setItem("user_id", user.uid);
@@ -185,6 +237,10 @@ const registerWithEmailAndPassword = async (name, phone, email, password) => {
   }
 };
 
+/**
+ * Gửi email đặt lại mật khẩu
+ * @param {string} email - Email người dùng cần đặt lại mật khẩu
+ */
 const sendPasswordReset = async (email) => {
   try {
     await sendPasswordResetEmail(auth, email);
