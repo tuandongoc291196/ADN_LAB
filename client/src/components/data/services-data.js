@@ -1,6 +1,15 @@
-// client/src/data/services-data.js
+/**
+ * File chứa các hàm tiện ích và dữ liệu để xử lý thông tin dịch vụ xét nghiệm
+ * Cung cấp các hàm helper để làm giàu dữ liệu và kiểm tra các điều kiện liên quan đến dịch vụ
+ */
 
 // Mapping cho methods từ BE để thêm icon và color
+/**
+ * Định nghĩa các phương thức lấy mẫu và thông tin liên quan
+ * - 0: Tự lấy mẫu tại nhà
+ * - 1: Nhân viên tới nhà lấy mẫu
+ * - 2: Lấy mẫu tại phòng xét nghiệm
+ */
 export const METHOD_MAPPING = {
   '0': { // Lấy mẫu tại nhà
     icon: 'bi-house',
@@ -25,7 +34,11 @@ export const METHOD_MAPPING = {
   }
 };
 
-// Helper function để enrich method data với icon và color
+/**
+ * Làm giàu dữ liệu phương thức lấy mẫu với icon và màu sắc
+ * @param {Array} methods - Mảng các phương thức lấy mẫu từ backend
+ * @returns {Array} Mảng phương thức đã được làm giàu với thông tin hiển thị
+ */
 export const enrichMethodData = (methods) => {
   if (!methods || !Array.isArray(methods)) return [];
   
@@ -42,12 +55,23 @@ export const enrichMethodData = (methods) => {
   });
 };
 
-// Helper functions - Sử dụng dữ liệu từ BE thay vì mock data
+/**
+ * Lấy thông tin dịch vụ theo ID
+ * @param {Array} services - Danh sách dịch vụ
+ * @param {string} id - ID dịch vụ cần tìm
+ * @returns {Object|null} Thông tin dịch vụ hoặc null nếu không tìm thấy
+ */
 export const getServiceById = (services, id) => {
   if (!services || !Array.isArray(services)) return null;
   return services.find(service => service.id === id);
 };
 
+/**
+ * Lọc dịch vụ theo loại (dân sự hoặc hành chính)
+ * @param {Array} services - Danh sách dịch vụ
+ * @param {string} type - Loại dịch vụ ('administrative' hoặc 'civil')
+ * @returns {Array} Danh sách dịch vụ đã lọc
+ */
 export const getServicesByType = (services, type) => {
   if (!services || !Array.isArray(services)) return [];
   
@@ -63,6 +87,12 @@ export const getServicesByType = (services, type) => {
   return activeServices; // Trả về tất cả dịch vụ active nếu không có type
 };
 
+/**
+ * Lấy danh sách phương thức lấy mẫu có sẵn cho dịch vụ
+ * @param {string} serviceId - ID dịch vụ
+ * @param {Array} methods - Danh sách phương thức lấy mẫu
+ * @returns {Array} Danh sách phương thức lấy mẫu có sẵn
+ */
 export const getAvailableMethodsForService = (serviceId, methods) => {
   if (!methods || !Array.isArray(methods)) return [];
   
@@ -71,6 +101,13 @@ export const getAvailableMethodsForService = (serviceId, methods) => {
   return methods;
 };
 
+/**
+ * Kiểm tra phương thức lấy mẫu có được phép cho dịch vụ không
+ * @param {string} serviceId - ID dịch vụ
+ * @param {string} methodId - ID phương thức lấy mẫu
+ * @param {Array} serviceMethods - Danh sách mapping giữa dịch vụ và phương thức
+ * @returns {boolean} true nếu phương thức được phép cho dịch vụ
+ */
 export const isMethodAllowedForService = (serviceId, methodId, serviceMethods) => {
   if (!serviceMethods || !Array.isArray(serviceMethods)) return false;
   
@@ -79,7 +116,11 @@ export const isMethodAllowedForService = (serviceId, methodId, serviceMethods) =
   );
 };
 
-// Helper functions cho AppointmentBooking
+/**
+ * Kiểm tra dịch vụ có thể sử dụng phương thức tự lấy mẫu không
+ * @param {Object} service - Thông tin dịch vụ
+ * @returns {boolean} true nếu dịch vụ có thể sử dụng tự lấy mẫu
+ */
 export const canServiceUseSelfSample = (service) => {
   if (!service) return false;
   
@@ -96,11 +137,21 @@ export const canServiceUseSelfSample = (service) => {
   return true;
 };
 
+/**
+ * Kiểm tra dịch vụ có phải là dịch vụ hành chính không
+ * @param {Object} service - Thông tin dịch vụ
+ * @returns {boolean} true nếu dịch vụ là hành chính
+ */
 export const isAdministrativeService = (service) => {
   return service?.category?.hasLegalValue === true;
 };
 
-// Helper function để check method restriction
+/**
+ * Kiểm tra phương thức lấy mẫu có bị vô hiệu hóa cho dịch vụ không
+ * @param {string} methodId - ID phương thức lấy mẫu
+ * @param {Object} service - Thông tin dịch vụ
+ * @returns {boolean} true nếu phương thức bị vô hiệu hóa
+ */
 export const isMethodDisabled = (methodId, service) => {
   if (!service) return true;
   
@@ -120,7 +171,12 @@ export const isMethodDisabled = (methodId, service) => {
   return false;
 };
 
-// Helper function để get method restriction reason
+/**
+ * Lấy lý do tại sao phương thức lấy mẫu bị giới hạn
+ * @param {string} methodId - ID phương thức lấy mẫu
+ * @param {Object} service - Thông tin dịch vụ
+ * @returns {string} Lý do giới hạn
+ */
 export const getMethodRestrictionReason = (methodId, service) => {
   if (!service) return 'Không có dịch vụ được chọn';
   
@@ -138,7 +194,11 @@ export const getMethodRestrictionReason = (methodId, service) => {
   return 'Phương thức này không khả dụng cho dịch vụ này';
 };
 
-// Helper function để lấy icon cho service
+/**
+ * Lấy icon cho dịch vụ dựa trên loại dịch vụ
+ * @param {Object} service - Thông tin dịch vụ
+ * @returns {string} Tên class của icon Bootstrap
+ */
 export const getServiceIcon = (service) => {
   if (!service) return 'bi-dna';
   

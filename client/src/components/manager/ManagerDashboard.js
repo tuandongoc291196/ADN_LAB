@@ -1,3 +1,7 @@
+/**
+ * Dashboard chính cho quản lý phòng xét nghiệm
+ * Cung cấp giao diện quản lý tổng quan và điều hướng đến các chức năng quản lý
+ */
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Container, Row, Col, Nav, Card, Alert, Badge, Button } from 'react-bootstrap';
@@ -18,22 +22,29 @@ import {
   ThreeDots
 } from 'react-bootstrap-icons';
 
-// Import components
+// Import các component con
 import ServiceManagement from './ServiceManagement';
 import AppointmentManagement from './AppointmentManagement';
 import StaffManagement from './StaffManagement';
 import ReportManagement from './ReportManagement';
 import FeedbackManagement from './FeedbackManagement';
 
+/**
+ * Component chính cho dashboard quản lý
+ * @param {Object} user - Thông tin người dùng quản lý
+ */
 const ManagerDashboard = ({ user }) => {
+  // Lấy thông tin đường dẫn hiện tại
   const location = useLocation();
+  // State quản lý tab đang active
   const [activeTab, setActiveTab] = useState('overview');
+  // State quản lý thông báo
   const [notifications, setNotifications] = useState([
     { id: 1, message: 'Có 5 lịch hẹn mới cần xác nhận', time: '5 phút trước', read: false },
     { id: 2, message: 'Báo cáo doanh thu tháng 3 đã sẵn sàng', time: '1 giờ trước', read: false }
   ]);
 
-  // Get current tab from URL
+  // Cập nhật tab active dựa trên đường dẫn URL
   useEffect(() => {
     const path = location.pathname.split('/').pop();
     if (path && path !== 'manager') {
@@ -43,7 +54,7 @@ const ManagerDashboard = ({ user }) => {
     }
   }, [location.pathname]);
 
-  // Mock manager user data if not provided
+  // Dữ liệu người dùng mặc định nếu không có dữ liệu từ props
   const currentUser = user || {
     id: 'manager-001',
     name: 'Nguyễn Văn Manager',
@@ -63,6 +74,7 @@ const ManagerDashboard = ({ user }) => {
     totalRevenue: 150000000
   };
 
+  // Cấu hình các mục menu trong sidebar
   const menuItems = [
     {
       key: 'overview',
