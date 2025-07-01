@@ -212,26 +212,6 @@ export const getServicesByCategory = async (categoryId) => {
   }
 };
 
-// Lấy tất cả service categories
-export const getServiceCategories = async () => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/services/category`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
-
-    const data = await response.json();
-    return data.data;
-  } catch (error) {
-    throw new Error('Failed to fetch service categories: ' + error.message);
-  }
-};
 
 // Tạo mới booking
 export const createBooking = async (bookingData) => {
@@ -273,7 +253,6 @@ export const createBooking = async (bookingData) => {
     throw new Error('Failed to create booking: ' + error.message);
   }
 };
-
 
 // Lấy user theo id
 export const getUserById = async (userId) => {
@@ -455,5 +434,54 @@ export const updateServiceFeatured = async (serviceId, featured) => {
     return data.data || data;
   } catch (error) {
     throw new Error('Failed to update service featured status: ' + error.message);
+  }
+};
+
+// Thêm mới payment
+export const createPayment = async (paymentData) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/payments/add`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(paymentData),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to create payment');
+    }
+    const data = await response.json();
+    return data.data || data;
+  } catch (error) {
+    throw new Error('Failed to create payment: ' + error.message);
+  }
+};
+
+// Lấy booking theo bookingId
+export const getBookingById = async (bookingId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/bookings`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ bookingId }),
+    });
+
+    if (!response.ok) throw new Error('Network response was not ok');
+
+    const data = await response.json();
+    const booking = data.data?.booking || {};
+
+    // Gộp tất cả vào 1 object để client dùng dễ
+    return {
+      ...booking,
+      information: data.data?.information || [],
+      participants: data.data?.participants || [],
+      history: data.data?.history || []
+    };
+  } catch (error) {
+    throw new Error('Failed to fetch booking by id: ' + error.message);
   }
 };

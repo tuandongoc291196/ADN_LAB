@@ -4,7 +4,7 @@ import { Navbar, Nav, NavDropdown, Container, Button, Badge, Image } from 'react
 import { auth, logout } from './config/firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import Swal from 'sweetalert2';
-import { getServiceCategories } from '../services/api';
+
 
 // Component Navbar: Thanh điều hướng chính của website, hiển thị menu động theo quyền user
 const MainNavbar = ({ setUser }) => {
@@ -18,29 +18,30 @@ const MainNavbar = ({ setUser }) => {
   const [userData, setUserData] = useState(null);
   const [logoUrl] = useState('https://firebasestorage.googleapis.com/v0/b/su25-swp391-g8.firebasestorage.app/o/assets%2Flogo.png?alt=media&token=1c903ba1-852a-4f5b-b498-97c31ffbb742');
 
-  // Effect: Lấy danh mục dịch vụ từ API khi mount
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        setLoadingCategories(true);
-        const response = await getServiceCategories();
-        console.log('Categories API response:', response);
-        
-        if (response && Array.isArray(response)) {
-          setCategories(response);
-        } else {
-          setCategories([]);
-        }
-      } catch (error) {
-        console.error('Error fetching categories:', error);
-        setCategories([]);
-      } finally {
-        setLoadingCategories(false);
-      }
-    };
 
-    fetchCategories();
-  }, []);
+  // Effect: Lấy danh mục dịch vụ từ API khi mount
+  // useEffect(() => {
+  //   const fetchCategories = async () => {
+  //     try {
+  //       setLoadingCategories(true);
+  //       const response = await getServiceCategories();
+  //       console.log('Categories API response:', response);
+
+  //       if (response && Array.isArray(response)) {
+  //         setCategories(response);
+  //       } else {
+  //         setCategories([]);
+  //       }
+  //     } catch (error) {
+  //       console.error('Error fetching categories:', error);
+  //       setCategories([]);
+  //     } finally {
+  //       setLoadingCategories(false);
+  //     }
+  //   };
+
+  //   fetchCategories();
+  // }, []);
 
   // Helper: Lọc danh mục hành chính/civil
   const getAdministrativeCategories = () => {
@@ -219,21 +220,21 @@ const MainNavbar = ({ setUser }) => {
     try {
       // Đăng xuất Firebase trước
       await logout();
-      
+
       // Clear localStorage
       localStorage.removeItem('user_id');
       localStorage.removeItem('userData');
       localStorage.removeItem('user');
       localStorage.removeItem('isAuthenticated');
       sessionStorage.setItem('justLoggedOut', 'true');
-      
+
       // Reset user state
       setUser(null);
       setUserData(null);
-      
+
       // Chuyển về trang chủ
       navigate('/', { replace: true });
-      
+
     } catch (error) {
       console.error('Logout error:', error);
       // Nếu có lỗi, vẫn clear data và chuyển trang
