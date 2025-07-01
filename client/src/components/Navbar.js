@@ -6,7 +6,9 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import Swal from 'sweetalert2';
 import { getServiceCategories } from '../services/api';
 
+// Component Navbar: Thanh điều hướng chính của website, hiển thị menu động theo quyền user
 const MainNavbar = ({ setUser }) => {
+  // State quản lý mở rộng navbar, danh mục dịch vụ, trạng thái loading, user
   const [expanded, setExpanded] = useState(false);
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
@@ -16,7 +18,7 @@ const MainNavbar = ({ setUser }) => {
   const [userData, setUserData] = useState(null);
   const [logoUrl] = useState('https://firebasestorage.googleapis.com/v0/b/su25-swp391-g8.firebasestorage.app/o/assets%2Flogo.png?alt=media&token=1c903ba1-852a-4f5b-b498-97c31ffbb742');
 
-  // Fetch categories from API
+  // Effect: Lấy danh mục dịch vụ từ API khi mount
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -40,7 +42,7 @@ const MainNavbar = ({ setUser }) => {
     fetchCategories();
   }, []);
 
-  // Helper function để phân loại categories
+  // Helper: Lọc danh mục hành chính/civil
   const getAdministrativeCategories = () => {
     return categories.filter(category => category.hasLegalValue);
   };
@@ -49,6 +51,7 @@ const MainNavbar = ({ setUser }) => {
     return categories.filter(category => !category.hasLegalValue);
   };
 
+  // Helper: Badge hiển thị vai trò user
   const getRoleBadge = (role) => {
     const roleConfig = {
       admin: { bg: 'danger', icon: 'bi-crown', text: 'Quản trị viên' },
@@ -67,6 +70,7 @@ const MainNavbar = ({ setUser }) => {
     );
   };
 
+  // Helper: Lấy link dashboard theo role
   const getDashboardLink = (role) => {
     switch (role) {
       case 'admin': return '/admin';
@@ -76,6 +80,8 @@ const MainNavbar = ({ setUser }) => {
       default: return '/user';
     }
   };
+
+  // Effect: Lấy userData từ localStorage hoặc Firebase, đồng bộ state user
   const storedUserData = localStorage.getItem('userData');
   useEffect(() => {
     const justLoggedOut = sessionStorage.getItem('justLoggedOut') === 'true';
@@ -144,6 +150,7 @@ const MainNavbar = ({ setUser }) => {
   }, [storedUserData, setUser]);
   console.log('userData', userData);
 
+  // Handler: Đăng xuất, clear localStorage, reset state, chuyển về trang chủ
   const handleLogout = async () => {
     try {
       // Đăng xuất Firebase trước
@@ -176,10 +183,12 @@ const MainNavbar = ({ setUser }) => {
     }
   };
 
+  // Handler: Đóng navbar khi click menu
   const handleNavClick = () => {
     setExpanded(false);
   };
 
+  // Helper: Kiểm tra route active
   const isActive = (path) => {
     return location.pathname === path;
   };
@@ -188,12 +197,12 @@ const MainNavbar = ({ setUser }) => {
     return location.pathname.startsWith('/services');
   };
 
-  // Check if user has admin/staff/manager access
+  // Helper: Kiểm tra quyền admin/staff/manager
   const hasAdminAccess = () => {
     return userData?.isAdmin === true;
   };
 
-  // Check if user is customer (for showing customer-specific menus)
+  // Helper: Kiểm tra user là customer
   const isCustomer = () => {
     return userData?.role_string === 'customer' || !userData?.role_string;
   };

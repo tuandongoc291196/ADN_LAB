@@ -2,7 +2,10 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Container, Row, Col } from 'react-bootstrap';
 
+// Component Footer: Hiển thị phần chân trang của website
+// Chứa thông tin liên hệ, chi nhánh, liên kết nhanh, mạng xã hội và bản quyền
 const Footer = () => {
+  // Thông tin liên hệ trung tâm
   return (
     <footer className="bg-dark text-light py-5 mt-5">
       <Container>

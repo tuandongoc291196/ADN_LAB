@@ -28,7 +28,7 @@ const Blog = () => {
 
   return (
     <div>
-      {/* Hero Section */}
+      {/* Hero Section: Tiêu đề, mô tả */}
       <section className="bg-primary text-white py-5">
         <Container>
           <Row className="align-items-center">
@@ -45,7 +45,7 @@ const Blog = () => {
         </Container>
       </section>
 
-      {/* Blog List Section */}
+      {/* Blog List Section: Danh sách bài viết */}
       <section className="py-5 bg-light">
         <Container>
             <Row>

@@ -95,7 +95,7 @@ const Guides = () => {
 
   return (
     <div>
-      {/* Hero Section */}
+      {/* Hero Section: Tiêu đề, mô tả, CTA đặt lịch */}
       <section className="bg-info text-white py-5">
         <Container>
           <Row className="align-items-center">
@@ -118,7 +118,7 @@ const Guides = () => {
         </Container>
       </section>
 
-      {/* Process Section */}
+      {/* Process Section: 4 bước quy trình */}
       <section className="py-5 bg-light">
         <Container>
             <div className="text-center mb-5">
@@ -143,7 +143,7 @@ const Guides = () => {
         </Container>
       </section>
 
-      {/* Sample Types Section */}
+      {/* Sample Types Section: Các loại mẫu phổ biến */}
       <section className="py-5">
         <Container>
             <div className="text-center mb-5">
@@ -173,7 +173,7 @@ const Guides = () => {
         </Container>
       </section>
 
-      {/* FAQ Section */}
+      {/* FAQ Section: Câu hỏi thường gặp */}
       <section className="py-5 bg-light">
         <Container>
             <div className="text-center mb-5">

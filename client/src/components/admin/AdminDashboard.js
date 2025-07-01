@@ -21,33 +21,32 @@ import SystemSettings from './SystemSettings';
 import StaffManagementByAdmin from './StaffManagementByAdmin';
 
 const AdminDashboard = ({ user }) => {
-  const location = useLocation(); // Hook để lấy thông tin URL hiện tại
-  const [activeTab, setActiveTab] = useState('overview'); // State quản lý tab đang được chọn
+  // Hook lấy thông tin URL hiện tại để xác định tab đang active
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState('overview');
 
-  // Effect để cập nhật activeTab dựa trên URL hiện tại
-  // Khi người dùng chuyển trang, activeTab sẽ tự động cập nhật
+  // Effect cập nhật activeTab khi URL thay đổi
   useEffect(() => {
-    const path = location.pathname.split('/').pop(); // Lấy phần cuối của đường dẫn
+    const path = location.pathname.split('/').pop();
     if (path && path !== 'admin') {
-      setActiveTab(path); // Nếu có path cụ thể, set làm active tab
+      setActiveTab(path);
     } else {
-      setActiveTab('overview'); // Mặc định là overview
+      setActiveTab('overview');
     }
   }, [location.pathname]);
 
-  // Dữ liệu admin mặc định hoặc từ props
-  // Chứa thông tin cá nhân và quyền hạn của admin
+  // Dữ liệu mặc định của admin nếu không có props user
   const adminUser = user || {
     id: 1,
     name: 'Admin ADN LAB',
     email: 'admin@adnlab.vn',
     role: 'admin',
     avatar: null,
-    permissions: ['all'] // Quyền truy cập tất cả chức năng
+    permissions: ['all']
   };
 
   // Cấu hình menu items cho sidebar
-  // Mỗi item chứa thông tin điều hướng và hiển thị
+  // Mỗi item chứa: key, label, icon, path, color và description
   const menuItems = [
     {
       key: 'overview',
@@ -102,13 +101,13 @@ const AdminDashboard = ({ user }) => {
   return (
     <Container fluid className="py-4">
       <Row>
-        {/* SIDEBAR - Thanh điều hướng bên trái */}
+        {/* SIDEBAR - Menu điều hướng bên trái */}
         <Col lg={3} md={4} className="mb-4">
           <Card className="shadow-sm">
-            {/* Header hiển thị thông tin admin */}
+            {/* HEADER - Thông tin admin */}
             <Card.Header className="bg-danger text-white text-center py-4">
+              {/* Avatar hoặc icon mặc định */}
               <div className="mb-3">
-                {/* Avatar admin hoặc icon mặc định */}
                 {adminUser.avatar ? (
                   <img 
                     src={adminUser.avatar} 
@@ -117,19 +116,20 @@ const AdminDashboard = ({ user }) => {
                     style={{ width: '80px', height: '80px', objectFit: 'cover' }}
                   />
                 ) : (
-                  // Icon mặc định khi không có avatar
                   <div className="bg-white text-danger rounded-circle mx-auto d-flex align-items-center justify-content-center"
                        style={{ width: '80px', height: '80px' }}>
                     <i className="bi bi-shield-check fs-1"></i>
                   </div>
                 )}
               </div>
+              
               {/* Tên và role của admin */}
               <h5 className="mb-1">{adminUser.name}</h5>
               <Badge bg="warning" text="dark" className="mb-2">
                 <i className="bi bi-crown me-1"></i>
                 Administrator
               </Badge>
+              
               {/* Email admin */}
               <div className="mt-2">
                 <small className="d-block opacity-75">
@@ -139,7 +139,7 @@ const AdminDashboard = ({ user }) => {
               </div>
             </Card.Header>
 
-            {/* Thống kê nhanh */}
+            {/* STATS - Thống kê nhanh */}
             <Card.Body className="py-3">
               <Row className="text-center g-0">
                 <Col xs={4}>
@@ -163,23 +163,20 @@ const AdminDashboard = ({ user }) => {
               </Row>
             </Card.Body>
 
-            {/* Menu điều hướng */}
+            {/* MENU - Danh sách các trang quản trị */}
             <Nav className="flex-column">
               {menuItems.map(item => (
                 <Nav.Link
                   key={item.key}
-                  as={Link} // Sử dụng React Router Link
+                  as={Link}
                   to={item.path}
                   className={`d-flex align-items-center py-3 px-4 border-0 ${
-                    // Styling cho item đang được chọn
                     activeTab === item.key ? `bg-${item.color} bg-opacity-10 text-${item.color} border-end border-${item.color} border-3` : 'text-dark'
                   }`}
                   style={{ textDecoration: 'none' }}
                 >
-                  {/* Icon của menu item */}
                   <i className={`${item.icon} me-3 fs-5`}></i>
                   <div className="flex-grow-1">
-                    {/* Tên và mô tả menu item */}
                     <div className="fw-medium">{item.label}</div>
                     <small className="text-muted d-block">{item.description}</small>
                   </div>
@@ -187,7 +184,7 @@ const AdminDashboard = ({ user }) => {
               ))}
             </Nav>
 
-            {/* Trạng thái hệ thống */}
+            {/* FOOTER - Trạng thái hệ thống */}
             <Card.Footer className="bg-light">
               <div className="small">
                 <div className="d-flex justify-content-between mb-2">

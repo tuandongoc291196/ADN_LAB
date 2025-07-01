@@ -3,7 +3,7 @@ import { Container, Row, Col, Card, Button, Badge, Accordion, ProgressBar } from
 import { Link } from 'react-router-dom';
 
 const About = () => {
-  // Company stats
+  // Dữ liệu thống kê công ty (stats)
   const stats = [
     { icon: 'bi-award', number: '10,000+', label: 'Khách hàng tin tưởng', color: 'primary' },
     { icon: 'bi-calendar-check', number: '15+', label: 'Năm kinh nghiệm', color: 'success' },
@@ -11,7 +11,7 @@ const About = () => {
     { icon: 'bi-building', number: '5+', label: 'Cơ sở toàn quốc', color: 'info' }
   ];
 
-  // Leadership team
+  // Dữ liệu đội ngũ lãnh đạo (leadership)
   const leadership = [
     {
       id: 1,
@@ -39,7 +39,7 @@ const About = () => {
     }
   ];
 
-  // Certifications and standards
+  // Dữ liệu chứng nhận, tiêu chuẩn (certifications)
   const certifications = [
     {
       name: 'ISO 15189:2012',
@@ -67,7 +67,7 @@ const About = () => {
     }
   ];
 
-  // Technology highlights
+  // Dữ liệu công nghệ nổi bật (technologies)
   const technologies = [
     {
       name: 'STR Analysis',
@@ -91,7 +91,7 @@ const About = () => {
     }
   ];
 
-  // Company milestones
+  // Dữ liệu các cột mốc phát triển (milestones)
   const milestones = [
     {
       year: '2008',
@@ -127,7 +127,7 @@ const About = () => {
 
   return (
     <div>
-      {/* Hero Section */}
+      {/* Hero Section: Tiêu đề, mô tả, CTA */}
       <section className="bg-primary text-white py-5">
         <Container>
           <Row className="align-items-center">
@@ -162,7 +162,7 @@ const About = () => {
         </Container>
       </section>
 
-      {/* Stats Section */}
+      {/* Stats Section: Thống kê nổi bật */}
       <section className="py-5 bg-light">
         <Container>
           <Row>
@@ -184,7 +184,7 @@ const About = () => {
         </Container>
       </section>
 
-      {/* Mission & Vision */}
+      {/* Mission & Vision: Sứ mệnh, tầm nhìn */}
       <section className="py-5">
         <Container>
           <Row>
@@ -233,7 +233,7 @@ const About = () => {
         </Container>
       </section>
 
-      {/* Leadership Team */}
+      {/* Leadership: Đội ngũ lãnh đạo */}
       <section className="py-5 bg-light">
         <Container>
           <div className="text-center mb-5">
@@ -281,7 +281,35 @@ const About = () => {
         </Container>
       </section>
 
-      {/* Technology & Equipment */}
+      {/* Certifications: Chứng nhận, tiêu chuẩn */}
+      <section className="py-5 bg-light">
+        <Container>
+          <div className="text-center mb-5">
+            <h2 className="display-6 fw-bold mb-3">Chứng nhận & Tiêu chuẩn</h2>
+            <p className="lead text-muted">
+              Đạt các chứng nhận quốc tế và tuân thủ nghiêm ngặt các tiêu chuẩn chất lượng
+            </p>
+          </div>
+          <Row>
+            {certifications.map((cert, index) => (
+              <Col key={index} lg={3} md={6} className="mb-4">
+                <Card className={`border-${cert.color} border-2 h-100`}>
+                  <Card.Body className="text-center">
+                    <div className={`bg-${cert.color} bg-opacity-10 rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center`} 
+                         style={{ width: '70px', height: '70px' }}>
+                      <i className={`${cert.icon} text-${cert.color} fs-2`}></i>
+                    </div>
+                    <h6 className={`text-${cert.color} fw-bold mb-2`}>{cert.name}</h6>
+                    <p className="small text-muted">{cert.description}</p>
+                  </Card.Body>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        </Container>
+      </section>
+
+      {/* Technologies: Công nghệ nổi bật */}
       <section className="py-5">
         <Container>
           <div className="text-center mb-5">
@@ -347,35 +375,7 @@ const About = () => {
         </Container>
       </section>
 
-      {/* Certifications */}
-      <section className="py-5 bg-light">
-        <Container>
-          <div className="text-center mb-5">
-            <h2 className="display-6 fw-bold mb-3">Chứng nhận & Tiêu chuẩn</h2>
-            <p className="lead text-muted">
-              Đạt các chứng nhận quốc tế và tuân thủ nghiêm ngặt các tiêu chuẩn chất lượng
-            </p>
-          </div>
-          <Row>
-            {certifications.map((cert, index) => (
-              <Col key={index} lg={3} md={6} className="mb-4">
-                <Card className={`border-${cert.color} border-2 h-100`}>
-                  <Card.Body className="text-center">
-                    <div className={`bg-${cert.color} bg-opacity-10 rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center`} 
-                         style={{ width: '70px', height: '70px' }}>
-                      <i className={`${cert.icon} text-${cert.color} fs-2`}></i>
-                    </div>
-                    <h6 className={`text-${cert.color} fw-bold mb-2`}>{cert.name}</h6>
-                    <p className="small text-muted">{cert.description}</p>
-                  </Card.Body>
-                </Card>
-              </Col>
-            ))}
-          </Row>
-        </Container>
-      </section>
-
-      {/* Company Timeline */}
+      {/* Milestones: Lịch sử phát triển */}
       <section className="py-5">
         <Container>
           <div className="text-center mb-5">
