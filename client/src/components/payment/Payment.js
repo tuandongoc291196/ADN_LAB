@@ -315,7 +315,7 @@ const Payment = () => {
     const getCategoryClass = (categoryName) => {
         switch (categoryName?.toLowerCase()) {
             case 'adn dân sự':
-                return 'bg-info text-dark px-2 py-1 rounded d-inline-block';
+                return 'bg-success text-white px-2 py-1 rounded d-inline-block';
             case 'adn hành chính':
                 return 'bg-warning text-white px-2 py-1 rounded d-inline-block';
             default:

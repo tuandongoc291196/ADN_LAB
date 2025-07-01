@@ -21,21 +21,21 @@ const AppointmentBooking = () => {
   // ROUTING & NAVIGATION
   const navigate = useNavigate(); // Hook điều hướng
   const location = useLocation(); // Hook nhận state từ page trước
-  
+
   // BOOKING FLOW STATE
   const [currentStep, setCurrentStep] = useState(1); // Bước hiện tại (1-4)
-  
+
   // API DATA STATE
   const [services, setServices] = useState([]); // Danh sách dịch vụ từ API
   const [methods, setMethods] = useState([]); // Danh sách phương thức từ API
   const [serviceMethods, setServiceMethods] = useState([]); // Phương thức của dịch vụ được chọn
   const [enrichedMethods, setEnrichedMethods] = useState([]); // Methods với icon và color
-  
+
   // UI STATE
   const [loading, setLoading] = useState(true); // Trạng thái đang tải dữ liệu
   const [errors, setErrors] = useState(null); // Lỗi chung
   const [userFromAPI, setUserFromAPI] = useState(null); // User data từ API
-  
+
   // BOOKING DATA STATE
   const [bookingData, setBookingData] = useState({
     serviceType: '',        // Loại dịch vụ: 'civil' hoặc 'administrative'
@@ -52,7 +52,7 @@ const AppointmentBooking = () => {
       participants: []     // Danh sách người tham gia xét nghiệm
     }
   });
-  
+
   // VALIDATION STATE
   const [idNumberErrors, setIdNumberErrors] = useState({}); // Lỗi CMND/CCCD
   const [phoneErrors, setPhoneErrors] = useState({});       // Lỗi số điện thoại
@@ -62,15 +62,15 @@ const AppointmentBooking = () => {
     idNumber: '',
     address: ''
   });
-  
+
   // RELATIONSHIP STATE
   const [relationshipBetween, setRelationshipBetween] = useState(''); // Quan hệ được chọn
   const [isParticipant1Customer, setIsParticipant1Customer] = useState(false); // Checkbox người tham gia 1 là người đặt lịch
-  
+
   // USER DATA
   const storedUserData = localStorage.getItem('userData');
   const userData = storedUserData ? JSON.parse(storedUserData) : null;
-  
+
   // Fetch user profile từ API khi component mount
   useEffect(() => {
     if (userData && (userData.id || userData._id)) {
@@ -237,7 +237,7 @@ const AppointmentBooking = () => {
           addressDetail = userFromAPI.address;
         }
       }
-      
+
       setBookingData(prev => ({
         ...prev,
         customerInfo: {
@@ -255,6 +255,22 @@ const AppointmentBooking = () => {
       }));
     }
   }, [userFromAPI]);
+
+  useEffect(() => {
+    const fullAddress = buildFullAddress(bookingData.customerInfo);
+    setBookingData(prev => ({
+      ...prev,
+      customerInfo: {
+        ...prev.customerInfo,
+        address: fullAddress
+      }
+    }));
+  }, [
+    bookingData.customerInfo.addressDetail,
+    bookingData.customerInfo.ward,
+    bookingData.customerInfo.district,
+    bookingData.customerInfo.city
+  ]);
 
   // Handler: Thay đổi loại dịch vụ (civil/administrative)
   const handleServiceTypeChange = (type) => {
@@ -409,7 +425,7 @@ const AppointmentBooking = () => {
     const information = {
       name: bookingData.customerInfo.fullName,
       identification: bookingData.customerInfo.idNumber,
-      address: bookingData.customerInfo.address,
+      address: buildFullAddress(bookingData.customerInfo),
       phone: bookingData.customerInfo.phone,
       email: bookingData.customerInfo.email
     };
@@ -419,7 +435,7 @@ const AppointmentBooking = () => {
     if (service && typeof service.price === 'number') {
       totalAmount = service.price;
     }
-    
+
     // Cộng thêm phí phương thức thu mẫu nếu có
     if (method && typeof method.price === 'number' && method.price > 0) {
       totalAmount += method.price;
@@ -480,7 +496,7 @@ const AppointmentBooking = () => {
           },
           bookingId: bookingId
         });
-        
+
         // Bước 11: Điều hướng đến trang xác nhận với dữ liệu booking
         try {
           navigate('/booking-confirmation', {
@@ -550,9 +566,9 @@ const AppointmentBooking = () => {
   // Helper function: Lấy màu sắc cho badge method
   const getMethodColor = (methodId) => {
     const methodColors = {
-      'self-sample': 'success',  
-      'home-visit': 'warning',   
-      'at-facility': 'primary',  
+      'self-sample': 'success',
+      'home-visit': 'warning',
+      'at-facility': 'primary',
       '0': 'success',
       '1': 'warning',
       '2': 'primary'
@@ -574,7 +590,7 @@ const AppointmentBooking = () => {
     }
     return dates;
   };
-  
+
   // Helper function: Format ngày sang tiếng Việt
   const renderDate = (dateString) => {
     if (!dateString) return '';
@@ -637,6 +653,16 @@ const AppointmentBooking = () => {
         }
       }));
     }
+  };
+
+  const buildFullAddress = ({ addressDetail, ward, district, city }) => {
+    const province = getProvinces().find(p => p.code === city)?.name || '';
+    const districtName = getDistricts().find(d => d.code === district)?.name || '';
+    const wardName = getWards().find(w => w.code === ward)?.name || '';
+
+    return [addressDetail, wardName, districtName, province]
+      .filter(part => part && part.trim())
+      .join(', ');
   };
 
   return (
@@ -1226,12 +1252,12 @@ const AppointmentBooking = () => {
                             </Col>
 
                             <Col md={6} className="mb-3">
-                              <Form.Label>CCCD/CMND <span className="text-danger">*</span></Form.Label>
+                              <Form.Label>CCCD <span className="text-danger">*</span></Form.Label>
                               <Form.Control
                                 type="text"
                                 inputMode="numeric"
                                 maxLength={12}
-                                placeholder="Nhập số CCCD/CMND"
+                                placeholder="Nhập số CCCD"
                                 value={bookingData.customerInfo.idNumber}
                                 onChange={(e) => {
                                   const value = e.target.value.replace(/\D/g, ''); // Chỉ cho số
@@ -1321,7 +1347,7 @@ const AppointmentBooking = () => {
                                 </Form.Select>
                               </Col>
                               <Col md={6} className="mb-3">
-                                <Form.Label>Địa chỉ chi tiết</Form.Label>
+                                <Form.Label>Số nhà, tên đường</Form.Label>
                                 <Form.Control
                                   type="text"
                                   value={bookingData.customerInfo.addressDetail}
@@ -1384,12 +1410,12 @@ const AppointmentBooking = () => {
                                     />
                                   </Form.Group>
                                   <Form.Group className="mb-3">
-                                    <Form.Label>CCCD/CMND</Form.Label>
+                                    <Form.Label>CCCD</Form.Label>
                                     <Form.Control
                                       type="text"
                                       inputMode="numeric"
                                       maxLength={12}
-                                      placeholder="Nhập số CCCD/CMND"
+                                      placeholder="Nhập số CCCD"
                                       value={bookingData.customerInfo.participants[idx]?.idNumber || ''}
                                       onChange={(e) => {
                                         const value = e.target.value.replace(/\D/g, ''); // Chỉ cho số
@@ -1410,35 +1436,6 @@ const AppointmentBooking = () => {
                                     />
                                     <Form.Control.Feedback type="invalid">
                                       {idNumberErrors[idx]}
-                                    </Form.Control.Feedback>
-                                  </Form.Group>
-                                  <Form.Group className="mb-3">
-                                    <Form.Label>Số điện thoại</Form.Label>
-                                    <Form.Control
-                                      type="tel"
-                                      inputMode="numeric"
-                                      maxLength={10}
-                                      placeholder="Nhập số điện thoại"
-                                      value={bookingData.customerInfo.participants[idx]?.phone || ''}
-                                      onChange={(e) => {
-                                        const value = e.target.value.replace(/\D/g, ''); // Chỉ cho số
-                                        if (value.length <= 10) {
-                                          handleParticipantChange(idx, 'phone', value);
-
-                                          if (value && !/^0\d{9}$/.test(value)) {
-                                            setPhoneErrors(prev => ({
-                                              ...prev,
-                                              [idx]: 'Số điện thoại phải có 10 chữ số và bắt đầu bằng 0',
-                                            }));
-                                          } else {
-                                            setPhoneErrors(prev => ({ ...prev, [idx]: '' }));
-                                          }
-                                        }
-                                      }}
-                                      isInvalid={!!phoneErrors[idx]}
-                                    />
-                                    <Form.Control.Feedback type="invalid">
-                                      {phoneErrors[idx]}
                                     </Form.Control.Feedback>
                                   </Form.Group>
                                   {/* Tuổi (Age) */}
@@ -1642,7 +1639,10 @@ const AppointmentBooking = () => {
                       disabled={
                         !bookingData.customerInfo.fullName ||
                         !bookingData.customerInfo.phone ||
-                        !bookingData.customerInfo.address ||
+                        !bookingData.customerInfo.city ||
+                        !bookingData.customerInfo.district ||
+                        !bookingData.customerInfo.ward ||
+                        !bookingData.customerInfo.addressDetail ||
                         (bookingData.collectionMethod !== 'self-sample' && (!bookingData.appointmentDate || !bookingData.appointmentTime))
                       }
                     >
