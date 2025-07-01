@@ -1,3 +1,13 @@
+/**
+ * COMPONENT: TechnologyManagement
+ * MỤC ĐÍCH: Quản lý công nghệ, thiết bị và quy trình xét nghiệm
+ * CHỨC NĂNG:
+ * - Quản lý các công nghệ xét nghiệm (NGS, STR, ADN ti thể)
+ * - Theo dõi thiết bị lab và lịch bảo trì
+ * - Quản lý protocols và quy trình chuẩn
+ * - Đánh giá hiệu suất và độ chính xác
+ */
+
 import React, { useState, useEffect } from 'react';
 import { 
   Card, Row, Col, Button, Table, Badge, Modal, Form, 

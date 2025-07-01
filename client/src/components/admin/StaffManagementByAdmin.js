@@ -1,3 +1,13 @@
+/**
+ * COMPONENT: StaffManagementByAdmin
+ * MỤC ĐÍCH: Quản lý nhân viên từ góc độ admin
+ * CHỨC NĂNG:
+ * - Hiển thị danh sách tất cả nhân viên theo role
+ * - Theo dõi hiệu suất làm việc của nhân viên
+ * - Quản lý trạng thái tài khoản nhân viên
+ * - Xem chi tiết thông tin cá nhân và công việc
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -6,41 +16,52 @@ import Badge from 'react-bootstrap/Badge';
 import { getStaffListByRole } from '../../services/api';
 
 const StaffManagementByAdmin = ({ onCountChange }) => {
-  const navigate = useNavigate();
-  const [staff, setStaff] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [selectedStaff, setSelectedStaff] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterDepartment, setFilterDepartment] = useState('all');
+  const navigate = useNavigate(); // Hook điều hướng
+  
+  // State quản lý dữ liệu nhân viên
+  const [staff, setStaff] = useState([]); // Danh sách nhân viên
+  const [loading, setLoading] = useState(true); // Trạng thái loading
+  const [showModal, setShowModal] = useState(false); // Hiển thị modal chi tiết
+  const [selectedStaff, setSelectedStaff] = useState(null); // Nhân viên được chọn
+  
+  // State quản lý filter và search
+  const [searchTerm, setSearchTerm] = useState(''); // Từ khóa tìm kiếm
+  const [filterDepartment, setFilterDepartment] = useState('all'); // Lọc theo phòng ban
 
+  // Effect để fetch danh sách nhân viên khi component mount
   useEffect(() => {
     const fetchStaff = async () => {
       setLoading(true);
       try {
-        const staffList = await getStaffListByRole([1, 2]); // Assuming '1' and '2' are the roles for staff
+        // Lấy danh sách nhân viên theo role 1 và 2 (staff và manager)
+        const staffList = await getStaffListByRole([1, 2]);
         console.log(staffList);
         setStaff(staffList || []);
+        // Callback để thông báo số lượng nhân viên cho component cha
         onCountChange && onCountChange(staffList.length);
       } catch (err) {
-        // Có thể toast lỗi hoặc setError
+        // Xử lý lỗi - có thể hiển thị toast hoặc set error state
+        console.error('Lỗi khi tải danh sách nhân viên:', err);
       } finally {
         setLoading(false);
       }
     };
     fetchStaff();
-  }, []);
+  }, []); // Chỉ chạy một lần khi component mount
 
+  // Hàm thay đổi trạng thái nhân viên
   const handleStatusChange = (staffId, newStatus) => {
-    // TODO: Implement API call to update staff status
+    // TODO: Triển khai API call để cập nhật trạng thái nhân viên
     toast.success('Cập nhật trạng thái thành công!');
   };
 
+  // Hàm mở modal xem chi tiết nhân viên
   const handleViewDetails = (staffMember) => {
     setSelectedStaff(staffMember);
     setShowModal(true);
   };
 
+  // Hàm tạo badge hiển thị role của nhân viên
   const getRoleBadge = (roleName) => {
     switch (roleName) {
       case 'staff':
@@ -52,6 +73,7 @@ const StaffManagementByAdmin = ({ onCountChange }) => {
     }
   };
 
+  // Hàm tạo badge hiển thị trạng thái tài khoản
   const getStatusBadge = (status) => {
     switch (status) {
       case 'active':

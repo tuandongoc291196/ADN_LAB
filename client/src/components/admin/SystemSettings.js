@@ -1,3 +1,13 @@
+/**
+ * COMPONENT: SystemSettings
+ * MỤC ĐÍCH: Cài đặt hệ thống và quản lý cache/performance
+ * CHỨC NĂNG:
+ * - Cài đặt giao diện (theme, compact mode, notifications)
+ * - Quản lý cache và dữ liệu local storage
+ * - Theo dõi trạng thái hệ thống (memory, storage)
+ * - Xóa cache và optimize performance
+ */
+
 import React, { useState, useEffect } from 'react';
 import { 
   Card, Row, Col, Button, Form, Alert, 

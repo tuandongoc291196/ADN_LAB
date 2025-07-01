@@ -1,3 +1,14 @@
+/**
+ * COMPONENT: BlogEditor
+ * MỤC ĐÍCH: Form tạo và chỉnh sửa bài viết blog cho admin
+ * CHỨC NĂNG:
+ * - Tạo/chỉnh sửa bài viết với editor WYSIWYG
+ * - Quản lý hình ảnh đại diện và tags
+ * - Cài đặt SEO (title, description, keywords)
+ * - Xuất bản hoặc lưu bản nháp
+ * - Lên lịch xuất bản
+ */
+
 import React, { useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Row, Col, Card, Button, Form, Alert, Badge, Tab, Nav, Modal } from 'react-bootstrap';

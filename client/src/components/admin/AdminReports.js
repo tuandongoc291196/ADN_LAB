@@ -1,3 +1,13 @@
+/**
+ * COMPONENT: AdminReports
+ * MỤC ĐÍCH: Trang báo cáo và thống kê chi tiết cho admin
+ * CHỨC NĂNG:
+ * - Báo cáo tổng quan về doanh thu, xét nghiệm, người dùng
+ * - Thống kê theo loại xét nghiệm và nguồn khách hàng
+ * - Phân tích hiệu suất và độ chính xác
+ * - Xuất báo cáo theo các định dạng khác nhau
+ */
+
 import React, { useState, useEffect } from 'react';
 import { 
   Card, Row, Col, Button, Form, Table, Badge, 

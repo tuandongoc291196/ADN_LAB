@@ -1,21 +1,40 @@
+/**
+ * COMPONENT: BookingConfirmation  
+ * MỤC ĐÍCH: Hiển thị thông tin xác nhận đặt lịch và chuyển đến thanh toán
+ * CHỨC NĂNG:
+ * - Nhận booking data từ navigation state
+ * - Hiển thị chi tiết dịch vụ, thời gian, phương thức thu mẫu
+ * - Tính toán và hiển thị chi phí (service + method price)
+ * - Button tiến hành thanh toán với state management
+ * - Thông tin liên hệ hỗ trợ khách hàng
+ * - Chức năng in/lưu thông tin đặt lịch
+ * - Fallback handling nếu không có booking data
+ */
+
 import React, { useEffect, useState } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Alert, Badge } from 'react-bootstrap';
 
 const BookingConfirmation = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [bookingData, setBookingData] = useState(null);
-  const [bookingId, setBookingId] = useState('');
+  const location = useLocation(); // Hook nhận state từ trang trước
+  const navigate = useNavigate(); // Hook điều hướng
+  
+  // State quản lý dữ liệu booking
+  const [bookingData, setBookingData] = useState(null); // Dữ liệu booking từ navigation state
+  const [bookingId, setBookingId] = useState(''); // ID booking từ backend
 
+  // EFFECT: Xử lý dữ liệu từ navigation state khi component mount
   useEffect(() => {
     if (location.state) {
+      // Lấy booking data từ previous page
       if (location.state.bookingData) {
       setBookingData(location.state.bookingData);
         console.log('Booking data received:', location.state.bookingData);
         console.log('Selected service:', location.state.bookingData.selectedService);
         console.log('Selected method:', location.state.bookingData.selectedMethod);
       }
+      
+      // Lấy booking ID từ backend response hoặc generate fallback
       if (location.state.bookingId) {
         setBookingId(location.state.bookingId);
       } else {
@@ -24,19 +43,21 @@ const BookingConfirmation = () => {
       setBookingId(id);
       }
     }
-  }, [location.state]);
+  }, [location.state]); // Chạy khi location.state thay đổi
 
+  // Handler: Chuyển đến trang thanh toán với booking data
   const handleProceedToPayment = () => {
     navigate('/payment', { 
       state: { 
         bookingData: {
           ...bookingData,
-          bookingId: bookingId
+          bookingId: bookingId // Kèm theo booking ID cho payment
         }
       } 
     });
   };
 
+  // Early return: Hiển thị error nếu không có booking data
   if (!bookingData) {
     return (
       <Container className="py-5">
@@ -53,13 +74,15 @@ const BookingConfirmation = () => {
     );
   }
 
+  // Helper function: Format ngày theo chuẩn Việt Nam
   const formatDate = (dateString) => {
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     return new Date(dateString).toLocaleDateString('vi-VN', options);
   };
 
+  // Helper function: Hiển thị badge loại dịch vụ với logic ưu tiên
   const getServiceTypeBadge = (serviceType, category) => {
-    // Ưu tiên lấy từ category nếu có
+    // Ưu tiên lấy từ category nếu có (dữ liệu mới từ API)
     if (category) {
       if (category.hasLegalValue) {
         return <Badge bg="warning" text="dark">ADN Hành chính</Badge>;
@@ -74,13 +97,14 @@ const BookingConfirmation = () => {
       : <Badge bg="success">ADN Dân sự</Badge>;
   };
 
+  // Helper function: Lấy tên phương thức thu mẫu
   const getCollectionMethodName = (methodId, methodInfo) => {
-    // Ưu tiên lấy tên từ methodInfo nếu có
+    // Ưu tiên lấy tên từ methodInfo nếu có (dữ liệu từ API)
     if (methodInfo && methodInfo.name) {
       return methodInfo.name;
     }
     
-    // Fallback về mapping cũ
+    // Fallback về mapping cũ cho ID cố định
     const methods = {
       '0': 'Tự lấy mẫu tại nhà',
       '1': 'Nhân viên tới nhà lấy mẫu',
@@ -92,11 +116,12 @@ const BookingConfirmation = () => {
     return methods[methodId] || methodId;
   };
 
+  // Helper function: Lấy màu badge cho phương thức
   const getMethodColor = (methodId) => {
     const methodColors = {
-      'self-sample': 'success',
-      'home-visit': 'warning', 
-      'at-facility': 'primary',
+      'self-sample': 'success',  // Xanh lá - Tiện lợi
+      'home-visit': 'warning',   // Vàng - Trung bình  
+      'at-facility': 'primary',  // Xanh dương - Chính thức
       '0': 'success',
       '1': 'warning',
       '2': 'primary'
@@ -106,7 +131,7 @@ const BookingConfirmation = () => {
 
   return (
     <Container className="py-5">
-      {/* Success Header */}
+      {/* SUCCESS HEADER - Banner xác nhận thành công */}
       <Row className="mb-4">
         <Col className="text-center">
           <div className="mb-4">
@@ -119,7 +144,7 @@ const BookingConfirmation = () => {
         </Col>
       </Row>
 
-      {/* Booking Details */}
+      {/* BOOKING DETAILS CARD - Chi tiết thông tin đặt lịch */}
       <Row className="mb-4">
         <Col lg={8} className="mx-auto">
           <Card className="shadow">
@@ -139,7 +164,7 @@ const BookingConfirmation = () => {
               </Row>
             </Card.Header>
             <Card.Body>
-              {/* Thông tin dịch vụ và thời gian hẹn */}
+              {/* SECTION 1: Thông tin dịch vụ và thời gian hẹn */}
               <Row className="mb-4">
                 <Col md={6} className="mb-4 border-end">
                   <h6 className="text-primary mb-3">
@@ -172,6 +197,7 @@ const BookingConfirmation = () => {
                     Thời gian hẹn
                   </h6>
                   <div className="text-start">
+                  {/* Conditional rendering dựa trên phương thức thu mẫu */}
                   {bookingData.collectionMethod === 'self-sample' ? (
                     <div>
                       <div className="mb-2">
@@ -204,7 +230,7 @@ const BookingConfirmation = () => {
 
               <hr />
 
-              {/* Thông tin liên hệ và người tham gia */}
+              {/* SECTION 2: Thông tin liên hệ và người tham gia */}
               <Row className="mb-4">
                 <Col md={6} className="mb-4 border-end">
                   <h6 className="text-primary mb-3">
@@ -230,6 +256,7 @@ const BookingConfirmation = () => {
                     Người tham gia
                   </h6>
                   <div className="text-start">
+                  {/* Conditional rendering danh sách participants */}
                   {bookingData.customerInfo.participants.length > 0 ? (
                     bookingData.customerInfo.participants.map((participant, index) => (
                       <div key={index} className="mb-2 p-2 bg-light rounded">
@@ -252,7 +279,7 @@ const BookingConfirmation = () => {
 
               <hr />
 
-              {/* Thông tin chi phí */}
+              {/* SECTION 3: Thông tin chi phí với breakdown chi tiết */}
       <Row className="mb-4">
                 <Col>
                   <h6 className="text-primary mb-3">
@@ -260,6 +287,7 @@ const BookingConfirmation = () => {
                     Thông tin chi phí
                     </h6>
                   <div className="bg-light p-3 rounded">
+                    {/* Chi phí dịch vụ chính */}
                     <div className="d-flex justify-content-between mb-2">
                       <span>Giá dịch vụ:</span>
                       <span className="text-muted">
@@ -272,6 +300,7 @@ const BookingConfirmation = () => {
                         })()}
                       </span>
                   </div>
+                    {/* Phí phương thức thu mẫu */}
                     <div className="d-flex justify-content-between mb-2">
                       <span>Phí dịch vụ (theo phương thức thu mẫu):</span>
                       <span className="text-muted">
@@ -285,6 +314,7 @@ const BookingConfirmation = () => {
                       </span>
                 </div>
                     <hr />
+                    {/* Tổng cộng với highlight */}
                     <div className="d-flex justify-content-between align-items-center mb-3">
                       <h5 className="mb-0">Tổng cộng:</h5>
                       <h4 className="text-primary mb-0">
@@ -308,11 +338,12 @@ const BookingConfirmation = () => {
         </Col>
       </Row>
 
-      {/* Payment CTA */}
+      {/* PAYMENT CTA SECTION - Khu vực chính để tiến hành thanh toán */}
       <Row className="mb-4">
         <Col lg={8} className="mx-auto">
           <Card className="border-warning bg-warning bg-opacity-10">
             <Card.Body className="text-center py-4">
+              {/* Warning alert về thời hạn */}
               <Alert variant="warning" className="mb-4">
                 <i className="bi bi-exclamation-triangle me-2"></i>
                 <strong>Quan trọng:</strong> Vui lòng hoàn tất thanh toán trong vòng 30 phút để giữ lịch hẹn.
@@ -326,7 +357,7 @@ const BookingConfirmation = () => {
                 Tiến hành thanh toán để đặt lịch thành công và bắt đầu quy trình xét nghiệm ADN
               </p>
               
-              {/* Total Amount Display */}
+              {/* Hiển thị tổng tiền cần thanh toán nổi bật */}
               <div className="bg-white p-3 rounded mb-4">
                 <div className="d-flex justify-content-between align-items-center">
                   <span className="fs-5">Tổng tiền cần thanh toán:</span>
@@ -345,6 +376,7 @@ const BookingConfirmation = () => {
                 </div>
               </div>
               
+              {/* Button chính để chuyển đến trang thanh toán */}
               <div className="d-flex justify-content-center">
                 <Button 
                   variant="warning" 
@@ -360,7 +392,7 @@ const BookingConfirmation = () => {
         </Col>
       </Row>
 
-      {/* Contact Information */}
+      {/* SUPPORT SECTION - Thông tin liên hệ hỗ trợ khách hàng */}
       <Row className="mb-4">
         <Col lg={8} className="mx-auto">
           <Card className="border-primary">
@@ -372,18 +404,21 @@ const BookingConfirmation = () => {
             </Card.Header>
             <Card.Body>
               <Row>
+                {/* Hotline 24/7 */}
                 <Col md={4} className="text-center mb-3">
                   <i className="bi bi-headset text-primary fs-1 mb-2 d-block"></i>
                   <h6>Hotline hỗ trợ</h6>
                   <p className="mb-0"><strong>1900 1234</strong></p>
                   <small className="text-muted">24/7</small>
                 </Col>
+                {/* Email support */}
                 <Col md={4} className="text-center mb-3">
                   <i className="bi bi-envelope text-primary fs-1 mb-2 d-block"></i>
                   <h6>Email hỗ trợ</h6>
                   <p className="mb-0"><strong>support@adnlab.vn</strong></p>
                   <small className="text-muted">Phản hồi trong 2h</small>
                 </Col>
+                {/* Live chat */}
                 <Col md={4} className="text-center mb-3">
                   <i className="bi bi-chat-dots text-primary fs-1 mb-2 d-block"></i>
                   <h6>Live Chat</h6>

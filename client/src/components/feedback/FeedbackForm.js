@@ -1,17 +1,34 @@
+/**
+ * Component biểu mẫu đánh giá dịch vụ
+ * Cho phép người dùng gửi đánh giá và nhận xét về dịch vụ đã sử dụng
+ */
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Container, Form, Button, Card, Alert } from 'react-bootstrap';
 
+/**
+ * Component FeedbackForm hiển thị form đánh giá dịch vụ
+ * @param {Object} user - Thông tin người dùng hiện tại
+ */
 const FeedbackForm = ({ user }) => {
+  // Lấy ID dịch vụ từ tham số URL
   const { serviceId } = useParams();
+  
+  // State quản lý dữ liệu form
   const [formData, setFormData] = useState({
     rating: 5,
     comment: '',
   });
+  
+  // State quản lý trạng thái form
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
 
+  /**
+   * Xử lý sự kiện thay đổi giá trị trong form
+   * @param {Event} e - Sự kiện thay đổi input
+   */
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -20,15 +37,20 @@ const FeedbackForm = ({ user }) => {
     });
   };
 
+  /**
+   * Xử lý sự kiện gửi form đánh giá
+   * @param {Event} e - Sự kiện submit form
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
-      // Simulate API call
+      // Giả lập gọi API - sẽ được thay thế bằng gọi API thực tế
       await new Promise(resolve => setTimeout(resolve, 1000));
       setSuccess(true);
+      // Reset form sau khi gửi thành công
       setFormData({
         rating: 5,
         comment: '',
@@ -45,19 +67,23 @@ const FeedbackForm = ({ user }) => {
       <h1 className="mb-4">Đánh giá dịch vụ</h1>
       <Card>
         <Card.Body>
+          {/* Thông báo thành công */}
           {success && (
             <Alert variant="success" className="mb-4">
               Cảm ơn bạn đã gửi đánh giá! Phản hồi của bạn rất quan trọng với chúng tôi.
             </Alert>
           )}
           
+          {/* Thông báo lỗi */}
           {error && (
             <Alert variant="danger" className="mb-4">
               {error}
             </Alert>
           )}
           
+          {/* Form đánh giá */}
           <Form onSubmit={handleSubmit}>
+            {/* Trường hiển thị ID dịch vụ */}
             <Form.Group className="mb-3">
               <Form.Label>Dịch vụ</Form.Label>
               <Form.Control
@@ -67,6 +93,7 @@ const FeedbackForm = ({ user }) => {
               />
             </Form.Group>
             
+            {/* Trường chọn đánh giá sao */}
             <Form.Group className="mb-3">
               <Form.Label>Đánh giá</Form.Label>
               <Form.Select
@@ -83,6 +110,7 @@ const FeedbackForm = ({ user }) => {
               </Form.Select>
             </Form.Group>
             
+            {/* Trường nhập nhận xét */}
             <Form.Group className="mb-4">
               <Form.Label>Nhận xét</Form.Label>
               <Form.Control
@@ -96,6 +124,7 @@ const FeedbackForm = ({ user }) => {
               />
             </Form.Group>
             
+            {/* Nút gửi đánh giá */}
             <div className="d-grid">
               <Button
                 variant="primary"

@@ -1,3 +1,14 @@
+/**
+ * COMPONENT: Login
+ * MỤC ĐÍCH: Form đăng nhập với tích hợp Firebase Authentication
+ * CHỨC NĂNG:
+ * - Đăng nhập bằng email/password hoặc Google
+ * - Validation form với Formik và Yup
+ * - Tự động điều hướng theo role của user
+ * - Xử lý trạng thái loading và error
+ * - Lưu thông tin user vào localStorage
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Form, Alert, InputGroup, Badge } from 'react-bootstrap';
@@ -248,7 +259,7 @@ const Login = ({ setUser }) => {
                   </div>
                 </Form>
 
-                {/* Divider */}
+                {/* DIVIDER - Phân cách giữa form đăng nhập và Google Sign In */}
                 <div className="text-center mb-4">
                   <div className="position-relative">
                     <hr />
@@ -258,7 +269,7 @@ const Login = ({ setUser }) => {
                   </div>
                 </div>
 
-                {/* Google Sign In */}
+                {/* GOOGLE SIGN IN - Đăng nhập bằng tài khoản Google */}
                 <div className="d-grid gap-2 mb-4">
                   <Button
                     variant="outline-danger"
@@ -281,7 +292,7 @@ const Login = ({ setUser }) => {
                   </Button>
                 </div>
 
-                {/* Register Link */}
+                {/* LINK ĐĂNG KÝ - Chuyển đến trang đăng ký */}
                 <div className="text-center">
                   <p className="text-muted mb-0">
                     Chưa có tài khoản?{' '}

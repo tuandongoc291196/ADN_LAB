@@ -1,52 +1,80 @@
+/**
+ * COMPONENT: AppointmentBooking
+ * MỤC ĐÍCH: Multi-step booking form cho đặt lịch xét nghiệm ADN
+ * CHỨC NĂNG:
+ * - 4 bước đặt lịch: Chọn dịch vụ → Phương thức lấy mẫu → Thông tin & Lịch hẹn → Xác nhận
+ * - Hỗ trợ 2 loại dịch vụ: Dân sự (civil) và Hành chính (administrative)
+ * - 3 phương thức thu mẫu: Tự lấy mẫu / Nhân viên tới nhà / Tại cơ sở
+ * - Validation phức tạp cho thông tin khách hàng và người tham gia
+ * - Tích hợp API để tạo booking và điều hướng đến xác nhận
+ * - Auto-fill thông tin từ localStorage nếu user đã đăng nhập
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Badge, Form, Alert, Tab, Nav } from 'react-bootstrap';
-import { getAllServices, getAllMethods, getMethodsByServiceId, createBooking } from '../../services/api';
-import { getServiceById, getServicesByType, canServiceUseSelfSample, isAdministrativeService, enrichMethodData, isMethodDisabled, getMethodRestrictionReason } from '../data/services-data';
+import { getAllServices, getAllMethods, getMethodsByServiceId, createBooking } from '../../services/api'; // API functions
+import { getServiceById, getServicesByType, canServiceUseSelfSample, isAdministrativeService, enrichMethodData, isMethodDisabled, getMethodRestrictionReason } from '../data/services-data'; // Helper functions
+
 const AppointmentBooking = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [currentStep, setCurrentStep] = useState(1);
-  const [services, setServices] = useState([]);
-  const [methods, setMethods] = useState([]);
-  const [serviceMethods, setServiceMethods] = useState([]);
-  const [enrichedMethods, setEnrichedMethods] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [errors, setErrors] = useState(null);
+  const navigate = useNavigate(); // Hook điều hướng
+  const location = useLocation(); // Hook nhận state từ page trước
+  
+  // State quản lý flow đặt lịch
+  const [currentStep, setCurrentStep] = useState(1); // Bước hiện tại (1-4)
+  
+  // State quản lý dữ liệu từ API
+  const [services, setServices] = useState([]); // Danh sách dịch vụ từ API
+  const [methods, setMethods] = useState([]); // Danh sách phương thức từ API
+  const [serviceMethods, setServiceMethods] = useState([]); // Phương thức của dịch vụ được chọn
+  const [enrichedMethods, setEnrichedMethods] = useState([]); // Methods với icon và color
+  
+  // State quản lý UI
+  const [loading, setLoading] = useState(true); // Trạng thái đang tải dữ liệu
+  const [errors, setErrors] = useState(null); // Lỗi chung
+  
+  // State chính - Dữ liệu booking
   const [bookingData, setBookingData] = useState({
-    serviceType: '', // 'civil' or 'administrative'
-    serviceId: '',
-    collectionMethod: '',
-    appointmentDate: '',
-    appointmentTime: '',
-    customerInfo: {
+    serviceType: '',        // 'civil' hoặc 'administrative'
+    serviceId: '',          // ID dịch vụ được chọn
+    collectionMethod: '',   // ID phương thức thu mẫu
+    appointmentDate: '',    // Ngày hẹn (YYYY-MM-DD)
+    appointmentTime: '',    // Giờ hẹn (HH:MM)
+    customerInfo: {         // Thông tin khách hàng
       fullName: '',
       phone: '',
       email: '',
       address: '',
       idNumber: '',
-      participants: []
+      participants: []      // Danh sách người tham gia xét nghiệm
     }
   });
-  const [idNumberErrors, setIdNumberErrors] = useState({});
-  const [phoneErrors, setPhoneErrors] = useState({});
+  
+  // State validation errors
+  const [idNumberErrors, setIdNumberErrors] = useState({}); // Lỗi CMND/CCCD
+  const [phoneErrors, setPhoneErrors] = useState({});       // Lỗi số điện thoại
+  const [customerErrors, setCustomerErrors] = useState({    // Lỗi thông tin khách hàng
+    fullName: '',
+    phone: '',
+    idNumber: '',
+    address: ''
+  });
+  
+  // State cho quan hệ gia đình
+  const [relationshipBetween, setRelationshipBetween] = useState(''); // Quan hệ được chọn
+  
+  // Lấy dữ liệu user từ localStorage
   const storedUserData = localStorage.getItem('userData');
   const userData = storedUserData ? JSON.parse(storedUserData) : null;
+  
+  // Helper function: Tính toán giờ kết thúc từ giờ bắt đầu (mỗi slot 1 tiếng)
   const calculateEndTime = (startTime) => {
     const [hour, minute] = startTime.split(':').map(Number);
     const endHour = hour + 1;
     return `${endHour < 10 ? '0' : ''}${endHour}:${minute < 10 ? '0' : ''}${minute}`;
   };
 
-  const [customerErrors, setCustomerErrors] = useState({
-    fullName: '',
-    phone: '',
-    idNumber: '',
-    address: ''
-  });
-
-  const [relationshipBetween, setRelationshipBetween] = useState('');
-
+  // Danh sách các mối quan hệ gia đình hợp lệ
   const familyRelations = [
     "Cha", "Mẹ",
     "Ông nội", "Bà nội",
@@ -58,6 +86,7 @@ const AppointmentBooking = () => {
     "Chồng", "Vợ", "Chưa xác định"
   ];
 
+  // Ma trận các cặp quan hệ hợp lệ (logic nghiệp vụ xét nghiệm ADN)
   const validRelationPairs = [
     ['Cha', 'Con trai'],
     ['Cha', 'Con gái'],
@@ -80,24 +109,27 @@ const AppointmentBooking = () => {
     []
   ];
 
+  // Helper function: Lấy danh sách quan hệ hợp lệ dựa trên quan hệ hiện tại
   const getValidRelationsForOther = (currentRelation) => {
     const valid = validRelationPairs
       .filter(pair => pair[0] === currentRelation)
       .map(pair => pair[1]);
 
-    return valid.length > 0 ? valid : familyRelations; // nếu rỗng → trả lại toàn bộ
+    return valid.length > 0 ? valid : familyRelations; // Nếu rỗng → trả lại toàn bộ
   };
 
-  // Fetch services and methods from API
+  // EFFECT: Fetch dữ liệu services và methods từ API khi component mount
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        // Gọi song song 2 API để tối ưu performance
         const [servicesData, methodsData] = await Promise.all([
           getAllServices(),
           getAllMethods()
         ]);
 
+        // Debug logs để kiểm tra cấu trúc dữ liệu từ API
         console.log('=== SERVICES FROM API ===');
         console.log('Services data:', servicesData);
         console.log('Services type:', typeof servicesData);
@@ -113,10 +145,11 @@ const AppointmentBooking = () => {
         console.log('Methods type:', typeof methodsData);
         console.log('Methods length:', methodsData?.length);
 
+        // Cập nhật state với dữ liệu từ API
         setServices(servicesData || []);
         setMethods(methodsData || []);
 
-        // Enrich methods with icon and color
+        // Làm giàu dữ liệu methods với icon và color cho UI
         const enriched = enrichMethodData(methodsData || []);
         setEnrichedMethods(enriched);
       } catch (error) {
@@ -127,9 +160,9 @@ const AppointmentBooking = () => {
     };
 
     fetchData();
-  }, []);
+  }, []); // Chạy 1 lần khi component mount
 
-  // Fetch service methods when service is selected
+  // EFFECT: Fetch các phương thức của service được chọn
   useEffect(() => {
     const fetchServiceMethods = async () => {
       if (bookingData.serviceId) {
@@ -144,9 +177,9 @@ const AppointmentBooking = () => {
     };
 
     fetchServiceMethods();
-  }, [bookingData.serviceId]);
+  }, [bookingData.serviceId]); // Chạy khi serviceId thay đổi
 
-  // Load pre-selected service from navigation state
+  // EFFECT: Load pre-selected service từ navigation state (từ page dịch vụ)
   useEffect(() => {
     if (location.state?.selectedService && services.length > 0) {
       const service = getServiceById(services, location.state.selectedService);
@@ -157,6 +190,7 @@ const AppointmentBooking = () => {
           serviceId: service.id,
           customerInfo: {
             ...prev.customerInfo,
+            // Tự động tạo danh sách participants dựa trên yêu cầu của service
             participants: service.participants ? service.participants.map((role, index) => ({
               id: index,
               role: role,
@@ -166,13 +200,12 @@ const AppointmentBooking = () => {
             })) : []
           }
         }));
-        setCurrentStep(2); // Skip service selection
+        setCurrentStep(2); // Skip service selection step
       }
     }
   }, [location.state, services]);
 
-  // Nếu có userData trong localStorage thì tự động điền thông tin người đặt lịch
-
+  // EFFECT: Auto-fill thông tin khách hàng từ userData trong localStorage
   useEffect(() => {
     if (storedUserData) {
       const parsed = JSON.parse(storedUserData);
@@ -180,6 +213,7 @@ const AppointmentBooking = () => {
         ...prev,
         customerInfo: {
           ...prev.customerInfo,
+          // Map các field từ userData structure khác nhau
           fullName: parsed.fullname || parsed.fullName || '',
           phone: parsed.phone || '',
           email: parsed.email || '',
@@ -188,25 +222,27 @@ const AppointmentBooking = () => {
         }
       }));
     }
-  }, [storedUserData]);
+  }, [storedUserData]); // Chạy khi storedUserData thay đổi
 
+  // Handler: Thay đổi loại dịch vụ (civil/administrative)
   const handleServiceTypeChange = (type) => {
     setBookingData({
       ...bookingData,
       serviceType: type,
-      serviceId: '',
-      collectionMethod: '',
+      serviceId: '',           // Reset service selection
+      collectionMethod: '',    // Reset method selection
       customerInfo: {
         ...bookingData.customerInfo,
-        participants: []
+        participants: []       // Reset participants
       }
     });
   };
 
+  // Handler: Chọn dịch vụ cụ thể
   const handleServiceSelect = (serviceId) => {
     const selectedService = getServiceById(services, serviceId);
 
-
+    // Debug logs để kiểm tra service selection
     console.log('handleServiceSelect called with serviceId:', serviceId);
     console.log('Selected service object:', selectedService);
     console.log('Service ID from object:', selectedService?.id);
@@ -215,9 +251,10 @@ const AppointmentBooking = () => {
     setBookingData({
       ...bookingData,
       serviceId: serviceId,
-      collectionMethod: '',
+      collectionMethod: '',    // Reset method khi đổi service
       customerInfo: {
         ...bookingData.customerInfo,
+        // Tạo participants list dựa trên requirements của service
         participants: selectedService ? (selectedService.participants ? selectedService.participants.map((role, index) => ({
           id: index,
           role: role,
@@ -229,6 +266,7 @@ const AppointmentBooking = () => {
     });
   };
 
+  // Handler: Chọn phương thức thu mẫu
   const handleMethodSelect = (method) => {
     setBookingData({
       ...bookingData,
@@ -236,6 +274,7 @@ const AppointmentBooking = () => {
     });
   };
 
+  // Handler: Cập nhật thông tin khách hàng
   const handleCustomerInfoChange = (field, value) => {
     setBookingData({
       ...bookingData,
@@ -246,6 +285,7 @@ const AppointmentBooking = () => {
     });
   };
 
+  // Handler: Cập nhật thông tin người tham gia
   const handleParticipantChange = (idx, field, value) => {
     const updated = [...bookingData.customerInfo.participants];
     updated[idx] = {
@@ -261,6 +301,7 @@ const AppointmentBooking = () => {
     }));
   };
 
+  // Navigation functions: Chuyển đổi giữa các step
   const nextStep = () => {
     if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
@@ -273,8 +314,9 @@ const AppointmentBooking = () => {
     }
   };
 
+  // Handler: Submit booking form cuối cùng
   const handleBookingSubmit = async () => {
-    // Lấy userId từ localStorage
+    // Bước 1: Lấy userId từ localStorage với multiple fallbacks
     let userId = '';
     try {
       const userDataFromStorage = JSON.parse(localStorage.getItem('userData'));
@@ -283,11 +325,11 @@ const AppointmentBooking = () => {
       console.error('Error parsing userData:', e);
     }
 
-    // Lấy service/method info
+    // Bước 2: Lấy thông tin service và method đã chọn
     const service = selectedService;
     const method = selectedMethod;
 
-    // Validation trước khi submit
+    // Bước 3: Validation dữ liệu trước khi submit
     if (!service) {
       alert('Vui lòng chọn dịch vụ!');
       return;
@@ -312,7 +354,7 @@ const AppointmentBooking = () => {
     console.log('Service ID type:', typeof service.id);
     console.log('Service ID value:', service.id);
 
-    // Tính toán startTime, endTime từ slot
+    // Bước 4: Tính toán thời gian slot (startTime, endTime)
     let startTime = bookingData.appointmentTime || '';
     let endTime = '';
     if (startTime) {
@@ -322,7 +364,7 @@ const AppointmentBooking = () => {
       endTime = start.toTimeString().slice(0, 5);
     }
 
-    // Map participants
+    // Bước 5: Map dữ liệu participants theo format API yêu cầu
     const participants = (bookingData.customerInfo.participants || []).map((p) => ({
       name: p.name || '',
       age: p.age || null,
@@ -331,7 +373,7 @@ const AppointmentBooking = () => {
       relationship: p.relation || p.role || '',
     }));
 
-    // Thông tin người đặt lịch
+    // Bước 6: Chuẩn bị thông tin người đặt lịch
     const information = {
       name: bookingData.customerInfo.fullName,
       identification: bookingData.customerInfo.idNumber,
@@ -340,25 +382,25 @@ const AppointmentBooking = () => {
       email: bookingData.customerInfo.email
     };
 
-    // Tổng tiền
+    // Bước 7: Tính tổng chi phí (service price + method price)
     let totalAmount = 0;
     if (service && typeof service.price === 'number') {
       totalAmount = service.price;
     }
     
-    // Cộng thêm phí phương thức thu mẫu
+    // Cộng thêm phí phương thức thu mẫu nếu có
     if (method && typeof method.price === 'number' && method.price > 0) {
       totalAmount += method.price;
     }
 
-    // Chuẩn bị payload
+    // Bước 8: Chuẩn bị payload theo format API backend
     const payload = {
-      userId: userId, // Sử dụng userId đã lấy từ localStorage
+      userId: userId, // ID người dùng từ localStorage
       slotDate: bookingData.appointmentDate,
       startTime: bookingData.appointmentTime,
       endTime: calculateEndTime(bookingData.appointmentTime),
       methodId: bookingData.collectionMethod,
-      serviceId: service.id, // phải là ID từ backend
+      serviceId: service.id, // ID dịch vụ từ backend
       totalAmount,
       information: {
         name: bookingData.customerInfo.fullName,
@@ -376,7 +418,7 @@ const AppointmentBooking = () => {
       }))
     };
 
-    // Kiểm tra nếu serviceId là title thay vì ID thực
+    // Debug: Kiểm tra nếu serviceId có vấn đề với backend data structure
     if (service.id === service.title) {
       console.warn('Service ID is same as title, this might be an issue with backend data structure');
       // Có thể cần điều chỉnh logic này tùy theo yêu cầu backend
@@ -384,12 +426,13 @@ const AppointmentBooking = () => {
 
     console.log('Final payload before API call:', payload);
 
+    // Bước 9: Gọi API tạo booking
     try {
       console.log('Submitting booking with payload:', payload);
       const res = await createBooking(payload);
       console.log('Booking response:', res);
 
-      // Kiểm tra response có hợp lệ không - handle cả booking_insert.id
+      // Bước 10: Extract booking ID từ response (handle multiple response formats)
       let bookingId = null;
       if (res) {
         bookingId = res.id || res.bookingId || res.data?.id || res.booking_insert?.id || res.data?.booking_insert?.id || null;
@@ -405,6 +448,8 @@ const AppointmentBooking = () => {
           },
           bookingId: bookingId
         });
+        
+        // Bước 11: Điều hướng đến trang xác nhận với dữ liệu booking
         try {
           navigate('/booking-confirmation', {
             state: {
@@ -419,7 +464,7 @@ const AppointmentBooking = () => {
           console.log('Navigation successful');
         } catch (navError) {
           console.error('Navigation error:', navError);
-          // Fallback: redirect to confirmation page
+          // Fallback: redirect trực tiếp nếu navigate không hoạt động
           window.location.href = '/booking-confirmation';
         }
       } else {
@@ -428,13 +473,14 @@ const AppointmentBooking = () => {
     } catch (err) {
       console.error('Booking error details:', err);
 
-      // Hiển thị thông báo lỗi chi tiết hơn
+      // Hiển thị thông báo lỗi chi tiết cho user
       const errorMessage = err.message || 'Đặt lịch thất bại! Vui lòng thử lại hoặc liên hệ hỗ trợ.';
       alert(`Lỗi đặt lịch: ${errorMessage}`);
     }
   };
 
 
+  // Computed values: Lấy thông tin service và method đã chọn
   const selectedService = bookingData.serviceId ? getServiceById(services, bookingData.serviceId) : null;
   const selectedMethod = bookingData.collectionMethod ?
     (typeof bookingData.collectionMethod === 'string'
@@ -442,7 +488,7 @@ const AppointmentBooking = () => {
       : bookingData.collectionMethod)
     : null;
 
-  // Helper: Render badge for service type
+  // Helper function: Render badge hiển thị loại dịch vụ
   const renderServiceTypeBadge = (serviceType, category) => {
     if (serviceType === 'administrative') {
       return <Badge bg="warning" text="dark">ADN Hành chính</Badge>;
@@ -450,14 +496,14 @@ const AppointmentBooking = () => {
     return <Badge bg="success">ADN Dân sự</Badge>;
   };
 
-  // Helper: Get collection method name
+  // Helper function: Lấy tên phương thức thu mẫu (với fallback)
   const getCollectionMethodName = (methodId, methodInfo) => {
-    // Ưu tiên lấy tên từ methodInfo nếu có
+    // Ưu tiên lấy tên từ methodInfo nếu có (từ API)
     if (methodInfo && methodInfo.name) {
       return methodInfo.name;
     }
 
-    // Fallback về mapping cũ
+    // Fallback về mapping cũ cho các ID cố định
     const methods = {
       '0': 'Tự lấy mẫu tại nhà',
       '1': 'Nhân viên tới nhà lấy mẫu',
@@ -469,12 +515,12 @@ const AppointmentBooking = () => {
     return methods[methodId] || methodId;
   };
 
-  // Helper: Get method color
+  // Helper function: Lấy màu sắc cho badge method
   const getMethodColor = (methodId) => {
     const methodColors = {
-      'self-sample': 'success',
-      'home-visit': 'warning',
-      'at-facility': 'primary',
+      'self-sample': 'success',  
+      'home-visit': 'warning',   
+      'at-facility': 'primary',  
       '0': 'success',
       '1': 'warning',
       '2': 'primary'
@@ -482,33 +528,35 @@ const AppointmentBooking = () => {
     return methodColors[methodId] || 'secondary';
   };
 
-  // Helper: Generate next 30 days for date selection (excluding Sundays)
+  // Helper function: Tạo danh sách 30 ngày tiếp theo (loại trừ Chủ nhật)
   const getDateOptions = () => {
     const dates = [];
     const today = new Date();
     for (let i = 1; i <= 30; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
+      // Loại trừ Chủ nhật (getDay() === 0) vì không làm việc
       if (date.getDay() !== 0) {
         dates.push(date.toISOString().split('T')[0]);
       }
     }
     return dates;
   };
-  // Helper: Format date to Vietnamese
+  
+  // Helper function: Format ngày sang tiếng Việt
   const renderDate = (dateString) => {
     if (!dateString) return '';
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     return new Date(dateString).toLocaleDateString('vi-VN', options);
   };
 
-  // Time slots for booking (modern, 8 slots per day, 1 hour each)
+  // Danh sách time slots cho booking (8 slots/ngày, mỗi slot 1 tiếng)
   const timeSlots = [
     { label: '08:00 - 09:00', value: '08:00' },
     { label: '09:00 - 10:00', value: '09:00' },
     { label: '10:00 - 11:00', value: '10:00' },
     { label: '11:00 - 12:00', value: '11:00' },
-    { label: '13:00 - 14:00', value: '13:00' },
+    { label: '13:00 - 14:00', value: '13:00' }, // Nghỉ trưa từ 12-13h
     { label: '14:00 - 15:00', value: '14:00' },
     { label: '15:00 - 16:00', value: '15:00' },
     { label: '16:00 - 17:00', value: '16:00' }
@@ -516,7 +564,7 @@ const AppointmentBooking = () => {
 
   return (
     <div>
-      {/* Header Section */}
+      {/* HEADER SECTION - Banner với tiêu đề và hotline */}
       <section className="bg-primary text-white py-4">
         <Container>
           <Row className="align-items-center">
@@ -540,6 +588,7 @@ const AppointmentBooking = () => {
       </section>
 
       <Container className="py-5">
+        {/* LOADING STATE - Hiển thị khi đang fetch dữ liệu từ API */}
         {loading ? (
           <div className="text-center py-5">
             <div className="spinner-border text-primary" role="status">
@@ -549,24 +598,27 @@ const AppointmentBooking = () => {
           </div>
         ) : (
           <>
-            {/* Progress Bar */}
+            {/* PROGRESS BAR - Hiển thị tiến độ 4 bước đặt lịch */}
             <Row className="mb-5">
               <Col>
                 <div className="d-flex justify-content-center align-items-center">
                   {[1, 2, 3, 4].map((step, index) => (
                     <React.Fragment key={step}>
+                      {/* Circle cho từng step với trạng thái dynamic */}
                       <div className={`rounded-circle d-flex align-items-center justify-content-center border-2 ${currentStep >= step
-                        ? 'bg-primary text-white border-primary'
+                        ? 'bg-primary text-white border-primary'     // Completed/Current - Xanh
                         : currentStep === step - 1
-                          ? 'bg-white text-primary border-primary'
-                          : 'bg-light text-muted border-light'
+                          ? 'bg-white text-primary border-primary'    // Next step - Viền xanh
+                          : 'bg-light text-muted border-light'        // Future - Xám
                         }`} style={{ width: '50px', height: '50px', fontWeight: 'bold' }}>
+                        {/* Icon check nếu đã hoàn thành, số nếu chưa */}
                         {currentStep > step ? (
                           <i className="bi bi-check-lg"></i>
                         ) : (
                           step
                         )}
                       </div>
+                      {/* Connecting line giữa các step */}
                       {index < 3 && (
                         <div className={`mx-3`}
                           style={{
@@ -582,6 +634,7 @@ const AppointmentBooking = () => {
               </Col>
             </Row>
 
+            {/* STEP LABELS - Nhãn mô tả cho từng bước */}
             <Row className="mt-3">
               <Col className="text-center">
                 <small className={`fw-medium ${currentStep >= 1 ? 'text-primary' : 'text-muted'}`}>

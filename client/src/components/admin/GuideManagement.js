@@ -1,3 +1,13 @@
+/**
+ * COMPONENT: GuideManagement
+ * MỤC ĐÍCH: Quản lý hướng dẫn xét nghiệm cho khách hàng
+ * CHỨC NĂNG:
+ * - Tạo/chỉnh sửa hướng dẫn theo từng loại xét nghiệm
+ * - Phân loại hướng dẫn theo độ khó và danh mục
+ * - Theo dõi lượt xem và hiệu quả của hướng dẫn
+ * - Quản lý trạng thái xuất bản của hướng dẫn
+ */
+
 import React, { useState, useEffect } from 'react';
 import { 
   Card, Row, Col, Button, Table, Badge, Modal, Form, 

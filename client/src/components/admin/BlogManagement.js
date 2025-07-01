@@ -1,16 +1,30 @@
+/**
+ * COMPONENT: BlogManagement
+ * MỤC ĐÍCH: Trang quản lý danh sách bài viết blog
+ * CHỨC NĂNG:
+ * - Hiển thị danh sách tất cả bài viết với pagination
+ * - Lọc bài viết theo trạng thái (published/draft/featured)
+ * - Tìm kiếm bài viết theo tiêu đề, nội dung, tags
+ * - Thao tác CRUD (tạo, đọc, cập nhật, xóa) bài viết
+ * - Thống kê tổng quan về blog
+ */
+
 import React, { useState } from 'react';
 import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { Row, Col, Card, Button, Table, Badge, Form, Modal, Alert, Tab, Nav } from 'react-bootstrap';
 
 const BlogManagement = ({ user }) => {
-  const navigate = useNavigate();
-  const [selectedTab, setSelectedTab] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedPost, setSelectedPost] = useState(null);
-  const [message, setMessage] = useState({ type: '', content: '' });
+  const navigate = useNavigate(); // Hook điều hướng React Router
+  
+  // State quản lý UI
+  const [selectedTab, setSelectedTab] = useState('all'); // Tab hiện tại: all/published/draft/featured
+  const [searchTerm, setSearchTerm] = useState(''); // Từ khóa tìm kiếm bài viết
+  const [showDeleteModal, setShowDeleteModal] = useState(false); // Hiển thị modal xác nhận xóa
+  const [selectedPost, setSelectedPost] = useState(null); // Bài viết được chọn để thao tác
+  const [message, setMessage] = useState({ type: '', content: '' }); // Thông báo success/error
 
-  // Mock blog posts data
+  // Dữ liệu mock các bài viết blog
+  // Trong thực tế sẽ được fetch từ API
   const [blogPosts, setBlogPosts] = useState([
     {
       id: 1,
@@ -71,14 +85,18 @@ const BlogManagement = ({ user }) => {
     }
   ]);
 
+  // Danh sách categories và statuses để lọc
   const categories = ['Tất cả', 'Xét nghiệm ADN', 'Hướng dẫn', 'Công nghệ', 'Tin tức'];
   const statuses = ['Tất cả', 'published', 'draft', 'pending'];
 
+  // Hàm lọc bài viết theo search term và tab được chọn
   const filteredPosts = blogPosts.filter(post => {
+    // Tìm kiếm theo tiêu đề, nội dung hoặc tags
     const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          post.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
     
+    // Lọc theo tab được chọn
     const matchesTab = selectedTab === 'all' || 
                       (selectedTab === 'published' && post.status === 'published') ||
                       (selectedTab === 'draft' && post.status === 'draft') ||
@@ -87,6 +105,7 @@ const BlogManagement = ({ user }) => {
     return matchesSearch && matchesTab;
   });
 
+  // Hàm tạo badge hiển thị trạng thái bài viết
   const getStatusBadge = (status) => {
     switch (status) {
       case 'published':
@@ -100,25 +119,29 @@ const BlogManagement = ({ user }) => {
     }
   };
 
+  // Hàm mở modal xác nhận xóa bài viết
   const handleDeletePost = (post) => {
     setSelectedPost(post);
     setShowDeleteModal(true);
   };
 
+  // Hàm xác nhận xóa bài viết
   const confirmDelete = () => {
-    setBlogPosts(blogPosts.filter(post => post.id !== selectedPost.id));
-    setShowDeleteModal(false);
-    setSelectedPost(null);
+    setBlogPosts(blogPosts.filter(post => post.id !== selectedPost.id)); // Xóa khỏi danh sách
+    setShowDeleteModal(false); // Đóng modal
+    setSelectedPost(null); // Reset selected post
     setMessage({ type: 'success', content: 'Đã xóa bài viết thành công!' });
-    setTimeout(() => setMessage({ type: '', content: '' }), 3000);
+    setTimeout(() => setMessage({ type: '', content: '' }), 3000); // Ẩn thông báo sau 3s
   };
 
+  // Hàm toggle trạng thái featured của bài viết
   const handleToggleFeatured = (postId) => {
     setBlogPosts(blogPosts.map(post => 
       post.id === postId ? { ...post, featured: !post.featured } : post
     ));
   };
 
+  // Hàm thay đổi trạng thái xuất bản của bài viết
   const handleStatusChange = (postId, newStatus) => {
     setBlogPosts(blogPosts.map(post => 
       post.id === postId ? { ...post, status: newStatus } : post
@@ -127,6 +150,7 @@ const BlogManagement = ({ user }) => {
     setTimeout(() => setMessage({ type: '', content: '' }), 3000);
   };
 
+  // Hàm format ngày tháng theo định dạng Việt Nam
   const formatDate = (dateString) => {
     if (!dateString) return 'Chưa xuất bản';
     return new Date(dateString).toLocaleDateString('vi-VN');

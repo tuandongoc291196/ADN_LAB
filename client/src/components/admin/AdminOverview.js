@@ -1,3 +1,13 @@
+/**
+ * COMPONENT: AdminOverview
+ * MỤC ĐÍCH: Trang tổng quan dashboard cho admin hiển thị các thống kê và biểu đồ quan trọng
+ * CHỨC NĂNG:
+ * - Hiển thị các thống kê chính (người dùng, xét nghiệm, đơn hàng)
+ * - Biểu đồ tăng trưởng người dùng, phân loại xét nghiệm
+ * - Hoạt động gần đây của hệ thống
+ * - Tình trạng sức khỏe hệ thống
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Badge, ProgressBar, Table, Alert, Button } from 'react-bootstrap';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';

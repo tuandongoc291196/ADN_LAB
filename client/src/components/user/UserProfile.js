@@ -1,22 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getUserById, updateUserById } from '../../services/api';
-import { Row, Col, Card, Button, Form, Alert, Modal, Badge, Tab, Tabs } from 'react-bootstrap';
+import { Row, Col, Card, Button, Form, Alert, Modal, Badge } from 'react-bootstrap';
+import { uploadAvatar } from '../config/firebase';
+import { getProvinces, getDistricts, getWards } from 'vietnam-provinces';
 
 const UserProfile = ({ user }) => {
-  const [activeTab, setActiveTab] = useState('personal');
   const [isEditing, setIsEditing] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [message, setMessage] = useState({ type: '', content: '' });
+  const [loading, setLoading] = useState(true);
   const [profileData, setProfileData] = useState({
-    fullName: '',
+    fullname: '',
     email: '',
     phone: '',
-    dateOfBirth: '',
     gender: '',
-    idNumber: '',
-    address: '',
+    avatar: '',
+    accountStatus: '',
+    role: { name: '', description: '' },
+    createdAt: '',
+    lastLogin: '',
+    addressDetail: '',
+    ward: '',
+    district: '',
+    city: '',
+    address: ''
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -30,52 +38,81 @@ const UserProfile = ({ user }) => {
 
   // Fetch user info từ API và điền vào form
   useEffect(() => {
-    if (userId) {
-      getUserById(userId)
-        .then(data => {
-          setProfileData(prev => ({
-            ...prev,
-            fullName: data.fullname || data.fullName || '',
-            email: data.email || '',
-            phone: data.phone || '',
-            dateOfBirth: data.dateOfBirth || data.dob || '',
-            gender: data.gender || '',
-            idNumber: data.id_number || data.idNumber || '',
-            address: data.address || ''
-          }));
-        })
-        .catch(err => {
-          // Có thể show thông báo lỗi nếu cần
-        });
-    }
+    const fetchUserData = async () => {
+      if (userId) {
+        try {
+          setLoading(true);
+          const data = await getUserById(userId);
+          if (data) {
+            // Xử lý địa chỉ an toàn
+            let addressDetail = '', ward = '', district = '', city = '';
+            if (data.address) {
+              const parts = data.address.split(',').map(s => s.trim());
+              if (parts.length === 4) {
+                addressDetail = parts[0];
+                // Không tự động map tên sang code, để user chọn lại
+                ward = '';
+                district = '';
+                city = '';
+              } else {
+                // Địa chỉ không đúng chuẩn, chỉ điền vào chi tiết
+                addressDetail = data.address;
+                ward = '';
+                district = '';
+                city = '';
+              }
+            }
+            setProfileData({
+              fullname: data.fullname || '',
+              email: data.email || '',
+              phone: data.phone || '',
+              gender: data.gender || '',
+              avatar: data.avatar || '',
+              accountStatus: data.accountStatus || '',
+              role: data.role || { name: '', description: '' },
+              createdAt: data.createdAt || '',
+              lastLogin: data.lastLogin || '',
+              address: data.address || '',
+              addressDetail,
+              ward,
+              district,
+              city
+            });
+          }
+        } catch (err) {
+          setMessage({ type: 'danger', content: 'Không thể tải thông tin người dùng' });
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    };
+    fetchUserData();
   }, [userId]);
 
-  const handleInputChange = (section, field, value) => {
-    if (section === 'notifications' || section === 'privacy') {
-      setProfileData({
-        ...profileData,
-        [section]: {
-          ...profileData[section],
-          [field]: value
-        }
-      });
-    } else {
-      setProfileData({
-        ...profileData,
-        [field]: value
-      });
-    }
+  const handleInputChange = (field, value) => {
+    setProfileData({
+      ...profileData,
+      [field]: value
+    });
   };
 
   const handleSaveProfile = async () => {
-    // Ghép địa chỉ chi tiết, xã, huyện, tỉnh thành 1 string
-    const fullAddress = [profileData.address, profileData.ward, profileData.district, profileData.city]
-      .filter(Boolean)
-      .join(', ');
+    const address = [
+      profileData.addressDetail,
+      wards.find(w => w.code === profileData.ward)?.name || '',
+      districts.find(d => d.code === profileData.district)?.name || '',
+      provinces.find(p => p.code === profileData.city)?.name || ''
+    ].filter(Boolean).join(', ');
     const updateData = {
-      ...profileData,
-      address: fullAddress
+      fullname: profileData.fullname || "",
+      gender: profileData.gender || "",
+      avatar: profileData.avatar || "",
+      phone: profileData.phone || "",
+      address
     };
+
     try {
       await updateUserById(userId, updateData);
       setMessage({ type: 'success', content: 'Thông tin cá nhân đã được cập nhật thành công!' });
@@ -107,9 +144,54 @@ const UserProfile = ({ user }) => {
   };
 
   const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    if (!dateString) return 'Chưa có thông tin';
+    const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
     return new Date(dateString).toLocaleDateString('vi-VN', options);
   };
+
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'active':
+        return <Badge bg="success">Hoạt động</Badge>;
+      case 'inactive':
+        return <Badge bg="warning" text="dark">Không hoạt động</Badge>;
+      case 'suspended':
+        return <Badge bg="danger">Tạm khóa</Badge>;
+      default:
+        return <Badge bg="secondary">Không xác định</Badge>;
+    }
+  };
+
+  const getRoleBadge = (roleName) => {
+    switch (roleName) {
+      case 'admin':
+        return <Badge bg="danger">Quản trị viên</Badge>;
+      case 'manager':
+        return <Badge bg="warning" text="dark">Quản lý</Badge>;
+      case 'staff':
+        return <Badge bg="info">Nhân viên</Badge>;
+      case 'customer':
+        return <Badge bg="primary">Khách hàng</Badge>;
+      default:
+        return <Badge bg="secondary">{roleName}</Badge>;
+    }
+  };
+
+  // Dropdown data
+  const provinces = getProvinces();
+  const districts = profileData.city ? getDistricts().filter(d => d.province_code === profileData.city) : [];
+  const wards = profileData.district ? getWards().filter(w => w.district_code === profileData.district) : [];
+
+  if (loading) {
+    return (
+      <div className="text-center py-5">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Đang tải...</span>
+        </div>
+        <p className="mt-3">Đang tải thông tin người dùng...</p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -119,7 +201,7 @@ const UserProfile = ({ user }) => {
           <div className="d-flex justify-content-between align-items-center">
             <div>
               <h2 className="mb-1">Hồ sơ cá nhân</h2>
-              <p className="text-muted mb-0">Quản lý thông tin tài khoản và cài đặt bảo mật</p>
+              <p className="text-muted mb-0">Quản lý thông tin tài khoản</p>
             </div>
             <div className="d-none d-md-block">
               {!isEditing ? (
@@ -177,329 +259,247 @@ const UserProfile = ({ user }) => {
 
       {/* Profile Content */}
       <Card className="shadow-sm">
-        <Tabs
-          activeKey={activeTab}
-          onSelect={(k) => setActiveTab(k)}
-          className="border-bottom"
-        >
-          {/* Personal Information Tab */}
-          <Tab eventKey="personal" title={<><i className="bi bi-person me-2"></i>Thông tin cá nhân</>}>
-            <Card.Body>
-              <Form>
-                <Row>
-                  <Col md={6} className="mb-3">
-                    <Form.Label>Họ và tên *</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={profileData.fullName}
-                      onChange={(e) => handleInputChange('', 'fullName', e.target.value)}
-                      disabled={!isEditing}
+        <Card.Body className="p-4">
+          <Form>
+            {/* Thông tin cơ bản */}
+            <h5 className="mb-4 text-primary">
+              <i className="bi bi-person-circle me-2"></i>
+              Thông tin cơ bản
+            </h5>
+            
+            {/* Avatar Section - Centered */}
+            <Row className="mb-4">
+              <Col md={12} className="d-flex flex-column align-items-center justify-content-center position-relative">
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  {profileData.avatar ? (
+                    <img
+                      src={profileData.avatar}
+                      alt="Avatar"
+                      className="rounded-circle border"
+                      style={{ width: '120px', height: '120px', objectFit: 'cover', display: 'block' }}
                     />
-                  </Col>
-                  <Col md={6} className="mb-3">
-                    <Form.Label>Email *</Form.Label>
-                    <Form.Control
-                      type="email"
-                      value={profileData.email}
-                      onChange={(e) => handleInputChange('', 'email', e.target.value)}
-                      disabled={!isEditing}
-                    />
-                  </Col>
-                </Row>
-
-                <Row>
-                  <Col md={6} className="mb-3">
-                    <Form.Label>Số điện thoại *</Form.Label>
-                    <Form.Control
-                      type="tel"
-                      value={profileData.phone}
-                      onChange={(e) => handleInputChange('', 'phone', e.target.value)}
-                      disabled={!isEditing}
-                    />
-                  </Col>
-                  <Col md={6} className="mb-3">
-                    <Form.Label>Ngày sinh</Form.Label>
-                    <Form.Control
-                      type="date"
-                      value={profileData.dateOfBirth}
-                      onChange={(e) => handleInputChange('', 'dateOfBirth', e.target.value)}
-                      disabled={!isEditing}
-                    />
-                  </Col>
-                </Row>
-
-                <Row>
-                  <Col md={6} className="mb-3">
-                    <Form.Label>Giới tính</Form.Label>
-                    <Form.Select
-                      value={profileData.gender}
-                      onChange={(e) => handleInputChange('', 'gender', e.target.value)}
-                      disabled={!isEditing}
-                    >
-                      <option value="male">Nam</option>
-                      <option value="female">Nữ</option>
-                      <option value="other">Khác</option>
-                    </Form.Select>
-                  </Col>
-                  <Col md={6} className="mb-3">
-                    <Form.Label>Số CCCD/CMND *</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={profileData.idNumber}
-                      onChange={(e) => handleInputChange('', 'idNumber', e.target.value)}
-                      disabled={!isEditing}
-                    />
-                  </Col>
-                </Row>
-                <Form.Group className="mb-3">
-                  <Form.Label>Địa chỉ chi tiết *</Form.Label>
-                  <Form.Control
-                    type="text"
-                    placeholder="Số nhà, tên đường..."
-                    value={profileData.address}
-                    onChange={(e) => handleInputChange('', 'address', e.target.value)}
-                    disabled={!isEditing}
-                  />
-                </Form.Group>
-                <Row>
-                  <Col md={6} className="mb-3">
-                    <Form.Label>Phường/Xã</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={profileData.ward}
-                      onChange={(e) => handleInputChange('', 'ward', e.target.value)}
-                      disabled={!isEditing}
-                    />
-                  </Col>
-                  <Col md={6} className="mb-3">
-                    <Form.Label>Quận/Huyện</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={profileData.district}
-                      onChange={(e) => handleInputChange('', 'district', e.target.value)}
-                      disabled={!isEditing}
-                    />
-                  </Col>
-                </Row>
-
-                <Row>
-                  <Col md={6} className="mb-3">
-                    <Form.Label>Tỉnh/Thành phố</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={profileData.city}
-                      onChange={(e) => handleInputChange('', 'city', e.target.value)}
-                      disabled={!isEditing}
-                    />
-                  </Col>
-                </Row>
-                {/* <Row>
-                  <Col md={6} className="mb-3">
-                    <Form.Label>Ngày cấp CCCD/CMND</Form.Label>
-                    <Form.Control
-                      type="date"
-                      value={profileData.idIssueDate}
-                      onChange={(e) => handleInputChange('', 'idIssueDate', e.target.value)}
-                      disabled={!isEditing}
-                    />
-                  </Col>
-                  <Col md={6} className="mb-3">
-                    <Form.Label>Nơi cấp</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={profileData.idIssuePlace}
-                      onChange={(e) => handleInputChange('', 'idIssuePlace', e.target.value)}
-                      disabled={!isEditing}
-                    />
-                  </Col>
-                </Row> */}
-              </Form>
-            </Card.Body>
-          </Tab>
-
-          {/* Address Information Tab */}
-          <Tab eventKey="address" title={<><i className="bi bi-geo-alt me-2"></i>Địa chỉ liên hệ</>}>
-            <Card.Body>
-              <Form>
-
-
-
-                {/* <Col md={6} className="mb-3">
-                    <Form.Label>Mã bưu điện</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={profileData.postalCode}
-                      onChange={(e) => handleInputChange('', 'postalCode', e.target.value)}
-                      disabled={!isEditing}
-                    />
-                  </Col>
-                </Row>
-
-                <hr />
-
-                <h6 className="mb-3">Liên hệ khẩn cấp</h6>
-                <Row>
-                  <Col md={4} className="mb-3">
-                    <Form.Label>Họ tên</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={profileData.emergencyContact}
-                      onChange={(e) => handleInputChange('', 'emergencyContact', e.target.value)}
-                      disabled={!isEditing}
-                    />
-                  </Col>
-                  <Col md={4} className="mb-3">
-                    <Form.Label>Số điện thoại</Form.Label>
-                    <Form.Control
-                      type="tel"
-                      value={profileData.emergencyPhone}
-                      onChange={(e) => handleInputChange('', 'emergencyPhone', e.target.value)}
-                      disabled={!isEditing}
-                    />
-                  </Col>
-                  <Col md={4} className="mb-3">
-                    <Form.Label>Mối quan hệ</Form.Label>
-                    <Form.Select
-                      value={profileData.emergencyRelation}
-                      onChange={(e) => handleInputChange('', 'emergencyRelation', e.target.value)}
-                      disabled={!isEditing}
-                    >
-                      <option value="Vợ/Chồng">Vợ/Chồng</option>
-                      <option value="Cha/Mẹ">Cha/Mẹ</option>
-                      <option value="Con">Con</option>
-                      <option value="Anh/Chị/Em">Anh/Chị/Em</option>
-                      <option value="Bạn bè">Bạn bè</option>
-                      <option value="Khác">Khác</option>
-                    </Form.Select> */}
-                {/* </Col> */}
-                {/* </Row> */}
-              </Form>
-            </Card.Body>
-          </Tab>
-
-          {/* Preferences Tab */}
-          <Tab eventKey="preferences" title={<><i className="bi bi-gear me-2"></i>Cài đặt</>}>
-            <Card.Body>
-              <h6 className="mb-3">Thông báo</h6>
-              <div className="mb-4">
-                {/* <Form.Check
-                  type="switch"
-                  id="notification-email"
-                  label="Nhận thông báo qua Email"
-                  checked={profileData.notifications.email}
-                  onChange={(e) => handleInputChange('notifications', 'email', e.target.checked)}
+                  ) : (
+                    <div className="bg-light border rounded-circle d-flex align-items-center justify-content-center"
+                         style={{ width: '120px', height: '120px' }}>
+                      <i className="bi bi-person fs-1 text-muted"></i>
+                    </div>
+                  )}
+                  {isEditing && (
+                    <>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        id="avatar-upload-input"
+                        style={{ display: 'none' }}
+                        onChange={async (e) => {
+                          const file = e.target.files[0];
+                          if (file && userId) {
+                            if (file.size > 2 * 1024 * 1024) { // 2MB
+                              setMessage({ type: 'danger', content: 'Ảnh đại diện không được vượt quá 2MB!' });
+                              return;
+                            }
+                            setMessage({ type: '', content: '' });
+                            try {
+                              setMessage({ type: 'info', content: 'Đang tải ảnh lên...' });
+                              const url = await uploadAvatar(file, userId);
+                              handleInputChange('avatar', url);
+                              setMessage({ type: 'success', content: 'Tải ảnh thành công!' });
+                            } catch (err) {
+                              setMessage({ type: 'danger', content: 'Tải ảnh thất bại: ' + err.message });
+                            }
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-light p-1 border position-absolute"
+                        style={{
+                          bottom: 0,
+                          right: 0,
+                          borderRadius: '50%',
+                          boxShadow: '0 0 4px rgba(0,0,0,0.1)',
+                          zIndex: 2
+                        }}
+                        onClick={() => document.getElementById('avatar-upload-input').click()}
+                        title="Đổi ảnh đại diện"
+                      >
+                        <i className="bi bi-camera-fill"></i>
+                      </button>
+                    </>
+                  )}
+                </div>
+              </Col>
+            </Row>
+            
+            <Row>
+              <Col md={6} className="mb-3">
+                <Form.Label>Họ và tên *</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={profileData.fullname}
+                  onChange={(e) => handleInputChange('fullname', e.target.value)}
                   disabled={!isEditing}
-                  className="mb-2"
+                  placeholder="Nhập họ và tên"
                 />
-                <Form.Check
-                  type="switch"
-                  id="notification-sms"
-                  label="Nhận thông báo qua SMS"
-                  checked={profileData.notifications.sms}
-                  onChange={(e) => handleInputChange('notifications', 'sms', e.target.checked)}
-                  disabled={!isEditing}
-                  className="mb-2"
+              </Col>
+              <Col md={6} className="mb-3">
+                <Form.Label>Email *</Form.Label>
+                <Form.Control
+                  type="email"
+                  value={profileData.email}
+                  disabled={true} // Email không được phép thay đổi
+                  className="bg-light"
                 />
-                <Form.Check
-                  type="switch"
-                  id="notification-appointment"
-                  label="Nhắc nhở lịch hẹn"
-                  checked={profileData.notifications.appointment}
-                  onChange={(e) => handleInputChange('notifications', 'appointment', e.target.checked)}
+                <Form.Text className="text-muted">
+                  <i className="bi bi-info-circle me-1"></i>
+                  Email không thể thay đổi
+                </Form.Text>
+              </Col>
+            </Row>
+
+            <Row>
+              <Col md={6} className="mb-3">
+                <Form.Label>Số điện thoại</Form.Label>
+                <Form.Control
+                  type="tel"
+                  value={profileData.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
                   disabled={!isEditing}
-                  className="mb-2"
+                  placeholder="Nhập số điện thoại"
                 />
-                <Form.Check
-                  type="switch"
-                  id="notification-results"
-                  label="Thông báo kết quả xét nghiệm"
-                  checked={profileData.notifications.results}
-                  onChange={(e) => handleInputChange('notifications', 'results', e.target.checked)}
+              </Col>
+              <Col md={6} className="mb-3">
+                <Form.Label>Giới tính</Form.Label>
+                <Form.Select
+                  value={profileData.gender}
+                  onChange={(e) => handleInputChange('gender', e.target.value)}
                   disabled={!isEditing}
-                  className="mb-2"
+                >
+                  <option value="">Chọn giới tính</option>
+                  <option value="male">Nam</option>
+                  <option value="female">Nữ</option>
+                  <option value="other">Khác</option>
+                </Form.Select>
+              </Col>
+            </Row>
+
+            <Row>
+              <Col md={6} className="mb-3">
+                <Form.Label>Tỉnh/Thành phố</Form.Label>
+                <Form.Select
+                  value={profileData.city}
+                  onChange={e => {
+                    setProfileData(prev => ({
+                      ...prev,
+                      city: e.target.value,
+                      district: '',
+                      ward: ''
+                    }));
+                  }}
+                  disabled={!isEditing}
+                >
+                  <option value="">Chọn tỉnh/thành phố</option>
+                  {provinces.map(p => (
+                    <option key={p.code} value={p.code}>{p.name}</option>
+                  ))}
+                </Form.Select>
+              </Col>
+              <Col md={6} className="mb-3">
+                <Form.Label>Quận/Huyện</Form.Label>
+                <Form.Select
+                  value={profileData.district}
+                  onChange={e => {
+                    setProfileData(prev => ({
+                      ...prev,
+                      district: e.target.value,
+                      ward: ''
+                    }));
+                  }}
+                  disabled={!isEditing || !profileData.city}
+                >
+                  <option value="">Chọn quận/huyện</option>
+                  {districts.map(d => (
+                    <option key={d.code} value={d.code}>{d.name}</option>
+                  ))}
+                </Form.Select>
+              </Col>
+            </Row>
+            <Row>
+              <Col md={6} className="mb-3">
+                <Form.Label>Phường/Xã</Form.Label>
+                <Form.Select
+                  value={profileData.ward}
+                  onChange={e => handleInputChange('ward', e.target.value)}
+                  disabled={!isEditing || !profileData.district}
+                >
+                  <option value="">Chọn phường/xã</option>
+                  {wards.map(w => (
+                    <option key={w.code} value={w.code}>{w.name}</option>
+                  ))}
+                </Form.Select>
+              </Col>
+              <Col md={6} className="mb-3">
+                <Form.Label>Địa chỉ chi tiết</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={profileData.addressDetail}
+                  onChange={e => handleInputChange('addressDetail', e.target.value)}
+                  disabled={!isEditing}
+                  placeholder="Số nhà, tên đường..."
                 />
-                <Form.Check
-                  type="switch"
-                  id="notification-promotions"
-                  label="Nhận thông tin khuyến mại"
-                  checked={profileData.notifications.promotions}
-                  onChange={(e) => handleInputChange('notifications', 'promotions', e.target.checked)}
-                  disabled={!isEditing}
-                /> */}
+              </Col>
+            </Row>
+
+            <hr className="my-4" />
+
+            {/* Thông tin tài khoản */}
+            <h5 className="mb-4 text-primary">
+              <i className="bi bi-shield-lock me-2"></i>
+              Thông tin tài khoản
+            </h5>
+
+            <div className="mb-3 row align-items-center">
+              <label className="col-md-4 col-6 fw-semibold">Trạng thái tài khoản:</label>
+              <div className="col-md-8 col-6">{getStatusBadge(profileData.accountStatus)}</div>
+            </div>
+            <div className="mb-3 row align-items-center">
+              <label className="col-md-4 col-6 fw-semibold">Vai trò:</label>
+              <div className="col-md-8 col-6">{getRoleBadge(profileData.role?.name)}</div>
+            </div>
+            <div className="mb-3 row align-items-center">
+              <label className="col-md-4 col-6 fw-semibold">Ngày tạo tài khoản:</label>
+              <div className="col-md-8 col-6">
+                <i className="bi bi-calendar me-2"></i>
+                {formatDate(profileData.createdAt)}
               </div>
-
-              <hr />
-
-              <h6 className="mb-3">Quyền riêng tư</h6>
-              <div className="mb-4">
-                {/* <Form.Check
-                  type="switch"
-                  id="privacy-share"
-                  label="Cho phép chia sẻ dữ liệu cho mục đích nghiên cứu"
-                  checked={profileData.privacy.shareData}
-                  onChange={(e) => handleInputChange('privacy', 'shareData', e.target.checked)}
-                  disabled={!isEditing}
-                  className="mb-2"
-                />
-                <Form.Check
-                  type="switch"
-                  id="privacy-marketing"
-                  label="Cho phép sử dụng thông tin cho mục đích marketing"
-                  checked={profileData.privacy.marketing}
-                  onChange={(e) => handleInputChange('privacy', 'marketing', e.target.checked)}
-                  disabled={!isEditing}
-                  className="mb-2"
-                />
-                <Form.Check
-                  type="switch"
-                  id="privacy-analytics"
-                  label="Cho phép thu thập dữ liệu phân tích"
-                  checked={profileData.privacy.analytics}
-                  onChange={(e) => handleInputChange('privacy', 'analytics', e.target.checked)}
-                  disabled={!isEditing}
-                /> */}
+            </div>
+            <div className="mb-3 row align-items-center">
+              <label className="col-md-4 col-6 fw-semibold">Đăng nhập cuối:</label>
+              <div className="col-md-8 col-6">
+                <i className="bi bi-clock me-2"></i>
+                {formatDate(profileData.lastLogin)}
               </div>
+            </div>
 
-              <hr />
+            <hr className="my-4" />
 
-              <h6 className="mb-3">Ngôn ngữ</h6>
-              <Form.Select
-                value={profileData.language}
-                onChange={(e) => handleInputChange('', 'language', e.target.value)}
-                disabled={!isEditing}
-                className="mb-4"
+            {/* Nút đổi mật khẩu */}
+            <div className="text-center">
+              <Button
+                variant="outline-warning"
+                onClick={() => setShowPasswordModal(true)}
+                className="px-4"
               >
-                <option value="vi">Tiếng Việt</option>
-                <option value="en">English</option>
-              </Form.Select>
-
-              <hr />
-
-              <h6 className="mb-3 text-danger">Bảo mật & Tài khoản</h6>
-              <div className="d-grid gap-2 d-md-flex">
-                <Button
-                  variant="outline-warning"
-                  onClick={() => setShowPasswordModal(true)}
-                >
-                  <i className="bi bi-key me-2"></i>
-                  Đổi mật khẩu
-                </Button>
-                <Button
-                  variant="outline-danger"
-                  onClick={() => setShowDeleteModal(true)}
-                  disabled={!isEditing}
-                >
-                  <i className="bi bi-trash me-2"></i>
-                  Xóa tài khoản
-                </Button>
-              </div>
-            </Card.Body>
-          </Tab>
-        </Tabs>
-      </Card >
+                <i className="bi bi-key me-2"></i>
+                Đổi mật khẩu
+              </Button>
+            </div>
+          </Form>
+        </Card.Body>
+      </Card>
 
       {/* Change Password Modal */}
-      < Modal show={showPasswordModal} onHide={() => setShowPasswordModal(false)}>
+      <Modal show={showPasswordModal} onHide={() => setShowPasswordModal(false)}>
         <Modal.Header closeButton>
           <Modal.Title>Đổi mật khẩu</Modal.Title>
         </Modal.Header>
@@ -542,36 +542,7 @@ const UserProfile = ({ user }) => {
             Đổi mật khẩu
           </Button>
         </Modal.Footer>
-      </Modal >
-
-      {/* Delete Account Modal */}
-      < Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title className="text-danger">Xóa tài khoản</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Alert variant="danger">
-            <i className="bi bi-exclamation-triangle me-2"></i>
-            <strong>Cảnh báo!</strong> Hành động này không thể hoàn tác.
-          </Alert>
-          <p>Khi xóa tài khoản, tất cả dữ liệu của bạn sẽ bị xóa vĩnh viễn bao gồm:</p>
-          <ul>
-            <li>Thông tin cá nhân</li>
-            <li>Lịch sử đặt lịch</li>
-            <li>Kết quả xét nghiệm</li>
-            <li>Điểm tích lũy</li>
-          </ul>
-          <p>Bạn có chắc chắn muốn xóa tài khoản không?</p>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
-            Hủy
-          </Button>
-          <Button variant="danger">
-            Xác nhận xóa tài khoản
-          </Button>
-        </Modal.Footer>
-      </Modal >
+      </Modal>
     </>
   );
 };
