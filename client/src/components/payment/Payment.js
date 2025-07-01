@@ -17,6 +17,7 @@ const Payment = () => {
     });
     const [loading, setLoading] = useState(false);
     const [showBankModal, setShowBankModal] = useState(false);
+    const [agreedToTerms, setAgreedToTerms] = useState(false);
 
     // Payment methods configuration
     const paymentMethods = [
@@ -169,7 +170,6 @@ const Payment = () => {
     // Helper: Map bookingData to display info for order summary (API trả về dạng mới hoặc từ form)
     const getOrderSummary = () => {
         if (!bookingData) return null;
-
         // Dạng bookingData trước khi lưu (từ form, có selectedService, selectedMethod, ...)
         if (bookingData.selectedService && bookingData.selectedMethod) {
             const info = bookingData.customerInfo || {};
@@ -191,53 +191,10 @@ const Payment = () => {
                 appointmentTime: bookingData.appointmentTime || '',
                 price: bookingData.selectedMethod.price || bookingData.selectedService.price || 0,
                 serviceFee: 0,
-                total: (bookingData.selectedMethod.price || bookingData.selectedService.price || 0),
+                total: (bookingData.selectedMethod.price + bookingData.selectedService.price || 0),
                 category,
             };
         }
-
-        // Dạng bookingData sau khi lưu (từ API)
-        //   const b = bookingData.booking || bookingData;
-        //   const info = Array.isArray(b.information) && b.information.length > 0 ? b.information[0] : {};
-        //   let appointmentDate = '';
-        //   let appointmentTime = '';
-        //   if (b.timeSlot?.id) {
-        //     const [date, timeStart, timeEnd] = b.timeSlot.id.split('_');
-        //     appointmentDate = date;
-        //     appointmentTime = `${timeStart} - ${timeEnd}`;
-        //   } else if (b.timeSlotId) {
-        //     const [date, timeStart, timeEnd] = b.timeSlotId.split('_');
-        //     appointmentDate = date;
-        //     appointmentTime = `${timeStart} - ${timeEnd}`;
-        //   }
-        //   // Ưu tiên lấy category name từ service.category
-        //   let category = '';
-        //   if (b.service && b.service.category) {
-        //     category = b.service.category.name || b.service.category;
-        //   } else if (b.category) {
-        //     category = b.category;
-        //   }
-        //   // Ưu tiên lấy method name từ method.name, nếu không thì mapping từ id
-        //   let methodName = '';
-        //   if (b.method && b.method.name) {
-        //     methodName = b.method.name;
-        //   } else {
-        //     methodName = getCollectionMethodName(b.method?.id || b.methodId);
-        //   }
-        //   return {
-        //     serviceName: b.service?.id || b.serviceId || '',
-        //     methodName,
-        //     customerName: info.name || '',
-        //     customerPhone: info.phone || '',
-        //     customerEmail: info.email || '',
-        //     customerAddress: info.address || '',
-        //     appointmentDate,
-        //     appointmentTime,
-        //     price: b.totalAmount || b.price || 0,
-        //     serviceFee: 0,
-        //     total: (b.totalAmount || b.price || 0),
-        //     category,
-        //   };
     };
     const orderSummary = useMemo(() => getOrderSummary(), [bookingData]);
 
@@ -268,47 +225,49 @@ const Payment = () => {
         setLoading(true);
 
         try {
-            const response = await fetch('https://app-bggwpxm32a-uc.a.run.app/payments', {
+            const method = paymentMethod.toUpperCase();
+            const today = new Date().toISOString().split('T')[0];
+
+            const payload = {
+                bookingId,
+                amount: totalAmount,
+                paymentMethod: method,
+                paymentDate: today
+            };
+
+            console.log('📤 Payload gửi lên:', payload);
+
+            const response = await fetch('https://app-bggwpxm32a-uc.a.run.app/payments/add', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    totalAmount,
-                    paymentChoice: paymentMethod.toUpperCase()
-                }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             });
 
             const result = await response.json();
-            console.log('🔍 API response result:', result);
-            console.log('🔍 paymentMethod raw:', paymentMethod);
-
-            const method = paymentMethod.toUpperCase();
-            console.log('🔍 method after toUpperCase:', method);
+            console.log('✅ Payment result:', result);
 
             if (!response.ok) {
                 throw new Error(result.message || 'Thanh toán thất bại');
             }
 
-            if (method === 'MOMO' && result.resultCode === 0 && result.payUrl) {
-                window.location.href = result.payUrl;
+            // 🔁 Redirect nếu có link thanh toán
+            if (result.data && typeof result.data === 'string' && result.data.startsWith('http')) {
+                window.location.href = result.data;
                 return;
             }
 
-            if (method === 'ZALOPAY' && result.return_code === 1 && result.order_url) {
-                window.location.href = result.order_url;
-                return;
-            }
-
-            throw new Error(result.return_message || result.message || 'Không thể xử lý thanh toán');
+            // ✅ Trường hợp không cần redirect
+            alert('Thanh toán thành công!');
+            navigate('/payment-success', { state: { bookingId } });
 
         } catch (error) {
-            console.error('Payment error:', error);
-            // alert(Có lỗi xảy ra trong quá trình thanh toán: ${ error.message });
+            console.error('❌ Payment error:', error);
+            alert(`Thanh toán thất bại: ${error.message}`);
         } finally {
             setLoading(false);
         }
     };
+
 
     const selectedPaymentMethod = paymentMethods.find(m => m.id === paymentMethod);
 
@@ -400,6 +359,16 @@ const Payment = () => {
                                     </div>
                                 </div>
                                 <hr />
+                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                    <span className="text-primary mb-2"><strong>Giá dịch vụ:</strong></span>
+                                    <span>{bookingData?.selectedService?.price ? formatCurrency(bookingData.selectedService.price) : '—'}</span>
+                                </div>
+
+                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                    <span className="text-primary mb-2"><strong>Phí thanh toán:</strong></span>
+                                    <span>{bookingData?.selectedMethod?.price ? formatCurrency(bookingData.selectedMethod.price) : '—'}</span>
+                                </div>
+                                <hr />
                                 <div className="d-flex justify-content-between align-items-center">
                                     <strong>Tổng thanh toán:</strong>
                                     <strong className="text-primary fs-5">{formatCurrency(orderSummary?.total || 0)}</strong>
@@ -419,39 +388,49 @@ const Payment = () => {
                             </Card.Header>
                             <Card.Body className="p-4">
                                 <Row>
-                                    {paymentMethods.map(method => (
-                                        <Col key={method.id} md={6} className="mb-3">
-                                            <Card
-                                                className={`h-100 border-2 cursor-pointer ${paymentMethod === method.id
-                                                    ? `border-${method.color} shadow-sm`
-                                                    : 'border-light'
-                                                    }`}
-                                                style={{ cursor: 'pointer', transition: 'all 0.3s ease' }}
-                                                onClick={() => handlePaymentMethodSelect(method.id)}
-                                            >
-                                                <Card.Body className="text-center p-3">
-                                                    <div className={`bg-${method.color} bg-opacity-10 rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center`}
-                                                        style={{ width: '60px', height: '60px' }}>
-                                                        <i className={`${method.icon} text-${method.color} fs-3`}></i>
-                                                    </div>
-                                                    <h6 className={`mb-2 ${paymentMethod === method.id ? `text-${method.color}` : ''}`}>
-                                                        {method.name}
-                                                    </h6>
-                                                    <p className="small text-muted mb-2">{method.description}</p>
-                                                    <div className="small text-muted">{method.note}</div>
+                                    {paymentMethods.map(method => {
+                                        const isCashMethod = method.id === 'cash-on-service';
+                                        const methodName = orderSummary?.methodName?.toLowerCase() || '';
+                                        const isDisabledCash = isCashMethod && !methodName.includes('tại cơ sở');
 
-                                                    {paymentMethod === method.id && (
-                                                        <div className="mt-3">
-                                                            <Badge bg={method.color} className="px-3 py-2">
-                                                                <i className="bi bi-check-circle me-2"></i>
-                                                                Đã chọn
-                                                            </Badge>
+                                        return (
+                                            <Col key={method.id} md={6} className="mb-3">
+                                                <Card
+                                                    className={`h-100 border-2 ${isDisabledCash ? 'opacity-50' : 'cursor-pointer'} ${paymentMethod === method.id
+                                                        ? `border-${method.color} shadow-sm`
+                                                        : 'border-light'
+                                                        }`}
+                                                    style={{ transition: 'all 0.3s ease' }}
+                                                    onClick={() => !isDisabledCash && handlePaymentMethodSelect(method.id)}
+                                                >
+                                                    <Card.Body className="text-center p-3">
+                                                        <div className={`bg-${method.color} bg-opacity-10 rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center`}
+                                                            style={{ width: '60px', height: '60px' }}>
+                                                            <i className={`${method.icon} text-${method.color} fs-3`}></i>
                                                         </div>
-                                                    )}
-                                                </Card.Body>
-                                            </Card>
-                                        </Col>
-                                    ))}
+                                                        <h6 className={`mb-2 ${paymentMethod === method.id ? `text-${method.color}` : ''}`}>
+                                                            {method.name}
+                                                        </h6>
+                                                        <p className="small text-muted mb-2">{method.description}</p>
+                                                        <div className="small text-muted">{method.note}</div>
+                                                        {isDisabledCash && (
+                                                            <div className="mt-2 text-danger small">
+                                                                Không áp dụng cho phương thức thu mẫu hiện tại
+                                                            </div>
+                                                        )}
+                                                        {paymentMethod === method.id && !isDisabledCash && (
+                                                            <div className="mt-3">
+                                                                <Badge bg={method.color} className="px-3 py-2">
+                                                                    <i className="bi bi-check-circle me-2"></i>
+                                                                    Đã chọn
+                                                                </Badge>
+                                                            </div>
+                                                        )}
+                                                    </Card.Body>
+                                                </Card>
+                                            </Col>
+                                        );
+                                    })}
                                 </Row>
 
                                 {/* Payment Details Form */}
@@ -578,16 +557,14 @@ const Payment = () => {
                                             <Form.Check
                                                 type="checkbox"
                                                 id="terms-agreement"
+                                                checked={agreedToTerms}
+                                                onChange={(e) => setAgreedToTerms(e.target.checked)}
                                                 label={
                                                     <span>
                                                         Tôi đồng ý với{' '}
-                                                        <a href="/terms" target="_blank" className="text-primary">
-                                                            Điều khoản sử dụng
-                                                        </a>{' '}
+                                                        <a href="/terms" target="_blank" className="text-primary">Điều khoản sử dụng</a>{' '}
                                                         và{' '}
-                                                        <a href="/privacy" target="_blank" className="text-primary">
-                                                            Chính sách bảo mật
-                                                        </a>{' '}
+                                                        <a href="/privacy" target="_blank" className="text-primary">Chính sách bảo mật</a>{' '}
                                                         của ADN LAB
                                                     </span>
                                                 }
@@ -607,7 +584,7 @@ const Payment = () => {
                                         variant="success"
                                         size="lg"
                                         onClick={handlePaymentSubmit}
-                                        disabled={!paymentMethod || loading}
+                                        disabled={!paymentMethod || loading || !agreedToTerms}
                                         className="px-5"
                                     >
                                         {loading ? (
