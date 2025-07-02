@@ -198,7 +198,76 @@ const updateServiceStatus = async (req, res) => {
         });
     }
 }
+
+const updateServiceFeatured = async (req, res) => {
+    try {
+        const { serviceId, featured } = req.body;
+
+        if (!serviceId) {
+            return res.status(400).json({
+                statusCode: 400,
+                status: "error",
+                message: "serviceId is required",
+            });
+        }
+
+        if (!(await checkServiceExists(serviceId))) {
+            return res.status(404).json({
+                statusCode: 404,
+                status: "error",
+                message: "Service does not exist",
+            });
+        }
+
+        if (typeof featured !== 'boolean') {
+            return res.status(400).json({
+                statusCode: 400,
+                status: "error",
+                message: "Featured must be a boolean value",
+            });
+        }
+
+        const variables = {
+            serviceId: serviceId,
+            featured: featured,
+        };
+
+        const UPDATE_SERVICE_FEATURED_MUTATION = `
+            mutation UpdateServiceFeatured($serviceId: String!, $featured: Boolean!) @auth(level: USER) {
+                service_update(key: {id: $serviceId}, data: {featured: $featured, updatedAt_expr: "request.time"})
+            }
+        `;
+
+        const response = await dataConnect.executeGraphql(UPDATE_SERVICE_FEATURED_MUTATION, { 
+            variables: variables 
+        });
+        const responseData = response.data.service_update;
+        if (!responseData) {
+            return res.status(404).json({
+                statusCode: 404,
+                status: "error",
+                message: "Failed to update service featured status",
+            });
+        }
+        res.status(200).json({
+            statusCode: 200,
+            status: "success",
+            message: "Service featured status updated successfully",
+            data: responseData,
+        });
+    } catch (error) {
+        console.error("Error updating service featured status:", error);
+        res.status(500).json({
+            statusCode: 500,
+            status: "error",
+            message: "Failed to update service featured status",
+            error: error.message,
+        });
+    }
+}
+
 module.exports = {
     updateService,
-    updateServiceStatus
+    updateServiceStatus,
+    updateServiceFeatured
 };

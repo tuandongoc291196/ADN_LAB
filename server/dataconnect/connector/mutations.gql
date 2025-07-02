@@ -632,7 +632,6 @@ mutation DeleteSample($sampleId: String!) @auth(level: USER) {
 mutation CreateTestResult(
   $id: String!
   $bookingId: String!
-  $sampleId: String!
   $staffId: String!
   $managerId: String!
   $testMethod: String!
@@ -648,7 +647,6 @@ mutation CreateTestResult(
   testResult_insert(data: {
     id: $id
     bookingId: $bookingId
-    sampleId: $sampleId
     staffId: $staffId
     managerId: $managerId
     testMethod: $testMethod

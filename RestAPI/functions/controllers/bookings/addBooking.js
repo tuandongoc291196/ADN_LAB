@@ -236,7 +236,7 @@ const addBooking = async (req, res) => {
 
     const updateStaffResponse = await updateStaffSlotCount(staffId, "increase");
     const createBooking = await addBookingHistory(bookingVariables.id, "CREATED", "Booking saved successfully");
-    const pendingBooking = await addBookingHistory(bookingVariables.id, "PENDING_PAYMENT", "Booking is pending confirmation");
+    const pendingBooking = await addBookingHistory(bookingVariables.id, "PENDING", "Booking is pending confirmation");
 
     const participantResults = [];
     for (const participant of participants) {

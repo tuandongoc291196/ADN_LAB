@@ -26,12 +26,6 @@ const getTestResultByBookingId = async (req, res) => {
             query GetBookingTestResults($bookingId: String!) @auth(level: USER) {
               testResults(where: {bookingId: {eq: $bookingId}}) {
                 id
-                sample {
-                  id
-                  participant {
-                    name
-                  }
-                }
                 booking {
                   service {
                     title
@@ -212,11 +206,6 @@ const getTestResultByStaffId = async (req, res) => {
                 }
                 service {
                   title
-                }
-              }
-              sample {
-                participant {
-                  name
                 }
               }
               staff {

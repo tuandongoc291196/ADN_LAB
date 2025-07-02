@@ -1,7 +1,6 @@
 const { dataConnect } = require("../../config/firebase.js");
 const { processMomoPayment} = require('./momoPayment');
-const { processVnpayPayment } = require('./vnpayPayment');
-const { processZaloPayPayment } = require('./zaloPayment');
+const { processZaloPayPayment } = require('./zaloPayPayment.js');
 const { checkPaymentStatus } = require('./paymentUtils');
 const {checkBookingExists} = require('../bookings/bookingUtils');
 const {addBookingHistory} = require('../bookingHistory/addBookingHistory');
@@ -41,7 +40,7 @@ const addPayment = async (req, res) => {
     if (bookingHistory && bookingHistory.length > 0) {
       const latestStatus = bookingHistory[0].status;
       console.log("Latest booking status:", latestStatus);
-      if (latestStatus === "expired") {
+      if (latestStatus === "EXPIRED") {
         return res.status(400).json({
           statusCode: 400,
           status: "error",
@@ -49,7 +48,7 @@ const addPayment = async (req, res) => {
         });
       }
 
-      if (latestStatus === "booked") {
+      if (latestStatus === "BOOKED") {
         return res.status(400).json({
           statusCode: 400,
           status: "error",
@@ -57,6 +56,14 @@ const addPayment = async (req, res) => {
         });
       }
     }
+
+      if (latestStatus === "PENDING_PAYMENT") {
+        return res.status(400).json({
+          statusCode: 400,
+          status: "error",
+          message: "Payment is already pending for this booking"
+        });
+      }
 
     const ADD_PAYMENT_MUTATION = `
       mutation CreatePayment($id: String!, $bookingId: String!, $amount: Float!, $paymentMethod: String!, $status: String, $paymentDate: Date, $refundDetail: String, $otherDetails: [String!]) @auth(level: USER) {
@@ -78,7 +85,7 @@ const addPayment = async (req, res) => {
     
     console.log("Booking amount:", amount);
     let result;
-
+    await addBookingHistory(bookingId, "PENDING_PAYMENT", "Payment is pending, waiting for user to complete payment", paymentMethod);
     if (paymentMethod === "MOMO") {
       console.log("Making MOMO payment");
       console.log(req.body);
@@ -90,7 +97,7 @@ const addPayment = async (req, res) => {
         .then(async (isSuccessful) => {
           if (isSuccessful) {
             console.log('Payment confirmed successfully');
-            await addBookingHistory(bookingId, "PAYMENT_CONFIRMED", "Payment is successful");
+            await addBookingHistory(bookingId, "PAYMENT_CONFIRMED", "Payment is successful, ", paymentMethod);
             await addBookingHistory(bookingId, "BOOKED", "Booking placed successfully");
             const otherDetails = await getPaymentDataMOMO(result.orderId, result.requestId);
             console.log("Other details from MOMO:", otherDetails);
@@ -125,13 +132,24 @@ const addPayment = async (req, res) => {
       return res.status(200).json({
         statusCode: 200,
         status: "success",
-        message: "Payment initiated. Status will be checked automatically for 15 minutes.",
+        message: "MOMO payment initiated. Status will be checked automatically for 15 minutes.",
         data: result.payUrl
       });
-      
+    } else if (paymentMethod === "ZALOPAY") {
+      console.log("Making ZALOPAY payment");
+      const paymentId = `ZALOPAY_${bookingId}_${new Date().getTime()}`;
+      result = await processZaloPayPayment(amount, paymentId);
+      console.log(result);
+
+      return res.status(200).json({
+        statusCode: 200,
+        status: "success",
+        message: "VNPAY payment initiated. Status will be checked automatically for 15 minutes.",
+        data: result.order_url
+      });
     } else if (paymentMethod === "CASH") {
       console.log("Making CASH payment");
-      await addBookingHistory(bookingId, "booked", "Booking placed successfully");
+      await addBookingHistory(bookingId, "BOOKED", "Booking placed successfully");
     }
     else {
       return res.status(400).json({

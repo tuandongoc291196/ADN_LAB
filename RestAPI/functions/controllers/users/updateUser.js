@@ -264,47 +264,15 @@ const updateUser = async (req, res) => {
         error: "User with the provided ID does not exist",
       });
     }
-
-    if (!fullname) {
+    
+    if (fullname && typeof fullname !== 'string') {
       return res.status(400).json({
         statusCode: 400,
         status: "error",
-        message: "fullname is required",
+        message: "fullname must be a string",
       });
     }
-
-    if (!gender) {
-      return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "gender is required",
-      });
-    }
-
-    if (!avatar) {
-      return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "avatar is required",
-      });
-    }
-
-    if (!phone) {
-      return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "phone is required",
-      });
-    }
-
-    if (!address) {
-      return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "address is required",
-      });
-    }
-
+    
     const UPDATE_USER_MUTATION = `
       mutation UpdateUser($userId: String!, $fullname: String, $gender: String, $avatar: String, $phone: String, $address: String) @auth(level: USER) {
         user_update(key: {id: $userId}, data: {

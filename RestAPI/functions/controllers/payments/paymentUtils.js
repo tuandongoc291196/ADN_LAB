@@ -1,7 +1,7 @@
 const { getPaymentDataMOMO } = require('./momoPayment');
 
 const checkPaymentStatus = async (paymentMethod, paymentResult) => {
-  const maxDuration = 15 * 60 * 1000; 
+  const maxDuration = 5 * 60 * 1000; 
   const checkInterval = 5 * 1000; 
   const startTime = Date.now();
 

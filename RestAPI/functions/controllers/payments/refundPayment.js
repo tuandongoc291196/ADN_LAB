@@ -1,4 +1,3 @@
-const { dataConnect } = require("../../config/firebase.js");
 const { checkBookingExists } = require("../bookings/bookingUtils.js");
 const { getPaymentByBookingId } = require("../payments/getPayments.js");
 const { processMomoRefund } = require("./momoPayment.js");
@@ -38,7 +37,7 @@ const refundPayment = async (req, res) => {
     console.log("Payment details for refund:", payment);
     console.log(payment.status);
     
-    if (payment.status == "refunded") {
+    if (payment.status == "REFUNDED") {
       return res.status(400).json({
         statusCode: 400,
         status: "error",
@@ -66,8 +65,8 @@ const refundPayment = async (req, res) => {
         });
       }
 
-      const updatePaymentStatusDATA = await updatePaymentStatus(bookingId, "refunded", refundResult);
-      const addBookingHistoryDATA = await addBookingHistory(bookingId, "refunded", "Payment refunded successfully via MOMO");
+      const updatePaymentStatusDATA = await updatePaymentStatus(bookingId, "REFUNDED", refundResult);
+      const addBookingHistoryDATA = await addBookingHistory(bookingId, "REFUNDED", "Payment refunded successfully via MOMO");
 
       responseData = {
         refund: refundResult,

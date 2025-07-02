@@ -14,15 +14,11 @@ const cleanupExpiredBookings = async () => {
         
         console.log(`Processing booking ${booking.id} with latest history:`, latestHistory);
         console.log(`Status of latest history:`, latestHistory[0]?.status);
-        if (latestHistory[0]?.status === "expired") {
-          console.log(`Booking ${booking.id} already marked as expired, skipping`);
-        } else if (latestHistory[0]?.status === "booked") {
-          console.log(`Booking ${booking.id} has completed payment, skipping cleanup`);
-        } else if (!latestHistory || latestHistory[0]?.status !== "booked") {
+        if (latestHistory[0]?.status === "PENDING" || latestHistory[0]?.status === "PAYMENT_FAILED" || latestHistory[0]?.status === "PENDING_PAYMENT") {
           console.log(`Marking expired booking as cancelled: ${booking.id}`);
           await updateStaffSlotCount(booking.staffId, "decrease");
           await updateTimeSlot(booking.timeSlotId, "decrease");
-          await addBookingHistory(booking.id, "expired", "Booking expired due to payment timeout - automatically cancelled");
+          await addBookingHistory(booking.id, "EXPIRED", "Booking expired due to payment timeout - automatically cancelled");
           console.log(`Successfully marked booking as expired: ${booking.id}`);
         } else {
           console.log(`Booking ${booking.id} has status ${latestHistory[0]?.status}, skipping cleanup`);
