@@ -20,6 +20,7 @@ import {
 import { useAuthState } from 'react-firebase-hooks/auth'; // Hook theo dõi auth state
 
 const Register = ({ setUser }) => {
+  // HOOKS & STATE MANAGEMENT
   // Hook theo dõi trạng thái authentication của Firebase
   const [user, loading] = useAuthState(auth);
   const navigate = useNavigate(); // Hook điều hướng React Router
@@ -34,31 +35,34 @@ const Register = ({ setUser }) => {
     agreeTerms: false     // Đồng ý điều khoản
   });
   
-  // State quản lý UI
-  const [showPassword, setShowPassword] = useState(false); // Hiện/ẩn mật khẩu
+  // State quản lý UI và trạng thái
+  const [showPassword, setShowPassword] = useState(false);           // Hiện/ẩn mật khẩu
   const [showConfirmPassword, setShowConfirmPassword] = useState(false); // Hiện/ẩn confirm password
-  const [error, setError] = useState(''); // Thông báo lỗi
-  const [isLoading, setIsLoading] = useState(false); // Trạng thái đang xử lý
-  const [success, setSuccess] = useState(false); // Trạng thái đăng ký thành công
+  const [error, setError] = useState('');                           // Thông báo lỗi
+  const [isLoading, setIsLoading] = useState(false);                // Trạng thái đang xử lý
+  const [success, setSuccess] = useState(false);                    // Trạng thái đăng ký thành công
 
+  // EFFECTS & LIFECYCLE
   // Effect xử lý sau khi đăng ký thành công
   useEffect(() => {
     if (loading) return; // Đợi Firebase Auth hoàn tất
+    
     if (user) {
-      // Cập nhật thông tin user cho component cha
+      // Cập nhật thông tin user cho app
       if (setUser) {
         setUser({
           id: user.uid,
           name: user.displayName || user.email?.split('@')[0] || 'User',
           email: user.email,
-          role: 'user' // Role mặc định cho user mới đăng ký
+          role: 'user' // Role mặc định cho user mới
         });
       }
       navigate('/user'); // Chuyển đến trang user dashboard
     }
   }, [user, loading, navigate, setUser]);
 
-  // Hàm xử lý thay đổi input form
+  // EVENT HANDLERS
+  // Xử lý thay đổi input form
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({
@@ -66,16 +70,16 @@ const Register = ({ setUser }) => {
       [name]: type === 'checkbox' ? checked : value // Xử lý riêng cho checkbox
     });
     
-    // Xóa thông báo lỗi khi user bắt đầu nhập lại
+    // Reset error khi user nhập lại
     if (error) setError('');
   };
 
-  // Hàm xử lý đăng ký bằng Google
+  // Xử lý đăng ký bằng Google
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
       setError('');
-      await signInWithGoogle(); // Gọi hàm đăng ký Google từ Firebase config
+      await signInWithGoogle();
     } catch (error) {
       setError('Đăng ký Google thất bại. Vui lòng thử lại.');
       console.error('Google sign in error:', error);
@@ -84,48 +88,49 @@ const Register = ({ setUser }) => {
     }
   };
 
-  // Hàm validation form trước khi submit
+  // VALIDATION
+  // Kiểm tra hợp lệ của form trước khi submit
   const validateForm = () => {
-    // Validation họ và tên
+    // Kiểm tra họ và tên
     if (!formData.fullName || formData.fullName.length < 2) {
       setError('Họ và tên phải có ít nhất 2 ký tự');
       return false;
     }
 
-    // Validation email với regex
+    // Kiểm tra email với regex
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       setError('Email không hợp lệ');
       return false;
     }
 
-    // Validation số điện thoại (10-11 số)
+    // Kiểm tra số điện thoại (10-11 số)
     const phoneRegex = /^[0-9]{10,11}$/;
     if (!phoneRegex.test(formData.phone)) {
       setError('Số điện thoại không hợp lệ');
       return false;
     }
     
-    // Validation độ dài mật khẩu
+    // Kiểm tra độ dài mật khẩu
     if (formData.password.length < 6) {
       setError('Mật khẩu phải có ít nhất 6 ký tự');
       return false;
     }
 
-    // Validation độ mạnh mật khẩu (chữ hoa, chữ thường, số)
+    // Kiểm tra độ mạnh mật khẩu
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
     if (!passwordRegex.test(formData.password)) {
       setError('Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường và 1 số');
       return false;
     }
     
-    // Validation khớp mật khẩu
+    // Kiểm tra khớp mật khẩu
     if (formData.password !== formData.confirmPassword) {
       setError('Mật khẩu xác nhận không khớp');
       return false;
     }
     
-    // Validation đồng ý điều khoản
+    // Kiểm tra đồng ý điều khoản
     if (!formData.agreeTerms) {
       setError('Bạn phải đồng ý với điều khoản sử dụng');
       return false;
@@ -134,11 +139,12 @@ const Register = ({ setUser }) => {
     return true;
   };
 
-  // Hàm xử lý submit form đăng ký
+  // FORM SUBMISSION
+  // Xử lý submit form đăng ký
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validate form trước khi gửi
+    // Validate form trước khi submit
     if (!validateForm()) {
       return;
     }
@@ -147,7 +153,7 @@ const Register = ({ setUser }) => {
     setError('');
 
     try {
-      // Gọi hàm đăng ký với Firebase Authentication
+      // Gọi API đăng ký Firebase
       await registerWithEmailAndPassword(
         formData.fullName,
         formData.phone,
@@ -155,10 +161,10 @@ const Register = ({ setUser }) => {
         formData.password
       );
       
-      // Hiển thị thông báo thành công
+      // Xử lý thành công
       setSuccess(true);
       
-      // Reset form về trạng thái ban đầu
+      // Reset form
       setFormData({
         fullName: '',
         email: '',
@@ -169,7 +175,7 @@ const Register = ({ setUser }) => {
       });
       
     } catch (err) {
-      // Xử lý các lỗi từ Firebase Authentication
+      // Xử lý các loại lỗi từ Firebase
       let errorMessage = 'Đăng ký thất bại. Email có thể đã được sử dụng.';
       
       if (err.code) {

@@ -148,7 +148,7 @@ const Sitemap = () => {
 
   return (
     <Container className="py-5">
-      {/* Header */}
+      {/* Header: Tiêu đề, mô tả, thống kê */}
       <Row className="mb-5">
         <Col>
           <div className="text-center">

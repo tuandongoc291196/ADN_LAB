@@ -4,9 +4,11 @@ import { Navbar, Nav, NavDropdown, Container, Button, Badge, Image } from 'react
 import { auth, logout } from './config/firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import Swal from 'sweetalert2';
-import { getServiceCategories } from '../services/api';
 
+
+// Component Navbar: Thanh điều hướng chính của website, hiển thị menu động theo quyền user
 const MainNavbar = ({ setUser }) => {
+  // State quản lý mở rộng navbar, danh mục dịch vụ, trạng thái loading, user
   const [expanded, setExpanded] = useState(false);
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
@@ -16,31 +18,32 @@ const MainNavbar = ({ setUser }) => {
   const [userData, setUserData] = useState(null);
   const [logoUrl] = useState('https://firebasestorage.googleapis.com/v0/b/su25-swp391-g8.firebasestorage.app/o/assets%2Flogo.png?alt=media&token=1c903ba1-852a-4f5b-b498-97c31ffbb742');
 
-  // Fetch categories from API
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        setLoadingCategories(true);
-        const response = await getServiceCategories();
-        console.log('Categories API response:', response);
-        
-        if (response && Array.isArray(response)) {
-          setCategories(response);
-        } else {
-          setCategories([]);
-        }
-      } catch (error) {
-        console.error('Error fetching categories:', error);
-        setCategories([]);
-      } finally {
-        setLoadingCategories(false);
-      }
-    };
 
-    fetchCategories();
-  }, []);
+  // Effect: Lấy danh mục dịch vụ từ API khi mount
+  // useEffect(() => {
+  //   const fetchCategories = async () => {
+  //     try {
+  //       setLoadingCategories(true);
+  //       const response = await getServiceCategories();
+  //       console.log('Categories API response:', response);
 
-  // Helper function để phân loại categories
+  //       if (response && Array.isArray(response)) {
+  //         setCategories(response);
+  //       } else {
+  //         setCategories([]);
+  //       }
+  //     } catch (error) {
+  //       console.error('Error fetching categories:', error);
+  //       setCategories([]);
+  //     } finally {
+  //       setLoadingCategories(false);
+  //     }
+  //   };
+
+  //   fetchCategories();
+  // }, []);
+
+  // Helper: Lọc danh mục hành chính/civil
   const getAdministrativeCategories = () => {
     return categories.filter(category => category.hasLegalValue);
   };
@@ -49,6 +52,7 @@ const MainNavbar = ({ setUser }) => {
     return categories.filter(category => !category.hasLegalValue);
   };
 
+  // Helper: Badge hiển thị vai trò user
   const getRoleBadge = (role) => {
     const roleConfig = {
       admin: { bg: 'danger', icon: 'bi-crown', text: 'Quản trị viên' },
@@ -67,6 +71,7 @@ const MainNavbar = ({ setUser }) => {
     );
   };
 
+  // Helper: Lấy link dashboard theo role
   const getDashboardLink = (role) => {
     switch (role) {
       case 'admin': return '/admin';
@@ -76,20 +81,21 @@ const MainNavbar = ({ setUser }) => {
       default: return '/user';
     }
   };
+
+  // Effect: Lấy userData từ localStorage hoặc Firebase, đồng bộ state user
   const storedUserData = localStorage.getItem('userData');
   useEffect(() => {
+    // Kiểm tra nếu vừa đăng xuất thì reset user
     const justLoggedOut = sessionStorage.getItem('justLoggedOut') === 'true';
     if (justLoggedOut) {
-      // Nếu vừa đăng xuất, reset userData và user
       sessionStorage.removeItem('justLoggedOut');
       return;
     }
     // Lấy userData mới nhất từ localStorage mỗi lần render
     if (storedUserData) {
       const parsed = JSON.parse(storedUserData);
-      // Ưu tiên lấy role từ role.name nếu có
+      // Ưu tiên lấy role từ role.name nếu có, chuẩn hóa role
       let role = '';
-      // Nếu userId là 0 thì role là customer
       if (parsed.user_id === 0 || parsed.user_id === '0') {
         role = 'customer';
       } else if (parsed.role && typeof parsed.role === 'object' && parsed.role.name) {
@@ -99,17 +105,29 @@ const MainNavbar = ({ setUser }) => {
       } else if (parsed.role_string) {
         role = parsed.role_string;
       }
-      // Normalize role
       role = (role || '').toLowerCase().trim();
+      // Chỉ giữ lại các trường user cần thiết cho UI, loại bỏ các trường cũ không còn dùng
       const enhancedUser = {
-        ...parsed,
-        role_string: role,
-        isAdmin: ['admin', 'manager', 'staff'].includes(role),
+        id: parsed.id || parsed.user_id || '',
+        user_id: parsed.user_id || parsed.id || '',
+        email: parsed.email || '',
+        fullname: parsed.fullname || '',
+        avatar: parsed.avatar || '',
+        phone: parsed.phone || '',
+        role: parsed.role || { name: role },
+        accountStatus: parsed.accountStatus || '',
+        authProvider: parsed.authProvider || '',
+        createdAt: parsed.createdAt || '',
+        lastLogin: parsed.lastLogin || '',
+        gender: parsed.gender || '',
+        address: parsed.address || '',
+        role_string: role, // role chuẩn hóa dạng string
+        isAdmin: ['admin', 'manager', 'staff'].includes(role) // flag phân quyền
       };
       setUserData(enhancedUser);
       setUser(enhancedUser);
     } else if (auth.currentUser) {
-      // 🔥 Nếu không có localStorage nhưng đã login Firebase → gọi API lấy user
+      // Nếu không có localStorage nhưng đã login Firebase → gọi API lấy user
       const fetchUserData = async () => {
         try {
           const res = await fetch(`https://app-bggwpxm32a-uc.a.run.app/users`, {
@@ -122,47 +140,101 @@ const MainNavbar = ({ setUser }) => {
           const result = await res.json();
           const userInfo = result.data;
           const role = userInfo?.role?.name?.toLowerCase() || 'customer';
-
+          // Chỉ giữ lại các trường user cần thiết cho UI, loại bỏ các trường cũ không còn dùng
           const enhancedUser = {
-            ...userInfo,
-            role_string: role,
-            isAdmin: ['admin', 'manager', 'staff'].includes(role),
+            id: userInfo.id || userInfo.user_id || '',
+            user_id: userInfo.user_id || userInfo.id || '',
+            email: userInfo.email || '',
+            fullname: userInfo.fullname || '',
+            avatar: userInfo.avatar || '',
+            phone: userInfo.phone || '',
+            role: userInfo.role || { name: role },
+            accountStatus: userInfo.accountStatus || '',
+            authProvider: userInfo.authProvider || '',
+            createdAt: userInfo.createdAt || '',
+            lastLogin: userInfo.lastLogin || '',
+            gender: userInfo.gender || '',
+            address: userInfo.address || '',
+            role_string: role, // role chuẩn hóa dạng string
+            isAdmin: ['admin', 'manager', 'staff'].includes(role) // flag phân quyền
           };
-
+          // Ghi đè localStorage chỉ với các trường mới nhất
           localStorage.setItem('userData', JSON.stringify(enhancedUser));
           localStorage.setItem('isAuthenticated', 'true');
           setUserData(enhancedUser);
           setUser(enhancedUser);
         } catch (error) {
           console.error('Error fetching user data:', error);
-          // setUserData(null);
-          // setUser(null);
         }
       };
       fetchUserData();
     }
   }, [storedUserData, setUser]);
+
+  useEffect(() => {
+    const handleUserDataUpdate = () => {
+      const storedUserData = localStorage.getItem('userData');
+      if (storedUserData) {
+        const parsed = JSON.parse(storedUserData);
+        // Ưu tiên lấy role từ role.name nếu có, chuẩn hóa role
+        let role = '';
+        if (parsed.user_id === 0 || parsed.user_id === '0') {
+          role = 'customer';
+        } else if (parsed.role && typeof parsed.role === 'object' && parsed.role.name) {
+          role = parsed.role.name;
+        } else if (typeof parsed.role === 'string') {
+          role = parsed.role;
+        } else if (parsed.role_string) {
+          role = parsed.role_string;
+        }
+        role = (role || '').toLowerCase().trim();
+        const enhancedUser = {
+          id: parsed.id || parsed.user_id || '',
+          user_id: parsed.user_id || parsed.id || '',
+          email: parsed.email || '',
+          fullname: parsed.fullname || '',
+          avatar: parsed.avatar || '',
+          phone: parsed.phone || '',
+          role: parsed.role || { name: role },
+          accountStatus: parsed.accountStatus || '',
+          authProvider: parsed.authProvider || '',
+          createdAt: parsed.createdAt || '',
+          lastLogin: parsed.lastLogin || '',
+          gender: parsed.gender || '',
+          address: parsed.address || '',
+          role_string: role,
+          isAdmin: ['admin', 'manager', 'staff'].includes(role)
+        };
+        setUserData(enhancedUser);
+        setUser(enhancedUser);
+      }
+    };
+    window.addEventListener('userDataUpdated', handleUserDataUpdate);
+    return () => window.removeEventListener('userDataUpdated', handleUserDataUpdate);
+  }, [setUser]);
+
   console.log('userData', userData);
 
+  // Handler: Đăng xuất, clear localStorage, reset state, chuyển về trang chủ
   const handleLogout = async () => {
     try {
       // Đăng xuất Firebase trước
       await logout();
-      
+
       // Clear localStorage
       localStorage.removeItem('user_id');
       localStorage.removeItem('userData');
       localStorage.removeItem('user');
       localStorage.removeItem('isAuthenticated');
       sessionStorage.setItem('justLoggedOut', 'true');
-      
+
       // Reset user state
       setUser(null);
       setUserData(null);
-      
+
       // Chuyển về trang chủ
       navigate('/', { replace: true });
-      
+
     } catch (error) {
       console.error('Logout error:', error);
       // Nếu có lỗi, vẫn clear data và chuyển trang
@@ -176,10 +248,12 @@ const MainNavbar = ({ setUser }) => {
     }
   };
 
+  // Handler: Đóng navbar khi click menu
   const handleNavClick = () => {
     setExpanded(false);
   };
 
+  // Helper: Kiểm tra route active
   const isActive = (path) => {
     return location.pathname === path;
   };
@@ -188,12 +262,12 @@ const MainNavbar = ({ setUser }) => {
     return location.pathname.startsWith('/services');
   };
 
-  // Check if user has admin/staff/manager access
+  // Helper: Kiểm tra quyền admin/staff/manager
   const hasAdminAccess = () => {
     return userData?.isAdmin === true;
   };
 
-  // Check if user is customer (for showing customer-specific menus)
+  // Helper: Kiểm tra user là customer
   const isCustomer = () => {
     return userData?.role_string === 'customer' || !userData?.role_string;
   };

@@ -17,22 +17,29 @@ import { useParams, Link } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Alert, Badge, Form, InputGroup, ProgressBar, Modal } from 'react-bootstrap';
 
 const OrderTracking = () => {
-  const { trackingId } = useParams();
-  const [searchId, setSearchId] = useState(trackingId || '');
-  const [orderData, setOrderData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [showReturnModal, setShowReturnModal] = useState(false);
-  const [returnInfo, setReturnInfo] = useState({
-    trackingNumber: '',
-    carrier: '',
-    returnDate: '',
-    note: ''
-  });
-  const [returnLoading, setReturnLoading] = useState(false);
+  // ROUTING & PARAMS
+  const { trackingId } = useParams(); // Lấy tracking ID từ URL params
 
-  // Mock order statuses
+  // COMPONENT STATE
+  const [searchId, setSearchId] = useState(trackingId || ''); // ID đơn hàng cần tìm
+  const [orderData, setOrderData] = useState(null); // Dữ liệu đơn hàng
+  const [loading, setLoading] = useState(false); // Loading state
+  const [error, setError] = useState(''); // Error message
+
+  // RETURN KIT MODAL STATE
+  const [showReturnModal, setShowReturnModal] = useState(false); // Hiển thị modal
+  const [returnInfo, setReturnInfo] = useState({
+    trackingNumber: '', // Mã vận đơn gửi lại kit
+    carrier: '',       // Đơn vị vận chuyển
+    returnDate: '',    // Ngày gửi lại
+    note: ''          // Ghi chú thêm
+  });
+  const [returnLoading, setReturnLoading] = useState(false); // Loading state cho form gửi lại
+
+  // MOCK DATA - TRẠNG THÁI ĐƠN HÀNG
+  // Timeline cho từng loại phương thức thu mẫu
   const orderStatuses = {
+    // Timeline cho phương thức tự lấy mẫu
     'self-sample': [
       { step: 1, title: 'Đặt hẹn thành công', description: 'Lịch hẹn đã được xác nhận', icon: 'bi-check-circle', status: 'completed' },
       { step: 2, title: 'Chuẩn bị kit xét nghiệm', description: 'Đang chuẩn bị kit gửi đến bạn', icon: 'bi-box', status: 'completed' },
@@ -41,6 +48,8 @@ const OrderTracking = () => {
       { step: 5, title: 'Phân tích mẫu', description: 'Đang tiến hành phân tích ADN', icon: 'bi-eye', status: 'pending' },
       { step: 6, title: 'Có kết quả', description: 'Kết quả đã sẵn sàng', icon: 'bi-file-earmark-check', status: 'pending' }
     ],
+    
+    // Timeline cho phương thức thu mẫu tại cơ sở
     'at-facility': [
       { step: 1, title: 'Đặt hẹn thành công', description: 'Lịch hẹn đã được xác nhận', icon: 'bi-check-circle', status: 'completed' },
       { step: 2, title: 'Xác nhận tham gia', description: 'Đã có mặt và thu mẫu thành công', icon: 'bi-hospital', status: 'completed' },
@@ -48,6 +57,8 @@ const OrderTracking = () => {
       { step: 4, title: 'Kiểm tra chất lượng', description: 'Đang kiểm tra và đối soát kết quả', icon: 'bi-shield-check', status: 'pending' },
       { step: 5, title: 'Có kết quả', description: 'Kết quả đã sẵn sàng', icon: 'bi-file-earmark-check', status: 'pending' }
     ],
+    
+    // Timeline cho phương thức thu mẫu tại nhà
     'home-visit': [
       { step: 1, title: 'Đặt hẹn thành công', description: 'Lịch hẹn đã được xác nhận', icon: 'bi-check-circle', status: 'completed' },
       { step: 2, title: 'Nhân viên đến thu mẫu', description: 'Nhân viên đã đến và thu mẫu thành công', icon: 'bi-truck', status: 'completed' },
@@ -57,8 +68,9 @@ const OrderTracking = () => {
     ]
   };
 
-  // Mock order data
+  // MOCK DATA - DỮ LIỆU ĐƠN HÀNG MẪU
   const mockOrderData = {
+    // Đơn hàng tự lấy mẫu
     'ADN123456': {
       id: 'ADN123456',
       serviceTitle: 'Xét nghiệm ADN huyết thống cha-con',
@@ -73,6 +85,8 @@ const OrderTracking = () => {
       kitTrackingNumber: 'VTP123456789',
       labCode: 'LAB-ADN-2024-0115-001'
     },
+
+    // Đơn hàng thu mẫu tại cơ sở
     'ADN123457': {
       id: 'ADN123457',
       serviceTitle: 'Xét nghiệm ADN khai sinh',
@@ -86,65 +100,71 @@ const OrderTracking = () => {
       statusHistory: orderStatuses['at-facility'],
       labCode: 'LAB-ADN-2024-0116-002'
     },
+
+    // Đơn hàng thu mẫu tại nhà
     'ADN123458': {
-    id: 'ADN123458',
-    serviceTitle: 'Xét nghiệm ADN nhập tịch',
-    serviceType: 'administrative',
-    collectionMethod: 'home-visit',
-    customerName: 'Lê Văn C',
-    orderDate: '2024-01-18',
-    expectedDate: '2024-01-23',
-    currentStatus: 'Đang phân tích mẫu',
-    progress: 80,
-    statusHistory: orderStatuses['home-visit'],
-    labCode: 'LAB-ADN-2024-0118-003'
-  },
+      id: 'ADN123458',
+      serviceTitle: 'Xét nghiệm ADN nhập tịch',
+      serviceType: 'administrative',
+      collectionMethod: 'home-visit',
+      customerName: 'Lê Văn C',
+      orderDate: '2024-01-18',
+      expectedDate: '2024-01-23',
+      currentStatus: 'Đang phân tích mẫu',
+      progress: 80,
+      statusHistory: orderStatuses['home-visit'],
+      labCode: 'LAB-ADN-2024-0118-003'
+    },
 
-  // Additional diverse orders
-  'ADN123459': {
-    id: 'ADN123459',
-    serviceTitle: 'Xét nghiệm ADN trước sinh',
-    serviceType: 'civil',
-    collectionMethod: 'at-facility',
-    customerName: 'Phạm Thị D',
-    orderDate: '2024-01-20',
-    expectedDate: '2024-01-27',
-    currentStatus: 'Đã có mặt và thu mẫu thành công',
-    progress: 50,
-    statusHistory: orderStatuses['at-facility'],
-    labCode: 'LAB-ADN-2024-0120-004'
-  },
+    // Đơn hàng xét nghiệm trước sinh
+    'ADN123459': {
+      id: 'ADN123459',
+      serviceTitle: 'Xét nghiệm ADN trước sinh',
+      serviceType: 'civil',
+      collectionMethod: 'at-facility',
+      customerName: 'Phạm Thị D',
+      orderDate: '2024-01-20',
+      expectedDate: '2024-01-27',
+      currentStatus: 'Đã có mặt và thu mẫu thành công',
+      progress: 50,
+      statusHistory: orderStatuses['at-facility'],
+      labCode: 'LAB-ADN-2024-0120-004'
+    },
 
-  'ADN123460': {
-    id: 'ADN123460',
-    serviceTitle: 'Xét nghiệm ADN bí mật',
-    serviceType: 'civil',
-    collectionMethod: 'self-sample',
-    customerName: 'Hoàng Văn E',
-    orderDate: '2024-01-22',
-    expectedDate: '2024-01-29',
-    currentStatus: 'Kit đã được gửi đến địa chỉ của bạn',
-    progress: 40,
-    statusHistory: orderStatuses['self-sample'],
-    kitTrackingNumber: 'VTP987654321',
-    labCode: 'LAB-ADN-2024-0122-005'
-  },
+    // Đơn hàng xét nghiệm bí mật
+    'ADN123460': {
+      id: 'ADN123460',
+      serviceTitle: 'Xét nghiệm ADN bí mật',
+      serviceType: 'civil',
+      collectionMethod: 'self-sample',
+      customerName: 'Hoàng Văn E',
+      orderDate: '2024-01-22',
+      expectedDate: '2024-01-29',
+      currentStatus: 'Kit đã được gửi đến địa chỉ của bạn',
+      progress: 40,
+      statusHistory: orderStatuses['self-sample'],
+      kitTrackingNumber: 'VTP987654321',
+      labCode: 'LAB-ADN-2024-0122-005'
+    },
 
-  'ADN123461': {
-    id: 'ADN123461',
-    serviceTitle: 'Xét nghiệm ADN anh chị em',
-    serviceType: 'civil',
-    collectionMethod: 'home-visit',
-    customerName: 'Vũ Thị F',
-    orderDate: '2024-01-25',
-    expectedDate: '2024-02-01',
-    currentStatus: 'Nhân viên đã đến và thu mẫu thành công',
-    progress: 60,
-    statusHistory: orderStatuses['home-visit'],
-    labCode: 'LAB-ADN-2024-0125-006'
-  }
+    // Đơn hàng xét nghiệm anh chị em
+    'ADN123461': {
+      id: 'ADN123461',
+      serviceTitle: 'Xét nghiệm ADN anh chị em',
+      serviceType: 'civil',
+      collectionMethod: 'home-visit',
+      customerName: 'Vũ Thị F',
+      orderDate: '2024-01-25',
+      expectedDate: '2024-02-01',
+      currentStatus: 'Nhân viên đã đến và thu mẫu thành công',
+      progress: 60,
+      statusHistory: orderStatuses['home-visit'],
+      labCode: 'LAB-ADN-2024-0125-006'
+    }
   };
 
+  // EVENT HANDLERS
+  // Xử lý tìm kiếm đơn hàng
   const handleSearch = async () => {
     if (!searchId.trim()) {
       setError('Vui lòng nhập mã đặt lịch');
@@ -168,12 +188,16 @@ const OrderTracking = () => {
     }, 1000);
   };
 
+  // EFFECTS
+  // Tự động tìm kiếm nếu có trackingId trong URL
   useEffect(() => {
     if (trackingId) {
       handleSearch();
     }
   }, [trackingId]);
 
+  // HELPER FUNCTIONS
+  // Lấy màu cho trạng thái
   const getStatusColor = (status) => {
     switch (status) {
       case 'completed': return 'success';
@@ -183,6 +207,7 @@ const OrderTracking = () => {
     }
   };
 
+  // Lấy icon cho trạng thái
   const getStatusIcon = (status) => {
     switch (status) {
       case 'completed': return 'bi-check-circle-fill';
@@ -192,11 +217,13 @@ const OrderTracking = () => {
     }
   };
 
+  // Format ngày theo định dạng Việt Nam
   const formatDate = (dateString) => {
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     return new Date(dateString).toLocaleDateString('vi-VN', options);
   };
 
+  // Xử lý gửi lại kit xét nghiệm
   const handleReturnKit = async () => {
     if (!returnInfo.trackingNumber || !returnInfo.carrier || !returnInfo.returnDate) {
       setError('Vui lòng điền đầy đủ thông tin bắt buộc');

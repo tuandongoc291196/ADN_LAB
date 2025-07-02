@@ -13,44 +13,47 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Badge, Form, Alert, Tab, Nav } from 'react-bootstrap';
-import { getAllServices, getAllMethods, getMethodsByServiceId, createBooking } from '../../services/api'; // API functions
+import { getAllServices, getAllMethods, getMethodsByServiceId, createBooking, getUserById } from '../../services/api'; // API functions
 import { getServiceById, getServicesByType, canServiceUseSelfSample, isAdministrativeService, enrichMethodData, isMethodDisabled, getMethodRestrictionReason } from '../data/services-data'; // Helper functions
+import { getProvinces, getDistricts, getWards } from 'vietnam-provinces';
 
 const AppointmentBooking = () => {
+  // ROUTING & NAVIGATION
   const navigate = useNavigate(); // Hook điều hướng
   const location = useLocation(); // Hook nhận state từ page trước
-  
-  // State quản lý flow đặt lịch
+
+  // BOOKING FLOW STATE
   const [currentStep, setCurrentStep] = useState(1); // Bước hiện tại (1-4)
-  
-  // State quản lý dữ liệu từ API
+
+  // API DATA STATE
   const [services, setServices] = useState([]); // Danh sách dịch vụ từ API
   const [methods, setMethods] = useState([]); // Danh sách phương thức từ API
   const [serviceMethods, setServiceMethods] = useState([]); // Phương thức của dịch vụ được chọn
   const [enrichedMethods, setEnrichedMethods] = useState([]); // Methods với icon và color
-  
-  // State quản lý UI
+
+  // UI STATE
   const [loading, setLoading] = useState(true); // Trạng thái đang tải dữ liệu
   const [errors, setErrors] = useState(null); // Lỗi chung
-  
-  // State chính - Dữ liệu booking
+  const [userFromAPI, setUserFromAPI] = useState(null); // User data từ API
+
+  // BOOKING DATA STATE
   const [bookingData, setBookingData] = useState({
-    serviceType: '',        // 'civil' hoặc 'administrative'
+    serviceType: '',        // Loại dịch vụ: 'civil' hoặc 'administrative'
     serviceId: '',          // ID dịch vụ được chọn
     collectionMethod: '',   // ID phương thức thu mẫu
     appointmentDate: '',    // Ngày hẹn (YYYY-MM-DD)
     appointmentTime: '',    // Giờ hẹn (HH:MM)
     customerInfo: {         // Thông tin khách hàng
-      fullName: '',
-      phone: '',
-      email: '',
-      address: '',
-      idNumber: '',
-      participants: []      // Danh sách người tham gia xét nghiệm
+      fullName: '',        // Họ tên đầy đủ
+      phone: '',           // Số điện thoại
+      email: '',           // Email liên hệ
+      address: '',         // Địa chỉ
+      idNumber: '',        // CMND/CCCD
+      participants: []     // Danh sách người tham gia xét nghiệm
     }
   });
-  
-  // State validation errors
+
+  // VALIDATION STATE
   const [idNumberErrors, setIdNumberErrors] = useState({}); // Lỗi CMND/CCCD
   const [phoneErrors, setPhoneErrors] = useState({});       // Lỗi số điện thoại
   const [customerErrors, setCustomerErrors] = useState({    // Lỗi thông tin khách hàng
@@ -59,14 +62,24 @@ const AppointmentBooking = () => {
     idNumber: '',
     address: ''
   });
-  
-  // State cho quan hệ gia đình
+
+  // RELATIONSHIP STATE
   const [relationshipBetween, setRelationshipBetween] = useState(''); // Quan hệ được chọn
-  
-  // Lấy dữ liệu user từ localStorage
+  const [isParticipant1Customer, setIsParticipant1Customer] = useState(false); // Checkbox người tham gia 1 là người đặt lịch
+
+  // USER DATA
   const storedUserData = localStorage.getItem('userData');
   const userData = storedUserData ? JSON.parse(storedUserData) : null;
-  
+
+  // Fetch user profile từ API khi component mount
+  useEffect(() => {
+    if (userData && (userData.id || userData._id)) {
+      getUserById(userData.id || userData._id)
+        .then(user => setUserFromAPI(user))
+        .catch(err => console.error('Lỗi lấy thông tin user:', err));
+    }
+  }, []);
+
   // Helper function: Tính toán giờ kết thúc từ giờ bắt đầu (mỗi slot 1 tiếng)
   const calculateEndTime = (startTime) => {
     const [hour, minute] = startTime.split(':').map(Number);
@@ -74,6 +87,7 @@ const AppointmentBooking = () => {
     return `${endHour < 10 ? '0' : ''}${endHour}:${minute < 10 ? '0' : ''}${minute}`;
   };
 
+  // CONSTANTS & DATA
   // Danh sách các mối quan hệ gia đình hợp lệ
   const familyRelations = [
     "Cha", "Mẹ",
@@ -86,30 +100,30 @@ const AppointmentBooking = () => {
     "Chồng", "Vợ", "Chưa xác định"
   ];
 
-  // Ma trận các cặp quan hệ hợp lệ (logic nghiệp vụ xét nghiệm ADN)
+  // Ma trận các cặp quan hệ hợp lệ cho xét nghiệm ADN
   const validRelationPairs = [
-    ['Cha', 'Con trai'],
-    ['Cha', 'Con gái'],
-    ['Mẹ', 'Con trai'],
-    ['Mẹ', 'Con gái'],
-    ['Anh', 'Em trai'],
-    ['Anh', 'Em gái'],
-    ['Chị', 'Em trai'],
-    ['Chị', 'Em gái'],
-    ['Ông nội', 'Cháu nội'],
-    ['Ông ngoại', 'Cháu ngoại'],
-    ['Bà nội', 'Cháu nội'],
-    ['Bà ngoại', 'Cháu ngoại'],
-    ['Chồng', 'Vợ'],
-    ['Cô', 'Cháu'],
-    ['Chú', 'Cháu'],
-    ['Dì', 'Cháu'],
-    ['Cậu', 'Cháu'],
-    ['Bác', 'Cháu'],
+    ['Cha', 'Con trai'],     // Xét nghiệm cha - con trai
+    ['Cha', 'Con gái'],      // Xét nghiệm cha - con gái
+    ['Mẹ', 'Con trai'],      // Xét nghiệm mẹ - con trai
+    ['Mẹ', 'Con gái'],       // Xét nghiệm mẹ - con gái
+    ['Anh', 'Em trai'],      // Xét nghiệm anh em trai
+    ['Anh', 'Em gái'],       // Xét nghiệm anh em gái
+    ['Chị', 'Em trai'],      // Xét nghiệm chị em trai
+    ['Chị', 'Em gái'],       // Xét nghiệm chị em gái
+    ['Ông nội', 'Cháu nội'], // Xét nghiệm ông nội - cháu
+    ['Ông ngoại', 'Cháu ngoại'], // Xét nghiệm ông ngoại - cháu
+    ['Bà nội', 'Cháu nội'],  // Xét nghiệm bà nội - cháu
+    ['Bà ngoại', 'Cháu ngoại'], // Xét nghiệm bà ngoại - cháu
+    ['Chồng', 'Vợ'],         // Xét nghiệm vợ chồng
+    ['Cô', 'Cháu'],          // Xét nghiệm cô - cháu
+    ['Chú', 'Cháu'],         // Xét nghiệm chú - cháu
+    ['Dì', 'Cháu'],          // Xét nghiệm dì - cháu
+    ['Cậu', 'Cháu'],         // Xét nghiệm cậu - cháu
+    ['Bác', 'Cháu'],         // Xét nghiệm bác - cháu
     []
   ];
 
-  // Helper function: Lấy danh sách quan hệ hợp lệ dựa trên quan hệ hiện tại
+  // Lấy danh sách quan hệ hợp lệ dựa trên quan hệ hiện tại
   const getValidRelationsForOther = (currentRelation) => {
     const valid = validRelationPairs
       .filter(pair => pair[0] === currentRelation)
@@ -118,7 +132,8 @@ const AppointmentBooking = () => {
     return valid.length > 0 ? valid : familyRelations; // Nếu rỗng → trả lại toàn bộ
   };
 
-  // EFFECT: Fetch dữ liệu services và methods từ API khi component mount
+  // EFFECTS & DATA FETCHING
+  // Effect: Fetch dữ liệu services và methods từ API khi component mount
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -162,7 +177,7 @@ const AppointmentBooking = () => {
     fetchData();
   }, []); // Chạy 1 lần khi component mount
 
-  // EFFECT: Fetch các phương thức của service được chọn
+  // Effect: Fetch các phương thức của service được chọn
   useEffect(() => {
     const fetchServiceMethods = async () => {
       if (bookingData.serviceId) {
@@ -179,7 +194,7 @@ const AppointmentBooking = () => {
     fetchServiceMethods();
   }, [bookingData.serviceId]); // Chạy khi serviceId thay đổi
 
-  // EFFECT: Load pre-selected service từ navigation state (từ page dịch vụ)
+  // Effect: Load pre-selected service từ navigation state
   useEffect(() => {
     if (location.state?.selectedService && services.length > 0) {
       const service = getServiceById(services, location.state.selectedService);
@@ -200,29 +215,62 @@ const AppointmentBooking = () => {
             })) : []
           }
         }));
-        setCurrentStep(2); // Skip service selection step
       }
     }
-  }, [location.state, services]);
+  }, [location.state, services]); // Chạy khi có service được chọn từ page trước
 
-  // EFFECT: Auto-fill thông tin khách hàng từ userData trong localStorage
+  // EFFECT: Auto-fill thông tin khách hàng từ userFromAPI (thay vì localStorage)
   useEffect(() => {
-    if (storedUserData) {
-      const parsed = JSON.parse(storedUserData);
+    if (userFromAPI) {
+      let addressDetail = '', ward = '', district = '', city = '';
+      if (userFromAPI.address) {
+        const parts = userFromAPI.address.split(',').map(s => s.trim());
+        if (parts.length === 4) {
+          addressDetail = parts[0];
+          // Map tên sang code (giống UserProfile)
+          const normalize = str => str.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+          const findCodeByName = (list, name) => (list.find(item => normalize(item.name) === normalize(name)) || {}).code || '';
+          city = findCodeByName(getProvinces(), parts[3]);
+          district = findCodeByName(getDistricts().filter(d => d.province_code === city), parts[2]);
+          ward = findCodeByName(getWards().filter(w => w.district_code === district), parts[1]);
+        } else {
+          addressDetail = userFromAPI.address;
+        }
+      }
+
       setBookingData(prev => ({
         ...prev,
         customerInfo: {
           ...prev.customerInfo,
-          // Map các field từ userData structure khác nhau
-          fullName: parsed.fullname || parsed.fullName || '',
-          phone: parsed.phone || '',
-          email: parsed.email || '',
-          idNumber: parsed.id_number || parsed.idNumber || '',
-          address: parsed.address || '',
+          fullName: userFromAPI.fullname || '',
+          phone: userFromAPI.phone || '',
+          email: userFromAPI.email || '',
+          idNumber: userFromAPI.id_number || userFromAPI.idNumber || '',
+          address: userFromAPI.address || '',
+          addressDetail,
+          ward,
+          district,
+          city
         }
       }));
     }
-  }, [storedUserData]); // Chạy khi storedUserData thay đổi
+  }, [userFromAPI]);
+
+  useEffect(() => {
+    const fullAddress = buildFullAddress(bookingData.customerInfo);
+    setBookingData(prev => ({
+      ...prev,
+      customerInfo: {
+        ...prev.customerInfo,
+        address: fullAddress
+      }
+    }));
+  }, [
+    bookingData.customerInfo.addressDetail,
+    bookingData.customerInfo.ward,
+    bookingData.customerInfo.district,
+    bookingData.customerInfo.city
+  ]);
 
   // Handler: Thay đổi loại dịch vụ (civil/administrative)
   const handleServiceTypeChange = (type) => {
@@ -377,7 +425,7 @@ const AppointmentBooking = () => {
     const information = {
       name: bookingData.customerInfo.fullName,
       identification: bookingData.customerInfo.idNumber,
-      address: bookingData.customerInfo.address,
+      address: buildFullAddress(bookingData.customerInfo),
       phone: bookingData.customerInfo.phone,
       email: bookingData.customerInfo.email
     };
@@ -387,7 +435,7 @@ const AppointmentBooking = () => {
     if (service && typeof service.price === 'number') {
       totalAmount = service.price;
     }
-    
+
     // Cộng thêm phí phương thức thu mẫu nếu có
     if (method && typeof method.price === 'number' && method.price > 0) {
       totalAmount += method.price;
@@ -448,7 +496,7 @@ const AppointmentBooking = () => {
           },
           bookingId: bookingId
         });
-        
+
         // Bước 11: Điều hướng đến trang xác nhận với dữ liệu booking
         try {
           navigate('/booking-confirmation', {
@@ -518,9 +566,9 @@ const AppointmentBooking = () => {
   // Helper function: Lấy màu sắc cho badge method
   const getMethodColor = (methodId) => {
     const methodColors = {
-      'self-sample': 'success',  
-      'home-visit': 'warning',   
-      'at-facility': 'primary',  
+      'self-sample': 'success',
+      'home-visit': 'warning',
+      'at-facility': 'primary',
       '0': 'success',
       '1': 'warning',
       '2': 'primary'
@@ -542,7 +590,7 @@ const AppointmentBooking = () => {
     }
     return dates;
   };
-  
+
   // Helper function: Format ngày sang tiếng Việt
   const renderDate = (dateString) => {
     if (!dateString) return '';
@@ -561,6 +609,61 @@ const AppointmentBooking = () => {
     { label: '15:00 - 16:00', value: '15:00' },
     { label: '16:00 - 17:00', value: '16:00' }
   ];
+
+  // Handler: Auto-fill thông tin người tham gia 1 từ thông tin người đặt lịch
+  const handleParticipant1AsCustomer = (checked) => {
+    setIsParticipant1Customer(checked);
+    if (checked) {
+      // Auto-fill thông tin từ customerInfo
+      const updated = [...bookingData.customerInfo.participants];
+      updated[0] = {
+        ...updated[0],
+        name: bookingData.customerInfo.fullName || '',
+        idNumber: bookingData.customerInfo.idNumber || '',
+        phone: bookingData.customerInfo.phone || '',
+        // Tuổi và giới tính cần user nhập thêm
+        age: '',
+        gender: '',
+        relation: 'Chưa xác định' // Mặc định
+      };
+      setBookingData(prev => ({
+        ...prev,
+        customerInfo: {
+          ...prev.customerInfo,
+          participants: updated
+        }
+      }));
+    } else {
+      // Clear thông tin người tham gia 1
+      const updated = [...bookingData.customerInfo.participants];
+      updated[0] = {
+        ...updated[0],
+        name: '',
+        idNumber: '',
+        phone: '',
+        age: '',
+        gender: '',
+        relation: ''
+      };
+      setBookingData(prev => ({
+        ...prev,
+        customerInfo: {
+          ...prev.customerInfo,
+          participants: updated
+        }
+      }));
+    }
+  };
+
+  const buildFullAddress = ({ addressDetail, ward, district, city }) => {
+    const province = getProvinces().find(p => p.code === city)?.name || '';
+    const districtName = getDistricts().find(d => d.code === district)?.name || '';
+    const wardName = getWards().find(w => w.code === ward)?.name || '';
+
+    return [addressDetail, wardName, districtName, province]
+      .filter(part => part && part.trim())
+      .join(', ');
+  };
 
   return (
     <div>
@@ -1149,28 +1252,24 @@ const AppointmentBooking = () => {
                             </Col>
 
                             <Col md={6} className="mb-3">
-                              <Form.Label>CCCD/CMND <span className="text-danger">*</span></Form.Label>
+                              <Form.Label>CCCD <span className="text-danger">*</span></Form.Label>
                               <Form.Control
                                 type="text"
                                 inputMode="numeric"
                                 maxLength={12}
-                                placeholder="Nhập số CCCD/CMND"
+                                placeholder="Nhập số CCCD"
                                 value={bookingData.customerInfo.idNumber}
                                 onChange={(e) => {
-                                  const value = e.target.value.replace(/\D/g, '');
+                                  const value = e.target.value.replace(/\D/g, ''); // Chỉ cho số
                                   if (value.length <= 12) {
                                     handleCustomerInfoChange('idNumber', value);
-                                    const error =
-                                      !value
-                                        ? 'CCCD không được để trống'
-                                        : value.length !== 12
-                                          ? 'CCCD phải gồm đúng 12 chữ số'
-                                          : '';
-                                    setCustomerErrors(prev => ({ ...prev, idNumber: error }));
+                                    setCustomerErrors(prev => ({
+                                      ...prev,
+                                      idNumber: value.length === 12 ? '' : 'CCCD phải gồm đúng 12 chữ số'
+                                    }));
                                   }
                                 }}
                                 isInvalid={!!customerErrors.idNumber}
-                                required
                               />
                               <Form.Control.Feedback type="invalid">
                                 {customerErrors.idNumber}
@@ -1178,27 +1277,91 @@ const AppointmentBooking = () => {
                             </Col>
                           </Row>
 
-                          <Form.Group className="mb-3">
-                            <Form.Label>Địa chỉ <span className="text-danger">*</span></Form.Label>
-                            <Form.Control
-                              as="textarea"
-                              rows={2}
-                              placeholder="Nhập địa chỉ đầy đủ"
-                              value={bookingData.customerInfo.address}
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                handleCustomerInfoChange('address', value);
-                                setCustomerErrors(prev => ({
-                                  ...prev,
-                                  address: value.trim() ? '' : 'Địa chỉ không được để trống'
-                                }));
-                              }}
-                              isInvalid={!!customerErrors.address}
-                              required
-                            />
-                            <Form.Control.Feedback type="invalid">
-                              {customerErrors.address}
-                            </Form.Control.Feedback>
+
+
+                          <Form.Group>
+                            <Row>
+                              <Col md={6} className="mb-3">
+                                <Form.Label>Tỉnh/Thành phố</Form.Label>
+                                <Form.Select
+                                  value={bookingData.customerInfo.city}
+                                  onChange={e => {
+                                    setBookingData(prev => ({
+                                      ...prev,
+                                      customerInfo: {
+                                        ...prev.customerInfo,
+                                        city: e.target.value,
+                                        district: '',
+                                        ward: ''
+                                      }
+                                    }));
+                                  }}
+                                >
+                                  <option value="">Chọn tỉnh/thành phố</option>
+                                  {getProvinces().map(p => (
+                                    <option key={p.code} value={p.code}>{p.name}</option>
+                                  ))}
+                                </Form.Select>
+                              </Col>
+                              <Col md={6} className="mb-3">
+                                <Form.Label>Quận/Huyện</Form.Label>
+                                <Form.Select
+                                  value={bookingData.customerInfo.district}
+                                  onChange={e => {
+                                    setBookingData(prev => ({
+                                      ...prev,
+                                      customerInfo: {
+                                        ...prev.customerInfo,
+                                        district: e.target.value,
+                                        ward: ''
+                                      }
+                                    }));
+                                  }}
+                                  disabled={!bookingData.customerInfo.city}
+                                >
+                                  <option value="">Chọn quận/huyện</option>
+                                  {getDistricts().filter(d => d.province_code === bookingData.customerInfo.city).map(d => (
+                                    <option key={d.code} value={d.code}>{d.name}</option>
+                                  ))}
+                                </Form.Select>
+                              </Col>
+                            </Row>
+                            <Row>
+                              <Col md={6} className="mb-3">
+                                <Form.Label>Phường/Xã</Form.Label>
+                                <Form.Select
+                                  value={bookingData.customerInfo.ward}
+                                  onChange={e => setBookingData(prev => ({
+                                    ...prev,
+                                    customerInfo: {
+                                      ...prev.customerInfo,
+                                      ward: e.target.value
+                                    }
+                                  }))}
+                                  disabled={!bookingData.customerInfo.district}
+                                >
+                                  <option value="">Chọn phường/xã</option>
+                                  {getWards().filter(w => w.district_code === bookingData.customerInfo.district).map(w => (
+                                    <option key={w.code} value={w.code}>{w.name}</option>
+                                  ))}
+                                </Form.Select>
+                              </Col>
+                              <Col md={6} className="mb-3">
+                                <Form.Label>Số nhà, tên đường</Form.Label>
+                                <Form.Control
+                                  type="text"
+                                  value={bookingData.customerInfo.addressDetail}
+                                  onChange={e => setBookingData(prev => ({
+                                    ...prev,
+                                    customerInfo: {
+                                      ...prev.customerInfo,
+                                      addressDetail: e.target.value
+                                    }
+                                  }))}
+                                  placeholder="Số nhà, tên đường..."
+                                />
+                              </Col>
+                            </Row>
                           </Form.Group>
                         </Form>
                       </Card.Body>
@@ -1221,6 +1384,20 @@ const AppointmentBooking = () => {
                                   <h6 className="text-primary mb-3">
                                     <i className="bi bi-person-badge me-2"></i>
                                     Người tham gia {idx + 1}
+                                    {idx === 0 && (
+                                      <Form.Check
+                                        type="checkbox"
+                                        id="participant1-customer"
+                                        className="mt-0"
+                                        checked={isParticipant1Customer}
+                                        onChange={(e) => handleParticipant1AsCustomer(e.target.checked)}
+                                        label={
+                                          <small className="text-success">
+                                            Là người đặt lịch
+                                          </small>
+                                        }
+                                      />
+                                    )}
                                   </h6>
                                   <Form.Group className="mb-3">
                                     <Form.Label>Họ và tên <span className="text-danger">*</span></Form.Label>
@@ -1233,12 +1410,12 @@ const AppointmentBooking = () => {
                                     />
                                   </Form.Group>
                                   <Form.Group className="mb-3">
-                                    <Form.Label>CCCD/CMND</Form.Label>
+                                    <Form.Label>CCCD</Form.Label>
                                     <Form.Control
                                       type="text"
                                       inputMode="numeric"
                                       maxLength={12}
-                                      placeholder="Nhập số CCCD/CMND"
+                                      placeholder="Nhập số CCCD"
                                       value={bookingData.customerInfo.participants[idx]?.idNumber || ''}
                                       onChange={(e) => {
                                         const value = e.target.value.replace(/\D/g, ''); // Chỉ cho số
@@ -1259,35 +1436,6 @@ const AppointmentBooking = () => {
                                     />
                                     <Form.Control.Feedback type="invalid">
                                       {idNumberErrors[idx]}
-                                    </Form.Control.Feedback>
-                                  </Form.Group>
-                                  <Form.Group className="mb-3">
-                                    <Form.Label>Số điện thoại</Form.Label>
-                                    <Form.Control
-                                      type="tel"
-                                      inputMode="numeric"
-                                      maxLength={10}
-                                      placeholder="Nhập số điện thoại"
-                                      value={bookingData.customerInfo.participants[idx]?.phone || ''}
-                                      onChange={(e) => {
-                                        const value = e.target.value.replace(/\D/g, ''); // Chỉ cho số
-                                        if (value.length <= 10) {
-                                          handleParticipantChange(idx, 'phone', value);
-
-                                          if (value && !/^0\d{9}$/.test(value)) {
-                                            setPhoneErrors(prev => ({
-                                              ...prev,
-                                              [idx]: 'Số điện thoại phải có 10 chữ số và bắt đầu bằng 0',
-                                            }));
-                                          } else {
-                                            setPhoneErrors(prev => ({ ...prev, [idx]: '' }));
-                                          }
-                                        }
-                                      }}
-                                      isInvalid={!!phoneErrors[idx]}
-                                    />
-                                    <Form.Control.Feedback type="invalid">
-                                      {phoneErrors[idx]}
                                     </Form.Control.Feedback>
                                   </Form.Group>
                                   {/* Tuổi (Age) */}
@@ -1491,7 +1639,10 @@ const AppointmentBooking = () => {
                       disabled={
                         !bookingData.customerInfo.fullName ||
                         !bookingData.customerInfo.phone ||
-                        !bookingData.customerInfo.address ||
+                        !bookingData.customerInfo.city ||
+                        !bookingData.customerInfo.district ||
+                        !bookingData.customerInfo.ward ||
+                        !bookingData.customerInfo.addressDetail ||
                         (bookingData.collectionMethod !== 'self-sample' && (!bookingData.appointmentDate || !bookingData.appointmentTime))
                       }
                     >
@@ -1502,6 +1653,7 @@ const AppointmentBooking = () => {
               </>
             )}
             {/* Step 4: Confirmation - Same as before but with updated logic */}
+            {/* //Step 4 Appointment mới */}
             {currentStep === 4 && (
               <>
                 <div className="text-center mb-5">
@@ -1518,260 +1670,226 @@ const AppointmentBooking = () => {
                     </h5>
                   </Card.Header>
                   <Card.Body className="p-4">
-                    <Tab.Container defaultActiveKey="service-info">
-                      <Nav variant="tabs" className="mb-4">
-                        <Nav.Item>
-                          <Nav.Link eventKey="service-info">
-                            <i className="bi bi-gear me-2"></i>
-                            Thông tin dịch vụ
-                          </Nav.Link>
-                        </Nav.Item>
-                        <Nav.Item>
-                          <Nav.Link eventKey="customer-appointment-info">
-                            <i className="bi bi-person-calendar me-2"></i>
-                            Thông tin khách hàng & lịch hẹn
-                          </Nav.Link>
-                        </Nav.Item>
-                      </Nav>
+                    {/* GOM THÔNG TIN DỊCH VỤ & KHÁCH HÀNG VÀ LỊCH HẸN VÀO 1 CHỖ */}
+                    <Row>
+                      <Col md={6} className="mb-4">
+                        <h6 className="text-primary mb-3">
+                          <i className="bi bi-gear me-2"></i>
+                          Thông tin dịch vụ
+                        </h6>
+                        <div className="mb-2">
+                          <strong>Tên dịch vụ:</strong>
+                          <div className="text-muted">
+                            {selectedService.title || 'Không có thông tin'}
+                          </div>
+                        </div>
+                        <div className="mb-2">
+                          <strong>Mô tả dịch vụ:</strong>
+                          <div className="text-muted">
+                            {selectedService.description || 'Không có mô tả'}
+                          </div>
+                        </div>
+                        <Row className="mb-2">
+                          <Col md={6}>
+                            <strong>Loại dịch vụ:</strong>
+                            <div className="mt-1">
+                              {renderServiceTypeBadge(selectedService.category?.hasLegalValue ? 'administrative' : 'civil', selectedService.category)}
+                            </div>
+                          </Col>
+                          <Col md={6}>
+                            <strong>Phương thức thu mẫu:</strong>
+                            <div className="mt-1">
+                              <Badge bg={getMethodColor(bookingData.collectionMethod)}>
+                                {getCollectionMethodName(bookingData.collectionMethod, selectedMethod)}
+                              </Badge>
+                            </div>
+                          </Col>
+                        </Row>
+                      </Col>
+                      <Col md={6} className="mb-4">
+                        <h6 className="text-primary mb-3">
+                          <i className="bi bi-cash-coin me-2"></i>
+                          Thông tin chi phí
+                        </h6>
+                        <div className="bg-light p-3 rounded">
+                          <div className="d-flex justify-content-between mb-2">
+                            <span>Giá dịch vụ:</span>
+                            <span className="text-muted">
+                              {selectedService.price && selectedService.price > 0
+                                ? `${new Intl.NumberFormat('vi-VN').format(selectedService.price)} VNĐ`
+                                : 'Liên hệ để biết giá'
+                              }
+                            </span>
+                          </div>
+                          <div className="d-flex justify-content-between mb-2">
+                            <span>Phí dịch vụ (theo phương thức thu mẫu):</span>
+                            <span className="text-muted">
+                              {(() => {
+                                const methodPrice = selectedMethod?.price || 0;
+                                if (methodPrice > 0) {
+                                  return `${new Intl.NumberFormat('vi-VN').format(methodPrice)} VNĐ`;
+                                }
+                                return 'Miễn phí';
+                              })()}
+                            </span>
+                          </div>
+                          <hr />
+                          <div className="d-flex justify-content-between align-items-center mb-3">
+                            <h5 className="mb-0">Tổng cộng:</h5>
+                            <h4 className="text-primary mb-0">
+                              {(() => {
+                                const servicePrice = selectedService.price || 0;
+                                const methodPrice = selectedMethod?.price || 0;
+                                const totalAmount = servicePrice + methodPrice;
 
-                      <Tab.Content>
-                        <Tab.Pane eventKey="service-info">
-                          <Row>
-                            <Col md={6} className="mb-4">
-                              <h6 className="text-primary mb-3">
-                                <i className="bi bi-gear me-2"></i>
-                                Thông tin dịch vụ
-                              </h6>
-                              <div className="mb-2">
-                                <strong>Tên dịch vụ:</strong>
-                                <div className="text-muted">
-                                  {selectedService.title || 'Không có thông tin'}
-                                </div>
-                              </div>
-                              <div className="mb-2">
-                                <strong>Mô tả dịch vụ:</strong>
-                                <div className="text-muted">
-                                  {selectedService.description || 'Không có mô tả'}
-                                </div>
-                              </div>
-                              <Row className="mb-2">
-                                <Col md={6}>
-                                  <strong>Loại dịch vụ:</strong>
-                                  <div className="mt-1">
-                                    {renderServiceTypeBadge(selectedService.category?.hasLegalValue ? 'administrative' : 'civil', selectedService.category)}
-                                  </div>
-                                </Col>
-                                <Col md={6}>
-                                  <strong>Phương thức thu mẫu:</strong>
-                                  <div className="mt-1">
-                                    <Badge bg={getMethodColor(bookingData.collectionMethod)}>
-                                      {getCollectionMethodName(bookingData.collectionMethod, selectedMethod)}
-                                    </Badge>
-                                  </div>
-                                </Col>
-                              </Row>
-                            </Col>
-                            <Col md={6} className="mb-4">
-                              <h6 className="text-primary mb-3">
-                                <i className="bi bi-cash-coin me-2"></i>
-                                Thông tin chi phí
-                              </h6>
-                              <div className="bg-light p-3 rounded">
-                                <div className="d-flex justify-content-between mb-2">
-                                  <span>Giá dịch vụ:</span>
-                                  <span className="text-muted">
-                                    {selectedService.price && selectedService.price > 0
-                                      ? `${new Intl.NumberFormat('vi-VN').format(selectedService.price)} VNĐ`
-                                      : 'Liên hệ để biết giá'
-                                    }
-                                  </span>
-                                </div>
-                                <div className="d-flex justify-content-between mb-2">
-                                  <span>Phí dịch vụ (theo phương thức thu mẫu):</span>
-                                  <span className="text-muted">
-                                    {(() => {
-                                      const methodPrice = selectedMethod?.price || 0;
-                                      if (methodPrice > 0) {
-                                        return `${new Intl.NumberFormat('vi-VN').format(methodPrice)} VNĐ`;
-                                      }
-                                      return 'Miễn phí';
-                                    })()}
-                                  </span>
-                                </div>
-                                <hr />
-                                <div className="d-flex justify-content-between align-items-center mb-3">
-                                  <h5 className="mb-0">Tổng cộng:</h5>
-                                  <h4 className="text-primary mb-0">
-                                    {(() => {
-                                      const servicePrice = selectedService.price || 0;
-                                      const methodPrice = selectedMethod?.price || 0;
-                                      const totalAmount = servicePrice + methodPrice;
-
-                                      if (totalAmount > 0) {
-                                        return `${new Intl.NumberFormat('vi-VN').format(totalAmount)} VNĐ`;
-                                      }
-                                      return 'Liên hệ để biết giá';
-                                    })()}
-                                  </h4>
-                                </div>
-                                <div className="d-flex justify-content-between mb-2">
-                                  <span>Thời gian có kết quả:</span>
-                                  <strong>{selectedService.duration || 'Liên hệ để biết thời gian'}</strong>
-                                </div>
-                                <small className="text-muted">
-                                  <i className="bi bi-info-circle me-1"></i>
-                                  Giá trên đã bao gồm thuế VAT và phí dịch vụ
-                                </small>
-                              </div>
-                            </Col>
-                          </Row>
-                        </Tab.Pane>
-
-                        <Tab.Pane eventKey="customer-appointment-info">
-                          {/* Thông tin khách hàng */}
-                          <div className="mb-4">
-                            <h6 className="text-primary mb-3">
-                              <i className="bi bi-person me-2"></i>
-                              Thông tin khách hàng
-                            </h6>
-                            <Row>
-                              <Col md={3} className="mb-2">
-                                <strong>Họ tên:</strong> {bookingData.customerInfo.fullName}
+                                if (totalAmount > 0) {
+                                  return `${new Intl.NumberFormat('vi-VN').format(totalAmount)} VNĐ`;
+                                }
+                                return 'Liên hệ để biết giá';
+                              })()}
+                            </h4>
+                          </div>
+                          <div className="d-flex justify-content-between mb-2">
+                            <span>Thời gian có kết quả:</span>
+                            <strong>{selectedService.duration || 'Liên hệ để biết thời gian'}</strong>
+                          </div>
+                          <small className="text-muted">
+                            <i className="bi bi-info-circle me-1"></i>
+                            Giá trên đã bao gồm thuế VAT và phí dịch vụ
+                          </small>
+                        </div>
+                      </Col>
+                    </Row>
+                    < hr />
+                    <Row>
+                      <Col md={12} className="mb-4">
+                        <h6 className="text-primary mb-3">
+                          <i className="bi bi-person me-2"></i>
+                          Thông tin khách hàng
+                        </h6>
+                        <Row>
+                          <Col md={3} className="mb-2">
+                            <strong>Họ tên:</strong> {bookingData.customerInfo.fullName}
+                          </Col>
+                          <Col md={3} className="mb-2">
+                            <strong>Điện thoại:</strong> {bookingData.customerInfo.phone}
+                          </Col>
+                          <Col md={3} className="mb-2">
+                            <strong>Email:</strong> {bookingData.customerInfo.email || 'Không có'}
+                          </Col>
+                          <Col md={3} className="mb-2">
+                            <strong>CCCD/CMND:</strong> {bookingData.customerInfo.idNumber}
+                          </Col>
+                        </Row>
+                      </Col>
+                    </Row>
+                    <hr />
+                    <Row>
+                      <Col md={12} className="mb-4">
+                        <h6 className="text-primary mb-3">
+                          <i className="bi bi-calendar me-2"></i>
+                          Thông tin lịch hẹn
+                        </h6>
+                        {bookingData.collectionMethod === 'self-sample' ? (
+                          <div>
+                            <Row className="mb-2">
+                              <Col md={4}>
+                                <strong>Phương thức:</strong> Tự lấy mẫu tại nhà
                               </Col>
-                              <Col md={3} className="mb-2">
-                                <strong>Điện thoại:</strong> {bookingData.customerInfo.phone}
+                              <Col md={4}>
+                                <strong>Thời gian nhận kit:</strong> <span className="text-warning">1-2 ngày làm việc</span>
                               </Col>
-                              <Col md={3} className="mb-2">
-                                <strong>Email:</strong> {bookingData.customerInfo.email || 'Không có'}
-                              </Col>
-                              <Col md={3} className="mb-2">
-                                <strong>CCCD/CMND:</strong> {bookingData.customerInfo.idNumber}
+                              <Col md={4}>
+                                <strong>Kit sẽ được gửi đến:</strong> {bookingData.customerInfo.address}
                               </Col>
                             </Row>
                           </div>
-
-                          {/* Thông tin lịch hẹn */}
-                          <div className="mb-4">
-                            <h6 className="text-primary mb-3">
-                              <i className="bi bi-calendar me-2"></i>
-                              Thông tin lịch hẹn
-                            </h6>
-                            {bookingData.collectionMethod === 'self-sample' ? (
-                              <div>
-                                <Row className="mb-2">
-                                  <Col md={4}>
-                                    <strong>Phương thức:</strong> Tự lấy mẫu tại nhà
-                                  </Col>
-                                  <Col md={4}>
-                                    <strong>Thời gian nhận kit:</strong> <span className="text-warning">1-2 ngày làm việc</span>
-                                  </Col>
-                                  <Col md={4}>
-                                    <strong>Kit sẽ được gửi đến:</strong> {bookingData.customerInfo.address}
-                                  </Col>
-                                </Row>
-                              </div>
-                            ) : (
-                              <div>
-                                <Row className="mb-2">
-                                  <Col md={3}>
-                                    <strong>Giờ hẹn:</strong> {bookingData.appointmentTime}
-                                  </Col>
-                                  <Col md={4}>
-                                    <strong>Ngày hẹn:</strong> {renderDate(bookingData.appointmentDate)}
-                                  </Col>
-                                  <Col md={5}>
-                                    <strong>Địa điểm:</strong> {
-                                      bookingData.collectionMethod === 'at-facility' ?
-                                        'Trung tâm xét nghiệm ADN - 123 Đường ABC, Quận XYZ' :
-                                        bookingData.customerInfo.address
-                                    }
-                                  </Col>
-                                </Row>
-                              </div>
-                            )}
+                        ) : (
+                          <div>
+                            <Row className="mb-2">
+                              <Col md={3}>
+                                <strong>Giờ hẹn:</strong> {bookingData.appointmentTime}
+                              </Col>
+                              <Col md={4}>
+                                <strong>Ngày hẹn:</strong> {renderDate(bookingData.appointmentDate)}
+                              </Col>
+                              <Col md={5}>
+                                <strong>Địa điểm:</strong> {
+                                  bookingData.collectionMethod === 'at-facility' ?
+                                    'Trung tâm xét nghiệm ADN - 123 Đường ABC, Quận XYZ' :
+                                    bookingData.customerInfo.address
+                                }
+                              </Col>
+                            </Row>
                           </div>
-
-                          {/* Người tham gia xét nghiệm */}
-                          {bookingData.customerInfo.participants.length > 0 && (
-                            <div className="mb-4">
-                              <h6 className="text-primary mb-3">
-                                <i className="bi bi-people me-2"></i>
-                                Người tham gia xét nghiệm
-                              </h6>
-                              <Row>
-                                <Col md={6} className="mb-3">
-                                  <Card className="border-light">
-                                    <Card.Header className="bg-light">
-                                      <h6 className="mb-0 text-success">Người tham gia 1</h6>
-                                    </Card.Header>
-                                    <Card.Body className="p-3">
-                                      {bookingData.customerInfo.participants[0] ? (
-                                        <div className="d-flex flex-wrap align-items-center justify-content-center text-center">
-                                          <span className="me-3 mb-1">
-                                            <strong>Tên:</strong> {bookingData.customerInfo.participants[0].name}
-                                          </span>
-                                          <span className="me-3 mb-1">
-                                            <strong>CCCD:</strong> {bookingData.customerInfo.participants[0].idNumber}
-                                          </span>
-                                          {bookingData.customerInfo.participants[0].phone && (
-                                            <span className="me-3 mb-1">
-                                              <strong>SĐT:</strong> {bookingData.customerInfo.participants[0].phone}
-                                            </span>
-                                          )}
-                                          <span className="mb-1">
-                                            <strong>Quan hệ:</strong> {bookingData.customerInfo.participants[0].relation || 'N/A'}
-                                          </span>
-                                        </div>
-                                      ) : (
-                                        <div className="text-muted text-center">Chưa có thông tin</div>
-                                      )}
-                                    </Card.Body>
-                                  </Card>
-                                </Col>
-                                <Col md={6} className="mb-3">
-                                  <Card className="border-light">
-                                    <Card.Header className="bg-light">
-                                      <h6 className="mb-0 text-success">Người tham gia 2</h6>
-                                    </Card.Header>
-                                    <Card.Body className="p-3">
-                                      {bookingData.customerInfo.participants[1] ? (
-                                        <div className="d-flex flex-wrap align-items-center justify-content-center text-center">
-                                          <span className="me-3 mb-1">
-                                            <strong>Tên:</strong> {bookingData.customerInfo.participants[1].name}
-                                          </span>
-                                          <span className="me-3 mb-1">
-                                            <strong>CCCD:</strong> {bookingData.customerInfo.participants[1].idNumber}
-                                          </span>
-                                          {bookingData.customerInfo.participants[1].phone && (
-                                            <span className="me-3 mb-1">
-                                              <strong>SĐT:</strong> {bookingData.customerInfo.participants[1].phone}
-                                            </span>
-                                          )}
-                                          <span className="mb-1">
-                                            <strong>Quan hệ:</strong> {bookingData.customerInfo.participants[1].relation || 'N/A'}
-                                          </span>
-                                        </div>
-                                      ) : (
-                                        <div className="text-muted text-center">Chưa có thông tin</div>
-                                      )}
-                                    </Card.Body>
-                                  </Card>
-                                </Col>
-                              </Row>
-                            </div>
-                          )}
-                        </Tab.Pane>
-                      </Tab.Content>
-                    </Tab.Container>
-
+                        )}
+                      </Col>
+                    </Row>
+                    {bookingData.customerInfo.participants.length > 0 && (
+                      <Row>
+                        <Col md={6} className="mb-3">
+                          <Card className="border-light">
+                            <Card.Header className="bg-light">
+                              <h6 className="mb-0 text-success">Người tham gia 1</h6>
+                            </Card.Header>
+                            <Card.Body className="p-3">
+                              {bookingData?.customerInfo?.participants?.[0] ? (
+                                <div className="d-flex flex-column align-items-center text-center">
+                                  <div className="mb-2">
+                                    <strong>Tên:</strong> {bookingData.customerInfo.participants[0].name}
+                                  </div>
+                                  <div className="mb-2">
+                                    <strong>CCCD:</strong> {bookingData.customerInfo.participants[0].idNumber}
+                                  </div>
+                                  <div className="mb-2">
+                                    <strong>Tuổi:</strong> {bookingData.customerInfo.participants[0].age}
+                                  </div>
+                                  <div>
+                                    <strong>Quan hệ:</strong> {bookingData.customerInfo.participants[0].relation || 'N/A'}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="text-muted text-center">Chưa có thông tin</div>
+                              )}
+                            </Card.Body>
+                          </Card>
+                        </Col>
+                        <Col md={6} className="mb-3">
+                          <Card className="border-light">
+                            <Card.Header className="bg-light">
+                              <h6 className="mb-0 text-success">Người tham gia 2</h6>
+                            </Card.Header>
+                            <Card.Body className="p-3">
+                              {bookingData?.customerInfo?.participants?.[1] ? (
+                                <div className="text-center">
+                                  <div className="mb-2">
+                                    <strong>Tên:</strong> {bookingData.customerInfo.participants[1].name}
+                                  </div>
+                                  <div className="mb-2">
+                                    <strong>CCCD:</strong> {bookingData.customerInfo.participants[1].idNumber}
+                                  </div>
+                                  <div className="mb-2">
+                                    <strong>Tuổi:</strong> {bookingData.customerInfo.participants[1].age}
+                                  </div>
+                                  <div>
+                                    <strong>Quan hệ:</strong> {bookingData.customerInfo.participants[1].relation || 'N/A'}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="text-muted text-center">Chưa có thông tin</div>
+                              )}
+                            </Card.Body>
+                          </Card>
+                        </Col>
+                      </Row>
+                    )}
                     <hr />
-
                     <Alert variant="info" className="mb-0">
-                      <div className="d-flex align-items-start">
-                        <i className="bi bi-info-circle me-3 mt-1"></i>
+                      <div className="d-flex flex-column align-items-center text-center">
+                        <i className="bi bi-info-circle fs-4 mb-3"></i>
                         <div>
                           <strong>Lưu ý quan trọng:</strong>
-                          <ul className="mb-0 mt-2">
+                          <ul className="mt-3">
                             {bookingData.collectionMethod !== 'self-sample' && (
                               <li>Vui lòng có mặt đúng giờ hẹn. Trễ hẹn quá 15 phút có thể bị hủy lịch.</li>
                             )}

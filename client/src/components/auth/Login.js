@@ -26,13 +26,14 @@ import {
 import { useAuthState } from 'react-firebase-hooks/auth';
 
 const Login = ({ setUser }) => {
-  const [user, loading] = useAuthState(auth);
-  const navigate = useNavigate();
-  const [showPassword, setShowPassword] = useState(false);
-  const [loginError, setLoginError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  // Hooks và state quản lý đăng nhập
+  const [user, loading] = useAuthState(auth);          // Trạng thái auth từ Firebase
+  const navigate = useNavigate();                      // Hook điều hướng
+  const [showPassword, setShowPassword] = useState(false); // Ẩn/hiện mật khẩu
+  const [loginError, setLoginError] = useState('');    // Thông báo lỗi
+  const [isLoading, setIsLoading] = useState(false);   // Trạng thái loading
 
-  // Function to get redirect path based on role
+  // Hàm xác định đường dẫn điều hướng theo role
   const getRedirectPath = (role) => {
     switch (role) {
       case 'admin': return '/admin';
@@ -43,16 +44,20 @@ const Login = ({ setUser }) => {
     }
   };
 
+  // Effect xử lý sau khi đăng nhập thành công
   useEffect(() => {
     const handleUserLogin = async () => {
       if (loading) return;
       
       if (user) {
         try {
+          // Lấy thông tin user từ database
           const { data: userData } = await getUser(dataConnect, { userId: user.uid });
           
           if (userData && userData.user) {
-            const userInfo = userData.user;           
+            const userInfo = userData.user;
+            
+            // Tạo object chứa thông tin user cho app
             const appUser = {
               ...userInfo,
               id: userInfo.id,
@@ -62,18 +67,22 @@ const Login = ({ setUser }) => {
               avatar: userInfo.avatar,
               verified: user.emailVerified,
               phone: userInfo.phone,
+              // Xác định department dựa trên role
               department: userInfo.role?.name === 'admin' ? 'Administration' : 
                          userInfo.role?.name === 'staff' ? 'Laboratory' :
                          userInfo.role?.name === 'manager' ? 'Management' : null,
+              // Phân quyền dựa trên role
               permissions: userInfo.role?.name === 'admin' ? ['all'] : 
                           userInfo.role?.name === 'staff' ? ['tests', 'reports'] :
                           userInfo.role?.name === 'manager' ? ['users', 'reports', 'guides'] :
                           ['profile', 'tests']
             };
 
+            // Lưu thông tin user và trạng thái đăng nhập
             setUser(appUser);
             localStorage.setItem('isAuthenticated', 'true');
             
+            // Điều hướng theo role
             navigate(getRedirectPath(appUser.role));
           } else {
             setLoginError('Không tìm thấy thông tin người dùng trong hệ thống.');
@@ -88,6 +97,7 @@ const Login = ({ setUser }) => {
     handleUserLogin();
   }, [user, loading, navigate, setUser]);
 
+  // Hàm xử lý đăng nhập bằng Google
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
@@ -101,11 +111,14 @@ const Login = ({ setUser }) => {
     }
   };
 
+  // Cấu hình form với Formik và Yup
   const formik = useFormik({
+    // Giá trị khởi tạo
     initialValues: {
       email: '',
       password: '',
     },
+    // Xử lý submit form
     onSubmit: async (values) => {
       try {
         setIsLoading(true);
@@ -119,6 +132,7 @@ const Login = ({ setUser }) => {
         setIsLoading(false);
       }
     },
+    // Validation schema với Yup
     validationSchema: Yup.object().shape({
       email: Yup.string()
         .required('Email là bắt buộc')
@@ -134,7 +148,7 @@ const Login = ({ setUser }) => {
       <Container>
         <Row className="justify-content-center">
           <Col lg={5} md={7} sm={9}>
-            {/* Header */}
+            {/* HEADER - Logo và tiêu đề */}
             <div className="text-center mb-4">
               <div 
                 className="rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center logo-circle" 
@@ -159,6 +173,7 @@ const Login = ({ setUser }) => {
               <p className="text-muted">Trung tâm xét nghiệm ADN hàng đầu</p>
             </div>
 
+            {/* CARD - Form đăng nhập */}
             <Card className="shadow-lg border-0">
               <Card.Header className="bg-primary text-white text-center py-4">
                 <h4 className="mb-0 fw-bold">
@@ -171,7 +186,7 @@ const Login = ({ setUser }) => {
               </Card.Header>
 
               <Card.Body className="p-4">
-                {/* Error Alert */}
+                {/* Thông báo lỗi */}
                 {loginError && (
                   <Alert variant="danger" className="mb-4">
                     <i className="bi bi-exclamation-circle me-2"></i>
@@ -179,8 +194,9 @@ const Login = ({ setUser }) => {
                   </Alert>
                 )}
 
-                {/* Login Form */}
+                {/* Form đăng nhập */}
                 <Form onSubmit={formik.handleSubmit}>
+                  {/* Input email */}
                   <Form.Group className="mb-3">
                     <Form.Label className="fw-medium">
                       <i className="bi bi-envelope me-2"></i>
