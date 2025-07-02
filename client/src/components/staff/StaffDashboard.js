@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Container, Row, Col, Nav, Card, Alert } from 'react-bootstrap';
+import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Container, Row, Col, Nav, Card, Alert, Spinner } from 'react-bootstrap';
+import { getUserById } from '../../services/api';
 
 // Import staff dashboard components
 import StaffOverview from './StaffOverview';
@@ -10,11 +11,55 @@ import LabTesting from './LabTesting';
 import ResultsManagement from './ResultsManagement';
 import StaffProfile from './StaffProfile';
 
-const StaffDashboard = ({ user }) => {
-  const location = useLocation();
-  const [activeTab, setActiveTab] = useState('overview');
+// Thêm hàm getRoleLabel để mapping role sang tiếng Việt
+function getRoleLabel(role) {
+  if (!role) return '';
+  const roleName = typeof role === 'object' && role !== null ? (role.name || role.role_string || '') : (role || '');
+  switch (roleName.toLowerCase()) {
+    case 'admin': return 'Quản trị viên';
+    case 'manager': return 'Quản lý';
+    case 'staff': return 'Nhân viên';
+    case 'customer': return 'Khách hàng';
+    default: return roleName;
+  }
+}
 
-  // Get current tab from URL
+const StaffDashboard = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('overview');
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const storedUserData = localStorage.getItem('userData');
+        let userId = null;
+        if (storedUserData) {
+          const userData = JSON.parse(storedUserData);
+          userId = userData.id || userData.user_id || userData.uid;
+        }
+        if (!userId) {
+          setError('Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.');
+          setLoading(false);
+          setTimeout(() => navigate('/login'), 2000);
+          return;
+        }
+        const user = await getUserById(userId);
+        setCurrentUser(user);
+      } catch (err) {
+        setError('Không thể lấy thông tin người dùng: ' + err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUser();
+  }, [navigate]);
+
   useEffect(() => {
     const path = location.pathname.split('/').pop();
     if (path && path !== 'staff') {
@@ -24,24 +69,19 @@ const StaffDashboard = ({ user }) => {
     }
   }, [location.pathname]);
 
-  // Mock staff user data if not provided
-  const currentUser = user || {
-    id: 'staff-001',
-    name: 'Nguyễn Văn Staff',
-    email: 'staff@adnlab.vn',
-    phone: '0123456789',
-    avatar: null,
-    role: 'staff',
-    role_string: 'staff',
-    department: 'Laboratory',
-    employeeId: 'EMP2024001',
-    position: 'Kỹ thuật viên xét nghiệm',
-    workShift: 'Ca sáng (07:00 - 15:00)',
-    certifications: ['ISO 15189', 'Good Laboratory Practice'],
-    totalSamples: 156,
-    completedTests: 89,
-    pendingTests: 12
-  };
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
+        <Spinner animation="border" variant="primary" />
+      </div>
+    );
+  }
+  if (error) {
+    return <Alert variant="danger" className="mt-4">{error}</Alert>;
+  }
+  if (!currentUser) {
+    return null;
+  }
 
   const menuItems = [
     {
@@ -122,9 +162,9 @@ const StaffDashboard = ({ user }) => {
                   </div>
                 )}
               </div>
-              <h5 className="mb-1">{currentUser.name}</h5>
-              <p className="mb-1 small opacity-75">{currentUser.position}</p>
-              <p className="mb-0 small opacity-75">ID: {currentUser.employeeId}</p>
+              <h5 className="mb-1">{currentUser.fullname}</h5>
+              <p className="mb-1 small opacity-75">{currentUser.email}</p>
+              <p className="mb-1 small opacity-75">{getRoleLabel(currentUser.role)}</p>
             </Card.Header>
 
             {/* Navigation Menu */}

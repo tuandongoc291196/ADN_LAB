@@ -18,7 +18,6 @@ import BlogManagement from './BlogManagement';
 import AdminReports from './AdminReports';
 import UserManagement from './UserManagement';
 import SystemSettings from './SystemSettings';
-import StaffManagementByAdmin from './StaffManagementByAdmin';
 
 const AdminDashboard = ({ user }) => {
   // Hook lấy thông tin URL hiện tại để xác định tab đang active
@@ -63,15 +62,7 @@ const AdminDashboard = ({ user }) => {
       path: '/admin/blog',
       color: 'success',
       description: 'Tạo và quản lý bài viết blog'
-    },
-    {
-      key: 'staff',
-      label: 'Quản lý nhân viên',
-      icon: 'bi-book',
-      path: '/admin/staff',
-      color: 'info',
-      description: 'Quản lý nhân viên'
-    },
+    },      
     {
       key: 'reports',
       label: 'Báo cáo & Thống kê',
@@ -82,7 +73,7 @@ const AdminDashboard = ({ user }) => {
     },
     {
       key: 'users',
-      label: 'Quản lý người dùng',
+      label: 'Quản lý tài khoản',
       icon: 'bi-people',
       path: '/admin/users',
       color: 'purple',
@@ -211,7 +202,7 @@ const AdminDashboard = ({ user }) => {
             <Route path="/" element={<AdminOverview user={adminUser} />} />
             <Route path="/overview" element={<AdminOverview user={adminUser} />} />
             <Route path="/blog/*" element={<BlogManagement user={adminUser} />} />
-            <Route path="/staff/*" element={<StaffManagementByAdmin user={adminUser} />} />
+            <Route path="/staff/*" element={<UserManagement user={adminUser} />} />
             <Route path="/reports/*" element={<AdminReports user={adminUser} />} />
             <Route path="/users/*" element={<UserManagement user={adminUser} />} />
             <Route path="/settings/*" element={<SystemSettings user={adminUser} />} />
