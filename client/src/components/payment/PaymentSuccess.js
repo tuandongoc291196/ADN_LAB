@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Alert, Badge, Modal } from 'react-bootstrap';
+import { getBookingById } from '../../services/api';
+// import { getPaymentByBookingId } from '../../services/api'; // Comment out API call for now
 
 const PaymentSuccess = () => {
   const location = useLocation();
@@ -9,33 +11,120 @@ const PaymentSuccess = () => {
   const [paymentMethodInfo, setPaymentMethodInfo] = useState(null);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [countdown, setCountdown] = useState(10);
+  const [bookingDetail, setBookingDetail] = useState(null);
 
   useEffect(() => {
-    if (location.state && location.state.paymentResult) {
-      setPaymentResult(location.state.paymentResult);
-      setPaymentMethodInfo(location.state.paymentMethodInfo);
+    const query = new URLSearchParams(location.search);
+    console.log('Query parameters:', query.toString());
+
+    const orderId = query.get('orderId');
+    const resultCode = query.get('resultCode');
+    const amount = query.get('amount');
+    const partnerCode = query.get('partnerCode');
+    const message = query.get('message');
+
+    console.log('Payment callback data:', { orderId, resultCode, amount, partnerCode, message });
+
+    if (orderId && resultCode === '0' && partnerCode === 'MOMO') {
+      // Extract bookingId from orderId format: MOMO_ADNLAB712881_1751536064022
+      const matches = orderId.match(/MOMO_(ADNLAB\d+)_/);
+      const bookingId = matches ? matches[1] : null;
+
+      console.log('Extracted bookingId:', bookingId);
+
+      if (!bookingId) {
+        console.error('Could not extract bookingId from orderId:', orderId);
+        return;
+      }
+
+      // Create payment result from URL parameters
+      setPaymentResult({
+        bookingId: bookingId,
+        orderId: orderId,
+        amount: parseInt(amount) || 0,
+        timestamp: new Date().toISOString(),
+        resultCode: resultCode,
+        message: message,
+        paymentData: {
+          customerName: 'Khách hàng', // Default values since we don't have API data
+          customerPhone: 'N/A',
+          customerEmail: 'N/A'
+        },
+        bookingData: {
+          serviceType: 'unknown',
+          collectionMethod: 'unknown',
+          appointmentDate: 'N/A',
+          appointmentTime: 'N/A'
+        }
+      });
+
+      setPaymentMethodInfo({
+        id: 'momo',
+        name: 'Ví MoMo',
+        type: 'online'
+      });
+
+      // Try to fetch API data in the background (optional)
+      // getPaymentByBookingId(bookingId)
+      //   .then((dataList) => {
+      //     const payment = dataList?.[0];
+      //     const booking = payment?.booking;
+      //     if (payment && booking) {
+      //       // Update with real data if API succeeds
+      //       setPaymentResult(prev => ({
+      //         ...prev,
+      //         paymentData: {
+      //           customerName: booking.user.fullname,
+      //           customerPhone: booking.user.phone,
+      //           customerEmail: booking.user.email
+      //         },
+      //         bookingData: {
+      //           serviceType: booking.service.category.hasLegalValue ? 'legal' : 'civil',
+      //           collectionMethod: booking.method.id,
+      //           appointmentDate: booking.timeSlot.slotDate,
+      //           appointmentTime: `${booking.timeSlot.startTime} - ${booking.timeSlot.endTime}`
+      //         }
+      //       }));
+      //     }
+      //   })
+      //   .catch((err) => {
+      //     console.warn('⚠️ Không thể tải thông tin chi tiết từ API:', err);
+      //     // Don't navigate away, just use URL parameters
+      //   });
+    } else if (resultCode && resultCode !== '0') {
+      // Payment failed
+      console.error('Payment failed with resultCode:', resultCode);
     } else {
-      // Redirect if no payment data
-      navigate('/');
+      console.log('No payment callback detected');
     }
-  }, [location.state, navigate]);
+  }, [location, navigate]);
 
-  // Countdown for automatic redirect
+  // Lấy thông tin booking chi tiết từ API nếu có bookingId
   useEffect(() => {
-    if (paymentResult && paymentMethodInfo?.type === 'online') {
-      const timer = setInterval(() => {
-        setCountdown(prev => {
-          if (prev <= 1) {
-            navigate('/user/appointments');
-            return 0;
-          }
-          return prev - 1;
+    if (paymentResult?.bookingId) {
+      getBookingById(paymentResult.bookingId)
+        .then((booking) => {
+          setBookingDetail(booking);
+          setPaymentResult(prev => ({
+            ...prev,
+            paymentData: {
+              customerName: booking.information?.[0]?.name || 'Khách hàng',
+              customerPhone: booking.information?.[0]?.phone || 'N/A',
+              customerEmail: booking.information?.[0]?.email || 'N/A',
+            },
+            bookingData: {
+              serviceType: booking.service?.category?.hasLegalValue ? 'administrative' : 'civil',
+              collectionMethod: booking.method?.id || 'unknown',
+              appointmentDate: booking.timeSlot?.slotDate || 'N/A',
+              appointmentTime: booking.timeSlot ? `${booking.timeSlot.startTime} - ${booking.timeSlot.endTime}` : 'N/A',
+            }
+          }));
+        })
+        .catch((err) => {
+          console.warn('Không thể lấy thông tin booking chi tiết:', err);
         });
-      }, 1000);
-
-      return () => clearInterval(timer);
     }
-  }, [paymentResult, paymentMethodInfo, navigate]);
+  }, [paymentResult?.bookingId]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -45,10 +134,10 @@ const PaymentSuccess = () => {
   };
 
   const formatDate = (dateString) => {
-    const options = { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
+    const options = {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -56,8 +145,10 @@ const PaymentSuccess = () => {
     return new Date(dateString).toLocaleDateString('vi-VN', options);
   };
 
-  const formatDateTime = (dateString) => {
-    return new Date(dateString).toLocaleString('vi-VN');
+  const formatTime = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
   };
 
   const getStatusColor = (method) => {
@@ -85,13 +176,13 @@ const PaymentSuccess = () => {
       return [
         'Bạn sẽ nhận email xác nhận trong vài phút',
         'Kiểm tra SMS để nhận thông tin chi tiết',
-        bookingData?.collectionMethod === 'self-sample' 
-          ? 'Kit xét nghiệm sẽ được gửi trong 1-2 ngày' 
+        bookingData?.collectionMethod === 'self-sample'
+          ? 'Kit xét nghiệm sẽ được gửi trong 1-2 ngày'
           : 'Nhân viên sẽ liên hệ xác nhận lịch hẹn',
         'Kết quả sẽ có trong 5-7 ngày làm việc'
       ];
     }
-    
+
     if (method?.id === 'bank-transfer') {
       return [
         'Thực hiện chuyển khoản theo thông tin đã cung cấp',
@@ -100,18 +191,18 @@ const PaymentSuccess = () => {
         'Dịch vụ sẽ được kích hoạt ngay sau khi xác nhận thanh toán'
       ];
     }
-    
+
     if (method?.id === 'cash-on-service') {
       return [
         'Chuẩn bị đầy đủ giấy tờ cần thiết',
-        bookingData?.collectionMethod === 'at-facility' 
+        bookingData?.collectionMethod === 'at-facility'
           ? 'Có mặt đúng giờ tại cơ sở để thanh toán và xét nghiệm'
           : 'Chuẩn bị tiền mặt để thanh toán cho nhân viên',
         'Nhận biên lai và giữ lại để theo dõi',
         'Kết quả sẽ có trong 5-7 ngày làv việc'
       ];
     }
-    
+
     return ['Đặt lịch đã được xác nhận thành công'];
   };
 
@@ -128,15 +219,35 @@ const PaymentSuccess = () => {
       paymentMethod: paymentMethodInfo.name,
       timestamp: paymentResult.timestamp
     };
-    
+
     const dataStr = JSON.stringify(receiptData, null, 2);
-    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
     link.href = url;
     link.download = `receipt-${paymentResult.bookingId}.json`;
     link.click();
   };
+  
+  // Hàm tách ngày và giờ từ timeSlot.id
+  function parseTimeSlotId(timeSlotId) {
+    if (!timeSlotId) return { date: 'N/A', time: 'N/A' };
+    const [date, start, end] = timeSlotId.split('_');
+    return {
+      date: date || 'N/A',
+      time: start && end ? `${start} - ${end}` : 'N/A'
+    };
+  }
+
+  // Hàm map phương thức lấy mẫu
+  function getMethodName(methodId) {
+    switch (methodId) {
+      case '1': return 'Tự lấy mẫu tại nhà';
+      case '2': return 'Nhân viên tới nhà';
+      case '3': return 'Tại cơ sở';
+      default: return methodId || 'Không xác định';
+    }
+  }
 
   if (!paymentResult) {
     return (
@@ -190,7 +301,7 @@ const PaymentSuccess = () => {
                 <h6 className="mb-1">Giao dịch hoàn tất</h6>
                 <div>Thanh toán qua <strong>{paymentMethodInfo.name}</strong> đã được xử lý thành công</div>
                 <div className="small text-muted">
-                  Thời gian: {formatDateTime(paymentResult.timestamp)}
+                  Thời gian: {formatDate(paymentResult.timestamp)}
                 </div>
               </div>
             </div>
@@ -245,15 +356,19 @@ const PaymentSuccess = () => {
                       <strong>Mã đặt lịch:</strong> {paymentResult.bookingId}
                     </div>
                     <div className="mb-2">
-                      <strong>Dịch vụ:</strong> {paymentResult.bookingData.serviceType === 'civil' ? 'ADN Dân sự' : 'ADN Hành chính'}
+                      <strong>Tên dịch vụ:</strong> {bookingDetail?.service?.id || 'N/A'}
                     </div>
                     <div className="mb-2">
-                      <strong>Phương thức lấy mẫu:</strong>
-                      <div className="text-muted">
-                        {paymentResult.bookingData.collectionMethod === 'self-sample' && 'Tự lấy mẫu tại nhà'}
-                        {paymentResult.bookingData.collectionMethod === 'home-visit' && 'Nhân viên tới nhà'}
-                        {paymentResult.bookingData.collectionMethod === 'at-facility' && 'Tại cơ sở'}
-                      </div>
+                      <strong>Loại dịch vụ:</strong> {
+                        bookingDetail?.service?.category?.hasLegalValue === true ? 'ADN Hành chính'
+                        : bookingDetail?.service?.category?.hasLegalValue === false ? 'ADN Dân sự'
+                        : bookingDetail?.serviceType === 'administrative' ? 'ADN Hành chính'
+                        : bookingDetail?.serviceType === 'civil' ? 'ADN Dân sự'
+                        : 'Không xác định'
+                      }
+                    </div>
+                    <div className="mb-2">
+                      <strong>Phương thức lấy mẫu:</strong> {getMethodName(bookingDetail?.method?.id)}
                     </div>
                   </Col>
                   <Col md={6} className="mb-3">
@@ -262,7 +377,7 @@ const PaymentSuccess = () => {
                       <strong>Phương thức:</strong> {paymentMethodInfo.name}
                     </div>
                     <div className="mb-2">
-                      <strong>Tổng tiền:</strong> 
+                      <strong>Tổng tiền:</strong>
                       <span className="text-success fw-bold ms-2">
                         {formatCurrency(paymentResult.amount)}
                       </span>
@@ -270,29 +385,32 @@ const PaymentSuccess = () => {
                     <div className="mb-2">
                       <strong>Trạng thái:</strong>
                       <Badge bg={statusColor} className="ms-2">
-                        {paymentMethodInfo?.type === 'online' ? 'Đã thanh toán' : 
-                         paymentMethodInfo?.id === 'bank-transfer' ? 'Chờ xác nhận' : 'Chờ thanh toán'}
+                        {paymentMethodInfo?.type === 'online' ? 'Đã thanh toán' :
+                          paymentMethodInfo?.id === 'bank-transfer' ? 'Chờ xác nhận' : 'Chờ thanh toán'}
                       </Badge>
                     </div>
                     <div className="mb-2">
-                      <strong>Thời gian:</strong>
-                      <div className="text-muted small">
-                        {formatDateTime(paymentResult.timestamp)}
-                      </div>
+                      <strong>Thời gian:</strong> {formatDate(paymentResult.timestamp)}
                     </div>
                   </Col>
                 </Row>
 
-                {paymentResult.bookingData.appointmentDate && (
+                {/* Lịch hẹn */}
+                {bookingDetail?.timeSlot?.id && (
                   <div className="mt-3 pt-3 border-top">
                     <h6 className="text-primary mb-2">Lịch hẹn</h6>
                     <Row>
-                      <Col sm={6}>
-                        <strong>Ngày:</strong> {formatDate(paymentResult.bookingData.appointmentDate)}
-                      </Col>
-                      <Col sm={6}>
-                        <strong>Giờ:</strong> {paymentResult.bookingData.appointmentTime}
-                      </Col>
+                      {(() => {
+                        const { date, time } = parseTimeSlotId(bookingDetail.timeSlot.id);
+                        return <>
+                          <Col sm={6}>
+                            <strong>Ngày:</strong> {date}
+                          </Col>
+                          <Col sm={6}>
+                            <strong>Giờ:</strong> {time}
+                          </Col>
+                        </>;
+                      })()}
                     </Row>
                   </div>
                 )}
@@ -301,11 +419,11 @@ const PaymentSuccess = () => {
                   <h6 className="text-primary mb-2">Thông tin khách hàng</h6>
                   <Row>
                     <Col sm={6}>
-                      <div><strong>Họ tên:</strong> {paymentResult.paymentData.customerName}</div>
-                      <div><strong>Điện thoại:</strong> {paymentResult.paymentData.customerPhone}</div>
+                      <div><strong>Họ tên:</strong> {bookingDetail?.information?.[0]?.name || bookingDetail?.information?.[0]?.fullName || 'Khách hàng'}</div>
+                      <div><strong>Điện thoại:</strong> {bookingDetail?.information?.[0]?.phone || 'N/A'}</div>
                     </Col>
                     <Col sm={6}>
-                      <div><strong>Email:</strong> {paymentResult.paymentData.customerEmail}</div>
+                      <div><strong>Email:</strong> {bookingDetail?.information?.[0]?.email || 'N/A'}</div>
                     </Col>
                   </Row>
                 </div>
@@ -326,21 +444,14 @@ const PaymentSuccess = () => {
                 <ol className="list-unstyled">
                   {nextSteps.map((step, index) => (
                     <li key={index} className="mb-3 d-flex align-items-start">
-                      <div className="bg-info bg-opacity-10 rounded-circle p-2 me-3 mt-1" 
-                           style={{ minWidth: '30px', height: '30px', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                      <div className="bg-info bg-opacity-10 rounded-circle p-2 me-3 mt-1"
+                        style={{ minWidth: '30px', height: '30px', fontSize: '0.8rem', fontWeight: 'bold' }}>
                         {index + 1}
                       </div>
                       <div className="small">{step}</div>
                     </li>
                   ))}
                 </ol>
-
-                {paymentMethodInfo?.type === 'online' && (
-                  <Alert variant="success" className="small mt-3">
-                    <i className="bi bi-info-circle me-2"></i>
-                    Tự động chuyển đến trang quản lý trong <strong>{countdown}s</strong>
-                  </Alert>
-                )}
               </Card.Body>
             </Card>
 
@@ -445,7 +556,7 @@ const PaymentSuccess = () => {
             <Col md={6}>
               <strong>Mã đơn hàng:</strong> {paymentResult.bookingId}
               <br />
-              <strong>Ngày tạo:</strong> {formatDateTime(paymentResult.timestamp)}
+              <strong>Ngày tạo:</strong> {formatDate(paymentResult.timestamp)}
               <br />
               <strong>Phương thức thanh toán:</strong> {paymentMethodInfo.name}
             </Col>
@@ -475,8 +586,7 @@ const PaymentSuccess = () => {
                   Xét nghiệm ADN {paymentResult.bookingData.serviceType === 'civil' ? 'Dân sự' : 'Hành chính'}
                   <br />
                   <small className="text-muted">
-                    Phương thức: {paymentResult.bookingData.collectionMethod === 'self-sample' ? 'Tự lấy mẫu' : 
-                                 paymentResult.bookingData.collectionMethod === 'home-visit' ? 'Tại nhà' : 'Tại cơ sở'}
+                    Phương thức: {getMethodName(paymentResult.bookingData.collectionMethod)}
                   </small>
                 </td>
                 <td>1</td>

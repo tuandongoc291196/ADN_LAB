@@ -18,32 +18,6 @@ const MainNavbar = ({ setUser }) => {
   const [userData, setUserData] = useState(null);
   const [logoUrl] = useState('https://firebasestorage.googleapis.com/v0/b/su25-swp391-g8.firebasestorage.app/o/assets%2Flogo.png?alt=media&token=1c903ba1-852a-4f5b-b498-97c31ffbb742');
 
-
-  // Effect: Lấy danh mục dịch vụ từ API khi mount
-  // useEffect(() => {
-  //   const fetchCategories = async () => {
-  //     try {
-  //       setLoadingCategories(true);
-  //       const response = await getServiceCategories();
-  //       console.log('Categories API response:', response);
-
-  //       if (response && Array.isArray(response)) {
-  //         setCategories(response);
-  //       } else {
-  //         setCategories([]);
-  //       }
-  //     } catch (error) {
-  //       console.error('Error fetching categories:', error);
-  //       setCategories([]);
-  //     } finally {
-  //       setLoadingCategories(false);
-  //     }
-  //   };
-
-  //   fetchCategories();
-  // }, []);
-
-  // Helper: Lọc danh mục hành chính/civil
   const getAdministrativeCategories = () => {
     return categories.filter(category => category.hasLegalValue);
   };
@@ -274,8 +248,8 @@ const MainNavbar = ({ setUser }) => {
 
   // Handler for booking button
   const handleBookingClick = (e) => {
-    if (!storedUserData) {
-      e.preventDefault(); // chặn click chuyển trang
+    if (!userData || !userData.user_id) {
+      e.preventDefault();
       Swal.fire({
         icon: 'info',
         title: 'Bạn chưa đăng nhập',
@@ -288,7 +262,7 @@ const MainNavbar = ({ setUser }) => {
         }
       });
     } else {
-      handleNavClick(); // vẫn xử lý bình thường nếu đã login
+      handleNavClick();
     }
   };
 

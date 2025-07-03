@@ -458,7 +458,7 @@ export const createPayment = async (paymentData) => {
   }
 };
 
-// Lấy booking theo bookingId
+// Lấy booking theo bookingId (sử dụng getOneBooking)
 export const getBookingById = async (bookingId) => {
   try {
     const response = await fetch(`${API_BASE_URL}/bookings`, {
@@ -536,5 +536,23 @@ export const updateStaff = async (staffData) => {
     return data.data || data;
   } catch (error) {
     throw new Error('Failed to update staff: ' + error.message);
+  }
+};
+
+// Lấy thông tin thanh toán theo bookingId
+export const getPaymentByBookingId = async (bookingId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/payments/booking`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ bookingId }),
+    });
+    if (!response.ok) throw new Error('Network response was not ok');
+    const data = await response.json();
+    return data.data || data;
+  } catch (error) {
+    throw new Error('Failed to fetch payment by bookingId: ' + error.message);
   }
 };
