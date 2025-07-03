@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Alert, Badge, Modal } from 'react-bootstrap';
-import { getPaymentByBookingId } from '../../services/api'; // Adjust the import path as needed
+// import { getPaymentByBookingId } from '../../services/api'; // Comment out API call for now
 
 const PaymentSuccess = () => {
   const location = useLocation();
@@ -14,50 +14,86 @@ const PaymentSuccess = () => {
   useEffect(() => {
     const query = new URLSearchParams(location.search);
     console.log('Query parameters:', query.toString());
+    
     const orderId = query.get('orderId');
-    console.log('orderId:', orderId);
     const resultCode = query.get('resultCode');
-    console.log('resultCode:', resultCode);
+    const amount = query.get('amount');
+    const partnerCode = query.get('partnerCode');
+    const message = query.get('message');
+    
+    console.log('Payment callback data:', { orderId, resultCode, amount, partnerCode, message });
 
-    if (orderId && resultCode === 0) {
-      const bookingId = orderId.split('_')[1];
+    if (orderId && resultCode === '0' && partnerCode === 'MOMO') {
+      // Extract bookingId from orderId format: MOMO_ADNLAB354617_1751536064022
+      const matches = orderId.match(/MOMO_ADNLAB(\d+)_/);
+      const bookingId = matches ? matches[1] : null;
+      
+      console.log('Extracted bookingId:', bookingId);
+      
+      if (!bookingId) {
+        console.error('Could not extract bookingId from orderId:', orderId);
+        return;
+      }
 
-      getPaymentByBookingId(bookingId)
-        .then((dataList) => {
-          const payment = dataList?.[0];
-          console.log('Payment data:', payment);
-          const booking = payment?.booking;
-          console.log('Booking data:', booking);
-          if (!payment || !booking) throw new Error('Không tìm thấy thông tin thanh toán');
-          setPaymentResult({
-            bookingId: booking.id,
-            amount: payment.amount,
-            timestamp: payment.updatedAt,
-            paymentData: {
-              customerName: booking.user.fullname,
-              customerPhone: booking.user.phone,
-              customerEmail: booking.user.email
-            },
-            bookingData: {
-              serviceType: booking.service.category.hasLegalValue ? 'legal' : 'civil',
-              collectionMethod: booking.method.id,
-              appointmentDate: booking.timeSlot.slotDate,
-              appointmentTime: `${booking.timeSlot.startTime} - ${booking.timeSlot.endTime}`
-            }
-          });
-          console.log('Payment result:', paymentResult);
-          setPaymentMethodInfo({
-            id: payment.paymentMethod?.toLowerCase() || 'momo',
-            name: 'Ví MoMo',
-            type: 'online'
-          });
-        })
-        .catch((err) => {
-          console.error('❌ Lỗi khi fetch thanh toán:', err);
-          //navigate('/');
-        });
+      // Create payment result from URL parameters
+      setPaymentResult({
+        bookingId: bookingId,
+        orderId: orderId,
+        amount: parseInt(amount) || 0,
+        timestamp: new Date().toISOString(),
+        resultCode: resultCode,
+        message: message,
+        paymentData: {
+          customerName: 'Khách hàng', // Default values since we don't have API data
+          customerPhone: 'N/A',
+          customerEmail: 'N/A'
+        },
+        bookingData: {
+          serviceType: 'unknown',
+          collectionMethod: 'unknown',
+          appointmentDate: 'N/A',
+          appointmentTime: 'N/A'
+        }
+      });
+      
+      setPaymentMethodInfo({
+        id: 'momo',
+        name: 'Ví MoMo',
+        type: 'online'
+      });
+
+      // Try to fetch API data in the background (optional)
+      // getPaymentByBookingId(bookingId)
+      //   .then((dataList) => {
+      //     const payment = dataList?.[0];
+      //     const booking = payment?.booking;
+      //     if (payment && booking) {
+      //       // Update with real data if API succeeds
+      //       setPaymentResult(prev => ({
+      //         ...prev,
+      //         paymentData: {
+      //           customerName: booking.user.fullname,
+      //           customerPhone: booking.user.phone,
+      //           customerEmail: booking.user.email
+      //         },
+      //         bookingData: {
+      //           serviceType: booking.service.category.hasLegalValue ? 'legal' : 'civil',
+      //           collectionMethod: booking.method.id,
+      //           appointmentDate: booking.timeSlot.slotDate,
+      //           appointmentTime: `${booking.timeSlot.startTime} - ${booking.timeSlot.endTime}`
+      //         }
+      //       }));
+      //     }
+      //   })
+      //   .catch((err) => {
+      //     console.warn('⚠️ Không thể tải thông tin chi tiết từ API:', err);
+      //     // Don't navigate away, just use URL parameters
+      //   });
+    } else if (resultCode && resultCode !== '0') {
+      // Payment failed
+      console.error('Payment failed with resultCode:', resultCode);
     } else {
-      // navigate('/');
+      console.log('No payment callback detected');
     }
   }, [location, navigate]);
 
