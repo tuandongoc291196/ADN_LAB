@@ -215,6 +215,7 @@ const AppointmentBooking = () => {
             })) : []
           }
         }));
+        setCurrentStep(2);
       }
     }
   }, [location.state, services]); // Chạy khi có service được chọn từ page trước
