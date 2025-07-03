@@ -13,19 +13,22 @@ const PaymentSuccess = () => {
 
   useEffect(() => {
     const query = new URLSearchParams(location.search);
+    console.log('Query parameters:', query.toString());
     const orderId = query.get('orderId');
+    console.log('orderId:', orderId);
     const resultCode = query.get('resultCode');
+    console.log('resultCode:', resultCode);
 
-    if (orderId && resultCode === '0') {
+    if (orderId && resultCode === 0) {
       const bookingId = orderId.split('_')[1];
 
       getPaymentByBookingId(bookingId)
         .then((dataList) => {
           const payment = dataList?.[0];
+          console.log('Payment data:', payment);
           const booking = payment?.booking;
-
+          console.log('Booking data:', booking);
           if (!payment || !booking) throw new Error('Không tìm thấy thông tin thanh toán');
-
           setPaymentResult({
             bookingId: booking.id,
             amount: payment.amount,
@@ -42,7 +45,7 @@ const PaymentSuccess = () => {
               appointmentTime: `${booking.timeSlot.startTime} - ${booking.timeSlot.endTime}`
             }
           });
-
+          console.log('Payment result:', paymentResult);
           setPaymentMethodInfo({
             id: payment.paymentMethod?.toLowerCase() || 'momo',
             name: 'Ví MoMo',
@@ -51,27 +54,13 @@ const PaymentSuccess = () => {
         })
         .catch((err) => {
           console.error('❌ Lỗi khi fetch thanh toán:', err);
-          navigate('/');
+          //navigate('/');
         });
     } else {
-      navigate('/');
+      // navigate('/');
     }
   }, [location, navigate]);
 
-  useEffect(() => {
-    const query = new URLSearchParams(location.search);
-    console.log('🔍 Current URL query parameters:', query.toString());
-    const resultCode = query.get('resultCode');
-    const orderId = query.get('orderId');
-
-    if (resultCode === '0' && orderId?.startsWith('MOMO')) {
-      // ✅ Nếu là thanh toán momo thành công
-      navigate(`/payment-success${location.search}`, { replace: true });
-    } else {
-      // ❌ Không phải redirect từ momo hoặc thất bại → có thể giữ nguyên hoặc redirect về trang chủ
-      console.log('🔁 Không phải redirect từ MoMo thành công. Giữ nguyên trang.');
-    }
-  }, [location, navigate]);
   // Countdown for automatic redirect
   useEffect(() => {
     if (paymentResult && paymentMethodInfo?.type === 'online') {
