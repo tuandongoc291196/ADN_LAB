@@ -1,6 +1,6 @@
 const { dataConnect } = require("../../config/firebase.js");
 const { processMomoPayment} = require('./momoPayment');
-const { processZaloPayPayment } = require('./zaloPayPayment.js');
+const { processZaloPayPayment, getPaymentDataZALOPAY } = require('./zaloPayPayment.js');
 const { checkPaymentStatus } = require('./paymentUtils');
 const {checkBookingExists} = require('../bookings/bookingUtils');
 const {addBookingHistory} = require('../bookingHistory/addBookingHistory');
@@ -40,30 +40,21 @@ const addPayment = async (req, res) => {
     if (bookingHistory && bookingHistory.length > 0) {
       const latestStatus = bookingHistory[0].status;
       console.log("Latest booking status:", latestStatus);
-      if (latestStatus === "EXPIRED") {
+      if (!(latestStatus === "PENDING")) {
+        if (latestStatus === "PENDING_PAYMENT") {
+          return res.status(400).json({
+            statusCode: 400,
+            status: "error",
+            message: "Booking is already pending payment"
+          });
+        }
         return res.status(400).json({
           statusCode: 400,
           status: "error",
-          message: "Cannot process payment for expired booking"
-        });
-      }
-
-      if (latestStatus === "BOOKED") {
-        return res.status(400).json({
-          statusCode: 400,
-          status: "error",
-          message: "Payment has already been made for this booking"
+          message: "Booking is not in a valid state for payment. Current status: " + latestStatus
         });
       }
     }
-
-      if (latestStatus === "PENDING_PAYMENT") {
-        return res.status(400).json({
-          statusCode: 400,
-          status: "error",
-          message: "Payment is already pending for this booking"
-        });
-      }
 
     const ADD_PAYMENT_MUTATION = `
       mutation CreatePayment($id: String!, $bookingId: String!, $amount: Float!, $paymentMethod: String!, $status: String, $paymentDate: Date, $refundDetail: String, $otherDetails: [String!]) @auth(level: USER) {
@@ -89,6 +80,7 @@ const addPayment = async (req, res) => {
     if (paymentMethod === "MOMO") {
       console.log("Making MOMO payment");
       console.log(req.body);
+      await addBookingHistory(bookingId, "PAYMENT_INITIATED", "Payment is initiated, waiting for user to complete payment", paymentMethod);
       const paymentId = `MOMO_${bookingId}_${new Date().getTime()}`;
       result = await processMomoPayment(amount, paymentId);
       console.log(result);
@@ -123,6 +115,7 @@ const addPayment = async (req, res) => {
           } else {
             console.log('Payment failed or timed out');
             await addBookingHistory(bookingId, "PAYMENT_FAILED", "Payment failed or timed out");
+            await addBookingHistory(bookingId, "PENDING", "Payment is pending, waiting for user to complete payment", paymentMethod);
           }
         })
         .catch(error => {
@@ -141,10 +134,47 @@ const addPayment = async (req, res) => {
       result = await processZaloPayPayment(amount, paymentId);
       console.log(result);
 
+      checkPaymentStatus('ZALOPAY', result)
+        .then(async (isSuccessful) => {
+          if (isSuccessful) {
+            console.log('Payment confirmed successfully');
+            await addBookingHistory(bookingId, "PAYMENT_CONFIRMED", "Payment is successful, ", paymentMethod);
+            await addBookingHistory(bookingId, "BOOKED", "Booking placed successfully");
+            const otherDetails = await getPaymentDataZALOPAY(result.app_trans_id);
+            console.log("Other details from ZALOPAY:", otherDetails);
+            const paymentVariables = {
+              id: paymentId,
+              bookingId: bookingId,
+              amount: parseFloat(amount),
+              paymentMethod: "ZALOPAY",
+              status: "success",
+              paymentDate: new Date().toISOString(),
+              refundDetail: null,
+              otherDetails: [JSON.stringify(otherDetails)]
+            };
+
+            const response = await dataConnect.executeGraphql(ADD_PAYMENT_MUTATION, {
+              variables: paymentVariables
+            });
+            const responseData = response.data.payment_insert;
+            if (!responseData) {
+              throw new Error("Failed to add payment record");
+            }
+            console.log("Payment record added successfully:", responseData);
+          } else {
+            console.log('Payment failed or timed out');
+            await addBookingHistory(bookingId, "PAYMENT_FAILED", "Payment failed or timed out");
+            await addBookingHistory(bookingId, "PENDING", "Payment is pending, waiting for user to complete payment", paymentMethod);
+          }
+        })
+        .catch(error => {
+          console.error('Error in payment status checking:', error);
+        });
+
       return res.status(200).json({
         statusCode: 200,
         status: "success",
-        message: "VNPAY payment initiated. Status will be checked automatically for 15 minutes.",
+        message: "ZALOPAY payment initiated. Status will be checked automatically for 15 minutes.",
         data: result.order_url
       });
     } else if (paymentMethod === "CASH") {

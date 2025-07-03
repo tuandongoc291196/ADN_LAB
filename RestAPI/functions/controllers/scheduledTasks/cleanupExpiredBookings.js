@@ -14,7 +14,7 @@ const cleanupExpiredBookings = async () => {
         
         console.log(`Processing booking ${booking.id} with latest history:`, latestHistory);
         console.log(`Status of latest history:`, latestHistory[0]?.status);
-        if (latestHistory[0]?.status === "PENDING" || latestHistory[0]?.status === "PAYMENT_FAILED" || latestHistory[0]?.status === "PENDING_PAYMENT") {
+        if (latestHistory[0]?.status === "PENDING") {
           console.log(`Marking expired booking as cancelled: ${booking.id}`);
           await updateStaffSlotCount(booking.staffId, "decrease");
           await updateTimeSlot(booking.timeSlotId, "decrease");
