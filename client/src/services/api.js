@@ -458,7 +458,7 @@ export const createPayment = async (paymentData) => {
   }
 };
 
-// Lấy booking theo bookingId
+// Lấy booking theo bookingId (sử dụng getOneBooking)
 export const getBookingById = async (bookingId) => {
   try {
     const response = await fetch(`${API_BASE_URL}/bookings`, {
