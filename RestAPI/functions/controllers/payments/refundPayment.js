@@ -45,7 +45,7 @@ const refundPayment = async (req, res) => {
       });
     }
 
-    if (payment.status !== "success") {
+    if (payment.status !== "SUCCESS") {
       return res.status(400).json({
         statusCode: 400,
         status: "error",
@@ -75,6 +75,13 @@ const refundPayment = async (req, res) => {
       };
 
       console.log("Response data for MOMO refund:", responseData);
+    } else if (payment.paymentMethod === "ZALOPAY") {
+      // ZALOPAY refund logic would go here
+      return res.status(501).json({
+        statusCode: 501,
+        status: "error",
+        message: "ZALOPAY refund not implemented yet"
+      });
     }
 
     res.status(200).json({

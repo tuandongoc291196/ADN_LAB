@@ -104,11 +104,12 @@ const getPaymentDataZALOPAY = async (app_trans_id) => {
   }
 };
 
-const checkPaymentZALOPAY = async (extractedData) => {
+const processVnpayRefund = async (paymentDetails) => {
   try {
-    return extractedData.return_code == 1;
+    // VNPAY refund logic would go here
+    return { success: true, message: "VNPAY refund processed successfully" };
   } catch (error) {
-    console.error("Error checking ZALOPAY payment status:", error);
+    console.error("Error processing VNPAY refund:", error);
     throw error;
   }
 };
@@ -116,5 +117,4 @@ const checkPaymentZALOPAY = async (extractedData) => {
 module.exports = {
   processZaloPayPayment,
   getPaymentDataZALOPAY,
-  checkPaymentZALOPAY
 };

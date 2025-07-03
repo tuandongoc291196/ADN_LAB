@@ -33,7 +33,7 @@ const checkPaymentStatus = async (paymentMethod, paymentResult) => {
             return;
           }
 
-          if (statusResult && statusResult.resultCode && statusResult.resultCode !== 1000) {
+          if (statusResult && statusResult.resultCode && statusResult.resultCode !== 1000 && statusResult.resultCode !== 7002) {
             console.log(`Payment failed with resultCode: ${statusResult.resultCode}`);
             resolve(false);
             return;

@@ -20,11 +20,11 @@ const addPayment = async (req, res) => {
       });
     }
 
-    if (!paymentMethod) {
+    if (!paymentMethod || (paymentMethod !== "MOMO" && paymentMethod !== "ZALOPAY" && paymentMethod !== "CASH")) {
       return res.status(400).json({
         statusCode: 400,
         status: "error", 
-        message: "paymentMethod is required"
+        message: "paymentMethod is required, must be one of: MOMO/ZALOPAY/CASH"
       });
     }
 
@@ -98,7 +98,7 @@ const addPayment = async (req, res) => {
               bookingId: bookingId,
               amount: parseFloat(amount),
               paymentMethod: "MOMO",
-              status: "success",
+              status: "SUCCESS",
               paymentDate: new Date().toISOString(),
               refundDetail: null,
               otherDetails: [JSON.stringify(otherDetails)]
@@ -180,12 +180,11 @@ const addPayment = async (req, res) => {
     } else if (paymentMethod === "CASH") {
       console.log("Making CASH payment");
       await addBookingHistory(bookingId, "BOOKED", "Booking placed successfully");
-    }
-    else {
+    } else {
       return res.status(400).json({
         statusCode: 400,
         status: "error",
-        message: "Invalid payment choice. Supported options: MOMO"
+        message: "Invalid payment choice. Supported options: MOMO/ZALOPAY/CASH"
       });
     }
     

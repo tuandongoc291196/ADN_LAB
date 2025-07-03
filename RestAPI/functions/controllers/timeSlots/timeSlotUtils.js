@@ -113,9 +113,49 @@ const isSlotBookingAvailable = async (startTime, endTime, slotDate) => {
   }
 };
 
+const isTimeFormatValid = (startTime, endTime) => {
+  try {
+    const validateTime = (timeStr) => {
+      const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+      if (!timeRegex.test(timeStr)) {
+        return false;
+      }
+      
+      const [hours, minutes] = timeStr.split(':').map(Number);
+      
+      if (hours < 0 || hours > 23) {
+        return false;
+      }
+      
+      if (minutes < 0 || minutes > 59) {
+        return false;
+      }
+      
+      return true;
+    };
+
+    if (!validateTime(startTime)) {
+      return false;
+    }
+
+    if (!validateTime(endTime)) {
+      return false;
+    }
+
+    if (startTime >= endTime) {
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Error validating time format:", error);
+    return false;
+  }
+};
 
 module.exports = {
   checkTimeSlotExists,
   isSlotTimePassed,
   isSlotBookingAvailable,
+  isTimeFormatValid,
 };
