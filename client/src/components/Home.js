@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Badge } from 'react-bootstrap';
-import { getAllServices, getServicesByCategory, getAllMethods, getMethodsByServiceId } from '../services/api';
+import { getAllServices, getAllMethods, getMethodsByServiceId } from '../services/api';
 import { enrichMethodData } from './data/services-data';
 import Swal from 'sweetalert2';
 
@@ -104,7 +104,7 @@ const Home = () => {
       setLoading(true);
       const response = await getAllServices();
       console.log('Home - Services API response:', response);
-      
+
       if (response && Array.isArray(response)) {
         setServices(response);
         // Fetch methods for each service
@@ -125,7 +125,7 @@ const Home = () => {
     try {
       const response = await getAllMethods();
       console.log('Home - Methods API response:', response);
-      
+
       if (response && Array.isArray(response)) {
         setMethods(response);
       } else {
@@ -140,13 +140,13 @@ const Home = () => {
   const fetchMethodsForServices = async (servicesList) => {
     try {
       const methodsMap = {};
-      
+
       // Fetch methods for each service
       for (const service of servicesList) {
         try {
           const serviceMethods = await getMethodsByServiceId(service.id);
           console.log(`Methods for service ${service.id}:`, serviceMethods);
-          
+
           if (serviceMethods && Array.isArray(serviceMethods)) {
             methodsMap[service.id] = serviceMethods;
           } else {
@@ -157,7 +157,7 @@ const Home = () => {
           methodsMap[service.id] = [];
         }
       }
-      
+
       console.log('Final serviceMethods map:', methodsMap);
       setServiceMethods(methodsMap);
     } catch (err) {
@@ -214,7 +214,7 @@ const Home = () => {
       if (service.isActive === false) {
         return false;
       }
-      
+
       const serviceType = getServiceTypeFromCategory(service.category);
       const isFeatured = service.featured === true;
       // Chỉ log khi cần debug
@@ -224,14 +224,14 @@ const Home = () => {
       return serviceType === 'administrative' && isFeatured;
     })
     .slice(0, 2);
-  
+
   const featuredCivilServices = services
     .filter(service => {
       // Chỉ hiển thị dịch vụ đang active
       if (service.isActive === false) {
         return false;
       }
-      
+
       const serviceType = getServiceTypeFromCategory(service.category);
       const isFeatured = service.featured === true;
       // Chỉ log khi cần debug
@@ -251,7 +251,7 @@ const Home = () => {
     const featuredServices = services.filter(service => service.featured === true).length;
     const adminServices = services.filter(service => getServiceTypeFromCategory(service.category) === 'administrative').length;
     const civilServices = services.filter(service => getServiceTypeFromCategory(service.category) === 'civil').length;
-    
+
     console.log(`Total services: ${totalServices}`);
     console.log(`Featured services: ${featuredServices}`);
     console.log(`Admin services: ${adminServices}`);
@@ -341,14 +341,14 @@ const Home = () => {
   };
 
   const getServiceTypeBadge = (serviceType) => {
-    return serviceType === 'administrative' 
+    return serviceType === 'administrative'
       ? <Badge bg="warning" text="dark" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}>ADN Hành chính</Badge>
       : <Badge bg="success" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}>ADN Dân sự</Badge>;
   };
 
   const getMethodBadges = (serviceId) => {
     const serviceMethodsList = serviceMethods[serviceId] || [];
-    
+
     if (serviceMethodsList.length === 0) {
       return (
         <Badge bg="secondary" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}>
@@ -357,14 +357,14 @@ const Home = () => {
         </Badge>
       );
     }
-    
+
     // Enrich methods với icon và color từ METHOD_MAPPING
     const enrichedMethods = enrichMethodData(serviceMethodsList);
-    
+
     return enrichedMethods.map(method => (
-      <Badge 
-        key={method.id} 
-        bg={method.color || 'secondary'} 
+      <Badge
+        key={method.id}
+        bg={method.color || 'secondary'}
         className="me-2 mb-2"
         style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}
       >
@@ -423,9 +423,9 @@ const Home = () => {
                   </Button>
                 </Col>
                 <Col sm={6}>
-                  <Button 
-                    size="lg" 
-                    variant="outline-light" 
+                  <Button
+                    size="lg"
+                    variant="outline-light"
                     onClick={(e) => handleBookingClick(e, null)}
                     className="w-100"
                   >
@@ -451,9 +451,9 @@ const Home = () => {
             </Col>
             <Col lg={6} className="text-center">
               <div className="hero-image">
-                <img 
-                  src="https://firebasestorage.googleapis.com/v0/b/su25-swp391-g8.firebasestorage.app/o/process-thumb.png?alt=media&token=4bcf6823-6ce1-44b6-8622-b265d7d32a12" 
-                  alt="DNA Testing" 
+                <img
+                  src="https://firebasestorage.googleapis.com/v0/b/su25-swp391-g8.firebasestorage.app/o/process-thumb.png?alt=media&token=4bcf6823-6ce1-44b6-8622-b265d7d32a12"
+                  alt="DNA Testing"
                   className="img-fluid"
                 />
               </div>
@@ -469,7 +469,7 @@ const Home = () => {
             <Col md={8}>
               <h5 className="mb-0">
                 <i className="bi bi-telephone me-2"></i>
-                Cần tư vấn chọn dịch vụ phù hợp? Gọi ngay hotline: 
+                Cần tư vấn chọn dịch vụ phù hợp? Gọi ngay hotline:
                 <strong className="ms-2">1900 1234</strong>
               </h5>
             </Col>
@@ -509,7 +509,7 @@ const Home = () => {
                       <li className="mb-2"><i className="bi bi-check-circle text-success me-2"></i>Giá thành hợp lý</li>
                     </ul>
                   </div>
-                  
+
                   <div className="mb-4">
                     <h6 className="text-success mb-3">Phù hợp cho:</h6>
                     <ul className="small text-muted">
@@ -546,7 +546,7 @@ const Home = () => {
                       <li className="mb-2"><i className="bi bi-check-circle text-warning me-2"></i>Tuân thủ tiêu chuẩn quốc tế</li>
                     </ul>
                   </div>
-                  
+
                   <div className="mb-4">
                     <h6 className="text-warning mb-3">Phù hợp cho:</h6>
                     <ul className="small text-muted">
@@ -668,8 +668,8 @@ const Home = () => {
               <Row>
                 {featuredAdminServices.map(service => (
                   <Col key={service.id} lg={6} className="mb-4">
-                    <Card 
-                      className="h-100 border-0 shadow-sm" 
+                    <Card
+                      className="h-100 border-0 shadow-sm"
                       style={{
                         ...styles.serviceCardAdmin,
                         ...(hoveredService === service.id ? styles.serviceCardAdminHover : {})
@@ -701,8 +701,8 @@ const Home = () => {
                           <Button variant="outline-warning" as={Link} to={`/services/${encodeURIComponent(service.id)}`}>
                             Xem chi tiết
                           </Button>
-                          <Button 
-                            variant="warning" 
+                          <Button
+                            variant="warning"
                             onClick={(e) => handleBookingClick(e, service.id)}
                           >
                             Đặt lịch ngay
@@ -727,8 +727,8 @@ const Home = () => {
               <Row>
                 {featuredCivilServices.map(service => (
                   <Col key={service.id} lg={6} className="mb-4">
-                    <Card 
-                      className="h-100 border-0 shadow-sm" 
+                    <Card
+                      className="h-100 border-0 shadow-sm"
                       style={{
                         ...styles.serviceCardCivil,
                         ...(hoveredService === service.id ? styles.serviceCardCivilHover : {})
@@ -760,8 +760,8 @@ const Home = () => {
                           <Button variant="outline-success" as={Link} to={`/services/${encodeURIComponent(service.id)}`}>
                             Xem chi tiết
                           </Button>
-                          <Button 
-                            variant="success" 
+                          <Button
+                            variant="success"
                             onClick={(e) => handleBookingClick(e, service.id)}
                           >
                             Đặt lịch ngay
@@ -845,7 +845,7 @@ const Home = () => {
                       "{testimonial.comment}"
                     </Card.Text>
                     <div className="d-flex align-items-center">
-                      <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" style={{width: '50px', height: '50px'}}>
+                      <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" style={{ width: '50px', height: '50px' }}>
                         <i className="bi bi-person text-white fs-4"></i>
                       </div>
                       <div>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Alert, Badge, Modal } from 'react-bootstrap';
+import { getPaymentByBookingId } from '../../services/api'; // Adjust the import path as needed
 
 const PaymentSuccess = () => {
   const location = useLocation();
@@ -11,15 +12,66 @@ const PaymentSuccess = () => {
   const [countdown, setCountdown] = useState(10);
 
   useEffect(() => {
-    if (location.state && location.state.paymentResult) {
-      setPaymentResult(location.state.paymentResult);
-      setPaymentMethodInfo(location.state.paymentMethodInfo);
+    const query = new URLSearchParams(location.search);
+    const orderId = query.get('orderId');
+    const resultCode = query.get('resultCode');
+
+    if (orderId && resultCode === '0') {
+      const bookingId = orderId.split('_')[1];
+
+      getPaymentByBookingId(bookingId)
+        .then((dataList) => {
+          const payment = dataList?.[0];
+          const booking = payment?.booking;
+
+          if (!payment || !booking) throw new Error('Không tìm thấy thông tin thanh toán');
+
+          setPaymentResult({
+            bookingId: booking.id,
+            amount: payment.amount,
+            timestamp: payment.updatedAt,
+            paymentData: {
+              customerName: booking.user.fullname,
+              customerPhone: booking.user.phone,
+              customerEmail: booking.user.email
+            },
+            bookingData: {
+              serviceType: booking.service.category.hasLegalValue ? 'legal' : 'civil',
+              collectionMethod: booking.method.id,
+              appointmentDate: booking.timeSlot.slotDate,
+              appointmentTime: `${booking.timeSlot.startTime} - ${booking.timeSlot.endTime}`
+            }
+          });
+
+          setPaymentMethodInfo({
+            id: payment.paymentMethod?.toLowerCase() || 'momo',
+            name: 'Ví MoMo',
+            type: 'online'
+          });
+        })
+        .catch((err) => {
+          console.error('❌ Lỗi khi fetch thanh toán:', err);
+          navigate('/');
+        });
     } else {
-      // Redirect if no payment data
       navigate('/');
     }
-  }, [location.state, navigate]);
+  }, [location, navigate]);
 
+  useEffect(() => {
+    const query = new URLSearchParams(location.search);
+    console.log('🔍 Current URL query parameters:', query.toString());
+    const resultCode = query.get('resultCode');
+    const orderId = query.get('orderId');
+
+    if (resultCode === '0' && orderId?.startsWith('MOMO')) {
+      // ✅ Nếu là thanh toán momo thành công
+      navigate(`/payment-success${location.search}`, { replace: true });
+    } else {
+      // ❌ Không phải redirect từ momo hoặc thất bại → có thể giữ nguyên hoặc redirect về trang chủ
+      console.log('🔁 Không phải redirect từ MoMo thành công. Giữ nguyên trang.');
+    }
+  }, [location, navigate]);
   // Countdown for automatic redirect
   useEffect(() => {
     if (paymentResult && paymentMethodInfo?.type === 'online') {
@@ -45,10 +97,10 @@ const PaymentSuccess = () => {
   };
 
   const formatDate = (dateString) => {
-    const options = { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
+    const options = {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -85,13 +137,13 @@ const PaymentSuccess = () => {
       return [
         'Bạn sẽ nhận email xác nhận trong vài phút',
         'Kiểm tra SMS để nhận thông tin chi tiết',
-        bookingData?.collectionMethod === 'self-sample' 
-          ? 'Kit xét nghiệm sẽ được gửi trong 1-2 ngày' 
+        bookingData?.collectionMethod === 'self-sample'
+          ? 'Kit xét nghiệm sẽ được gửi trong 1-2 ngày'
           : 'Nhân viên sẽ liên hệ xác nhận lịch hẹn',
         'Kết quả sẽ có trong 5-7 ngày làm việc'
       ];
     }
-    
+
     if (method?.id === 'bank-transfer') {
       return [
         'Thực hiện chuyển khoản theo thông tin đã cung cấp',
@@ -100,18 +152,18 @@ const PaymentSuccess = () => {
         'Dịch vụ sẽ được kích hoạt ngay sau khi xác nhận thanh toán'
       ];
     }
-    
+
     if (method?.id === 'cash-on-service') {
       return [
         'Chuẩn bị đầy đủ giấy tờ cần thiết',
-        bookingData?.collectionMethod === 'at-facility' 
+        bookingData?.collectionMethod === 'at-facility'
           ? 'Có mặt đúng giờ tại cơ sở để thanh toán và xét nghiệm'
           : 'Chuẩn bị tiền mặt để thanh toán cho nhân viên',
         'Nhận biên lai và giữ lại để theo dõi',
         'Kết quả sẽ có trong 5-7 ngày làv việc'
       ];
     }
-    
+
     return ['Đặt lịch đã được xác nhận thành công'];
   };
 
@@ -128,9 +180,9 @@ const PaymentSuccess = () => {
       paymentMethod: paymentMethodInfo.name,
       timestamp: paymentResult.timestamp
     };
-    
+
     const dataStr = JSON.stringify(receiptData, null, 2);
-    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
     link.href = url;
@@ -262,7 +314,7 @@ const PaymentSuccess = () => {
                       <strong>Phương thức:</strong> {paymentMethodInfo.name}
                     </div>
                     <div className="mb-2">
-                      <strong>Tổng tiền:</strong> 
+                      <strong>Tổng tiền:</strong>
                       <span className="text-success fw-bold ms-2">
                         {formatCurrency(paymentResult.amount)}
                       </span>
@@ -270,8 +322,8 @@ const PaymentSuccess = () => {
                     <div className="mb-2">
                       <strong>Trạng thái:</strong>
                       <Badge bg={statusColor} className="ms-2">
-                        {paymentMethodInfo?.type === 'online' ? 'Đã thanh toán' : 
-                         paymentMethodInfo?.id === 'bank-transfer' ? 'Chờ xác nhận' : 'Chờ thanh toán'}
+                        {paymentMethodInfo?.type === 'online' ? 'Đã thanh toán' :
+                          paymentMethodInfo?.id === 'bank-transfer' ? 'Chờ xác nhận' : 'Chờ thanh toán'}
                       </Badge>
                     </div>
                     <div className="mb-2">
@@ -326,8 +378,8 @@ const PaymentSuccess = () => {
                 <ol className="list-unstyled">
                   {nextSteps.map((step, index) => (
                     <li key={index} className="mb-3 d-flex align-items-start">
-                      <div className="bg-info bg-opacity-10 rounded-circle p-2 me-3 mt-1" 
-                           style={{ minWidth: '30px', height: '30px', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                      <div className="bg-info bg-opacity-10 rounded-circle p-2 me-3 mt-1"
+                        style={{ minWidth: '30px', height: '30px', fontSize: '0.8rem', fontWeight: 'bold' }}>
                         {index + 1}
                       </div>
                       <div className="small">{step}</div>
@@ -475,8 +527,8 @@ const PaymentSuccess = () => {
                   Xét nghiệm ADN {paymentResult.bookingData.serviceType === 'civil' ? 'Dân sự' : 'Hành chính'}
                   <br />
                   <small className="text-muted">
-                    Phương thức: {paymentResult.bookingData.collectionMethod === 'self-sample' ? 'Tự lấy mẫu' : 
-                                 paymentResult.bookingData.collectionMethod === 'home-visit' ? 'Tại nhà' : 'Tại cơ sở'}
+                    Phương thức: {paymentResult.bookingData.collectionMethod === 'self-sample' ? 'Tự lấy mẫu' :
+                      paymentResult.bookingData.collectionMethod === 'home-visit' ? 'Tại nhà' : 'Tại cơ sở'}
                   </small>
                 </td>
                 <td>1</td>
