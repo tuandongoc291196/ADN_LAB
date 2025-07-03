@@ -19,14 +19,14 @@ const PaymentSuccess = () => {
     const resultCode = query.get('resultCode');
     console.log('resultCode:', resultCode);
 
-    if (orderId && resultCode === 0) {
+    if (orderId && String(resultCode) === '0') {
       const bookingId = orderId.split('_')[1];
 
       getPaymentByBookingId(bookingId)
         .then((dataList) => {
           const payment = dataList?.[0];
           console.log('Payment data:', payment);
-          const booking = payment?.booking;
+          const booking = payment?.bookingId;
           console.log('Booking data:', booking);
           if (!payment || !booking) throw new Error('Không tìm thấy thông tin thanh toán');
           setPaymentResult({
