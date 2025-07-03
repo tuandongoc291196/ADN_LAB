@@ -4,8 +4,8 @@ try {
     const secretKey = 'K951B6PE1waDMi640xX08PD3vg6EkVlz';
     const orderInfo = 'Pay with MoMo';
     const partnerCode = 'MOMO';
-    const redirectUrl = 'http://localhost:5173/';
-    const ipnUrl = 'http://localhost:5173/';
+    const redirectUrl = 'http://localhost:3000/payment-success';
+    const ipnUrl = 'http://localhost:3000/';
     const requestType = "payWithMethod";
     const extraData = '';
     const orderGroupId = '';

@@ -439,6 +439,10 @@ const getOneBookingById = async (bookingId) => {
           }
           service {
             id
+            categoryId
+            category {
+              name
+            }
           }
           timeSlot {
             id

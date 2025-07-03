@@ -80,7 +80,6 @@ const addPayment = async (req, res) => {
     if (paymentMethod === "MOMO") {
       console.log("Making MOMO payment");
       console.log(req.body);
-      await addBookingHistory(bookingId, "PAYMENT_INITIATED", "Payment is initiated, waiting for user to complete payment", paymentMethod);
       const paymentId = `MOMO_${bookingId}_${new Date().getTime()}`;
       result = await processMomoPayment(amount, paymentId);
       console.log(result);

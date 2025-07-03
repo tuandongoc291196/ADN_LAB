@@ -102,8 +102,12 @@ const getAllServices = async (req, res) => {
                     isActive
                     createdAt
                     updatedAt
+                    methods_via_ServiceMethod {
+                      id
+                      name
+                    }
                 }
-                }
+            }
         `;
 
         const response = await dataConnect.executeGraphql(GET_SERVICES_QUERY);

@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Badge } from 'react-bootstrap';
-import { getAllServices, getServicesByCategory, getAllMethods, getMethodsByServiceId } from '../services/api';
+import { getAllServices, getServicesByCategory, getAllMethods } from '../services/api';
 import { enrichMethodData } from './data/services-data';
 import Swal from 'sweetalert2';
 
 const Home = () => {
   const [services, setServices] = useState([]);
   const [methods, setMethods] = useState([]);
-  const [serviceMethods, setServiceMethods] = useState({}); // { serviceId: [methods] }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [hoveredService, setHoveredService] = useState(null);
@@ -107,8 +106,6 @@ const Home = () => {
       
       if (response && Array.isArray(response)) {
         setServices(response);
-        // Fetch methods for each service
-        await fetchMethodsForServices(response);
       } else {
         setServices([]);
       }
@@ -134,35 +131,6 @@ const Home = () => {
     } catch (err) {
       console.error('Error fetching methods:', err);
       setMethods([]);
-    }
-  };
-
-  const fetchMethodsForServices = async (servicesList) => {
-    try {
-      const methodsMap = {};
-      
-      // Fetch methods for each service
-      for (const service of servicesList) {
-        try {
-          const serviceMethods = await getMethodsByServiceId(service.id);
-          console.log(`Methods for service ${service.id}:`, serviceMethods);
-          
-          if (serviceMethods && Array.isArray(serviceMethods)) {
-            methodsMap[service.id] = serviceMethods;
-          } else {
-            methodsMap[service.id] = [];
-          }
-        } catch (err) {
-          console.error(`Error fetching methods for service ${service.id}:`, err);
-          methodsMap[service.id] = [];
-        }
-      }
-      
-      console.log('Final serviceMethods map:', methodsMap);
-      setServiceMethods(methodsMap);
-    } catch (err) {
-      console.error('Error fetching methods for services:', err);
-      setServiceMethods({});
     }
   };
 
@@ -346,8 +314,9 @@ const Home = () => {
       : <Badge bg="success" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}>ADN Dân sự</Badge>;
   };
 
-  const getMethodBadges = (serviceId) => {
-    const serviceMethodsList = serviceMethods[serviceId] || [];
+  const getMethodBadges = (service) => {
+    // Get methods directly from service data
+    const serviceMethodsList = service.methods_via_ServiceMethod || [];
     
     if (serviceMethodsList.length === 0) {
       return (
@@ -694,7 +663,7 @@ const Home = () => {
                         <div className="mb-3">
                           <small className="text-muted d-block mb-2">Phương thức lấy mẫu:</small>
                           <div className="d-flex flex-wrap gap-1 justify-content-center">
-                            {getMethodBadges(service.id)}
+                            {getMethodBadges(service)}
                           </div>
                         </div>
                         <div className="d-grid gap-2">
@@ -753,7 +722,7 @@ const Home = () => {
                         <div className="mb-3">
                           <small className="text-muted d-block mb-2">Phương thức lấy mẫu:</small>
                           <div className="d-flex flex-wrap gap-1 justify-content-center">
-                            {getMethodBadges(service.id)}
+                            {getMethodBadges(service)}
                           </div>
                         </div>
                         <div className="d-grid gap-2">
