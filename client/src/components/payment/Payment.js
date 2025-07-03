@@ -22,16 +22,6 @@ const Payment = () => {
     // Payment methods configuration
     const paymentMethods = [
         {
-            id: 'vnpay',
-            name: 'VNPay',
-            description: 'Thanh toán qua cổng VNPay (Visa, Master, ATM)',
-            icon: 'bi-credit-card',
-            color: 'primary',
-            type: 'online',
-            fee: 0,
-            note: 'Thanh toán ngay, an toàn và bảo mật'
-        },
-        {
             id: 'momo',
             name: 'Ví MoMo',
             description: 'Thanh toán qua ví điện tử MoMo',
@@ -52,16 +42,6 @@ const Payment = () => {
             note: 'Ưu đãi và hoàn tiền hấp dẫn'
         },
         {
-            id: 'bank-transfer',
-            name: 'Chuyển khoản ngân hàng',
-            description: 'Chuyển khoản trực tiếp vào tài khoản công ty',
-            icon: 'bi-bank',
-            color: 'success',
-            type: 'manual',
-            fee: 0,
-            note: 'Xác nhận thanh toán trong 1-2 giờ'
-        },
-        {
             id: 'cash-on-service',
             name: 'Thanh toán khi nhận dịch vụ',
             description: 'Thanh toán bằng tiền mặt khi sử dụng dịch vụ',
@@ -70,22 +50,6 @@ const Payment = () => {
             type: 'offline',
             fee: 0,
             note: 'Phù hợp với dịch vụ tại cơ sở hoặc nhân viên đến nhà'
-        }
-    ];
-
-    // Bank account information
-    const bankAccounts = [
-        {
-            bank: 'Vietcombank',
-            accountNumber: '0123456789',
-            accountName: 'CONG TY TNHH ADN LAB',
-            branch: 'Chi nhánh Hà Nội'
-        },
-        {
-            bank: 'VietinBank',
-            accountNumber: '9876543210',
-            accountName: 'CONG TY TNHH ADN LAB',
-            branch: 'Chi nhánh TP.HCM'
         }
     ];
 
@@ -282,11 +246,6 @@ const Payment = () => {
         }
     };
 
-    const canPayOffline = () => {
-        const name = orderSummary?.methodName?.toLowerCase() || '';
-        return name.includes('tại lab'); // chỉ lab mới được offline
-    };
-
     return (
         <div>
             {/* Header */}
@@ -391,8 +350,13 @@ const Payment = () => {
                                     {paymentMethods.map(method => {
                                         const isCashMethod = method.id === 'cash-on-service';
                                         const methodName = orderSummary?.methodName?.toLowerCase() || '';
-                                        const isDisabledCash = isCashMethod && !methodName.includes('tại cơ sở');
 
+                                        // Các phương thức không được thanh toán tiền mặt
+                                        const disallowedCashMethods = ['nhân viên tới nhà lấy mẫu', 'lấy mẫu tại nhà'];
+
+                                        // Convert về lowercase để so sánh chính xác
+                                        const normalizedMethod = methodName.toLowerCase().trim();
+                                        const isDisabledCash = isCashMethod && disallowedCashMethods.includes(normalizedMethod);
                                         return (
                                             <Col key={method.id} md={6} className="mb-3">
                                                 <Card
@@ -466,36 +430,6 @@ const Payment = () => {
                                                             Đơn hàng sẽ được xử lý sau khi chúng tôi nhận được thanh toán (1-2 giờ).
                                                         </p>
                                                     </Alert>
-
-                                                    <Row>
-                                                        {bankAccounts.map((account, index) => (
-                                                            <Col md={6} key={index} className="mb-3">
-                                                                <Card className="border-success">
-                                                                    <Card.Body>
-                                                                        <h6 className="text-success mb-3">{account.bank}</h6>
-                                                                        <div className="mb-2">
-                                                                            <strong>Số tài khoản:</strong>
-                                                                            <div className="font-monospace text-primary">{account.accountNumber}</div>
-                                                                        </div>
-                                                                        <div className="mb-2">
-                                                                            <strong>Tên tài khoản:</strong>
-                                                                            <div>{account.accountName}</div>
-                                                                        </div>
-                                                                        <div className="mb-2">
-                                                                            <strong>Chi nhánh:</strong>
-                                                                            <div>{account.branch}</div>
-                                                                        </div>
-                                                                        <div className="mt-3">
-                                                                            <strong>Nội dung chuyển khoản:</strong>
-                                                                            <div className="font-monospace bg-light p-2 rounded small">
-                                                                                {paymentData.bankTransferNote}
-                                                                            </div>
-                                                                        </div>
-                                                                    </Card.Body>
-                                                                </Card>
-                                                            </Col>
-                                                        ))}
-                                                    </Row>
                                                 </div>
                                             )}
 
@@ -657,20 +591,6 @@ const Payment = () => {
                         </ul>
                     </Alert>
                     <p>Chọn một trong các tài khoản bên dưới để chuyển khoản:</p>
-                    <Row>
-                        {bankAccounts.map((account, index) => (
-                            <Col md={6} key={index} className="mb-3">
-                                <Card className="border-primary">
-                                    <Card.Body>
-                                        <h6 className="text-primary">{account.bank}</h6>
-                                        <div><strong>STK:</strong> {account.accountNumber}</div>
-                                        <div><strong>Tên:</strong> {account.accountName}</div>
-                                        <div><strong>Chi nhánh:</strong> {account.branch}</div>
-                                    </Card.Body>
-                                </Card>
-                            </Col>
-                        ))}
-                    </Row>
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" onClick={() => setShowBankModal(false)}>

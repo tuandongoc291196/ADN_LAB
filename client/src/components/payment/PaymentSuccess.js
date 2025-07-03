@@ -14,22 +14,22 @@ const PaymentSuccess = () => {
   useEffect(() => {
     const query = new URLSearchParams(location.search);
     console.log('Query parameters:', query.toString());
-    
+
     const orderId = query.get('orderId');
     const resultCode = query.get('resultCode');
     const amount = query.get('amount');
     const partnerCode = query.get('partnerCode');
     const message = query.get('message');
-    
+
     console.log('Payment callback data:', { orderId, resultCode, amount, partnerCode, message });
 
     if (orderId && resultCode === '0' && partnerCode === 'MOMO') {
       // Extract bookingId from orderId format: MOMO_ADNLAB354617_1751536064022
       const matches = orderId.match(/MOMO_ADNLAB(\d+)_/);
       const bookingId = matches ? matches[1] : null;
-      
+
       console.log('Extracted bookingId:', bookingId);
-      
+
       if (!bookingId) {
         console.error('Could not extract bookingId from orderId:', orderId);
         return;
@@ -55,7 +55,7 @@ const PaymentSuccess = () => {
           appointmentTime: 'N/A'
         }
       });
-      
+
       setPaymentMethodInfo({
         id: 'momo',
         name: 'Ví MoMo',
