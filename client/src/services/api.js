@@ -556,3 +556,25 @@ export const getPaymentByBookingId = async (bookingId) => {
     throw new Error('Failed to fetch payment by bookingId: ' + error.message);
   }
 };
+
+// Lấy danh sách booking theo userId
+export const getBookingByUserId = async (userId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/bookings/user`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+
+    const data = await response.json();
+    return data.data;
+  } catch (error) {
+    throw new Error('Failed to fetch bookings by user ID: ' + error.message);
+  }
+};

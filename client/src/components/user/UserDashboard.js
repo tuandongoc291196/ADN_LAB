@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Container, Row, Col, Nav, Card, Alert } from 'react-bootstrap';
-import { getUserById } from '../../services/api';
+import { Container, Row, Col, Nav, Card, Alert, Spinner } from 'react-bootstrap';
+import { getUserById, getBookingByUserId } from '../../services/api';
 
 // Import dashboard components
 import DashboardOverview from './DashboardOverview';
@@ -17,6 +17,8 @@ const UserDashboard = ({ user }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [appointments, setAppointments] = useState([]);
+  const [counts, setCounts] = useState({ total: 0, completed: 0, inProgress: 0 });
 
   // Get current tab from URL
   useEffect(() => {
@@ -28,7 +30,7 @@ const UserDashboard = ({ user }) => {
     }
   }, [location.pathname]);
 
-  // Fetch user data from API
+  // Fetch user data and appointments from API
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -48,11 +50,9 @@ const UserDashboard = ({ user }) => {
             phone: '0123456789',
             avatar: null,
             role: { name: 'customer' },
-            createdAt: '2023-01-15',
-            totalAppointments: 8,
-            completedTests: 5,
-            pendingResults: 2
+            createdAt: '2023-01-15'
           });
+          setCounts({ total: 0, completed: 0, inProgress: 0 });
           return;
         }
 
@@ -69,14 +69,50 @@ const UserDashboard = ({ user }) => {
             phone: userData.phone || '',
             avatar: userData.avatar || null,
             role: userData.role || { name: 'customer' },
-            createdAt: userData.createdAt || userData.memberSince || new Date().toISOString(),
-            // Mock data cho stats (sẽ được thay thế bằng API thực tế sau)
-            totalAppointments: 8,
-            completedTests: 5,
-            pendingResults: 2
+            createdAt: userData.createdAt || userData.memberSince || new Date().toISOString()
           });
         } else {
           throw new Error('Không thể lấy thông tin người dùng');
+        }
+
+        // Fetch appointments để tính toán stats
+        try {
+          const appointmentsData = await getBookingByUserId(userId);
+          setAppointments(appointmentsData || []);
+          
+          // Count status
+          let completed = 0, inProgress = 0;
+          (appointmentsData || []).forEach(b => {
+            // Logic phân loại status giống DashboardOverview
+            const createdAt = new Date(b.createdAt);
+            const now = new Date();
+            let isUpcoming = false;
+            if (b.timeSlotId) {
+              const parts = b.timeSlotId.split('_');
+              if (parts.length >= 1) {
+                const appointmentDate = new Date(parts[0]);
+                isUpcoming = !isNaN(appointmentDate.getTime()) && appointmentDate > now;
+              }
+            }
+            let status = 'confirmed';
+            if (isUpcoming) {
+              status = 'confirmed';
+            } else if (createdAt.getTime() + (7 * 24 * 60 * 60 * 1000) < now.getTime()) {
+              status = 'completed';
+            } else {
+              status = 'in-progress';
+            }
+            if (status === 'completed') completed++;
+            if (status === 'in-progress') inProgress++;
+          });
+          setCounts({ 
+            total: (appointmentsData || []).length, 
+            completed, 
+            inProgress 
+          });
+        } catch (appointmentsErr) {
+          console.error('Error fetching appointments:', appointmentsErr);
+          setCounts({ total: 0, completed: 0, inProgress: 0 });
         }
       } catch (err) {
         console.error('Error fetching user data:', err);
@@ -89,11 +125,9 @@ const UserDashboard = ({ user }) => {
           phone: '0123456789',
           avatar: null,
           role: { name: 'customer' },
-          createdAt: '2023-01-15',
-          totalAppointments: 8,
-          completedTests: 5,
-          pendingResults: 2
+          createdAt: '2023-01-15'
         });
+        setCounts({ total: 0, completed: 0, inProgress: 0 });
       } finally {
         setLoading(false);
       }
@@ -154,14 +188,14 @@ const UserDashboard = ({ user }) => {
       icon: 'bi-calendar-event',
       path: '/user/appointments',
       color: 'success',
-      badge: currentUser.pendingResults
+      badge: counts.total
     },
     {
       key: 'results',
       label: 'Kết quả xét nghiệm',
       icon: 'bi-file-earmark-check',
       path: '/user/results',
-      badge: currentUser.pendingResults,
+      badge: counts.completed,
       color: 'warning'
     },
     {
@@ -169,7 +203,6 @@ const UserDashboard = ({ user }) => {
       label: 'Hồ sơ cá nhân',
       icon: 'bi-person',
       path: '/user/profile',
-      badge: currentUser,
       color: 'info'
     },
     {
@@ -226,19 +259,25 @@ const UserDashboard = ({ user }) => {
               <Row className="text-center g-0">
                 <Col xs={4}>
                   <div className="py-2">
-                    <div className="h5 mb-0 text-primary">{currentUser.totalAppointments}</div>
+                    <div className="h5 mb-0 text-primary">
+                      {loading ? <Spinner size="sm" /> : counts.total}
+                    </div>
                     <small className="text-muted">Tổng lịch hẹn</small>
                   </div>
                 </Col>
                 <Col xs={4} className="border-start border-end">
                   <div className="py-2">
-                    <div className="h5 mb-0 text-success">{currentUser.completedTests}</div>
+                    <div className="h5 mb-0 text-success">
+                      {loading ? <Spinner size="sm" /> : counts.completed}
+                    </div>
                     <small className="text-muted">Đã hoàn thành</small>
                   </div>
                 </Col>
                 <Col xs={4}>
                   <div className="py-2">
-                    <div className="h5 mb-0 text-warning">{currentUser.pendingResults}</div>
+                    <div className="h5 mb-0 text-warning">
+                      {loading ? <Spinner size="sm" /> : counts.inProgress}
+                    </div>
                     <small className="text-muted">Chờ kết quả</small>
                   </div>
                 </Col>
