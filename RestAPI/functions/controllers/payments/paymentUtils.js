@@ -1,7 +1,8 @@
 const { getPaymentDataMOMO } = require('./momoPayment');
+const { getPaymentDataZALOPAY } = require('./zaloPayPayment');
 
 const checkPaymentStatus = async (paymentMethod, paymentResult) => {
-  const maxDuration = 15 * 60 * 1000; 
+  const maxDuration = 5 * 60 * 1000; 
   const checkInterval = 5 * 1000; 
   const startTime = Date.now();
 
@@ -15,7 +16,7 @@ const checkPaymentStatus = async (paymentMethod, paymentResult) => {
         const elapsedTime = currentTime - startTime;
 
         if (elapsedTime >= maxDuration) {
-          console.log('Payment status check timeout - 15 minutes elapsed');
+          console.log('Payment status check timeout - 5 minutes elapsed');
           resolve(false);
           return;
         }
@@ -32,7 +33,7 @@ const checkPaymentStatus = async (paymentMethod, paymentResult) => {
             return;
           }
 
-          if (statusResult && statusResult.resultCode && statusResult.resultCode !== 1000) {
+          if (statusResult && statusResult.resultCode && statusResult.resultCode !== 1000 && statusResult.resultCode !== 7002) {
             console.log(`Payment failed with resultCode: ${statusResult.resultCode}`);
             resolve(false);
             return;
@@ -44,9 +45,20 @@ const checkPaymentStatus = async (paymentMethod, paymentResult) => {
           return;
           
         } else if (paymentMethod === "ZALOPAY") {
-          console.log("ZALOPAY payment status checking not implemented yet");
-          resolve(false);
-          return;
+          statusResult = await getPaymentDataZALOPAY(paymentResult.app_trans_id);
+          console.log(`ZALOPAY payment status check at ${new Date().toISOString()}:`, statusResult);
+
+          if (statusResult && statusResult.return_code === 1) {
+            console.log('Payment successful - return_code is 1');
+            resolve(true);
+            return;
+          }
+
+          if (statusResult && statusResult.return_code && statusResult.return_code !== 3) {
+            console.log(`Payment failed with return_code: ${statusResult.return_code}`);
+            resolve(false);
+            return;
+          }
           
         } else {
           console.log(`Invalid payment method: ${paymentMethod}`);

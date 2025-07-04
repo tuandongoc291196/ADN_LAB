@@ -20,41 +20,43 @@ const processMomoPayment = async (totalAmount, paymentId) => {
     const orderExpireTime = momo.orderExpireTime;
     const lang = momo.lang;
 
-    const rawSignBodyPaymentMOMO = "accessKey=" + accessKey + "&amount=" + amount + "&extraData=" + 
-    extraData + "&ipnUrl=" + ipnUrl + "&orderId=" + orderId + "&orderInfo=" + orderInfo + "&partnerCode=" + partnerCode + "&redirectUrl=" + redirectUrl + 
-    "&requestId=" + requestId + "&requestType=" + requestType;
-    
-    const signatureBodyPaymentMOMO = crypto.createHmac('sha256', secretKey)
-        .update(rawSignBodyPaymentMOMO)
-        .digest('hex');
+    const rawSignBodyPaymentMOMO = "accessKey=" + accessKey + "&amount=" + amount + "&extraData=" +
+      extraData + "&ipnUrl=" + ipnUrl + "&orderId=" + orderId + "&orderInfo=" + orderInfo + "&partnerCode=" + partnerCode + "&redirectUrl=" + redirectUrl +
+      "&requestId=" + requestId + "&requestType=" + requestType;
 
+    const signatureBodyPaymentMOMO = crypto.createHmac('sha256', secretKey)
+      .update(rawSignBodyPaymentMOMO)
+      .digest('hex');
+    console.log("📍 MoMo redirectUrl:", redirectUrl);
+    console.log("📍 MoMo ipnUrl:", ipnUrl);
+    console.log("📍 Đang gọi MoMo với orderId:", orderId);
     const requestBodyPaymentMOMO = JSON.stringify({
-        partnerCode : partnerCode,
-        partnerName : "Test",
-        storeId : "MomoTestStore",
-        requestId : requestId,
-        amount : amount,
-        orderId : orderId,
-        orderInfo : orderInfo,
-        redirectUrl : redirectUrl,
-        ipnUrl : ipnUrl,
-        lang : lang,
-        requestType: requestType,
-        autoCapture: autoCapture,
-        extraData : extraData,
-        orderGroupId: orderGroupId,
-        orderExpireTime : orderExpireTime,
-        signature : signatureBodyPaymentMOMO
+      partnerCode: partnerCode,
+      partnerName: "Test",
+      storeId: "MomoTestStore",
+      requestId: requestId,
+      amount: amount,
+      orderId: orderId,
+      orderInfo: orderInfo,
+      redirectUrl: redirectUrl,
+      ipnUrl: ipnUrl,
+      lang: lang,
+      requestType: requestType,
+      autoCapture: autoCapture,
+      extraData: extraData,
+      orderGroupId: orderGroupId,
+      orderExpireTime: orderExpireTime,
+      signature: signatureBodyPaymentMOMO
     });
 
     const paymentMOMORequestBody = {
-        method: "POST",
-        url: "https://test-payment.momo.vn/v2/gateway/api/create",
-        headers: {
+      method: "POST",
+      url: "https://test-payment.momo.vn/v2/gateway/api/create",
+      headers: {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(requestBodyPaymentMOMO),
-        },
-        data: requestBodyPaymentMOMO
+      },
+      data: requestBodyPaymentMOMO
     };
 
     console.log("MOMO Payment Request Body:", paymentMOMORequestBody);
@@ -74,32 +76,32 @@ const getPaymentDataMOMO = async (orderId, requestId) => {
     const partnerCode = momo.partnerCode;
 
     const rawSignatureBodyCheckMOMO = "accessKey=" + accessKey + "&orderId=" + orderId + "&partnerCode=" + partnerCode + "&requestId=" + requestId;
-    
+
     const signatureBodyCheckMOMO = crypto.createHmac('sha256', secretKey)
-        .update(rawSignatureBodyCheckMOMO)
-        .digest('hex');
+      .update(rawSignatureBodyCheckMOMO)
+      .digest('hex');
 
     const requestBodyCheckMOMO = JSON.stringify({
-      partnerCode : partnerCode,
-      requestId : requestId,
-      orderId : orderId,
-      signature : signatureBodyCheckMOMO,
-      lang : "en"
+      partnerCode: partnerCode,
+      requestId: requestId,
+      orderId: orderId,
+      signature: signatureBodyCheckMOMO,
+      lang: "en"
     });
 
     const paymentMOMOCheckBody = {
       method: "POST",
       url: "https://test-payment.momo.vn/v2/gateway/api/query",
       headers: {
-      'Content-Type': 'application/json',
-      'Content-Length': Buffer.byteLength(requestBodyCheckMOMO),
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(requestBodyCheckMOMO),
       },
       data: requestBodyCheckMOMO
     };
 
     const response = await axios(paymentMOMOCheckBody);
     const responseData = response.data;
-    
+
     const extractedData = {
       partnerCode: responseData.partnerCode,
       orderId: responseData.orderId,
@@ -110,7 +112,7 @@ const getPaymentDataMOMO = async (orderId, requestId) => {
       message: responseData.message,
       resultCode: responseData.resultCode,
     };
-    
+
     return extractedData;
   } catch (error) {
     console.error("Error getting MOMO payment data:", error);
@@ -132,7 +134,7 @@ const processMomoRefund = async (paymentDetails) => {
     const lang = "en";
     const description = "REFUND";
 
-    var rawSignature = "accessKey=" + accessKey + "&amount=" + amount + "&description=" + description 
+    var rawSignature = "accessKey=" + accessKey + "&amount=" + amount + "&description=" + description
       + "&orderId=" + orderId + "&partnerCode=" + partnerCode + "&requestId=" + requestId + "&transId=" + transId;
     const crypto = require('crypto');
     var signature = crypto.createHmac('sha256', secretKey)
@@ -140,16 +142,16 @@ const processMomoRefund = async (paymentDetails) => {
       .digest('hex');
 
     const requestBodyPayment = JSON.stringify({
-        partnerCode : partnerCode,
-        orderId : orderId,
-        requestId : requestId,
-        amount : amount,
-        transId : transId,
-        lang : lang,
-        description : description,
-        signature : signature,
+      partnerCode: partnerCode,
+      orderId: orderId,
+      requestId: requestId,
+      amount: amount,
+      transId: transId,
+      lang: lang,
+      description: description,
+      signature: signature,
     });
-    
+
     console.log("MOMO Refund Request Body:", requestBodyPayment);
     const paymentRequestBody = {
       method: "POST",
@@ -158,11 +160,11 @@ const processMomoRefund = async (paymentDetails) => {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(requestBodyPayment),
       },
-      data: requestBodyPayment 
+      data: requestBodyPayment
     }
-    
+
     let result;
-    result = await axios (paymentRequestBody);
+    result = await axios(paymentRequestBody);
     console.log("MOMO Refund Response:", result.data);
     return result.data;
   } catch (error) {

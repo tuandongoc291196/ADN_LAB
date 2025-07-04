@@ -24,15 +24,6 @@ const checkTestResultExists = async (resultId) => {
                             name
                         }
                     }
-                    sample {
-                        id
-                        collectionDate
-                        participant {
-                            name
-                            age
-                            gender
-                        }
-                    }
                     staff {
                         user {
                             fullname

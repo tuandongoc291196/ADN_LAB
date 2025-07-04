@@ -15,7 +15,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Badge, Form, Alert } from 'react-bootstrap';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { getAllServices, getAllMethods, getServicesByCategory, getMethodsByServiceId } from '../../services/api';
+import { getAllServices, getAllMethods} from '../../services/api';
 import { enrichMethodData } from '../data/services-data';
 import Swal from 'sweetalert2';
 
@@ -27,7 +27,6 @@ const ServiceList = () => {
   // COMPONENT STATE
   const [services, setServices] = useState([]); // Danh sách dịch vụ từ API
   const [methods, setMethods] = useState([]); // Danh sách phương thức từ API
-  const [serviceMethods, setServiceMethods] = useState({}); // Map { serviceId: [methods] }
   const [loading, setLoading] = useState(true); // Loading state
   const [error, setError] = useState(null); // Error message
   const [expanded, setExpanded] = useState(false); // Trạng thái mở rộng card
@@ -65,8 +64,6 @@ const ServiceList = () => {
 
       if (response && Array.isArray(response)) {
         setServices(response);
-        // Fetch methods cho từng service
-        await fetchMethodsForServices(response);
       } else {
         setServices([]);
       }
@@ -96,36 +93,6 @@ const ServiceList = () => {
     }
   };
 
-  // Fetch phương thức cho từng dịch vụ
-  const fetchMethodsForServices = async (servicesList) => {
-    try {
-      const methodsMap = {};
-
-      // Fetch methods cho từng service
-      for (const service of servicesList) {
-        try {
-          const serviceMethods = await getMethodsByServiceId(service.id);
-          console.log(`Methods for service ${service.id}:`, serviceMethods);
-
-          if (serviceMethods && Array.isArray(serviceMethods)) {
-            methodsMap[service.id] = serviceMethods;
-          } else {
-            methodsMap[service.id] = [];
-          }
-        } catch (err) {
-          console.error(`Error fetching methods for service ${service.id}:`, err);
-          methodsMap[service.id] = [];
-        }
-      }
-
-      console.log('Final serviceMethods map:', methodsMap);
-      setServiceMethods(methodsMap);
-    } catch (err) {
-      console.error('Error fetching methods for services:', err);
-      setServiceMethods({});
-    }
-  };
-
   // HELPER FUNCTIONS
   // Xác định loại dịch vụ từ category
   const getServiceTypeFromCategory = (category) => {
@@ -149,8 +116,9 @@ const ServiceList = () => {
   };
 
   // Tạo badges cho các phương thức thu mẫu
-  const getMethodBadges = (serviceId) => {
-    const serviceMethodsList = serviceMethods[serviceId] || [];
+  const getMethodBadges = (service) => {
+    // Get methods directly from service data
+    const serviceMethodsList = service.methods_via_ServiceMethod || [];
 
     if (serviceMethodsList.length === 0) {
       return (
@@ -190,8 +158,8 @@ const ServiceList = () => {
 
     // Filter theo method nếu có
     const matchesMethod = !filterMethod ||
-      (serviceMethods[service.id] &&
-        serviceMethods[service.id].some(method => method.id === filterMethod));
+      (service.methods_via_ServiceMethod &&
+        service.methods_via_ServiceMethod.some(method => method.id === filterMethod));
 
     return matchesType && matchesMethod;
   });
@@ -462,7 +430,7 @@ const ServiceList = () => {
                       <div className="mb-3" style={{ minHeight: '80px' }}>
                         <small className="text-muted d-block mb-2">Phương thức lấy mẫu:</small>
                         <div className="d-flex flex-wrap gap-1">
-                          {getMethodBadges(service.id)}
+                          {getMethodBadges(service)}
                         </div>
                       </div>
 

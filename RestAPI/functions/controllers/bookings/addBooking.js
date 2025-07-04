@@ -1,5 +1,6 @@
 const { dataConnect } = require("../../config/firebase.js");
 const {addTimeSlot} = require("../timeSlots/addTimeSlot.js");
+const {isTimeFormatValid} = require("../timeSlots/timeSlotUtils.js");
 const {checkServiceExists} = require("../services/serviceUtils.js");
 const {getActiveStaffWithLowestSlotCount} = require("../users/userUtils.js");
 const {checkUserExists} = require("../users/userUtils.js");
@@ -57,11 +58,11 @@ const addBooking = async (req, res) => {
       });
     }
 
-    if (startTime >= endTime) {
+    if (!isTimeFormatValid(startTime, endTime)) {
       return res.status(400).json({
         statusCode: 400,
         status: "error",
-        message: "endTime must be later than startTime",
+        message: "Invalid time format. Time must be in HH:MM format (00:00 - 23:59) and endTime must be later than startTime",
       });
     }
 
@@ -236,7 +237,7 @@ const addBooking = async (req, res) => {
 
     const updateStaffResponse = await updateStaffSlotCount(staffId, "increase");
     const createBooking = await addBookingHistory(bookingVariables.id, "CREATED", "Booking saved successfully");
-    const pendingBooking = await addBookingHistory(bookingVariables.id, "PENDING_PAYMENT", "Booking is pending confirmation");
+    const pendingBooking = await addBookingHistory(bookingVariables.id, "PENDING", "Booking is pending confirmation");
 
     const participantResults = [];
     for (const participant of participants) {

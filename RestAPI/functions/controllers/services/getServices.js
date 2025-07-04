@@ -44,7 +44,6 @@ const getOneService = async (req, res) => {
                     hasLegalValue
                     }
                     icon
-                    isActive
                     featured
                     isActive
                     createdAt
@@ -99,13 +98,16 @@ const getAllServices = async (req, res) => {
                     hasLegalValue
                     }
                     icon
-                    isActive
                     featured
                     isActive
                     createdAt
                     updatedAt
+                    methods_via_ServiceMethod {
+                      id
+                      name
+                    }
                 }
-                }
+            }
         `;
 
         const response = await dataConnect.executeGraphql(GET_SERVICES_QUERY);
@@ -173,7 +175,6 @@ const getServiceByCategoryId = async (req, res) => {
                     hasLegalValue
                     }
                     icon
-                    isActive
                     featured
                     isActive
                     createdAt

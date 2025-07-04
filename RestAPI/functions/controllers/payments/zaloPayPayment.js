@@ -59,6 +59,7 @@ const processZaloPayPayment = async (totalAmount) => {
 
 const getPaymentDataZALOPAY = async (app_trans_id) => {
   try {
+    console.log("Getting ZALOPAY payment data for", app_trans_id);
     const app_id = zaloPay.app_id;
     const rawSignatureBodyCheckZALOPAY = app_id + "|" + app_trans_id + "|" + zaloPay.key1;
 
@@ -72,6 +73,7 @@ const getPaymentDataZALOPAY = async (app_trans_id) => {
         mac: signatureBodyCheckZALOPAY
     });
 
+    console.log("Request body for ZALOPAY check:", requestBodyCheckZALOPAY);
     const paymentZALOCheckBody = {
         method: "POST",
         url: "https://sb-openapi.zalopay.vn/v2/query",
@@ -88,6 +90,10 @@ const getPaymentDataZALOPAY = async (app_trans_id) => {
     const extractedData = {
       return_code: responseData.return_code,
       return_message: responseData.return_message,
+      sub_return_code: responseData.sub_return_code,
+      sub_return_message: responseData.sub_return_message,
+      is_processing: responseData.is_processing,
+      amount: responseData.amount,
       zp_trans_id: responseData.zp_trans_id,
     };
     
@@ -98,11 +104,12 @@ const getPaymentDataZALOPAY = async (app_trans_id) => {
   }
 };
 
-const checkPaymentZALOPAY = async (extractedData) => {
+const processVnpayRefund = async (paymentDetails) => {
   try {
-    return extractedData.return_code == 1;
+    // VNPAY refund logic would go here
+    return { success: true, message: "VNPAY refund processed successfully" };
   } catch (error) {
-    console.error("Error checking ZALOPAY payment status:", error);
+    console.error("Error processing VNPAY refund:", error);
     throw error;
   }
 };
@@ -110,5 +117,4 @@ const checkPaymentZALOPAY = async (extractedData) => {
 module.exports = {
   processZaloPayPayment,
   getPaymentDataZALOPAY,
-  checkPaymentZALOPAY
 };

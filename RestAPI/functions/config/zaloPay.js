@@ -5,7 +5,9 @@ try {
     const app_id = 2553;
     const partnerCode = 'ZALOPAY';
     const app_time = Date.now();
-    const embed_data = {};
+    const embed_data = {
+        "redirecturl": "http://localhost:3000/payment-success"
+    };
     const bank_code = "";
 
     // Validate required configuration

@@ -9,17 +9,19 @@ const { cleanupExpiredBookings } = require("./controllers/scheduledTasks/cleanup
 const {addUser} = require('./controllers/users/addUser');
 const {getAllUsers, getOneUser, getUsersByRole} = require('./controllers/users/getUsers');
 const {updateUserRoleToStaff, updateUserRoleToAdmin, updateUser, updateUserAccountStatus} = require('./controllers/users/updateUser');
+const {deleteUser} = require('./controllers/users/deleteUser');
+
+const {getStaffById, getStaffs} = require('./controllers/staffs/getStaffs');
+const {updateStaff} = require('./controllers/staffs/updateStaff');
 
 const {addService} = require('./controllers/services/addService');
 const {getOneService, getAllServices, getServiceByCategoryId} = require('./controllers/services/getServices');
-const {updateService, updateServiceStatus} = require('./controllers/services/updateService');
+const {updateService, updateServiceStatus, updateServiceFeatured} = require('./controllers/services/updateService');
 const {deleteService} = require('./controllers/services/deleteService');
 
 const {getMethodServices, getServicesByMethodId} = require('./controllers/methodService/getMethodServices');
 
 const {getAllMethods, getOneMethod} = require('./controllers/methods/getMethods');
-
-const {getAllCategories, getCategoryById} = require('./controllers/categories/getCategories');
 
 const {getAllRoles, getOneRole} = require('./controllers/roles/getRoles');
 const {updateRole} = require('./controllers/roles/updateRole');
@@ -69,6 +71,7 @@ app.post('/services', getOneService);
 app.post('/services/category', getServiceByCategoryId);
 app.put('/services', updateService);
 app.put('/services/status', updateServiceStatus);
+app.put('/services/featured', updateServiceFeatured);
 app.delete('/services', deleteService);
 
 app.post('/method/services', getMethodServices);
@@ -85,6 +88,11 @@ app.put('/users/role/staff', updateUserRoleToStaff);
 app.put('/users', updateUser);
 app.put('/users/role/admin', updateUserRoleToAdmin);
 app.put('/users/status', updateUserAccountStatus);
+app.delete('/users', deleteUser);
+
+app.get('/staffs', getStaffs);
+app.post('/staffs', getStaffById);
+app.put('/staffs', updateStaff);
 
 app.get('/roles', getAllRoles);
 app.post('/roles', getOneRole);

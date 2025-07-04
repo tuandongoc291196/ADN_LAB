@@ -155,10 +155,16 @@ const StaffProfile = ({ user }) => {
     setSavingWork(true);
     try {
       const staffId = staffInfo.id;
+      const specificationArr = workForm.specification
+        ? workForm.specification.split(',').map(s => s.trim()).filter(Boolean)
+        : [];
+      const certificationsArr = workForm.certifications
+        ? workForm.certifications.split(',').map(c => c.trim()).filter(Boolean)
+        : [];
       await updateStaff({
         staffId,
-        specification: workForm.specification.split(',').map(s => s.trim()).filter(Boolean),
-        certifications: workForm.certifications.split(',').map(c => c.trim()).filter(Boolean),
+        specification: specificationArr,
+        certifications: certificationsArr,
       });
       setAlert({ show: true, message: 'Cập nhật thông tin công việc thành công!', type: 'success' });
       setIsEditing(false);

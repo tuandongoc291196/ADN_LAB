@@ -14,7 +14,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Badge, Form, Alert, Tab, Nav } from 'react-bootstrap';
 import { getAllServices, getAllMethods, getMethodsByServiceId, createBooking, getUserById } from '../../services/api'; // API functions
-import { getServiceById, getServicesByType, canServiceUseSelfSample, isAdministrativeService, enrichMethodData, isMethodDisabled, getMethodRestrictionReason } from '../data/services-data'; // Helper functions
+import { getServiceById, getServicesByType, enrichMethodData, isMethodDisabled, getMethodRestrictionReason } from '../data/services-data'; // Helper functions
 import { getProvinces, getDistricts, getWards } from 'vietnam-provinces';
 
 const AppointmentBooking = () => {
@@ -215,6 +215,7 @@ const AppointmentBooking = () => {
             })) : []
           }
         }));
+        setCurrentStep(2);
       }
     }
   }, [location.state, services]); // Chạy khi có service được chọn từ page trước

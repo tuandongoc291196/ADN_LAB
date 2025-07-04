@@ -1039,12 +1039,6 @@ query GetAllSamples($limit: Int, $offset: Int) @auth(level: USER) {
 query GetBookingTestResults($bookingId: String!) @auth(level: USER) {
   testResults(where: { bookingId: { eq: $bookingId } }) {
     id
-    sample {
-      id
-      participant {
-        name
-      }
-    }
     booking {
       service {
         title
@@ -1096,15 +1090,6 @@ query GetTestResultById($resultId: String!) @auth(level: USER) {
         name
       }
     }
-    sample {
-      id
-      collectionDate
-      participant {
-        name
-        age
-        gender
-      }
-    }
     staff {
       user {
         fullname
@@ -1145,11 +1130,6 @@ query GetTestResultsByStatus($status: String!) @auth(level: USER) {
       }
       service {
         title
-      }
-    }
-    sample {
-      participant {
-        name
       }
     }
     staff {
@@ -1229,11 +1209,6 @@ query GetManagerTestResults($managerId: String!) @auth(level: USER) {
         title
       }
     }
-    sample {
-      participant {
-        name
-      }
-    }
     staff {
       user {
         fullname
@@ -1271,11 +1246,6 @@ query GetStaffTestResults($staffId: String!) @auth(level: USER) {
       }
       service {
         title
-      }
-    }
-    sample {
-      participant {
-        name
       }
     }
     staff {
@@ -1352,11 +1322,6 @@ query GetPositiveTestResults @auth(level: USER) {
       }
       service {
         title
-      }
-    }
-    sample {
-      participant {
-        name
       }
     }
     staff {

@@ -113,7 +113,46 @@ const getOneRole = async (req, res) => {
   }
 }
 
+const getRoleByUserId = async (userId) => {
+  try {
+    if (!userId) {
+      throw new Error("userId is required");
+    }
+
+    const GET_ROLE_BY_USER_QUERY = `
+      query GetRoleByUserId($userId: String!) @auth(level: USER) {
+        user(key: {id: $userId}) {
+          id
+          roleId
+          role {
+            id
+            name
+            description
+          }
+        }
+      }
+    `;
+
+    const variables = {
+      userId: userId,
+    };
+
+    console.log("Executing GraphQL query:", GET_ROLE_BY_USER_QUERY, "with variables:", variables);
+    
+    const response = await dataConnect.executeGraphql(GET_ROLE_BY_USER_QUERY, {
+      variables: variables,
+    });
+
+    const responseData = response.data.user.role;
+    console.log("Role data retrieved:", responseData);
+    return responseData;
+  } catch (error) {
+    console.error("Error retrieving role by user ID:", error);
+    throw error;
+  }
+};
 module.exports = {
   getAllRoles,
   getOneRole,
+  getRoleByUserId,
 };
