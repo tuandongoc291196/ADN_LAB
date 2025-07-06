@@ -3,8 +3,9 @@
  * Cung cấp giao diện quản lý tổng quan và điều hướng đến các chức năng quản lý
  */
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Container, Row, Col, Nav, Card, Alert, Badge, Button } from 'react-bootstrap';
+import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Container, Row, Col, Nav, Card, Alert, Badge, Button, Spinner } from 'react-bootstrap';
+import { getUserById } from '../../services/api';
 import { 
   Speedometer2, 
   Gear, 
@@ -28,6 +29,20 @@ import AppointmentManagement from './AppointmentManagement';
 import StaffManagement from './StaffManagement';
 import ReportManagement from './ReportManagement';
 import FeedbackManagement from './FeedbackManagement';
+import ManagerProfile from './ManagerProfile';
+
+// Thêm hàm getRoleLabel để mapping role sang tiếng Việt
+function getRoleLabel(role) {
+  if (!role) return '';
+  const roleName = typeof role === 'object' && role !== null ? (role.name || role.role_string || '') : (role || '');
+  switch (roleName.toLowerCase()) {
+    case 'admin': return 'Quản trị viên';
+    case 'manager': return 'Quản lý';
+    case 'staff': return 'Nhân viên';
+    case 'customer': return 'Khách hàng';
+    default: return roleName;
+  }
+}
 
 /**
  * Component chính cho dashboard quản lý
@@ -36,6 +51,7 @@ import FeedbackManagement from './FeedbackManagement';
 const ManagerDashboard = ({ user }) => {
   // Lấy thông tin đường dẫn hiện tại
   const location = useLocation();
+  const navigate = useNavigate();
   // State quản lý tab đang active
   const [activeTab, setActiveTab] = useState('overview');
   // State quản lý thông báo
@@ -43,6 +59,52 @@ const ManagerDashboard = ({ user }) => {
     { id: 1, message: 'Có 5 lịch hẹn mới cần xác nhận', time: '5 phút trước', read: false },
     { id: 2, message: 'Báo cáo doanh thu tháng 3 đã sẵn sàng', time: '1 giờ trước', read: false }
   ]);
+  // State quản lý user data
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch user data từ localStorage và API
+  useEffect(() => {
+    const fetchUser = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const storedUserData = localStorage.getItem('userData');
+        let userId = null;
+        if (storedUserData) {
+          const userData = JSON.parse(storedUserData);
+          userId = userData.id || userData.user_id || userData.uid;
+        }
+        if (!userId) {
+          setError('Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.');
+          setLoading(false);
+          setTimeout(() => navigate('/login'), 2000);
+          return;
+        }
+        const userData = await getUserById(userId);
+        
+        // Tạo currentUser với thông tin từ API và fallback
+        const managerUser = {
+          ...userData,
+          name: userData.fullname || userData.name || 'Quản lý',
+          position: 'Quản lý phòng xét nghiệm',
+          employeeId: userData.staffId || userData.id || 'MGR001',
+          totalServices: 5, // TODO: Lấy từ API
+          totalStaff: 10, // TODO: Lấy từ API
+          totalAppointments: 150, // TODO: Lấy từ API
+          totalRevenue: 150000000 // TODO: Lấy từ API
+        };
+        
+        setCurrentUser(managerUser);
+      } catch (err) {
+        setError('Không thể lấy thông tin người dùng: ' + err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUser();
+  }, [navigate]);
 
   // Cập nhật tab active dựa trên đường dẫn URL
   useEffect(() => {
@@ -53,26 +115,6 @@ const ManagerDashboard = ({ user }) => {
       setActiveTab('overview');
     }
   }, [location.pathname]);
-
-  // Dữ liệu người dùng mặc định nếu không có dữ liệu từ props
-  const currentUser = user || {
-    id: 'manager-001',
-    name: 'Nguyễn Văn Manager',
-    email: 'manager@adnlab.vn',
-    phone: '0123456789',
-    avatar: null,
-    role: 'manager',
-    role_string: 'manager',
-    department: 'Management',
-    employeeId: 'MGR2024001',
-    position: 'Quản lý phòng xét nghiệm',
-    workShift: 'Ca sáng (08:00 - 17:00)',
-    certifications: ['ISO 15189', 'Quality Management'],
-    totalServices: 5,
-    totalStaff: 10,
-    totalAppointments: 150,
-    totalRevenue: 150000000
-  };
 
   // Cấu hình các mục menu trong sidebar
   const menuItems = [
@@ -123,8 +165,30 @@ const ManagerDashboard = ({ user }) => {
       path: '/manager/feedback',
       color: 'secondary',
       description: 'Quản lý phản hồi khách hàng'
+    },
+    {
+      key: 'profile',
+      label: 'Hồ sơ cá nhân',
+      icon: PersonBadge,
+      path: '/manager/profile',
+      color: 'dark',
+      description: 'Quản lý thông tin cá nhân'
     }
   ];
+
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
+        <Spinner animation="border" variant="primary" />
+      </div>
+    );
+  }
+  if (error) {
+    return <Alert variant="danger" className="mt-4">{error}</Alert>;
+  }
+  if (!currentUser) {
+    return null;
+  }
 
   return (
     <Container fluid className="py-4">
@@ -134,7 +198,7 @@ const ManagerDashboard = ({ user }) => {
           <Card className="shadow-sm">
             {/* Manager Info Header */}
             <Card.Header className="bg-warning text-dark text-center py-4">
-              <div className="position-relative mb-3">
+              <div className="mb-3">
                 {currentUser.avatar ? (
                   <img 
                     src={currentUser.avatar} 
@@ -146,20 +210,13 @@ const ManagerDashboard = ({ user }) => {
                 ) : (
                   <div className="bg-white bg-opacity-20 rounded-circle d-inline-flex align-items-center justify-content-center" 
                        style={{ width: '60px', height: '60px' }}>
-                    <PersonBadge className="fs-1 text-dark" />
+                    <i className="bi bi-person-badge fs-1 text-dark"></i>
                   </div>
                 )}
-                <Badge 
-                  bg="success" 
-                  className="position-absolute bottom-0 end-0 rounded-circle p-1"
-                  style={{ transform: 'translate(25%, 25%)' }}
-                >
-                  <div style={{ width: '8px', height: '8px' }}></div>
-                </Badge>
               </div>
-              <h5 className="mb-1">{currentUser.name}</h5>
-              <p className="mb-1 small opacity-75">{currentUser.position}</p>
-              <p className="mb-0 small opacity-75">ID: {currentUser.employeeId}</p>
+              <h5 className="mb-1">{currentUser.fullname}</h5>
+              <p className="mb-1 small opacity-75">{currentUser.email}</p>
+              <p className="mb-1 small opacity-75">{getRoleLabel(currentUser.role)}</p>
             </Card.Header>
 
             {/* Navigation Menu */}
@@ -206,19 +263,26 @@ const ManagerDashboard = ({ user }) => {
             </Card.Footer>
           </Card>
 
-          {/* Work Shift Info */}
+          {/* Quick Actions */}
           <Card className="shadow-sm mt-3">
             <Card.Body>
-              <h6 className="text-warning mb-3">
-                <Clock className="me-2" />
-                Ca làm việc hôm nay
+              <h6 className="text-primary mb-3">
+                <i className="bi bi-lightning me-2"></i>
+                Thao tác nhanh
               </h6>
-              <p className="mb-2">
-                <strong>{currentUser.workShift}</strong>
-              </p>
-              <div className="d-flex justify-content-between align-items-center">
-                <small className="text-muted">Trạng thái</small>
-                <Badge bg="success">Đang làm việc</Badge>
+              <div className="d-grid gap-2">
+                <Button variant="outline-primary" size="sm" as={Link} to="/manager/appointments">
+                  <i className="bi bi-calendar-check me-1"></i>
+                  Xem lịch hẹn mới
+                </Button>
+                <Button variant="outline-success" size="sm" as={Link} to="/manager/feedback">
+                  <i className="bi bi-chat-dots me-1"></i>
+                  Phản hồi chờ xử lý
+                </Button>
+                <Button variant="outline-info" size="sm" as={Link} to="/manager/reports">
+                  <i className="bi bi-graph-up me-1"></i>
+                  Báo cáo tháng
+                </Button>
               </div>
             </Card.Body>
           </Card>
@@ -265,6 +329,7 @@ const ManagerDashboard = ({ user }) => {
             <Route path="/staff" element={<StaffManagement user={currentUser} />} />
             <Route path="/reports" element={<ReportManagement user={currentUser} />} />
             <Route path="/feedback" element={<FeedbackManagement user={currentUser} />} />
+            <Route path="/profile" element={<ManagerProfile user={currentUser} />} />
           </Routes>
         </Col>
       </Row>
@@ -279,7 +344,7 @@ const ManagerOverview = ({ user }) => {
       {/* Welcome Header */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h2 className="mb-1">Chào mừng, {user.name}!</h2>
+          <h2 className="mb-1">Chào mừng, {user.fullname}!</h2>
           <p className="text-muted mb-0">
             <Clock className="me-1" />
             Hôm nay là {new Date().toLocaleDateString('vi-VN', { 
@@ -289,7 +354,7 @@ const ManagerOverview = ({ user }) => {
         </div>
         <div className="text-end">
           <div className="h4 text-success mb-0">
-            {user.totalRevenue.toLocaleString('vi-VN')} VNĐ
+            {user.totalRevenue ? user.totalRevenue.toLocaleString('vi-VN') : '0'} VNĐ
           </div>
           <small className="text-muted">Doanh thu tháng này</small>
         </div>
