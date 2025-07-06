@@ -57,7 +57,10 @@ const Payment = () => {
         const methods = {
             'self-sample': 'Tự lấy mẫu tại nhà',
             'home-visit': 'Nhân viên tới nhà lấy mẫu',
-            'at-facility': 'Tới cơ sở lấy mẫu'
+            'at-facility': 'Tới cơ sở lấy mẫu',
+            '0': 'Tự lấy mẫu tại nhà',
+            '1': 'Nhân viên tới nhà lấy mẫu',
+            '2': 'Tới cơ sở lấy mẫu'
         };
         return methods[method] || method;
     };
@@ -189,7 +192,22 @@ const Payment = () => {
         setLoading(true);
 
         try {
-            const method = paymentMethod.toUpperCase();
+            // Map payment method ID to API format
+            let method;
+            switch (paymentMethod) {
+                case 'momo':
+                    method = 'MOMO';
+                    break;
+                case 'zalopay':
+                    method = 'ZALOPAY';
+                    break;
+                case 'cash-on-service':
+                    method = 'CASH';
+                    break;
+                default:
+                    method = paymentMethod.toUpperCase();
+            }
+            
             const today = new Date().toISOString().split('T')[0];
 
             const payload = {
@@ -352,7 +370,10 @@ const Payment = () => {
                                         const methodName = orderSummary?.methodName?.toLowerCase() || '';
 
                                         // Các phương thức không được thanh toán tiền mặt
-                                        const disallowedCashMethods = ['nhân viên tới nhà lấy mẫu', 'lấy mẫu tại nhà'];
+                                        // Chỉ cho phép thanh toán tiền mặt khi "tới cơ sở lấy mẫu"
+                                        // "Nhân viên tới nhà" phải thanh toán trước để tránh spam
+                                        // "Tự lấy mẫu" không có nhân viên thu tiền
+                                        const disallowedCashMethods = ['tự lấy mẫu tại nhà', 'nhân viên tới nhà lấy mẫu'];
 
                                         // Convert về lowercase để so sánh chính xác
                                         const normalizedMethod = methodName.toLowerCase().trim();
@@ -379,7 +400,10 @@ const Payment = () => {
                                                         <div className="small text-muted">{method.note}</div>
                                                         {isDisabledCash && (
                                                             <div className="mt-2 text-danger small">
-                                                                Không áp dụng cho phương thức thu mẫu hiện tại
+                                                                {methodName.includes('nhân viên tới nhà') 
+                                                                    ? 'Không áp dụng cho phương thức thu mẫu hiện tại'
+                                                                    : 'Không áp dụng cho phương thức thu mẫu hiện tại'
+                                                                }
                                                             </div>
                                                         )}
                                                         {paymentMethod === method.id && !isDisabledCash && (
@@ -440,9 +464,9 @@ const Payment = () => {
                                                     <strong>Thanh toán khi nhận dịch vụ</strong>
                                                     <p className="mb-0 mt-2">
                                                         Bạn sẽ thanh toán bằng tiền mặt khi sử dụng dịch vụ.
-                                                        {bookingData.collectionMethod === 'at-facility' && ' Thanh toán tại quầy lễ tân trước khi xét nghiệm.'}
-                                                        {bookingData.collectionMethod === 'home-visit' && ' Thanh toán trực tiếp cho nhân viên khi họ đến nhà.'}
-                                                        {bookingData.collectionMethod === 'self-sample' && ' Không áp dụng với phương thức tự lấy mẫu.'}
+                                                        {(bookingData.collectionMethod === 'at-facility' || bookingData.collectionMethod === '2') && ' Thanh toán tại quầy lễ tân trước khi xét nghiệm.'}
+                                                        {(bookingData.collectionMethod === 'home-visit' || bookingData.collectionMethod === '1') && ' Không áp dụng với phương thức nhân viên tới nhà lấy mẫu.'}
+                                                        {(bookingData.collectionMethod === 'self-sample' || bookingData.collectionMethod === '0') && ' Không áp dụng với phương thức tự lấy mẫu tại nhà.'}
                                                     </p>
                                                 </Alert>
                                             )}
