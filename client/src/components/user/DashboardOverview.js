@@ -100,13 +100,18 @@ const DashboardOverview = ({ user }) => {
     if (status === 'confirmed') nextAction = 'Chuẩn bị cho lịch hẹn';
     if (status === 'in-progress') nextAction = 'Đang xử lý mẫu tại phòng lab';
     if (status === 'completed') nextAction = 'Kết quả đã sẵn sàng';
+    
+    // Sử dụng dữ liệu từ nested query
+    const serviceName = b.service?.title || 'Dịch vụ xét nghiệm ADN';
+    const methodName = b.method?.name || 'Phương thức lấy mẫu';
+    
     return {
       id: b.id,
-      service: b.serviceId || 'Dịch vụ',
+      service: serviceName,
       date,
       time,
       status,
-      method: b.methodId,
+      method: methodName,
       progress,
       nextAction
     };

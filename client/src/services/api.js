@@ -573,7 +573,8 @@ export const getBookingByUserId = async (userId) => {
     }
 
     const data = await response.json();
-    return data.data;
+    // API mới trả về bookings array trực tiếp
+    return data.data?.bookings || data.data || [];
   } catch (error) {
     throw new Error('Failed to fetch bookings by user ID: ' + error.message);
   }

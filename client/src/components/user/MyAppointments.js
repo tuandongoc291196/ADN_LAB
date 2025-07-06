@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Row, Col, Card, Button, Badge, Form, Alert, Modal, Tab, Tabs, ProgressBar, Spinner } from 'react-bootstrap';
-import { getBookingByUserId, getServiceById, getAllMethods, getStaffById, getBookingById } from '../../services/api';
+import { getBookingByUserId } from '../../services/api';
 import { METHOD_MAPPING } from '../data/services-data';
 
 const MyAppointments = ({ user }) => {
@@ -13,10 +13,6 @@ const MyAppointments = ({ user }) => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [services, setServices] = useState({});
-  const [methods, setMethods] = useState({});
-  const [staffs, setStaffs] = useState({});
-  const [bookingDetails, setBookingDetails] = useState({});
   const [filterDate, setFilterDate] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
 
@@ -44,90 +40,54 @@ const MyAppointments = ({ user }) => {
     fetchAppointments();
   }, [user?.id]);
 
-  // Fetch services and methods data
-  useEffect(() => {
-    const fetchAdditionalData = async () => {
-      try {
-        console.log('Fetching additional data for appointments:', appointments);
-        
-        // Fetch all methods
-        const methodsData = await getAllMethods();
-        console.log('Methods data:', methodsData);
-        const methodsMap = {};
-        methodsData.forEach(method => {
-          methodsMap[method.id] = method;
-        });
-        setMethods(methodsMap);
-
-        // Fetch services for each appointment
-        const servicesMap = {};
-        for (const appointment of appointments) {
-          if (appointment.serviceId && !servicesMap[appointment.serviceId]) {
-            try {
-              console.log('Fetching service for ID:', appointment.serviceId);
-              const serviceData = await getServiceById(appointment.serviceId);
-              console.log('Service data for', appointment.serviceId, ':', serviceData);
-              servicesMap[appointment.serviceId] = serviceData;
-            } catch (err) {
-              console.error(`Error fetching service ${appointment.serviceId}:`, err);
-              // If service fetch fails, use serviceId as name
-              servicesMap[appointment.serviceId] = { name: appointment.serviceId };
-            }
-          }
-        }
-        setServices(servicesMap);
-
-        // Fetch staff data for each appointment
-        const staffsMap = {};
-        for (const appointment of appointments) {
-          if (appointment.staffId && !staffsMap[appointment.staffId]) {
-            try {
-              console.log('Fetching staff for ID:', appointment.staffId);
-              const staffData = await getStaffById(appointment.staffId);
-              console.log('Staff data for', appointment.staffId, ':', staffData);
-              staffsMap[appointment.staffId] = staffData;
-            } catch (err) {
-              console.error(`Error fetching staff ${appointment.staffId}:`, err);
-              // If staff fetch fails, use staffId as name
-              staffsMap[appointment.staffId] = { 
-                user: { fullname: `Nhân viên ${appointment.staffId}` },
-                name: `Nhân viên ${appointment.staffId}`
-              };
-            }
-          }
-        }
-        setStaffs(staffsMap);
-
-        // Fetch detailed booking information including participants
-        const bookingDetailsMap = {};
-        for (const appointment of appointments) {
-          if (appointment.id && !bookingDetailsMap[appointment.id]) {
-            try {
-              console.log('Fetching detailed booking for ID:', appointment.id);
-              const bookingDetail = await getBookingById(appointment.id);
-              console.log('Booking detail for', appointment.id, ':', bookingDetail);
-              bookingDetailsMap[appointment.id] = bookingDetail;
-            } catch (err) {
-              console.error(`Error fetching booking detail ${appointment.id}:`, err);
-              // If booking detail fetch fails, create empty structure
-              bookingDetailsMap[appointment.id] = { 
-                participants: [],
-                information: [],
-                history: []
-              };
-            }
-          }
-        }
-        setBookingDetails(bookingDetailsMap);
-      } catch (err) {
-        console.error('Error fetching additional data:', err);
-      }
-    };
-
-    if (appointments.length > 0) {
-      fetchAdditionalData();
+  // Helper functions
+  const getNextAction = (status) => {
+    switch (status) {
+      case 'confirmed':
+        return 'Chuẩn bị cho lịch hẹn';
+      case 'in-progress':
+        return 'Đang xử lý mẫu tại phòng lab';
+      case 'completed':
+        return 'Kết quả đã sẵn sàng';
+      default:
+        return 'Đang chờ xử lý';
     }
-  }, [appointments]);
+  };
+
+  const getNotes = (status) => {
+    switch (status) {
+      case 'confirmed':
+        return 'Lịch hẹn đã được xác nhận. Vui lòng chuẩn bị đầy đủ giấy tờ cần thiết.';
+      case 'in-progress':
+        return 'Mẫu đã được thu thập thành công. Đang trong quá trình phân tích.';
+      case 'completed':
+        return 'Xét nghiệm hoàn tất. Kết quả có thể tải về hoặc nhận tại cơ sở.';
+      default:
+        return 'Lịch hẹn đang được xử lý.';
+    }
+  };
+
+  const getEstimatedCompletion = (date, status) => {
+    if (status === 'completed') return null;
+    
+    // Validate date
+    if (!date || date === '') return null;
+    
+    try {
+      const appointmentDate = new Date(date);
+      
+      // Check if date is valid
+      if (isNaN(appointmentDate.getTime())) {
+        return null;
+      }
+      
+      const estimatedDate = new Date(appointmentDate.getTime() + (7 * 24 * 60 * 60 * 1000));
+      return estimatedDate.toISOString().split('T')[0];
+    } catch (error) {
+      console.error('Error calculating estimated completion:', error);
+      return null;
+    }
+  };
 
   // Transform API data to match component structure
   const transformBookingData = (booking) => {
@@ -200,80 +160,42 @@ const MyAppointments = ({ user }) => {
         progress = 0;
     }
 
+    // Get service information from nested data
+    const serviceName = booking.service?.title || 'Dịch vụ xét nghiệm ADN';
+    const serviceType = serviceName.toLowerCase().includes('hành chính') ? 'administrative' : 'civil';
+
+    // Get method information from nested data
+    const methodName = booking.method?.name || 'Phương thức lấy mẫu';
+    const methodId = booking.methodId?.toString() || '';
+
+    // Get staff information from nested data
+    const staffName = booking.staff?.user?.fullname || `Nhân viên ${booking.staffId}`;
+
+    // Get participants from nested data
+    const participants = booking.participants_on_booking || [];
+
     return {
       id: booking.id,
-      service: services[booking.serviceId]?.name || booking.serviceId || `Dịch vụ ${booking.serviceId}`,
-      serviceType: services[booking.serviceId]?.categoryId || 'civil',
+      service: serviceName,
+      serviceType: serviceType,
+      method: methodName,
+      methodId: methodId,
+      staff: staffName,
       date: date,
       time: time,
+      price: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(booking.totalAmount),
       status: status,
-      method: methods[booking.methodId]?.name || booking.methodId,
-      methodId: String(booking.methodId),
       progress: progress,
-      price: booking.totalAmount ? `${booking.totalAmount.toLocaleString('vi-VN')} VNĐ` : 'Chưa xác định',
-      participants: bookingDetails[booking.id]?.participants || [],
-      information: bookingDetails[booking.id]?.information || [],
-      history: bookingDetails[booking.id]?.history || [],
-      staff: staffs[booking.staffId]?.user?.fullname || staffs[booking.staffId]?.name || `Nhân viên ${booking.staffId}`,
-      nextAction: getNextAction(status),
+      participants: participants,
       canCancel: status === 'confirmed',
       canReschedule: status === 'confirmed',
+      nextAction: getNextAction(status),
       notes: getNotes(status),
-      estimatedCompletion: getEstimatedCompletion(date, status),
-      // Original booking data for API calls
-      originalData: booking
+      estimatedCompletion: getEstimatedCompletion(date, status)
     };
   };
 
-  const getNextAction = (status) => {
-    switch (status) {
-      case 'confirmed':
-        return 'Chuẩn bị cho lịch hẹn';
-      case 'in-progress':
-        return 'Đang xử lý mẫu tại phòng lab';
-      case 'completed':
-        return 'Kết quả đã sẵn sàng';
-      default:
-        return 'Đang chờ xử lý';
-    }
-  };
-
-  const getNotes = (status) => {
-    switch (status) {
-      case 'confirmed':
-        return 'Lịch hẹn đã được xác nhận. Vui lòng chuẩn bị đầy đủ giấy tờ cần thiết.';
-      case 'in-progress':
-        return 'Mẫu đã được thu thập thành công. Đang trong quá trình phân tích.';
-      case 'completed':
-        return 'Xét nghiệm hoàn tất. Kết quả có thể tải về hoặc nhận tại cơ sở.';
-      default:
-        return 'Lịch hẹn đang được xử lý.';
-    }
-  };
-
-  const getEstimatedCompletion = (date, status) => {
-    if (status === 'completed') return null;
-    
-    // Validate date
-    if (!date || date === '') return null;
-    
-    try {
-      const appointmentDate = new Date(date);
-      
-      // Check if date is valid
-      if (isNaN(appointmentDate.getTime())) {
-        return null;
-      }
-      
-      const estimatedDate = new Date(appointmentDate.getTime() + (7 * 24 * 60 * 60 * 1000));
-      return estimatedDate.toISOString().split('T')[0];
-    } catch (error) {
-      console.error('Error calculating estimated completion:', error);
-      return null;
-    }
-  };
-
-  // Transform appointments data
+  // Transform all appointments
   const transformedAppointments = appointments.map(transformBookingData);
 
   const getStatusInfo = (status) => {
@@ -291,20 +213,7 @@ const MyAppointments = ({ user }) => {
     }
   };
 
-  const getMethodText = (method) => {
-    // Handle actual method names from API
-    const methodName = method?.toLowerCase() || '';
-    
-    if (methodName.includes('tự thu') || methodName.includes('self')) {
-      return { text: 'Tự thu mẫu tại nhà', icon: 'bi-house', color: 'success' };
-    } else if (methodName.includes('tại nhà') || methodName.includes('home')) {
-      return { text: 'Thu mẫu tại nhà', icon: 'bi-truck', color: 'warning' };
-    } else if (methodName.includes('tại cơ sở') || methodName.includes('facility')) {
-      return { text: 'Thu mẫu tại cơ sở', icon: 'bi-hospital', color: 'primary' };
-    } else {
-      return { text: method || 'Không xác định', icon: 'bi-question', color: 'secondary' };
-    }
-  };
+
 
   const getMethodIcon = (methodId) => {
     return METHOD_MAPPING[String(methodId)]?.icon || 'bi-gear';
@@ -557,7 +466,6 @@ const MyAppointments = ({ user }) => {
             <div className="list-group list-group-flush">
               {filteredAppointments.map((appointment, index) => {
                 const statusInfo = getStatusInfo(appointment.status);
-                const methodInfo = getMethodText(appointment.method);
 
                 console.log('Participants:', appointment.participants);
 
@@ -591,7 +499,7 @@ const MyAppointments = ({ user }) => {
                               </span>
                               <span className="text-muted small">
                                 <i className={`${getMethodIcon(appointment.methodId) + ' me-1'}`}></i>
-                                {methodInfo.text}
+                                {appointment.method}
                               </span>
                               <span className="text-muted small">
                                 <i className="bi bi-person-badge me-1"></i>
@@ -630,7 +538,7 @@ const MyAppointments = ({ user }) => {
                                       <td style={{fontWeight: 500}}>{participant.name}</td>
                                       <td>{participant.age}</td>
                                       <td>{participant.relationship || 'Chưa xác định'}</td>
-                                      <td>{participant.gender === 'male' ? 'Nam' : 'Nữ'}</td>
+                                      <td>{participant.gender === 'male' ? 'Nam' : participant.gender === 'female' ? 'Nữ' : 'Khác'}</td>
                                     </tr>
                                   ))}
                                 </tbody>
