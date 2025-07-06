@@ -2,6 +2,8 @@ const { dataConnect } = require("../../config/firebase.js");
 const {addSample} = require("../sample/addSample.js");
 const {createTestResult} = require("../testResult/addTestResult.js");
 const {checkBookingExists} = require("../bookings/bookingUtils.js");
+const {getBookingHistoryByBookingId} = require("./getBookingHistory.js");
+const {updatePaymentStatusByBookingId} = require("../payments/updatePayments.js");
 
 const addBookingHistory = async (bookingId, status, description) => {
     try {
@@ -93,8 +95,6 @@ const addBookingHistoryById = async (req, res) => {
             });
         }
 
-        const result = await addBookingHistory(bookingId, status, description);
-
         if (status === "SAMPLE_RECEIVED") {
             console.log("Adding sample for booking ID:", bookingId);
             await addSample(bookingId);
@@ -104,6 +104,26 @@ const addBookingHistoryById = async (req, res) => {
             console.log("Adding test result for booking ID:", bookingId);
             await createTestResult(bookingId);
         }
+
+        if (status === "BOOKED") {
+            console.log("Booking history added with status BOOKED for booking ID:", bookingId);
+            const latestHistory = await getBookingHistoryByBookingId(bookingId);
+
+            console.log(`Processing booking ${bookingId} with latest history:`, latestHistory);
+            console.log(`Status of latest history:`, latestHistory[0]?.status);
+            if (latestHistory && latestHistory.length > 0 && latestHistory[0].status === "BOOKED") {
+                return res.status(400).json({
+                    statusCode: 400,
+                    status: "error",
+                    message: "Booking already exists with status BOOKED"
+                });
+            } else {
+                console.log("Updating payment status for booking ID:", bookingId);
+                await updatePaymentStatusByBookingId(bookingId, "SUCCESS", { status: "BOOKED", updatedAt: new Date().toISOString() });
+            }
+        }
+
+        const result = await addBookingHistory(bookingId, status, description);
         return res.status(201).json({
             statusCode: 201,
             status: "success",

@@ -8,7 +8,9 @@ const DashboardOverview = ({ user }) => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [counts, setCounts] = useState({ total: 0, completed: 0, inProgress: 0 });
+  const [counts, setCounts] = useState({ total: 0, completed: 0, inProgress: 0, totalAmount: 0 });
+
+
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -21,8 +23,8 @@ const DashboardOverview = ({ user }) => {
         setError(null);
         const data = await getBookingByUserId(user.id);
         setAppointments(data || []);
-        // Count status
-        let completed = 0, inProgress = 0;
+        // Count status and calculate total amount
+        let completed = 0, inProgress = 0, totalAmount = 0;
         (data || []).forEach(b => {
           // Logic phân loại status giống MyAppointments
           const createdAt = new Date(b.createdAt);
@@ -43,15 +45,22 @@ const DashboardOverview = ({ user }) => {
           } else {
             status = 'in-progress';
           }
-          if (status === 'completed') completed++;
+          if (status === 'completed') {
+            completed++;
+            // Calculate total amount only for completed bookings
+            if (b.totalAmount && !isNaN(parseFloat(b.totalAmount))) {
+              totalAmount += parseFloat(b.totalAmount);
+            }
+          }
           if (status === 'in-progress') inProgress++;
         });
-        setCounts({ total: (data || []).length, completed, inProgress });
-      } catch (err) {
-        setError('Không thể tải danh sách lịch hẹn. Vui lòng thử lại sau.');
-      } finally {
-        setLoading(false);
-      }
+        setCounts({ total: (data || []).length, completed, inProgress, totalAmount });
+              } catch (err) {
+          setError('Không thể tải danh sách lịch hẹn. Vui lòng thử lại sau.');
+          setCounts({ total: 0, completed: 0, inProgress: 0, totalAmount: 0 });
+        } finally {
+          setLoading(false);
+        }
     };
     fetchAppointments();
   }, [user?.id]);
@@ -100,13 +109,18 @@ const DashboardOverview = ({ user }) => {
     if (status === 'confirmed') nextAction = 'Chuẩn bị cho lịch hẹn';
     if (status === 'in-progress') nextAction = 'Đang xử lý mẫu tại phòng lab';
     if (status === 'completed') nextAction = 'Kết quả đã sẵn sàng';
+    
+    // Sử dụng dữ liệu từ nested query
+    const serviceName = b.service?.title || 'Dịch vụ xét nghiệm ADN';
+    const methodName = b.method?.name || 'Phương thức lấy mẫu';
+    
     return {
       id: b.id,
-      service: b.serviceId || 'Dịch vụ',
+      service: serviceName,
       date,
       time,
       status,
-      method: b.methodId,
+      method: methodName,
       progress,
       nextAction
     };
@@ -152,7 +166,7 @@ const DashboardOverview = ({ user }) => {
         <Col>
           <div className="d-flex justify-content-between align-items-center">
             <div>
-              <h2 className="mb-1">Chào mừng trở lại, {(user && user.name && typeof user.name === 'string') ? user.name.split(' ').pop() : ''}! 👋</h2>
+              <h2 className="mb-1">Chào mừng trở lại, {(user && (user.fullname || user.name || user.displayName) && typeof (user.fullname || user.name || user.displayName) === 'string') ? (user.fullname || user.name || user.displayName) : 'Người dùng'}! 👋</h2>
               <p className="text-muted mb-0">Đây là tổng quan về các hoạt động xét nghiệm của bạn</p>
             </div>
             <div className="d-none d-md-block">
@@ -167,27 +181,53 @@ const DashboardOverview = ({ user }) => {
 
       {/* Tổng quan số lượng lịch hẹn */}
       <Row className="mb-3">
-        <Col md={4} className="mb-2">
-          <Card className="text-center shadow-sm">
-            <Card.Body>
-              <h6 className="text-muted">Tổng lịch hẹn</h6>
+        <Col md={3} className="mb-2">
+          <Card className="text-center shadow-sm bg-primary text-white">
+            <Card.Body className="py-3">
+              <div className="d-flex align-items-center justify-content-center mb-2">
+                <i className="bi bi-calendar-check fs-4 me-2"></i>
+                <h6 className="mb-0">Tổng lịch hẹn</h6>
+              </div>
               <h3 className="fw-bold mb-0">{loading ? <Spinner size="sm" /> : counts.total}</h3>
             </Card.Body>
           </Card>
         </Col>
-        <Col md={4} className="mb-2">
-          <Card className="text-center shadow-sm">
-            <Card.Body>
-              <h6 className="text-muted">Đã hoàn thành</h6>
+        <Col md={3} className="mb-2">
+          <Card className="text-center shadow-sm bg-success text-white">
+            <Card.Body className="py-3">
+              <div className="d-flex align-items-center justify-content-center mb-2">
+                <i className="bi bi-check-circle fs-4 me-2"></i>
+                <h6 className="mb-0">Đã hoàn thành</h6>
+              </div>
               <h3 className="fw-bold mb-0">{loading ? <Spinner size="sm" /> : counts.completed}</h3>
             </Card.Body>
           </Card>
         </Col>
-        <Col md={4} className="mb-2">
-          <Card className="text-center shadow-sm">
-            <Card.Body>
-              <h6 className="text-muted">Chờ kết quả</h6>
+        <Col md={3} className="mb-2">
+          <Card className="text-center shadow-sm bg-warning text-white">
+            <Card.Body className="py-3">
+              <div className="d-flex align-items-center justify-content-center mb-2">
+                <i className="bi bi-clock fs-4 me-2"></i>
+                <h6 className="mb-0">Chờ kết quả</h6>
+              </div>
               <h3 className="fw-bold mb-0">{loading ? <Spinner size="sm" /> : counts.inProgress}</h3>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col md={3} className="mb-2">
+          <Card className="text-center shadow-sm bg-info text-white">
+            <Card.Body className="py-3">
+              <div className="d-flex align-items-center justify-content-center mb-2">
+                <i className="bi bi-currency-dollar fs-4 me-2"></i>
+                <h6 className="mb-0">Tổng chi phí</h6>
+              </div>
+              <h3 className="fw-bold mb-0">
+                {loading ? <Spinner size="sm" /> : (
+                  <span>
+                    {(counts.totalAmount || 0).toLocaleString('vi-VN')} <small>VNĐ</small>
+                  </span>
+                )}
+              </h3>
             </Card.Body>
           </Card>
         </Col>

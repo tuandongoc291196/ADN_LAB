@@ -155,7 +155,110 @@ const checkUserBookingExists = async (userId, timeSlotId) => {
   }
 }
 
+const checkStaffBookingExists = async (staffId, timeSlotId) => {
+
+  if (!staffId) {
+    throw new Error("Staff ID is required to check booking existence.");
+  }
+
+  if (!timeSlotId) {
+    throw new Error("Time Slot ID is required to check booking existence.");
+  }
+
+  try {
+    const CHECK_STAFF_BOOKING_EXISTS_QUERY = `
+      query GetBookingByStaffAndTimeSlot($staffId: String!, $timeSlotId: String!) {
+        bookings(where: {
+          staffId: { eq: $staffId }
+          timeSlotId: { eq: $timeSlotId }
+        }, orderBy: {
+          createdAt: DESC
+        }) {
+          id
+          userId
+          staffId
+          timeSlotId
+          serviceId
+          methodId
+          totalAmount
+          expiresAt
+          createdAt
+          updatedAt
+          user {
+            id
+            fullname
+            email
+          }
+          staff {
+            id
+            user {
+              fullname
+            }
+          }
+          timeSlot {
+            id
+            slotDate
+            startTime
+            endTime
+          }
+          service {
+            id
+            title
+            description
+            price
+          }
+          method {
+            id
+            name
+            description
+            price
+          }
+        }
+      }
+    `;
+
+    const variables = {
+      staffId: staffId,
+      timeSlotId: timeSlotId
+    };
+    const response = await dataConnect.executeGraphql(CHECK_STAFF_BOOKING_EXISTS_QUERY, { 
+      variables: variables 
+    });
+    const bookings = response.data.bookings;
+    console.log("Staff bookings found:", bookings);
+    
+    if (bookings.length === 0) {
+      return false;
+    }
+    
+    for (const booking of bookings) {
+      try {
+        const bookingHistory = await getBookingHistoryByBookingId(booking.id);
+        if (bookingHistory && bookingHistory.length > 0) {
+          const latestStatus = bookingHistory[0].status;
+          console.log(`Booking ${booking.id} latest status:`, latestStatus);
+          
+          if (latestStatus ==  "EXPIRED") {
+            return false;
+          } else return true;
+        } else {
+          return true;
+        }
+      } catch (historyError) {
+        console.error(`Error checking history for booking ${booking.id}:`, historyError);
+        return true;
+      }
+    }
+    
+    return false;
+  } catch (error) {
+    console.error("Error checking staff booking existence:", error);
+    throw error;
+  }
+}
+
 module.exports = {
   checkBookingExists,
   checkUserBookingExists,
+  checkStaffBookingExists,
 };

@@ -60,6 +60,8 @@ const UserDashboard = ({ user }) => {
         const userData = await getUserById(userId);
         console.log('User data from API:', userData);
         
+
+        
         if (userData) {
           setCurrentUser({
             ...userData,

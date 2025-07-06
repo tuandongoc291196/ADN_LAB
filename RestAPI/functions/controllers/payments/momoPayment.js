@@ -27,9 +27,6 @@ const processMomoPayment = async (totalAmount, paymentId) => {
     const signatureBodyPaymentMOMO = crypto.createHmac('sha256', secretKey)
       .update(rawSignBodyPaymentMOMO)
       .digest('hex');
-    console.log("📍 MoMo redirectUrl:", redirectUrl);
-    console.log("📍 MoMo ipnUrl:", ipnUrl);
-    console.log("📍 Đang gọi MoMo với orderId:", orderId);
     const requestBodyPaymentMOMO = JSON.stringify({
       partnerCode: partnerCode,
       partnerName: "Test",
@@ -120,7 +117,7 @@ const getPaymentDataMOMO = async (orderId, requestId) => {
   }
 };
 
-const processMomoRefund = async (paymentDetails) => {
+const processMomoRefund = async (paymentDetails, refundAmount) => {
   try {
     console.log("Processing MOMO refund for payment details:", paymentDetails);
     const payment = JSON.parse(paymentDetails);
@@ -130,7 +127,7 @@ const processMomoRefund = async (paymentDetails) => {
     const orderId = `${payment.orderId}_REFUND`;
     const requestId = `${payment.orderId}_REFUND`;
     const transId = payment.transId;
-    const amount = payment.amount;
+    const amount = refundAmount;
     const lang = "en";
     const description = "REFUND";
 

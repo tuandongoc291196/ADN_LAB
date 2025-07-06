@@ -2,11 +2,10 @@ const { dataConnect } = require("../../config/firebase.js");
 const {addTimeSlot} = require("../timeSlots/addTimeSlot.js");
 const {isTimeFormatValid} = require("../timeSlots/timeSlotUtils.js");
 const {checkServiceExists} = require("../services/serviceUtils.js");
-const {getActiveStaffWithLowestSlotCount} = require("../users/userUtils.js");
-const {checkUserExists} = require("../users/userUtils.js");
+const {getActiveStaffWithLowestSlotCount, getActiveStaffWithLowestSlotCountExcluding, checkUserExists} = require("../users/userUtils.js");
 const {updateStaffSlotCount} = require("../users/updateUser.js");
 const {checkMethodExists} = require("../methods/methodUtils.js");
-const {checkUserBookingExists} = require("./bookingUtils.js");
+const {checkUserBookingExists, checkStaffBookingExists} = require("./bookingUtils.js");
 const {addBookingHistory} = require("../bookingHistory/addBookingHistory.js");
 const {addParticipant} = require("../participants/addParticipant.js");
 const {addInformation} = require("../information/addInformation.js");
@@ -180,8 +179,39 @@ const addBooking = async (req, res) => {
       }
     `;
 
-    const staffId = await getActiveStaffWithLowestSlotCount("1");
+    if (!(await checkUserExists(userId))) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "User not found",
+      });
+    }
+
+    if (!(await checkServiceExists(serviceId))) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "Service not found",
+      });
+    }
+
+    if (!(await checkMethodExists(methodId))) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "Method not found",
+      });
+    }
+    
+    const updateTimeSlotResponse = await addTimeSlot(slotDate, startTime, endTime);
+    
     const timeSlotId = `${slotDate}_${startTime}_${endTime}`;
+    let staffId = await getActiveStaffWithLowestSlotCount("1");
+    
+    if (await checkStaffBookingExists(staffId, timeSlotId)) {
+        staffId = await getActiveStaffWithLowestSlotCountExcluding("1", staffId);
+    }
+    
     const bookingId = `ADNLAB${await randomAlphanumeric(6, 6)}`;
 
     const bookingVariables = {
@@ -192,7 +222,7 @@ const addBooking = async (req, res) => {
       serviceId,
       methodId,
       totalAmount,
-      expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString()
+      expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString()
     };
 
     if (await checkUserBookingExists(userId, timeSlotId)) {
@@ -227,8 +257,6 @@ const addBooking = async (req, res) => {
       });
     }
     
-    const updateTimeSlotResponse = await addTimeSlot(slotDate, startTime, endTime);
-
     const response = await dataConnect.executeGraphql(CREATE_BOOKING_MUTATION, {
       variables: bookingVariables,
     });

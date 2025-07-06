@@ -1,8 +1,5 @@
 const { dataConnect } = require("../../config/firebase.js");
 const { checkBookingExists } = require("./bookingUtils.js");
-const {getBookingHistoryByBookingId} = require("../bookingHistory/getBookingHistory.js");
-const {getParticipantsByBookingId} = require("../participants/getParticipants.js");
-const {getInformationByBookingId} = require("../information/getInformations.js");
 const {checkUserExists} = require("../users/userUtils.js");
 const {checkStaffExists} = require("../users/userUtils.js");
 const {checkTimeSlotExists} = require("../timeSlots/timeSlotUtils.js");
@@ -106,40 +103,83 @@ const getOneBooking = async (req, res) => {
           totalAmount
           createdAt
           updatedAt
+          participants_on_booking {
+            id
+            name
+            age
+            identification
+            gender
+            relationship
+            createdAt
+            updatedAt
+          }
+          bookingHistories_on_booking (orderBy: {createdAt: DESC}) {
+            id
+            description
+            status
+            createdAt
+            updatedAt
+          }
+          informations_on_booking {
+            id
+            name
+            identification
+            address
+            phone
+            email
+            createdAt
+            updatedAt
+          }
           user {
             id
+            fullname
+            email
+            phone
           }
           staff {
             id
+            user {
+              fullname
+            }
           }
           service {
             id
+            title
+            description
+            fullDescription
+            price
+            duration
+            category {
+              id
+              name
+              description
+              hasLegalValue
+            }
           }
           timeSlot {
             id
           }
           method {
             id
+            name
           }
         }
       }
     `;
     
-    const responseBooking = await dataConnect.executeGraphql(GET_BOOKING_BY_ID_QUERY, {
+    const response = await dataConnect.executeGraphql(GET_BOOKING_BY_ID_QUERY, {
       variables: variables,
     });
 
-    const responseBookingData = responseBooking.data.booking;
-    const responseHistoryData = await getBookingHistoryByBookingId(bookingId);
-    const responseParticipantsData = await getParticipantsByBookingId(bookingId);
-    const responseInformationData = await getInformationByBookingId(bookingId);
+    const responseData = response.data.booking;
 
-    const responseData = {
-      booking: responseBookingData,
-      history: responseHistoryData,
-      participants: responseParticipantsData,
-      information: responseInformationData,
-    };
+    if (!responseData) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "Booking not found",
+      });
+    }
 
     res.status(200).json({
       statusCode: 200,
@@ -191,17 +231,44 @@ const getBookingByUserId = async (req, res) => {
           totalAmount
           createdAt
           updatedAt
+          participants_on_booking {
+            name
+            age
+            gender
+            identification          
+            relationship
+          }
           service {
             id
+            title
+            description
+            fullDescription
+            price
+            duration
+            category {
+              id
+              name
+              description
+              hasLegalValue
+            }
           }
           timeSlot {
             id
           }
           staff {
             id
+            user {
+              fullname
+            }
           }
           method {
             id
+            name
+          }
+          payments_on_booking {
+            id
+            status
+            createdAt
           }
         }
       }
@@ -431,17 +498,57 @@ const getOneBookingById = async (bookingId) => {
           totalAmount
           createdAt
           updatedAt
+          participants_on_booking {
+            id
+            name
+            age
+            identification
+            gender
+            relationship
+            createdAt
+            updatedAt
+          }
+          bookingHistories_on_booking (orderBy: {createdAt: DESC}) {
+            id
+            description
+            status
+            createdAt
+            updatedAt
+          }
+          informations_on_booking {
+            id
+            name
+            identification
+            address
+            phone
+            email
+            createdAt
+            updatedAt
+          }
           user {
             id
+            fullname
+            email
+            phone
           }
           staff {
             id
+            user {
+              fullname
+            }
           }
           service {
             id
-            categoryId
+            title
+            description
+            fullDescription
+            price
+            duration
             category {
+              id
               name
+              description
+              hasLegalValue
             }
           }
           timeSlot {
@@ -449,6 +556,12 @@ const getOneBookingById = async (bookingId) => {
           }
           method {
             id
+            name
+          }
+          payments_on_booking {
+            id
+            status
+            createdAt
           }
         }
       }
@@ -466,6 +579,83 @@ const getOneBookingById = async (bookingId) => {
   } catch (error) {
     console.error("Error fetching booking by ID:", error);
     throw new Error(`Failed to retrieve booking: ${error.message}`);
+  }
+};
+
+const getBookingsBySlotDate = async (slotDate) => {
+  try {
+    if (!slotDate) {
+      throw new Error("slotDate is required");
+    }
+
+    const GET_BOOKINGS_BY_SLOT_DATE_QUERY = `
+      query GetBookingsBySlotDate($slotDate: Date!) @auth(level: USER) {
+        bookings(where: {timeSlot: {slotDate: {eq: $slotDate}}}) {
+          id
+          staffId
+          timeSlotId
+          user {
+            id
+            fullname
+            email
+            phone
+            address
+          }
+          staff {
+            id
+            user {
+              fullname
+            }
+          }
+          service {
+            id
+            title
+            description
+            fullDescription
+            price
+            duration
+            category {
+              id
+              name
+              description
+              hasLegalValue
+            }
+          }
+          method {
+            id
+            name
+            description
+            price
+          }
+          timeSlot {
+            slotDate
+            startTime
+            endTime
+          }
+          totalAmount
+          createdAt
+        }
+      }
+    `;
+
+    const variables = {
+      slotDate: slotDate
+    };
+
+    console.log("Fetching bookings for slot date:", slotDate);
+    const response = await dataConnect.executeGraphql(GET_BOOKINGS_BY_SLOT_DATE_QUERY, {
+      variables: variables
+    });
+
+    const responseData = response.data.bookings;
+    if (!responseData || responseData.length === 0) {
+      console.log("No bookings found for slot date:", slotDate);
+      return [];
+    } else {
+      return responseData;
+    }
+  } catch (error) {
+    throw new Error(`Failed to fetch bookings by slot date: ${error.message}`);
   }
 };
 
@@ -513,5 +703,6 @@ module.exports = {
   getBookingbyStaffId,
   getBookingByTimeSlotId,
   getOneBookingById,
+  getBookingsBySlotDate,
   getExpiredBookings
 };

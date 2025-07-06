@@ -104,12 +104,63 @@ const getPaymentDataZALOPAY = async (app_trans_id) => {
   }
 };
 
-const processVnpayRefund = async (paymentDetails) => {
+const processZaloPayRefund = async (paymentDetails, refundAmount) => {
   try {
-    // VNPAY refund logic would go here
-    return { success: true, message: "VNPAY refund processed successfully" };
+    if (!paymentDetails) {
+      throw new Error("Payment details are required for processing refund");  
+    }
+
+    console.log("Processing ZALOPAY refund for payment details:", paymentDetails);
+    
+    const payment = JSON.parse(paymentDetails);
+    const zp_trans_id = payment.zp_trans_id;
+    const amount = refundAmount;
+    const description = "REFUND";
+
+    if (!zp_trans_id || !amount) {
+      throw new Error("zp_trans_id and amount are required for refund");
+    }
+
+    const app_id = zaloPay.app_id;
+    const timestamp = Date.now();
+    const transID = Math.floor(Math.random() * 1000000);
+    const m_refund_id = `${moment().format('YYMMDD')}_${app_id}_${transID}`;
+
+    const hmacinput = `${app_id}|${zp_trans_id}|${amount}|${description}|${timestamp}`;
+
+    const mac = crypto.createHmac('sha256', zaloPay.key1)
+        .update(hmacinput)
+        .digest('hex');
+
+    const requestBody = {
+      app_id: app_id,
+      m_refund_id: m_refund_id,
+      zp_trans_id: zp_trans_id,
+      amount: amount,
+      timestamp: timestamp,
+      description: description,
+      mac: mac
+    };
+
+    const refundRequestBody = JSON.stringify(requestBody);
+
+    const refundZALOPAYRequest = {
+      method: "POST",
+      url: "https://sb-openapi.zalopay.vn/v2/refund",
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(refundRequestBody),
+      },
+      data: refundRequestBody
+    };
+
+    console.log("Sending ZALOPAY refund request:", refundRequestBody);
+    const result = await axios(refundZALOPAYRequest);
+    
+    console.log("ZALOPAY Refund Response:", result.data);
+    return result.data;
   } catch (error) {
-    console.error("Error processing VNPAY refund:", error);
+    console.error("Error processing ZALOPAY refund:", error);
     throw error;
   }
 };
@@ -117,4 +168,5 @@ const processVnpayRefund = async (paymentDetails) => {
 module.exports = {
   processZaloPayPayment,
   getPaymentDataZALOPAY,
+  processZaloPayRefund,
 };

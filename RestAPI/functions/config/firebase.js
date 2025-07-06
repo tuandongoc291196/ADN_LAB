@@ -2,8 +2,7 @@ try {
     var admin = require("firebase-admin");
     var serviceAccount = require("./serviceAccountKey.json");
     const { getDataConnect } = require("firebase-admin/data-connect");
-
-    // Validate service account
+    
     if (!serviceAccount) {
         throw new Error("Service account key file not found");
     }

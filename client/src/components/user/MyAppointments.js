@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Row, Col, Card, Button, Badge, Form, Alert, Modal, Tab, Tabs, ProgressBar, Spinner } from 'react-bootstrap';
-import { getBookingByUserId, getServiceById, getAllMethods, getStaffById, getBookingById } from '../../services/api';
+import { getBookingByUserId } from '../../services/api';
 import { METHOD_MAPPING } from '../data/services-data';
 
 const MyAppointments = ({ user }) => {
@@ -13,12 +13,8 @@ const MyAppointments = ({ user }) => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [services, setServices] = useState({});
-  const [methods, setMethods] = useState({});
-  const [staffs, setStaffs] = useState({});
-  const [bookingDetails, setBookingDetails] = useState({});
-  const [filterDate, setFilterDate] = useState('');
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [timeFilter, setTimeFilter] = useState('all'); // all, 1week, 1month, 3months, 6months, 12months
+  const [statusFilter, setStatusFilter] = useState('all'); // all, confirmed, in-progress, completed, cancelled
 
   // Fetch appointments from API
   useEffect(() => {
@@ -44,90 +40,54 @@ const MyAppointments = ({ user }) => {
     fetchAppointments();
   }, [user?.id]);
 
-  // Fetch services and methods data
-  useEffect(() => {
-    const fetchAdditionalData = async () => {
-      try {
-        console.log('Fetching additional data for appointments:', appointments);
-        
-        // Fetch all methods
-        const methodsData = await getAllMethods();
-        console.log('Methods data:', methodsData);
-        const methodsMap = {};
-        methodsData.forEach(method => {
-          methodsMap[method.id] = method;
-        });
-        setMethods(methodsMap);
-
-        // Fetch services for each appointment
-        const servicesMap = {};
-        for (const appointment of appointments) {
-          if (appointment.serviceId && !servicesMap[appointment.serviceId]) {
-            try {
-              console.log('Fetching service for ID:', appointment.serviceId);
-              const serviceData = await getServiceById(appointment.serviceId);
-              console.log('Service data for', appointment.serviceId, ':', serviceData);
-              servicesMap[appointment.serviceId] = serviceData;
-            } catch (err) {
-              console.error(`Error fetching service ${appointment.serviceId}:`, err);
-              // If service fetch fails, use serviceId as name
-              servicesMap[appointment.serviceId] = { name: appointment.serviceId };
-            }
-          }
-        }
-        setServices(servicesMap);
-
-        // Fetch staff data for each appointment
-        const staffsMap = {};
-        for (const appointment of appointments) {
-          if (appointment.staffId && !staffsMap[appointment.staffId]) {
-            try {
-              console.log('Fetching staff for ID:', appointment.staffId);
-              const staffData = await getStaffById(appointment.staffId);
-              console.log('Staff data for', appointment.staffId, ':', staffData);
-              staffsMap[appointment.staffId] = staffData;
-            } catch (err) {
-              console.error(`Error fetching staff ${appointment.staffId}:`, err);
-              // If staff fetch fails, use staffId as name
-              staffsMap[appointment.staffId] = { 
-                user: { fullname: `Nhân viên ${appointment.staffId}` },
-                name: `Nhân viên ${appointment.staffId}`
-              };
-            }
-          }
-        }
-        setStaffs(staffsMap);
-
-        // Fetch detailed booking information including participants
-        const bookingDetailsMap = {};
-        for (const appointment of appointments) {
-          if (appointment.id && !bookingDetailsMap[appointment.id]) {
-            try {
-              console.log('Fetching detailed booking for ID:', appointment.id);
-              const bookingDetail = await getBookingById(appointment.id);
-              console.log('Booking detail for', appointment.id, ':', bookingDetail);
-              bookingDetailsMap[appointment.id] = bookingDetail;
-            } catch (err) {
-              console.error(`Error fetching booking detail ${appointment.id}:`, err);
-              // If booking detail fetch fails, create empty structure
-              bookingDetailsMap[appointment.id] = { 
-                participants: [],
-                information: [],
-                history: []
-              };
-            }
-          }
-        }
-        setBookingDetails(bookingDetailsMap);
-      } catch (err) {
-        console.error('Error fetching additional data:', err);
-      }
-    };
-
-    if (appointments.length > 0) {
-      fetchAdditionalData();
+  // Helper functions
+  const getNextAction = (status) => {
+    switch (status) {
+      case 'confirmed':
+        return 'Chuẩn bị cho lịch hẹn';
+      case 'in-progress':
+        return 'Đang xử lý mẫu tại phòng lab';
+      case 'completed':
+        return 'Kết quả đã sẵn sàng';
+      default:
+        return 'Đang chờ xử lý';
     }
-  }, [appointments]);
+  };
+
+  const getNotes = (status) => {
+    switch (status) {
+      case 'confirmed':
+        return 'Lịch hẹn đã được xác nhận. Vui lòng chuẩn bị đầy đủ giấy tờ cần thiết.';
+      case 'in-progress':
+        return 'Mẫu đã được thu thập thành công. Đang trong quá trình phân tích.';
+      case 'completed':
+        return 'Xét nghiệm hoàn tất. Kết quả có thể tải về hoặc nhận tại cơ sở.';
+      default:
+        return 'Lịch hẹn đang được xử lý.';
+    }
+  };
+
+  const getEstimatedCompletion = (date, status) => {
+    if (status === 'completed') return null;
+    
+    // Validate date
+    if (!date || date === '') return null;
+    
+    try {
+      const appointmentDate = new Date(date);
+      
+      // Check if date is valid
+      if (isNaN(appointmentDate.getTime())) {
+        return null;
+      }
+      
+      const estimatedDate = new Date(appointmentDate.getTime() + (7 * 24 * 60 * 60 * 1000));
+      return estimatedDate.toISOString().split('T')[0];
+    } catch (error) {
+      console.error('Error calculating estimated completion:', error);
+      return null;
+    }
+  };
 
   // Transform API data to match component structure
   const transformBookingData = (booking) => {
@@ -200,81 +160,91 @@ const MyAppointments = ({ user }) => {
         progress = 0;
     }
 
+    // Get service information from nested data (new API structure with category included)
+    const serviceName = booking.service?.title || 'Dịch vụ xét nghiệm ADN';
+    let serviceType = 'civil'; // default
+    let categoryName = 'ADN Dân sự'; // default
+    
+    // Use category data directly from booking.service.category (new API structure)
+    if (booking.service?.category) {
+      const hasLegalValue = booking.service.category.hasLegalValue;
+      const isAdministrative = hasLegalValue === true || hasLegalValue === 'true' || hasLegalValue === 1 || hasLegalValue === '1';
+      const isCivil = hasLegalValue === false || hasLegalValue === 'false' || hasLegalValue === 0 || hasLegalValue === '0';
+      
+      if (isAdministrative) {
+        serviceType = 'administrative';
+        categoryName = booking.service.category.name || 'ADN Hành chính';
+      } else if (isCivil) {
+        serviceType = 'civil';
+        categoryName = booking.service.category.name || 'ADN Dân sự';
+      } else {
+        // Fallback: check category name
+        const catName = booking.service.category.name || '';
+        if (catName.toLowerCase().includes('hành chính')) {
+          serviceType = 'administrative';
+          categoryName = catName;
+        } else if (catName.toLowerCase().includes('dân sự')) {
+          serviceType = 'civil';
+          categoryName = catName;
+        }
+      }
+    } else {
+      // Fallback: check service name (for backward compatibility)
+      serviceType = serviceName.toLowerCase().includes('hành chính') ? 'administrative' : 'civil';
+      categoryName = serviceType === 'administrative' ? 'ADN Hành chính' : 'ADN Dân sự';
+    }
+
+    // Get method information from nested data
+    const methodName = booking.method?.name || 'Phương thức lấy mẫu';
+    const methodId = booking.methodId?.toString() || '';
+
+    // Get staff information from nested data
+    const staffName = booking.staff?.user?.fullname || `Nhân viên ${booking.staffId}`;
+
+    // Get participants from nested data
+    const participants = booking.participants_on_booking || [];
+
+
+
     return {
       id: booking.id,
-      service: services[booking.serviceId]?.name || booking.serviceId || `Dịch vụ ${booking.serviceId}`,
-      serviceType: services[booking.serviceId]?.categoryId || 'civil',
+      service: serviceName,
+      serviceType: serviceType,
+      categoryName: categoryName, // Add category name for display
+      method: methodName,
+      methodId: methodId,
+      staff: staffName,
       date: date,
       time: time,
+      price: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(booking.totalAmount),
       status: status,
-      method: methods[booking.methodId]?.name || booking.methodId,
-      methodId: String(booking.methodId),
       progress: progress,
-      price: booking.totalAmount ? `${booking.totalAmount.toLocaleString('vi-VN')} VNĐ` : 'Chưa xác định',
-      participants: bookingDetails[booking.id]?.participants || [],
-      information: bookingDetails[booking.id]?.information || [],
-      history: bookingDetails[booking.id]?.history || [],
-      staff: staffs[booking.staffId]?.user?.fullname || staffs[booking.staffId]?.name || `Nhân viên ${booking.staffId}`,
-      nextAction: getNextAction(status),
+      participants: participants,
       canCancel: status === 'confirmed',
       canReschedule: status === 'confirmed',
+      nextAction: getNextAction(status),
       notes: getNotes(status),
-      estimatedCompletion: getEstimatedCompletion(date, status),
-      // Original booking data for API calls
-      originalData: booking
+      estimatedCompletion: getEstimatedCompletion(date, status)
     };
   };
 
-  const getNextAction = (status) => {
-    switch (status) {
-      case 'confirmed':
-        return 'Chuẩn bị cho lịch hẹn';
-      case 'in-progress':
-        return 'Đang xử lý mẫu tại phòng lab';
-      case 'completed':
-        return 'Kết quả đã sẵn sàng';
-      default:
-        return 'Đang chờ xử lý';
+  // Transform all appointments - handle async transformation
+  const [transformedAppointments, setTransformedAppointments] = useState([]);
+  
+  useEffect(() => {
+    if (appointments.length === 0) {
+      setTransformedAppointments([]);
+      return;
     }
-  };
-
-  const getNotes = (status) => {
-    switch (status) {
-      case 'confirmed':
-        return 'Lịch hẹn đã được xác nhận. Vui lòng chuẩn bị đầy đủ giấy tờ cần thiết.';
-      case 'in-progress':
-        return 'Mẫu đã được thu thập thành công. Đang trong quá trình phân tích.';
-      case 'completed':
-        return 'Xét nghiệm hoàn tất. Kết quả có thể tải về hoặc nhận tại cơ sở.';
-      default:
-        return 'Lịch hẹn đang được xử lý.';
-    }
-  };
-
-  const getEstimatedCompletion = (date, status) => {
-    if (status === 'completed') return null;
-    
-    // Validate date
-    if (!date || date === '') return null;
     
     try {
-      const appointmentDate = new Date(date);
-      
-      // Check if date is valid
-      if (isNaN(appointmentDate.getTime())) {
-        return null;
-      }
-      
-      const estimatedDate = new Date(appointmentDate.getTime() + (7 * 24 * 60 * 60 * 1000));
-      return estimatedDate.toISOString().split('T')[0];
+      const transformed = appointments.map(transformBookingData);
+      setTransformedAppointments(transformed);
     } catch (error) {
-      console.error('Error calculating estimated completion:', error);
-      return null;
+      console.error('Error transforming appointments:', error);
+      setTransformedAppointments([]);
     }
-  };
-
-  // Transform appointments data
-  const transformedAppointments = appointments.map(transformBookingData);
+  }, [appointments]);
 
   const getStatusInfo = (status) => {
     switch (status) {
@@ -291,20 +261,7 @@ const MyAppointments = ({ user }) => {
     }
   };
 
-  const getMethodText = (method) => {
-    // Handle actual method names from API
-    const methodName = method?.toLowerCase() || '';
-    
-    if (methodName.includes('tự thu') || methodName.includes('self')) {
-      return { text: 'Tự thu mẫu tại nhà', icon: 'bi-house', color: 'success' };
-    } else if (methodName.includes('tại nhà') || methodName.includes('home')) {
-      return { text: 'Thu mẫu tại nhà', icon: 'bi-truck', color: 'warning' };
-    } else if (methodName.includes('tại cơ sở') || methodName.includes('facility')) {
-      return { text: 'Thu mẫu tại cơ sở', icon: 'bi-hospital', color: 'primary' };
-    } else {
-      return { text: method || 'Không xác định', icon: 'bi-question', color: 'secondary' };
-    }
-  };
+
 
   const getMethodIcon = (methodId) => {
     return METHOD_MAPPING[String(methodId)]?.icon || 'bi-gear';
@@ -330,9 +287,44 @@ const MyAppointments = ({ user }) => {
       );
     }
 
-    // Filter by date
-    if (filterDate) {
-      filtered = filtered.filter(apt => apt.date === filterDate);
+    // Filter by time range
+    if (timeFilter !== 'all') {
+      const now = new Date();
+      const cutoffDate = new Date();
+      
+      switch (timeFilter) {
+        case '1week':
+          cutoffDate.setDate(now.getDate() - 7);
+          break;
+        case '1month':
+          cutoffDate.setMonth(now.getMonth() - 1);
+          break;
+        case '3months':
+          cutoffDate.setMonth(now.getMonth() - 3);
+          break;
+        case '6months':
+          cutoffDate.setMonth(now.getMonth() - 6);
+          break;
+        case '12months':
+          cutoffDate.setFullYear(now.getFullYear() - 1);
+          break;
+        default:
+          break;
+      }
+      
+      filtered = filtered.filter(apt => {
+        try {
+          const appointmentDate = new Date(apt.date);
+          return !isNaN(appointmentDate.getTime()) && appointmentDate >= cutoffDate;
+        } catch (error) {
+          return false;
+        }
+      });
+    }
+
+    // Filter by status
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(apt => apt.status === statusFilter);
     }
 
     // Sort by date with error handling
@@ -432,48 +424,43 @@ const MyAppointments = ({ user }) => {
 
       {/* Search and Filter */}
       <Row className="mb-4">
-        <Col lg={6}>
+        <Col lg={3} md={6} className="mb-2">
           <Form.Control
             type="text"
             placeholder="Tìm kiếm theo tên dịch vụ, mã đặt lịch hoặc người tham gia..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="me-3"
           />
         </Col>
-        <Col lg={6} className="mt-3 mt-lg-0">
+        <Col lg={3} md={6} className="mb-2">
+          <Form.Select
+            value={timeFilter}
+            onChange={(e) => setTimeFilter(e.target.value)}
+            style={{ height: '38px' }}
+          >
+            <option value="all">Tất cả thời gian</option>
+            <option value="1week">1 tuần qua</option>
+            <option value="1month">1 tháng qua</option>
+            <option value="3months">3 tháng qua</option>
+            <option value="6months">6 tháng qua</option>
+            <option value="12months">12 tháng qua</option>
+          </Form.Select>
+        </Col>
+        <Col lg={3} md={6} className="mb-2">
+          <Form.Select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            style={{ height: '38px' }}
+          >
+            <option value="all">Tất cả trạng thái</option>
+            <option value="confirmed">Đã xác nhận</option>
+            <option value="in-progress">Đang thực hiện</option>
+            <option value="completed">Hoàn thành</option>
+            <option value="cancelled">Đã hủy</option>
+          </Form.Select>
+        </Col>
+        <Col lg={3} md={6} className="mb-2">
           <div className="d-flex justify-content-end">
-            <div style={{ position: 'relative', display: 'inline-block' }}>
-              <Button
-                variant="outline-primary"
-                className="me-2"
-                onClick={() => setShowDatePicker(!showDatePicker)}
-              >
-                <i className="bi bi-filter me-1"></i>
-                Lọc theo ngày
-              </Button>
-              {showDatePicker && (
-                <input
-                  type="date"
-                  value={filterDate}
-                  autoFocus
-                  onChange={e => setFilterDate(e.target.value)}
-                  onBlur={() => setShowDatePicker(false)}
-                  style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    zIndex: 10,
-                    background: '#fff',
-                    border: '1px solid #ccc',
-                    borderRadius: 6,
-                    padding: '4px 8px',
-                    marginTop: 4,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
-                  }}
-                />
-              )}
-            </div>
             <Button variant="warning" as={Link} to="/appointment">
               <i className="bi bi-plus-circle me-2"></i>
               Đặt lịch mới
@@ -557,7 +544,6 @@ const MyAppointments = ({ user }) => {
             <div className="list-group list-group-flush">
               {filteredAppointments.map((appointment, index) => {
                 const statusInfo = getStatusInfo(appointment.status);
-                const methodInfo = getMethodText(appointment.method);
 
                 console.log('Participants:', appointment.participants);
 
@@ -569,15 +555,9 @@ const MyAppointments = ({ user }) => {
                         <div className="d-flex justify-content-between align-items-start mb-3">
                           <div>
                             <h5 className="mb-2 d-flex align-items-center" style={{gap: 8}}>
-                              {appointment.serviceType === 'administrative' ? (
-                                <span className="badge bg-warning text-dark" style={{borderRadius: '8px', padding: '6px 12px', fontWeight: 500}}>
-                                  ADN Hành chính
-                                </span>
-                              ) : (
-                                <span className="badge bg-success" style={{borderRadius: '8px', padding: '6px 12px', fontWeight: 500}}>
-                                  ADN Dân sự
-                                </span>
-                              )}
+                              <span className={`badge ${appointment.serviceType === 'administrative' ? 'bg-warning text-dark' : 'bg-success'}`} style={{borderRadius: '8px', padding: '6px 12px', fontWeight: 500}}>
+                                {appointment.categoryName}
+                              </span>
                               <span style={{fontWeight: 500, fontSize: 18}}>{appointment.service}</span>
                             </h5>
                             <div className="d-flex align-items-center gap-3 text-muted mb-2">
@@ -591,7 +571,7 @@ const MyAppointments = ({ user }) => {
                               </span>
                               <span className="text-muted small">
                                 <i className={`${getMethodIcon(appointment.methodId) + ' me-1'}`}></i>
-                                {methodInfo.text}
+                                {appointment.method}
                               </span>
                               <span className="text-muted small">
                                 <i className="bi bi-person-badge me-1"></i>
@@ -630,7 +610,7 @@ const MyAppointments = ({ user }) => {
                                       <td style={{fontWeight: 500}}>{participant.name}</td>
                                       <td>{participant.age}</td>
                                       <td>{participant.relationship || 'Chưa xác định'}</td>
-                                      <td>{participant.gender === 'male' ? 'Nam' : 'Nữ'}</td>
+                                      <td>{participant.gender === 'male' ? 'Nam' : participant.gender === 'female' ? 'Nữ' : 'Khác'}</td>
                                     </tr>
                                   ))}
                                 </tbody>
