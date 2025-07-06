@@ -161,8 +161,84 @@ const MyAppointments = ({ user }) => {
     }
 
     // Get service information from nested data
-    const serviceName = booking.service?.title || 'Dịch vụ xét nghiệm ADN';
-    const serviceType = serviceName.toLowerCase().includes('hành chính') ? 'administrative' : 'civil';
+    let serviceName = booking.service?.title || 'Dịch vụ xét nghiệm ADN';
+    let serviceType = 'civil'; // default
+    let categoryName = 'ADN Dân sự'; // default
+    
+    // Try to fetch service details if we have serviceId but no category
+    if (booking.serviceId && !booking.service?.category) {
+      try {
+        const serviceDetails = await getServiceById(booking.serviceId);
+        
+        if (serviceDetails) {
+          // Update service name if available
+          if (serviceDetails.title) {
+            serviceName = serviceDetails.title;
+          }
+          
+          // Determine service type from category data
+          // Check multiple possible locations for category data
+          const categoryData = serviceDetails.category || serviceDetails.data?.category || serviceDetails.service?.category;
+          
+          if (categoryData) {
+            // Handle both boolean and string values for hasLegalValue
+            const hasLegalValue = categoryData.hasLegalValue;
+            const isAdministrative = hasLegalValue === true || hasLegalValue === 'true' || hasLegalValue === 1 || hasLegalValue === '1';
+            const isCivil = hasLegalValue === false || hasLegalValue === 'false' || hasLegalValue === 0 || hasLegalValue === '0';
+            
+            if (isAdministrative) {
+              serviceType = 'administrative';
+              categoryName = categoryData.name || 'ADN Hành chính';
+            } else if (isCivil) {
+              serviceType = 'civil';
+              categoryName = categoryData.name || 'ADN Dân sự';
+            } else {
+              // Fallback: check category name
+              const catName = categoryData.name || '';
+              if (catName.toLowerCase().includes('hành chính')) {
+                serviceType = 'administrative';
+                categoryName = catName;
+              } else if (catName.toLowerCase().includes('dân sự')) {
+                serviceType = 'civil';
+                categoryName = catName;
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error fetching service details:', error);
+        // Fallback to service name check
+        serviceType = serviceName.toLowerCase().includes('hành chính') ? 'administrative' : 'civil';
+        categoryName = serviceType === 'administrative' ? 'ADN Hành chính' : 'ADN Dân sự';
+      }
+    } else if (booking.service?.category) {
+      // Use existing category data
+      const hasLegalValue = booking.service.category.hasLegalValue;
+      const isAdministrative = hasLegalValue === true || hasLegalValue === 'true' || hasLegalValue === 1 || hasLegalValue === '1';
+      const isCivil = hasLegalValue === false || hasLegalValue === 'false' || hasLegalValue === 0 || hasLegalValue === '0';
+      
+      if (isAdministrative) {
+        serviceType = 'administrative';
+        categoryName = booking.service.category.name || 'ADN Hành chính';
+      } else if (isCivil) {
+        serviceType = 'civil';
+        categoryName = booking.service.category.name || 'ADN Dân sự';
+      } else {
+        // Fallback: check category name
+        const catName = booking.service.category.name || '';
+        if (catName.toLowerCase().includes('hành chính')) {
+          serviceType = 'administrative';
+          categoryName = catName;
+        } else if (catName.toLowerCase().includes('dân sự')) {
+          serviceType = 'civil';
+          categoryName = catName;
+        }
+      }
+    } else {
+      // Fallback: check service name
+      serviceType = serviceName.toLowerCase().includes('hành chính') ? 'administrative' : 'civil';
+      categoryName = serviceType === 'administrative' ? 'ADN Hành chính' : 'ADN Dân sự';
+    }
 
     // Get method information from nested data
     const methodName = booking.method?.name || 'Phương thức lấy mẫu';
@@ -195,8 +271,27 @@ const MyAppointments = ({ user }) => {
     };
   };
 
-  // Transform all appointments
-  const transformedAppointments = appointments.map(transformBookingData);
+  // Transform all appointments - handle async transformation
+  const [transformedAppointments, setTransformedAppointments] = useState([]);
+  
+  useEffect(() => {
+    const transformAllAppointments = async () => {
+      if (appointments.length === 0) {
+        setTransformedAppointments([]);
+        return;
+      }
+      
+      try {
+        const transformed = await Promise.all(appointments.map(transformBookingData));
+        setTransformedAppointments(transformed);
+      } catch (error) {
+        console.error('Error transforming appointments:', error);
+        setTransformedAppointments([]);
+      }
+    };
+    
+    transformAllAppointments();
+  }, [appointments]);
 
   const getStatusInfo = (status) => {
     switch (status) {
