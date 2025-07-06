@@ -160,59 +160,13 @@ const MyAppointments = ({ user }) => {
         progress = 0;
     }
 
-    // Get service information from nested data
-    let serviceName = booking.service?.title || 'Dịch vụ xét nghiệm ADN';
+    // Get service information from nested data (new API structure with category included)
+    const serviceName = booking.service?.title || 'Dịch vụ xét nghiệm ADN';
     let serviceType = 'civil'; // default
     let categoryName = 'ADN Dân sự'; // default
     
-    // Try to fetch service details if we have serviceId but no category
-    if (booking.serviceId && !booking.service?.category) {
-      try {
-        const serviceDetails = await getServiceById(booking.serviceId);
-        
-        if (serviceDetails) {
-          // Update service name if available
-          if (serviceDetails.title) {
-            serviceName = serviceDetails.title;
-          }
-          
-          // Determine service type from category data
-          // Check multiple possible locations for category data
-          const categoryData = serviceDetails.category || serviceDetails.data?.category || serviceDetails.service?.category;
-          
-          if (categoryData) {
-            // Handle both boolean and string values for hasLegalValue
-            const hasLegalValue = categoryData.hasLegalValue;
-            const isAdministrative = hasLegalValue === true || hasLegalValue === 'true' || hasLegalValue === 1 || hasLegalValue === '1';
-            const isCivil = hasLegalValue === false || hasLegalValue === 'false' || hasLegalValue === 0 || hasLegalValue === '0';
-            
-            if (isAdministrative) {
-              serviceType = 'administrative';
-              categoryName = categoryData.name || 'ADN Hành chính';
-            } else if (isCivil) {
-              serviceType = 'civil';
-              categoryName = categoryData.name || 'ADN Dân sự';
-            } else {
-              // Fallback: check category name
-              const catName = categoryData.name || '';
-              if (catName.toLowerCase().includes('hành chính')) {
-                serviceType = 'administrative';
-                categoryName = catName;
-              } else if (catName.toLowerCase().includes('dân sự')) {
-                serviceType = 'civil';
-                categoryName = catName;
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error('❌ Error fetching service details:', error);
-        // Fallback to service name check
-        serviceType = serviceName.toLowerCase().includes('hành chính') ? 'administrative' : 'civil';
-        categoryName = serviceType === 'administrative' ? 'ADN Hành chính' : 'ADN Dân sự';
-      }
-    } else if (booking.service?.category) {
-      // Use existing category data
+    // Use category data directly from booking.service.category (new API structure)
+    if (booking.service?.category) {
       const hasLegalValue = booking.service.category.hasLegalValue;
       const isAdministrative = hasLegalValue === true || hasLegalValue === 'true' || hasLegalValue === 1 || hasLegalValue === '1';
       const isCivil = hasLegalValue === false || hasLegalValue === 'false' || hasLegalValue === 0 || hasLegalValue === '0';
@@ -235,7 +189,7 @@ const MyAppointments = ({ user }) => {
         }
       }
     } else {
-      // Fallback: check service name
+      // Fallback: check service name (for backward compatibility)
       serviceType = serviceName.toLowerCase().includes('hành chính') ? 'administrative' : 'civil';
       categoryName = serviceType === 'administrative' ? 'ADN Hành chính' : 'ADN Dân sự';
     }
@@ -250,10 +204,13 @@ const MyAppointments = ({ user }) => {
     // Get participants from nested data
     const participants = booking.participants_on_booking || [];
 
+
+
     return {
       id: booking.id,
       service: serviceName,
       serviceType: serviceType,
+      categoryName: categoryName, // Add category name for display
       method: methodName,
       methodId: methodId,
       staff: staffName,
@@ -275,22 +232,18 @@ const MyAppointments = ({ user }) => {
   const [transformedAppointments, setTransformedAppointments] = useState([]);
   
   useEffect(() => {
-    const transformAllAppointments = async () => {
-      if (appointments.length === 0) {
-        setTransformedAppointments([]);
-        return;
-      }
-      
-      try {
-        const transformed = await Promise.all(appointments.map(transformBookingData));
-        setTransformedAppointments(transformed);
-      } catch (error) {
-        console.error('Error transforming appointments:', error);
-        setTransformedAppointments([]);
-      }
-    };
+    if (appointments.length === 0) {
+      setTransformedAppointments([]);
+      return;
+    }
     
-    transformAllAppointments();
+    try {
+      const transformed = appointments.map(transformBookingData);
+      setTransformedAppointments(transformed);
+    } catch (error) {
+      console.error('Error transforming appointments:', error);
+      setTransformedAppointments([]);
+    }
   }, [appointments]);
 
   const getStatusInfo = (status) => {
@@ -572,15 +525,9 @@ const MyAppointments = ({ user }) => {
                         <div className="d-flex justify-content-between align-items-start mb-3">
                           <div>
                             <h5 className="mb-2 d-flex align-items-center" style={{gap: 8}}>
-                              {appointment.serviceType === 'administrative' ? (
-                                <span className="badge bg-warning text-dark" style={{borderRadius: '8px', padding: '6px 12px', fontWeight: 500}}>
-                                  ADN Hành chính
-                                </span>
-                              ) : (
-                                <span className="badge bg-success" style={{borderRadius: '8px', padding: '6px 12px', fontWeight: 500}}>
-                                  ADN Dân sự
-                                </span>
-                              )}
+                              <span className={`badge ${appointment.serviceType === 'administrative' ? 'bg-warning text-dark' : 'bg-success'}`} style={{borderRadius: '8px', padding: '6px 12px', fontWeight: 500}}>
+                                {appointment.categoryName}
+                              </span>
                               <span style={{fontWeight: 500, fontSize: 18}}>{appointment.service}</span>
                             </h5>
                             <div className="d-flex align-items-center gap-3 text-muted mb-2">
