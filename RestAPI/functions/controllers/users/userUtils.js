@@ -205,10 +205,71 @@ const getActiveStaffWithLowestSlotCount = async (positionId) => {
   }
 };
 
+const getActiveStaffWithLowestSlotCountExcluding = async (positionId, excludeStaffId) => {
+  try {
+    if (!positionId) {
+      throw new Error("positionId is required");
+    }
+
+    if (!excludeStaffId) {
+      throw new Error("excludeStaffId is required");
+    }
+
+    const GET_ACTIVE_STAFF_EXCLUDING_QUERY = `
+      query GetActiveStaffExcluding($positionId: String!, $excludeStaffId: String!) @auth(level: USER) {
+        staffs(
+          where: {
+            positionId: {eq: $positionId},
+            id: {ne: $excludeStaffId},
+            user: {
+              accountStatus: {eq: "active"}
+            }
+          },
+          orderBy: {slot: ASC},
+          limit: 1
+        ) {
+          id
+          slot
+          user {
+            id
+            fullname
+            accountStatus
+          }
+        }
+      }
+    `;
+
+    const variables = {
+      positionId: positionId,
+      excludeStaffId: excludeStaffId
+    };
+
+    console.log("Executing GraphQL query:", GET_ACTIVE_STAFF_EXCLUDING_QUERY, "with variables:", variables);
+    const response = await dataConnect.executeGraphql(GET_ACTIVE_STAFF_EXCLUDING_QUERY, {
+      variables: variables,
+    });
+
+    const responseData = response.data.staffs;
+
+    if (!responseData || responseData.length === 0) {
+      console.log(`No alternative active staff found for position ${positionId} excluding staff ${excludeStaffId}`);
+      throw new Error(`No alternative active staff found for position ${positionId} excluding staff ${excludeStaffId}`);
+    }
+
+    console.log(`Found alternative staff: ${responseData[0].id} with ${responseData[0].slot} slots`);
+    return responseData[0].id;
+
+  } catch (error) {
+    console.error("Error getting alternative active staff:", error);
+    throw error;
+  }
+};
+
 module.exports = {
   checkUserExists,
   checkStaffExists,
   countUsersByRole,
   getActiveStaffWithLowestSlotCount,
+  getActiveStaffWithLowestSlotCountExcluding,
   countActiveUsersByRole
 };

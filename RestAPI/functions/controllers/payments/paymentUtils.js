@@ -1,5 +1,7 @@
 const { getPaymentDataMOMO } = require('./momoPayment');
 const { getPaymentDataZALOPAY } = require('./zaloPayPayment');
+const {addBookingHistory} = require('../bookingHistory/addBookingHistory');
+const {updatePaymentStatus} = require('./updatePayments');
 
 const checkPaymentStatus = async (paymentMethod, paymentResult) => {
   const maxDuration = 5 * 60 * 1000; 
@@ -78,6 +80,64 @@ const checkPaymentStatus = async (paymentMethod, paymentResult) => {
   });
 };
 
+const handlePaymentConfirmation = async (bookingId, paymentMethod) => {
+  if (!bookingId) {
+    throw new Error("bookingId is required for payment confirmation");
+  }
+  if (!paymentMethod) {
+    throw new Error("paymentMethod is required for payment confirmation");
+  }
+
+  const paymentConfirmedHistory = await addBookingHistory(bookingId, "PAYMENT_CONFIRMED", "Payment is successful, ", paymentMethod);
+  const bookedHistory = await addBookingHistory(bookingId, "BOOKED", "Booking placed successfully");
+
+  return {
+    paymentConfirmed: paymentConfirmedHistory,
+    booked: bookedHistory
+  };
+};
+
+const handlePaymentFailure = async (bookingId, paymentMethod) => {
+  if (!bookingId) {
+    throw new Error("bookingId is required for payment failure handling");
+  }
+  if (!paymentMethod) {
+    throw new Error("paymentMethod is required for payment failure handling");
+  }
+  
+  const paymentFailedHistory = await addBookingHistory(bookingId, "PAYMENT_FAILED", "Payment failed or timed out");
+  const pendingHistory = await addBookingHistory(bookingId, "PENDING", "Payment is pending, waiting for user to complete payment", paymentMethod);
+
+  return {
+    paymentFailed: paymentFailedHistory,
+    pending: pendingHistory
+  };
+};
+
+const handleRefundConfirmation = async (bookingId, paymentMethod, refundResult) => {
+  if (!bookingId) {
+    throw new Error("bookingId is required for refund confirmation");
+  }
+  if (!paymentMethod) {
+    throw new Error("paymentMethod is required for refund confirmation");
+  }
+  if (!refundResult) {
+    throw new Error("refundResult is required for refund confirmation");
+  }
+
+  const updatePaymentStatusDATA = await updatePaymentStatus(bookingId, "REFUNDED", refundResult);
+  const addBookingHistoryDATA = await addBookingHistory(bookingId, "REFUNDED", `Payment refunded successfully via ${paymentMethod}`);
+
+  return {
+    refund: refundResult,
+    payment: updatePaymentStatusDATA,
+    bookingHistory: addBookingHistoryDATA
+  };
+};
+
 module.exports = {
-  checkPaymentStatus
+  checkPaymentStatus,
+  handlePaymentConfirmation,
+  handlePaymentFailure,
+  handleRefundConfirmation
 };

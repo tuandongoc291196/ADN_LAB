@@ -5,6 +5,7 @@ const {swaggerUi, swaggerDocs} = require('./config/swagger');
 const {onSchedule} = require("firebase-functions/v2/scheduler");
 
 const { cleanupExpiredBookings } = require("./controllers/scheduledTasks/cleanupExpiredBookings");
+const { cleanupPendingPaymentBookings } = require("./controllers/scheduledTasks/cleanupPendingPaymentBookings");
 
 const {addUser} = require('./controllers/users/addUser');
 const {getAllUsers, getOneUser, getUsersByRole} = require('./controllers/users/getUsers');
@@ -31,6 +32,8 @@ const {addRole} = require('./controllers/roles/addRole');
 const {addBooking} = require('./controllers/bookings/addBooking');
 const {getAllBookings, getOneBooking, getBookingByTimeSlotId, getBookingByUserId, getBookingbyStaffId} = require('./controllers/bookings/getBookings');
 const {deleteBookingById} = require('./controllers/bookings/deleteBooking');
+const {cancelBookingByUser, cancelBookingByManager} = require('./controllers/bookings/cancelBooking');
+const {updateBookingTime} = require('./controllers/bookings/updateBooking');
 
 const {addBookingHistoryById} = require('./controllers/bookingHistory/addBookingHistory');
 const {getBookingHistories} = require('./controllers/bookingHistory/getBookingHistory');
@@ -46,6 +49,11 @@ const {updateTestResult} = require('./controllers/testResult/updateTestResult');
 const {addPayment} = require('./controllers/payments/addPayment');
 const {getAllPayments, getBookingPayments} = require('./controllers/payments/getPayments');
 const {refundPayment} = require('./controllers/payments/refundPayment');
+
+const {addBlog} = require('./controllers/blogs/addBlog');
+const {getAllBlogs, getOneBlog} = require('./controllers/blogs/getBlogs');
+const {deleteBlog} = require('./controllers/blogs/deleteBlog');
+const {updateBlog} = require('./controllers/blogs/updateBlog');
 
 const app = express();
 
@@ -107,6 +115,9 @@ app.post('/bookings/timeslot', getBookingByTimeSlotId);
 app.post('/bookings/user', getBookingByUserId);
 app.post('/bookings/staff', getBookingbyStaffId);
 app.delete('/bookings', deleteBookingById);
+app.post('/bookings/cancel/user', cancelBookingByUser);
+app.post('/bookings/cancel/manager', cancelBookingByManager);
+app.put('/bookings/time', updateBookingTime);
 
 app.post('/booking/history/add', addBookingHistoryById);
 app.post('/booking/history', getBookingHistories);
@@ -127,8 +138,22 @@ app.get('/payments', getAllPayments);
 app.post('/payments/booking', getBookingPayments);
 app.post('/payments/refund', refundPayment);
 
+app.post('/blogs/add', addBlog);
+app.get('/blogs', getAllBlogs);
+app.post('/blogs', getOneBlog);
+app.put('/blogs', updateBlog);
+app.delete('/blogs', deleteBlog);
+
 exports.app = functions.https.onRequest(app);
-exports.cleanupExpiredBookings = onSchedule('every 15 minutes', async (event) => {
+exports.cleanupExpiredBookings = onSchedule('every 30 minutes', async (event) => {
   console.log('Running expired bookings cleanup...');
   await cleanupExpiredBookings();
+});
+
+exports.cleanupPendingPaymentBookings = onSchedule({
+  schedule: '0 18 * * *',
+  timeZone: 'Asia/Ho_Chi_Minh'
+}, async (event) => {
+  console.log('Running pending payment bookings cleanup at 18:00 GMT+7...');
+  await cleanupPendingPaymentBookings();
 });
