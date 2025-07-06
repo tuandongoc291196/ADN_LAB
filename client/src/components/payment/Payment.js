@@ -43,13 +43,13 @@ const Payment = () => {
         },
         {
             id: 'cash-on-service',
-            name: 'Thanh toán khi nhận dịch vụ',
+            name: 'Thanh toán khi sử dụng dịch vụ',
             description: 'Thanh toán bằng tiền mặt khi sử dụng dịch vụ',
             icon: 'bi-cash',
             color: 'warning',
             type: 'offline',
             fee: 0,
-            note: 'Phù hợp với dịch vụ tại cơ sở hoặc nhân viên đến nhà'
+            note: 'Phù hợp với dịch vụ lấy mẫu trực tiếp tại cơ sở'
         }
     ];
 
@@ -239,8 +239,15 @@ const Payment = () => {
             }
 
             // ✅ Trường hợp không cần redirect
-            alert('Thanh toán thành công!');
-            navigate('/payment-success', { state: { bookingId } });
+            if (paymentMethod === 'cash-on-service') {
+                // Thanh toán tiền mặt
+                alert('Đặt lịch thành công! Vui lòng thanh toán khi sử dụng dịch vụ.');
+                navigate('/user/appointments', { state: { bookingId } });
+            } else {
+                // Thanh toán online
+                alert('Thanh toán thành công!');
+                navigate('/payment-success', { state: { bookingId } });
+            }
 
         } catch (error) {
             console.error('❌ Payment error:', error);
