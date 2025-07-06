@@ -13,8 +13,8 @@ const MyAppointments = ({ user }) => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filterDate, setFilterDate] = useState('');
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [timeFilter, setTimeFilter] = useState('all'); // all, 1week, 1month, 3months, 6months, 12months
+  const [statusFilter, setStatusFilter] = useState('all'); // all, confirmed, in-progress, completed, cancelled
 
   // Fetch appointments from API
   useEffect(() => {
@@ -287,9 +287,44 @@ const MyAppointments = ({ user }) => {
       );
     }
 
-    // Filter by date
-    if (filterDate) {
-      filtered = filtered.filter(apt => apt.date === filterDate);
+    // Filter by time range
+    if (timeFilter !== 'all') {
+      const now = new Date();
+      const cutoffDate = new Date();
+      
+      switch (timeFilter) {
+        case '1week':
+          cutoffDate.setDate(now.getDate() - 7);
+          break;
+        case '1month':
+          cutoffDate.setMonth(now.getMonth() - 1);
+          break;
+        case '3months':
+          cutoffDate.setMonth(now.getMonth() - 3);
+          break;
+        case '6months':
+          cutoffDate.setMonth(now.getMonth() - 6);
+          break;
+        case '12months':
+          cutoffDate.setFullYear(now.getFullYear() - 1);
+          break;
+        default:
+          break;
+      }
+      
+      filtered = filtered.filter(apt => {
+        try {
+          const appointmentDate = new Date(apt.date);
+          return !isNaN(appointmentDate.getTime()) && appointmentDate >= cutoffDate;
+        } catch (error) {
+          return false;
+        }
+      });
+    }
+
+    // Filter by status
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(apt => apt.status === statusFilter);
     }
 
     // Sort by date with error handling
@@ -389,48 +424,43 @@ const MyAppointments = ({ user }) => {
 
       {/* Search and Filter */}
       <Row className="mb-4">
-        <Col lg={6}>
+        <Col lg={3} md={6} className="mb-2">
           <Form.Control
             type="text"
             placeholder="Tìm kiếm theo tên dịch vụ, mã đặt lịch hoặc người tham gia..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="me-3"
           />
         </Col>
-        <Col lg={6} className="mt-3 mt-lg-0">
+        <Col lg={3} md={6} className="mb-2">
+          <Form.Select
+            value={timeFilter}
+            onChange={(e) => setTimeFilter(e.target.value)}
+            style={{ height: '38px' }}
+          >
+            <option value="all">Tất cả thời gian</option>
+            <option value="1week">1 tuần qua</option>
+            <option value="1month">1 tháng qua</option>
+            <option value="3months">3 tháng qua</option>
+            <option value="6months">6 tháng qua</option>
+            <option value="12months">12 tháng qua</option>
+          </Form.Select>
+        </Col>
+        <Col lg={3} md={6} className="mb-2">
+          <Form.Select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            style={{ height: '38px' }}
+          >
+            <option value="all">Tất cả trạng thái</option>
+            <option value="confirmed">Đã xác nhận</option>
+            <option value="in-progress">Đang thực hiện</option>
+            <option value="completed">Hoàn thành</option>
+            <option value="cancelled">Đã hủy</option>
+          </Form.Select>
+        </Col>
+        <Col lg={3} md={6} className="mb-2">
           <div className="d-flex justify-content-end">
-            <div style={{ position: 'relative', display: 'inline-block' }}>
-              <Button
-                variant="outline-primary"
-                className="me-2"
-                onClick={() => setShowDatePicker(!showDatePicker)}
-              >
-                <i className="bi bi-filter me-1"></i>
-                Lọc theo ngày
-              </Button>
-              {showDatePicker && (
-                <input
-                  type="date"
-                  value={filterDate}
-                  autoFocus
-                  onChange={e => setFilterDate(e.target.value)}
-                  onBlur={() => setShowDatePicker(false)}
-                  style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    zIndex: 10,
-                    background: '#fff',
-                    border: '1px solid #ccc',
-                    borderRadius: 6,
-                    padding: '4px 8px',
-                    marginTop: 4,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
-                  }}
-                />
-              )}
-            </div>
             <Button variant="warning" as={Link} to="/appointment">
               <i className="bi bi-plus-circle me-2"></i>
               Đặt lịch mới

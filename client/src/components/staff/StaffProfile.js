@@ -141,10 +141,9 @@ const StaffProfile = ({ user }) => {
       };
       await updateUserById(userInfo.id, updateData);
       setAlert({ show: true, message: 'Cập nhật thông tin cá nhân thành công!', type: 'success' });
-      setIsEditing(false);
-      await fetchStaff();
     } catch (err) {
       setAlert({ show: true, message: 'Lỗi: ' + err.message, type: 'danger' });
+      throw err; // Re-throw để nút lưu có thể catch
     } finally {
       setSavingPersonal(false);
     }
@@ -167,10 +166,9 @@ const StaffProfile = ({ user }) => {
         certifications: certificationsArr,
       });
       setAlert({ show: true, message: 'Cập nhật thông tin công việc thành công!', type: 'success' });
-      setIsEditing(false);
-      await fetchStaff();
     } catch (err) {
       setAlert({ show: true, message: 'Lỗi: ' + err.message, type: 'danger' });
+      throw err; // Re-throw để nút lưu có thể catch
     } finally {
       setSavingWork(false);
     }
@@ -435,8 +433,25 @@ const StaffProfile = ({ user }) => {
                 {/* Nút lưu/hủy khi chỉnh sửa */}
                 {isEditing && (
                   <div className="text-end mt-4">
-                    <Button variant="success" onClick={handleSavePersonal} className="me-2" disabled={savingPersonal}>
-                      {savingPersonal ? 'Đang lưu...' : 'Lưu thay đổi'}
+                    <Button 
+                      variant="success" 
+                      onClick={async () => {
+                        try {
+                          // Cập nhật thông tin cá nhân trước
+                          await handleSavePersonal();
+                          // Sau đó cập nhật thông tin công việc
+                          await handleSaveWork();
+                          // Nếu cả 2 thành công thì đóng edit mode và refresh data
+                          setIsEditing(false);
+                          await fetchStaff();
+                        } catch (error) {
+                          console.error('Error saving:', error);
+                        }
+                      }} 
+                      className="me-2" 
+                      disabled={savingPersonal || savingWork}
+                    >
+                      {(savingPersonal || savingWork) ? 'Đang lưu...' : 'Lưu thay đổi'}
                     </Button>
                     <Button variant="secondary" onClick={() => setIsEditing(false)}>
                       Hủy
