@@ -1,60 +1,64 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Alert, Image, Breadcrumb, ListGroup } from 'react-bootstrap';
+import { Container, Row, Col, Card, Alert, Image, Breadcrumb, ListGroup, Spinner } from 'react-bootstrap';
 import { useParams, Link } from 'react-router-dom';
-
-const hardcodedBlogs = [
-    {
-      id: '1',
-      title: 'Quy trình xét nghiệm ADN cha-con và những điều cần biết',
-      summary: 'Tìm hiểu chi tiết về quy trình xét nghiệm ADN huyết thống cha-con, từ khâu thu mẫu, phân tích đến khi nhận kết quả. Bài viết cung cấp thông tin hữu ích giúp bạn chuẩn bị tốt hơn.',
-      content: 'Xét nghiệm ADN huyết thống cha-con là một phương pháp khoa học hiện đại và chính xác nhất để xác định mối quan hệ cha con.\\nQuy trình bắt đầu bằng việc thu thập mẫu. Mẫu có thể là máu, niêm mạc miệng, tóc có chân, hoặc móng tay. Tại ADN LAB, chúng tôi khuyến khích sử dụng mẫu niêm mạc miệng vì tính an toàn, không đau và dễ thực hiện.\\nSau khi thu mẫu, các mẫu sẽ được gửi đến phòng thí nghiệm đạt chuẩn quốc tế ISO 15189:2012 của chúng tôi. Tại đây, các chuyên gia sẽ tách chiết ADN và sử dụng công nghệ giải trình tự gen để phân tích 24 locus gen. Kết quả so sánh sẽ cho thấy mối quan hệ huyết thống với độ chính xác lên đến 99.9999%.\\nThời gian trả kết quả thường từ 2-5 ngày làm việc. Kết quả sẽ được bảo mật tuyệt đối và trả cho người yêu cầu xét nghiệm dưới nhiều hình thức: online qua website, bản cứng tại trung tâm hoặc gửi qua bưu điện.',
-      imageUrl: 'https://images.unsplash.com/photo-1579154204601-01588f351e67?q=80&w=2070&auto=format&fit=crop',
-      createdAt: new Date('2023-10-26T10:00:00Z').toISOString(),
-      author: 'TS. Nguyễn Văn Minh'
-    },
-    {
-      id: '2',
-      title: 'Tầm quan trọng của xét nghiệm ADN trong thủ tục pháp lý',
-      summary: 'Kết quả xét nghiệm ADN không chỉ để biết sự thật mà còn là một chứng cứ pháp lý quan trọng trong nhiều vụ việc như làm giấy khai sinh, phân chia tài sản thừa kế, hoặc thủ tục di dân.',
-      content: 'Trong các vấn đề pháp lý, sự chính xác và minh bạch là yếu tố hàng đầu. Kết quả xét nghiệm ADN từ một đơn vị được cấp phép như ADN LAB có giá trị pháp lý và được các cơ quan chức năng công nhận.\\nĐối với việc làm giấy khai sinh cho con khi cha mẹ không có giấy đăng ký kết hôn, kết quả xét nghiệm ADN là giấy tờ bắt buộc để chứng minh quan hệ cha-con. Tương tự, trong các tranh chấp về tài sản thừa kế, kết quả ADN là bằng chứng không thể chối cãi để xác định quyền lợi của những người liên quan.\\nNgoài ra, đối với các thủ tục bảo lãnh, di dân sang các nước như Mỹ, Úc, Canada, kết quả xét nghiệm ADN cũng thường được yêu cầu bởi cơ quan lãnh sự để chứng minh mối quan hệ huyết thống. Quy trình thu mẫu cho mục đích pháp lý sẽ nghiêm ngặt hơn, cần có sự chứng kiến của người có thẩm quyền và lăn tay, chụp ảnh người tham gia để đảm bảo tính khách quan.',
-      imageUrl: 'https://images.unsplash.com/photo-1581092580497-c2d29a0a4839?q=80&w=2070&auto=format&fit=crop',
-      createdAt: new Date('2023-10-20T14:30:00Z').toISOString(),
-      author: 'ThS. Lê Văn Đức'
-    }
-];
+import { getBlogById, getAllBlogs } from '../services/api'; // Corrected import path
 
 const BlogDetail = () => {
   const { id } = useParams();
   const [blog, setBlog] = useState(null);
   const [otherBlogs, setOtherBlogs] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const foundBlog = hardcodedBlogs.find(b => b.id === id);
-    if (foundBlog) {
-      setBlog(foundBlog);
-      setOtherBlogs(hardcodedBlogs.filter(b => b.id !== id));
-    } else {
-      setError('Không thể tìm thấy bài viết. Có thể bài viết đã bị xóa hoặc không tồn tại.');
-    }
+    const fetchBlogData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch the main blog post
+        const foundBlog = await getBlogById(id);
+        if (foundBlog) {
+          setBlog(foundBlog);
+        } else {
+          throw new Error('Không thể tìm thấy bài viết.');
+        }
+
+        // Fetch all blogs for the "other blogs" list
+        const allBlogs = await getAllBlogs();
+        setOtherBlogs(allBlogs.filter(b => b.id !== id).slice(0, 5)); // Show 5 other blogs
+
+      } catch (err) {
+        setError(err.message || 'Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại.');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBlogData();
   }, [id]);
 
-  const renderContent = (content) => {
-    return content.split('\\n').map((paragraph, index) => (
-      <p key={index}>{paragraph}</p>
-    ));
+  if (loading) {
+    return (
+        <Container className="py-5 text-center">
+            <Spinner animation="border" variant="primary" />
+            <p className="mt-3">Đang tải bài viết...</p>
+        </Container>
+    );
   }
 
   if (error) {
     return (
         <Container className="py-5">
             <Alert variant="danger">{error}</Alert>
+            <Link to="/blog" className="btn btn-primary">Quay lại danh sách</Link>
         </Container>
     );
   }
 
   if (!blog) {
-      return null; // or a loading spinner
+      return null; // Should not happen if error is handled properly
   }
 
   return (
@@ -62,18 +66,20 @@ const BlogDetail = () => {
       {/* Hero Section */}
       <section className="bg-primary text-white py-5">
         <Container>
-          <h1 className="display-4 fw-bold mt-4">{blog.title}</h1>
-          <div className="text-white-50 mt-4">
+           <Breadcrumb listProps={{ className: 'mb-4' }}>
+              <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/" }} className="text-white-50">Trang chủ</Breadcrumb.Item>
+              <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/blog" }} className="text-white-50">Blog</Breadcrumb.Item>
+              <Breadcrumb.Item active className="text-white">{blog.title}</Breadcrumb.Item>
+          </Breadcrumb>
+          <h1 className="display-5 fw-bold">{blog.title}</h1>
+          <div className="text-white-50 mt-3">
             <span>
               <i className="bi bi-calendar-event me-2"></i>
               Đăng ngày: {new Date(blog.createdAt).toLocaleDateString('vi-VN')} 
             </span>
             <span className="ms-4">           
-              |
-            </span>
-            <span className="ms-4">
               <i className="bi bi-person me-2"></i>
-              Tác giả: {blog.author || 'Admin'}
+              Tác giả: {blog.user?.fullname || 'Admin'}
             </span>
           </div>
         </Container>
@@ -93,18 +99,18 @@ const BlogDetail = () => {
                             fluid 
                             rounded 
                             className="mb-4"
+                            style={{ maxHeight: '400px', objectFit: 'cover', width: '100%' }}
                             />
                         )}
-                        <div className="blog-content lh-lg text-break fs-5">
-                            {renderContent(blog.content)}
-                        </div>
+                        {/* Use dangerouslySetInnerHTML to render HTML content from the editor */}
+                        <div className="blog-content lh-lg text-break fs-5" dangerouslySetInnerHTML={{ __html: blog.content }} />
 
                         <hr className="my-4" />
 
                         <div className="text-center">
                             <Link to="/blog" className="btn btn-outline-primary">
                                 <i className="bi bi-arrow-left me-2"></i>
-                                Quay lại
+                                Quay lại danh sách Blog
                             </Link>
                         </div>
                     </Card>
@@ -119,18 +125,14 @@ const BlogDetail = () => {
                                 Các bài viết khác
                             </Card.Header>
                             <ListGroup variant="flush">
-                                {otherBlogs.map(other => (
+                                {otherBlogs.length > 0 ? otherBlogs.map(other => (
                                     <ListGroup.Item action as={Link} to={`/blog/${other.id}`} key={other.id} className="py-3">
                                         <div className="fw-bold mb-1">{other.title}</div>
                                         <small className="text-muted">
-                                            <i className="bi bi-clock me-2"></i>
                                             {new Date(other.createdAt).toLocaleDateString('vi-VN')}
-                                            <span className="mx-2">|</span>
-                                            <i className="bi bi-person"></i>
-                                            <span className="mx-2">{other.author || 'Admin'}</span>
                                         </small>
                                     </ListGroup.Item>
-                                ))}
+                                )) : <ListGroup.Item>Không có bài viết nào khác.</ListGroup.Item>}
                             </ListGroup>
                         </Card>
                     </div>

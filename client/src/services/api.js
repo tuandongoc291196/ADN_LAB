@@ -582,14 +582,10 @@ export const getBookingByUserId = async (userId) => {
 
 // ==================== BLOG API FUNCTIONS ====================
 
-// Lấy danh sách tất cả blogs
+// Lấy tất cả bài blog
 export const getAllBlogs = async () => {
   try {
     const token = getToken();
-    if (!token) {
-      throw new Error('Vui lòng đăng nhập lại!');
-    }
-
     const response = await fetch(`${API_BASE_URL}/blogs`, {
       method: 'GET',
       headers: {
@@ -597,34 +593,24 @@ export const getAllBlogs = async () => {
         'Authorization': `Bearer ${token}`
       },
     });
-    
-    const data = await response.json();
-    
-    // Kiểm tra nếu response không ok
+
     if (!response.ok) {
-      throw new Error(data.message || 'Network response was not ok');
+      const errorData = await response.json().catch(() => ({ message: response.statusText }));
+      throw new Error(`Lỗi ${response.status}: ${errorData.message || 'Không thể lấy danh sách bài blog'}`);
     }
-    
-    // Đảm bảo luôn trả về mảng
-    return data.data?.blogs || [];
+
+    const data = await response.json();
+    return data.data?.blogs || data.data || [];
   } catch (error) {
-    console.error('getAllBlogs error:', error);
-    // Nếu lỗi là "No blogs found", trả về mảng rỗng
-    if (error.message.includes('No blogs found')) {
-      return [];
-    }
-    throw new Error('Failed to fetch blogs: ' + error.message);
+    console.error('Lỗi khi lấy tất cả bài blog:', error);
+    throw error;
   }
 };
 
-// Lấy blog theo ID
+// Lấy chi tiết một bài blog bằng ID
 export const getBlogById = async (id) => {
   try {
     const token = getToken();
-    if (!token) {
-      throw new Error('Vui lòng đăng nhập lại!');
-    }
-
     const response = await fetch(`${API_BASE_URL}/blogs`, {
       method: 'POST',
       headers: {
@@ -633,16 +619,16 @@ export const getBlogById = async (id) => {
       },
       body: JSON.stringify({ blogId: id }),
     });
-    
+
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to fetch blog');
+      const errorData = await response.json().catch(() => ({ message: response.statusText }));
+      throw new Error(`Lỗi ${response.status}: ${errorData.message || 'Không thể lấy chi tiết bài blog'}`);
     }
 
     const data = await response.json();
-    return data.data?.blog || null;
+    return data.data?.blog || data.data || null;
   } catch (error) {
-    console.error('Error in getBlogById:', error);
+    console.error(`Lỗi khi lấy bài blog với ID ${id}:`, error);
     throw error;
   }
 };
@@ -651,92 +637,48 @@ const getToken = () => {
   return localStorage.getItem('token');
 };
 
-export const addBlog = async (formData) => {
+export const addBlog = async (blogData) => {
   try {
-    console.log('Form data being sent:');
-    for (let [key, value] of formData.entries()) {
-      if (key === 'images') {
-        console.log('images:', value.name, value.type, value.size);
-      } else {
-        console.log(key, ':', value);
-      }
-    }
-
-    const token = getToken();
-    if (!token) {
-      throw new Error('Vui lòng đăng nhập lại!');
-    }
-
     const response = await fetch(`${API_BASE_URL}/blogs/add`, {
       method: 'POST',
       headers: {
-        // Don't set Content-Type when sending FormData
-        // Let the browser set it automatically with the correct boundary
-        'Authorization': `Bearer ${token}`
+        'Content-Type': 'application/json',
       },
-      body: formData
+      body: JSON.stringify(blogData),
     });
 
+    const result = await response.json();
     if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      const errorMessage = errorData?.message || response.statusText || 'Có lỗi xảy ra khi tạo bài viết';
-      throw new Error(errorMessage);
+      throw new Error(result.message || `HTTP error! status: ${response.status}`);
     }
-
-    const data = await response.json();
-    return data;
+    return result;
   } catch (error) {
-    console.error('Error in addBlog:', error);
+    console.error('Lỗi khi tạo bài viết mới:', error);
     throw error;
   }
 };
 
-// Cập nhật blog
-export const updateBlog = async (id, blogData) => {
+export const updateBlog = async (blogData) => {
   try {
-    const token = getToken();
-    if (!token) {
-      throw new Error('Vui lòng đăng nhập lại!');
-    }
-
-    const formData = new FormData();
-    
-    // Add text fields
-    Object.keys(blogData).forEach(key => {
-      if (key !== 'images') {
-        formData.append(key, blogData[key]);
-      }
-    });
-    
-    // Add image if exists
-    if (blogData.images) {
-      formData.append('images', blogData.images);
-    }
-
-    formData.append('blogId', id);
-
     const response = await fetch(`${API_BASE_URL}/blogs`, {
       method: 'PUT',
       headers: {
-        'Authorization': `Bearer ${token}`
+        'Content-Type': 'application/json',
       },
-      body: formData,
+      body: JSON.stringify(blogData),
     });
 
+    const result = await response.json();
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to update blog');
+      throw new Error(result.message || `HTTP error! status: ${response.status}`);
     }
-
-    const data = await response.json();
-    return data.data?.blog || null;
+    return result;
   } catch (error) {
-    console.error('Error in updateBlog:', error);
+    console.error(`Lỗi khi cập nhật bài viết ${blogData.blogId}:`, error);
     throw error;
   }
 };
 
-// Xóa blog
 export const deleteBlog = async (id) => {
   try {
     const token = getToken();

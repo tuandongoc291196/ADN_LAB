@@ -12,6 +12,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Row, Col, Card, Button, Form, Alert, Badge, Tab, Nav, Modal } from 'react-bootstrap';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { storage } from '../config/firebase';
 import { addBlog, getBlogById, updateBlog } from '../../services/api';
 import { useAuth } from '../context/auth';
 
@@ -170,134 +172,95 @@ const BlogEditor = () => {
       return false;
     }
 
-    if (!isEditMode && !selectedImageFile) {
-      console.log('Image validation failed');
-      setMessage({ type: 'danger', content: 'Vui lòng chọn ảnh cho bài viết!' });
-      return false;
-    }
-
     console.log('Form validation passed');
     return true;
   };
 
+  const uploadImageAndGetURL = (file) => {
+    return new Promise((resolve, reject) => {
+      const storageRef = ref(storage, `blogs/${Date.now()}_${file.name}`);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      uploadTask.on('state_changed',
+        (snapshot) => {
+          // Có thể thêm logic xử lý progress bar ở đây
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          console.log('Upload is ' + progress + '% done');
+        },
+        (error) => {
+          console.error("Upload failed:", error);
+          reject(error);
+        },
+        () => {
+          getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+            console.log('File available at', downloadURL);
+            resolve(downloadURL);
+          });
+        }
+      );
+    });
+  };
+
   const handleSave = async (status = 'draft') => {
     console.log('Starting save with status:', status);
-    console.log('Current form data:', formData);
-    console.log('Selected image:', selectedImageFile);
-    console.log('User info:', user);
 
     if (!validateForm()) {
-      console.log('Form validation failed');
       return;
     }
 
     setIsSaving(true);
+    setMessage({ type: '', content: '' });
+
     try {
-      const form = new FormData();
-      
-      // Add required fields first
       const userId = user?.id || user?.user_id;
-      console.log('Using userId:', userId);
-      
       if (!userId) {
         throw new Error('Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại!');
       }
 
-      // Kiểm tra quyền admin
-      if (!user?.role?.id || user.role.id !== '3') {
-        console.log('Role check failed:', user?.role);
-        throw new Error('Bạn không có quyền tạo bài viết!');
-      }
+      let imageUrl = isEditMode ? formData.imageUrl : '';
 
-      // Add user ID first
-      form.append('userId', userId);
-      
-      // Add other required fields
-      if (!formData.title?.trim()) {
-        throw new Error('Tiêu đề không được để trống!');
-      }
-      form.append('title', formData.title.trim());
-
-      if (!formData.content?.trim()) {
-        throw new Error('Nội dung không được để trống!');
-      }
-      form.append('content', formData.content.trim());
-
-      form.append('status', status);
-      form.append('slug', formData.slug?.trim() || formData.title.trim().toLowerCase().replace(/\s+/g, '-'));
-
-      // Add optional fields
-      if (formData.excerpt) form.append('excerpt', formData.excerpt.trim());
-      if (formData.category) form.append('category', formData.category.trim());
-      if (formData.tags && formData.tags.length > 0) form.append('tags', formData.tags.join(','));
-      if (formData.seoTitle) form.append('seoTitle', formData.seoTitle.trim());
-      if (formData.seoDescription) form.append('seoDescription', formData.seoDescription.trim());
-      if (formData.seoKeywords) form.append('seoKeywords', formData.seoKeywords.trim());
-      form.append('featured', formData.featured ? 'true' : 'false');
-      
-      // Add image if selected
-      if (!selectedImageFile && !isEditMode) {
-        throw new Error('Vui lòng chọn ảnh cho bài viết!');
-      }
-      
+      // Nếu có file ảnh mới được chọn, upload nó trước
       if (selectedImageFile) {
-        // Kiểm tra kích thước file (max 5MB)
-        if (selectedImageFile.size > 5 * 1024 * 1024) {
-          throw new Error('Kích thước ảnh không được vượt quá 5MB!');
-        }
-        
-        // Kiểm tra định dạng file
-        if (!selectedImageFile.type.startsWith('image/')) {
-          throw new Error('File không đúng định dạng hình ảnh!');
-        }
-        
-        // Thêm file hình ảnh vào form với key là 'images'
-        form.append('images', selectedImageFile, selectedImageFile.name);
-      }
-      
-      // Log form data for debugging
-      console.log('Form data being sent:');
-      for (let [key, value] of form.entries()) {
-        if (key === 'images') {
-          console.log('images:', value.name, value.type, value.size);
-        } else {
-          console.log(key, ':', value);
-        }
+        setMessage({ type: 'info', content: 'Đang tải ảnh lên...' });
+        imageUrl = await uploadImageAndGetURL(selectedImageFile);
+        setMessage({ type: '', content: '' });
       }
 
-      // Log form data for debugging
-      console.log('Form data entries:');
-      for (let [key, value] of form.entries()) {
-        console.log(key, ':', value);
-      }
+      const blogData = {
+        title: formData.title.trim(),
+        content: formData.content.trim(),
+        status: status,
+        userId: userId,
+        imageUrl: imageUrl, // Gửi link ảnh đã upload (hoặc link cũ)
+        // Thêm các trường khác nếu cần
+        slug: formData.slug?.trim() || formData.title.trim().toLowerCase().replace(/\s+/g, '-'),
+        excerpt: formData.excerpt?.trim(),
+        category: formData.category?.trim(),
+        tags: formData.tags,
+        seoTitle: formData.seoTitle?.trim(),
+        seoDescription: formData.seoDescription?.trim(),
+        seoKeywords: formData.seoKeywords?.trim(),
+        featured: formData.featured,
+      };
 
-      let result;
+      let response;
       if (isEditMode) {
-        console.log('Updating blog with ID:', id);
-        result = await updateBlog(id, form);
+        console.log('Updating blog with data:', { blogId: id, ...blogData });
+        response = await updateBlog({ blogId: id, ...blogData });
       } else {
-        console.log('Creating new blog');
-        result = await addBlog(form);
+        console.log('Adding new blog with data:', blogData);
+        response = await addBlog(blogData);
       }
 
-      console.log('API response:', result);
-
-      setMessage({ 
-        type: 'success', 
-        content: `Bài viết đã được ${isEditMode ? 'cập nhật' : 'tạo'} ${status === 'published' ? 'và xuất bản' : ''} thành công!` 
-      });
-
-      // Redirect after successful save
+      setMessage({ type: 'success', content: response.message || 'Lưu bài viết thành công!' });
       setTimeout(() => {
         navigate('/admin/blog');
       }, 2000);
 
     } catch (error) {
-      console.error('Error details:', error);
-      setMessage({ 
-        type: 'danger', 
-        content: `Có lỗi xảy ra khi ${isEditMode ? 'cập nhật' : 'tạo'} bài viết: ${error.message}` 
-      });
+      console.error('Error saving blog:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Đã xảy ra lỗi không mong muốn.';
+      setMessage({ type: 'danger', content: errorMessage });
     } finally {
       setIsSaving(false);
     }
@@ -468,7 +431,6 @@ const BlogEditor = () => {
                   accept="image/jpeg,image/png"
                   onChange={handleImageUpload}
                   className="mb-2"
-                  required={!isEditMode}
                   name="images"
                 />
                 <Form.Text className="text-muted">
