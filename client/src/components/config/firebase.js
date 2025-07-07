@@ -137,6 +137,11 @@ const signInWithGoogle = async () => {
   try {
     const res = await signInWithPopup(auth, googleProvider);
     const user = res.user;
+    
+    // Get and store the ID token
+    const token = await user.getIdToken();
+    localStorage.setItem('token', token);
+    
     try {
       const { data: userData } = await getUser(dataConnect, { userId: user.uid });
       console.log("Checking if user exists in database:", userData);
@@ -181,6 +186,10 @@ const logInWithEmailAndPassword = async (email, password) => {
   try {
     const res = await signInWithEmailAndPassword(auth, email, password);
     const user = res.user;
+
+    // Get and store the ID token
+    const token = await user.getIdToken();
+    localStorage.setItem('token', token);
 
     // Lấy thông tin người dùng từ Data Connect
     const { data: userData } = await getUser(dataConnect, { userId: user.uid });
@@ -260,6 +269,7 @@ const logout = async () => {
   localStorage.removeItem("user_id");
   localStorage.removeItem("userData");
   localStorage.removeItem("isAuthenticated");
+  localStorage.removeItem("token");
   clearUserCache();  
   signOut(auth);
 };

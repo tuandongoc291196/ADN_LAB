@@ -1,3 +1,4 @@
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -53,6 +54,14 @@ import MessengerChat from "./components/chat/messenger/MessengerChat.js";
 import { AuthProvider } from "./components/context/auth.js";
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from './components/config/firebase';
+
+// Admin Components
+import AdminOverview from './components/admin/AdminOverview';
+import BlogManagement from './components/admin/BlogManagement';
+import BlogEditor from './components/admin/BlogEditor';
+import AdminReports from './components/admin/AdminReports';
+import UserManagement from './components/admin/UserManagement';
+import SystemSettings from './components/admin/SystemSettings';
 
 // Protected Route Component for general authentication
 const ProtectedRoute = ({ children, user, requiredRole }) => {
@@ -182,7 +191,16 @@ function App() {
               <Route path="/manager/*" element={<ManagerDashboard />} />
 
               {/* Admin Dashboard Routes */}
-              <Route path="/admin/*" element={<AdminDashboard />} />
+              <Route path="/admin" element={<AdminDashboard />}>
+                <Route index element={<Navigate to="/admin/overview" replace />} />
+                <Route path="overview" element={<AdminOverview />} />
+                <Route path="blog" element={<BlogManagement />} />
+                <Route path="blog/create" element={<BlogEditor />} />
+                <Route path="blog/edit/:id" element={<BlogEditor />} />
+                <Route path="reports" element={<AdminReports />} />
+                <Route path="users" element={<UserManagement />} />
+                <Route path="settings" element={<SystemSettings />} />
+              </Route>
 
               {/* Information & Library Pages */}
               <Route path="/library" element={<div className="container py-5"><h2>Thư viện ADN</h2><p>Thư viện kiến thức đang được phát triển...</p></div>} />

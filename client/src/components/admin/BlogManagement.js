@@ -9,81 +9,68 @@
  * - Thống kê tổng quan về blog
  */
 
-import React, { useState } from 'react';
-import { Routes, Route, Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Row, Col, Card, Button, Table, Badge, Form, Modal, Alert, Tab, Nav } from 'react-bootstrap';
+import { getAllBlogs, deleteBlog, updateBlogStatus, toggleBlogFeatured } from '../../services/api';
+import { useAuth } from '../context/auth';
 
-const BlogManagement = ({ user }) => {
-  const navigate = useNavigate(); // Hook điều hướng React Router
+const BlogManagement = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   
-  // State quản lý UI
-  const [selectedTab, setSelectedTab] = useState('all'); // Tab hiện tại: all/published/draft/featured
-  const [searchTerm, setSearchTerm] = useState(''); // Từ khóa tìm kiếm bài viết
-  const [showDeleteModal, setShowDeleteModal] = useState(false); // Hiển thị modal xác nhận xóa
-  const [selectedPost, setSelectedPost] = useState(null); // Bài viết được chọn để thao tác
-  const [message, setMessage] = useState({ type: '', content: '' }); // Thông báo success/error
+  // State management
+  const [selectedTab, setSelectedTab] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedPost, setSelectedPost] = useState(null);
+  const [message, setMessage] = useState({ type: '', content: '' });
+  const [loading, setLoading] = useState(true);
+  const [blogPosts, setBlogPosts] = useState([]);
 
-  // Dữ liệu mock các bài viết blog
-  // Trong thực tế sẽ được fetch từ API
-  const [blogPosts, setBlogPosts] = useState([
-    {
-      id: 1,
-      title: 'Những điều cần biết về xét nghiệm ADN trước sinh',
-      slug: 'xet-nghiem-adn-truoc-sinh',
-      excerpt: 'Xét nghiệm ADN trước sinh là phương pháp hiện đại, an toàn để xác định quan hệ huyết thống khi thai nhi còn trong bụng mẹ...',
-      content: 'Nội dung chi tiết về xét nghiệm ADN trước sinh...',
-      featuredImage: 'https://via.placeholder.com/300x200/007bff/ffffff?text=ADN+Prenatal',
-      category: 'Xét nghiệm ADN',
-      tags: ['ADN trước sinh', 'Thai nhi', 'An toàn'],
-      status: 'published',
-      author: 'TS. Nguyễn Văn Minh',
-      publishDate: '2024-01-20',
-      views: 1250,
-      comments: 8,
-      featured: true,
-      seoTitle: 'Xét nghiệm ADN trước sinh - An toàn và chính xác',
-      seoDescription: 'Tìm hiểu về xét nghiệm ADN trước sinh, phương pháp hiện đại giúp xác định quan hệ huyết thống an toàn cho mẹ và bé.',
-      seoKeywords: 'xét nghiệm ADN trước sinh, ADN thai nhi, xét nghiệm an toàn'
-    },
-    {
-      id: 2,
-      title: 'Quy trình xét nghiệm ADN hành chính tại ADN LAB',
-      slug: 'quy-trinh-xet-nghiem-adn-hanh-chinh',
-      excerpt: 'Hướng dẫn chi tiết quy trình thực hiện xét nghiệm ADN có giá trị pháp lý tại ADN LAB...',
-      content: 'Nội dung về quy trình xét nghiệm ADN hành chính...',
-      featuredImage: 'https://via.placeholder.com/300x200/28a745/ffffff?text=ADN+Legal',
-      category: 'Hướng dẫn',
-      tags: ['ADN hành chính', 'Pháp lý', 'Quy trình'],
-      status: 'published',
-      author: 'ThS. Trần Thị Lan',
-      publishDate: '2024-01-18',
-      views: 890,
-      comments: 12,
-      featured: false,
-      seoTitle: 'Quy trình xét nghiệm ADN hành chính chi tiết',
-      seoDescription: 'Hướng dẫn quy trình xét nghiệm ADN có giá trị pháp lý, các bước thực hiện và giấy tờ cần thiết.',
-      seoKeywords: 'xét nghiệm ADN hành chính, ADN pháp lý, quy trình ADN'
-    },
-    {
-      id: 3,
-      title: 'Công nghệ STR Analysis trong xét nghiệm ADN',
-      slug: 'cong-nghe-str-analysis-adn',
-      excerpt: 'Tìm hiểu về công nghệ STR Analysis - phương pháp hiện đại nhất trong xét nghiệm ADN hiện nay...',
-      content: 'Nội dung về công nghệ STR Analysis...',
-      featuredImage: 'https://via.placeholder.com/300x200/ffc107/000000?text=STR+Tech',
-      category: 'Công nghệ',
-      tags: ['STR Analysis', 'Công nghệ ADN', 'Khoa học'],
-      status: 'draft',
-      author: 'TS. Lê Văn Đức',
-      publishDate: '',
-      views: 0,
-      comments: 0,
-      featured: false,
-      seoTitle: 'Công nghệ STR Analysis trong xét nghiệm ADN',
-      seoDescription: 'Khám phá công nghệ STR Analysis, phương pháp tiên tiến nhất trong phân tích ADN với độ chính xác cao.',
-      seoKeywords: 'STR Analysis, công nghệ ADN, phân tích gen'
+  // Check user permissions
+  useEffect(() => {
+    if (!user?.role?.id || user.role.id !== '3') {
+      navigate('/');
+      return;
     }
-  ]);
+    fetchBlogs();
+  }, [user]);
+
+  const fetchBlogs = async () => {
+    try {
+      setLoading(true);
+      const blogs = await getAllBlogs();
+      setBlogPosts(blogs || []);
+      
+      // Hiển thị thông báo khi không có bài viết
+      if (blogs.length === 0) {
+        setMessage({ 
+          type: 'info', 
+          content: 'Chưa có bài viết nào. Hãy tạo bài viết đầu tiên!' 
+        });
+      } else {
+        setMessage({ type: '', content: '' });
+      }
+    } catch (error) {
+      console.error('Error fetching blogs:', error);
+      setMessage({ 
+        type: 'danger', 
+        content: 'Lỗi khi tải danh sách blog: ' + error.message 
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle create new blog
+  const handleCreateNew = () => {
+    if (!user?.role?.id || user.role.id !== '3') {
+      setMessage({ type: 'danger', content: 'Bạn không có quyền tạo bài viết mới!' });
+      return;
+    }
+    navigate('/admin/blog/create');
+  };
 
   // Danh sách categories và statuses để lọc
   const categories = ['Tất cả', 'Xét nghiệm ADN', 'Hướng dẫn', 'Công nghệ', 'Tin tức'];
@@ -92,9 +79,9 @@ const BlogManagement = ({ user }) => {
   // Hàm lọc bài viết theo search term và tab được chọn
   const filteredPosts = blogPosts.filter(post => {
     // Tìm kiếm theo tiêu đề, nội dung hoặc tags
-    const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         post.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesSearch = post.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         post.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         post.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
     
     // Lọc theo tab được chọn
     const matchesTab = selectedTab === 'all' || 
@@ -119,34 +106,61 @@ const BlogManagement = ({ user }) => {
     }
   };
 
-  // Hàm mở modal xác nhận xóa bài viết
-  const handleDeletePost = (post) => {
+  // Handle delete blog
+  const handleDeletePost = async (post) => {
+    if (!user?.role?.id || user.role.id !== '3') {
+      setMessage({ type: 'danger', content: 'Bạn không có quyền xóa bài viết!' });
+      return;
+    }
     setSelectedPost(post);
     setShowDeleteModal(true);
   };
 
-  // Hàm xác nhận xóa bài viết
-  const confirmDelete = () => {
-    setBlogPosts(blogPosts.filter(post => post.id !== selectedPost.id)); // Xóa khỏi danh sách
-    setShowDeleteModal(false); // Đóng modal
-    setSelectedPost(null); // Reset selected post
-    setMessage({ type: 'success', content: 'Đã xóa bài viết thành công!' });
-    setTimeout(() => setMessage({ type: '', content: '' }), 3000); // Ẩn thông báo sau 3s
+  // Confirm delete
+  const confirmDelete = async () => {
+    try {
+      await deleteBlog(selectedPost.id);
+      await fetchBlogs();
+      setShowDeleteModal(false);
+      setSelectedPost(null);
+      setMessage({ type: 'success', content: 'Đã xóa bài viết thành công!' });
+    } catch (error) {
+      console.error('Error deleting blog:', error);
+      setMessage({ type: 'danger', content: 'Lỗi khi xóa bài viết: ' + error.message });
+    }
+  };
+
+  // Handle edit blog
+  const handleEditPost = (post) => {
+    if (!user?.role?.id || user.role.id !== '3') {
+      setMessage({ type: 'danger', content: 'Bạn không có quyền chỉnh sửa bài viết!' });
+      return;
+    }
+    navigate(`/admin/blog/edit/${post.id}`);
   };
 
   // Hàm toggle trạng thái featured của bài viết
-  const handleToggleFeatured = (postId) => {
-    setBlogPosts(blogPosts.map(post => 
-      post.id === postId ? { ...post, featured: !post.featured } : post
-    ));
+  const handleToggleFeatured = async (postId) => {
+    try {
+      const post = blogPosts.find(p => p.id === postId);
+      await toggleBlogFeatured(postId, !post.featured);
+      await fetchBlogs(); // Refresh list
+      setMessage({ type: 'success', content: 'Đã cập nhật trạng thái nổi bật!' });
+    } catch (error) {
+      setMessage({ type: 'danger', content: 'Lỗi khi cập nhật trạng thái: ' + error.message });
+    }
+    setTimeout(() => setMessage({ type: '', content: '' }), 3000);
   };
 
   // Hàm thay đổi trạng thái xuất bản của bài viết
-  const handleStatusChange = (postId, newStatus) => {
-    setBlogPosts(blogPosts.map(post => 
-      post.id === postId ? { ...post, status: newStatus } : post
-    ));
-    setMessage({ type: 'success', content: 'Đã cập nhật trạng thái bài viết!' });
+  const handleStatusChange = async (postId, newStatus) => {
+    try {
+      await updateBlogStatus(postId, newStatus);
+      await fetchBlogs(); // Refresh list
+      setMessage({ type: 'success', content: 'Đã cập nhật trạng thái bài viết!' });
+    } catch (error) {
+      setMessage({ type: 'danger', content: 'Lỗi khi cập nhật trạng thái: ' + error.message });
+    }
     setTimeout(() => setMessage({ type: '', content: '' }), 3000);
   };
 
@@ -167,7 +181,11 @@ const BlogManagement = ({ user }) => {
               <p className="text-muted mb-0">Tạo và quản lý bài viết blog về ADN</p>
             </div>
             <div>
-              <Button variant="success" as={Link} to="/admin/blog/create">
+              <Button 
+                variant="success" 
+                onClick={handleCreateNew}
+                disabled={!user?.id && !user?.user_id}
+              >
                 <i className="bi bi-plus-circle me-2"></i>
                 Tạo bài viết mới
               </Button>
@@ -183,286 +201,213 @@ const BlogManagement = ({ user }) => {
         </Alert>
       )}
 
-      {/* Statistics */}
-      <Row className="mb-4">
-        <Col lg={3} md={6} className="mb-3">
-          <Card className="border-0 shadow-sm bg-primary text-white">
-            <Card.Body className="text-center">
-              <i className="bi bi-newspaper fs-1 mb-2 d-block"></i>
-              <div className="h4 mb-0">{blogPosts.length}</div>
-              <small>Tổng bài viết</small>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col lg={3} md={6} className="mb-3">
-          <Card className="border-0 shadow-sm bg-success text-white">
-            <Card.Body className="text-center">
-              <i className="bi bi-check-circle fs-1 mb-2 d-block"></i>
-              <div className="h4 mb-0">{blogPosts.filter(p => p.status === 'published').length}</div>
-              <small>Đã xuất bản</small>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col lg={3} md={6} className="mb-3">
-          <Card className="border-0 shadow-sm bg-warning text-dark">
-            <Card.Body className="text-center">
-              <i className="bi bi-star fs-1 mb-2 d-block"></i>
-              <div className="h4 mb-0">{blogPosts.filter(p => p.featured).length}</div>
-              <small>Nổi bật</small>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col lg={3} md={6} className="mb-3">
-          <Card className="border-0 shadow-sm bg-info text-white">
-            <Card.Body className="text-center">
-              <i className="bi bi-eye fs-1 mb-2 d-block"></i>
-              <div className="h4 mb-0">{blogPosts.reduce((sum, p) => sum + p.views, 0).toLocaleString()}</div>
-              <small>Tổng lượt xem</small>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Search and Filter */}
-      <Card className="shadow-sm mb-4">
-        <Card.Body>
-          <Row>
-            <Col lg={6} className="mb-3">
-              <Form.Control
-                type="text"
-                placeholder="Tìm kiếm bài viết..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+      {/* Loading State */}
+      {loading ? (
+        <Card className="shadow-sm mb-4">
+          <Card.Body className="text-center py-5">
+            <div className="spinner-border text-primary mb-3" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+            <p className="text-muted">Đang tải danh sách bài viết...</p>
+          </Card.Body>
+        </Card>
+      ) : (
+        <>
+          {/* Statistics */}
+          <Row className="mb-4">
+            <Col lg={3} md={6} className="mb-3">
+              <Card className="border-0 shadow-sm bg-primary text-white">
+                <Card.Body className="text-center">
+                  <i className="bi bi-newspaper fs-1 mb-2 d-block"></i>
+                  <div className="h4 mb-0">{blogPosts.length}</div>
+                  <small>Tổng bài viết</small>
+                </Card.Body>
+              </Card>
             </Col>
-            <Col lg={6} className="text-lg-end">
-              <Button variant="outline-primary" className="me-2">
-                <i className="bi bi-funnel me-1"></i>
-                Lọc theo danh mục
-              </Button>
-              <Button variant="outline-secondary">
-                <i className="bi bi-download me-1"></i>
-                Xuất danh sách
-              </Button>
+            <Col lg={3} md={6} className="mb-3">
+              <Card className="border-0 shadow-sm bg-success text-white">
+                <Card.Body className="text-center">
+                  <i className="bi bi-check-circle fs-1 mb-2 d-block"></i>
+                  <div className="h4 mb-0">
+                    {blogPosts.filter(post => post.status === 'published').length}
+                  </div>
+                  <small>Đã xuất bản</small>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col lg={3} md={6} className="mb-3">
+              <Card className="border-0 shadow-sm bg-warning text-dark">
+                <Card.Body className="text-center">
+                  <i className="bi bi-pencil-square fs-1 mb-2 d-block"></i>
+                  <div className="h4 mb-0">
+                    {blogPosts.filter(post => post.status === 'draft').length}
+                  </div>
+                  <small>Bản nháp</small>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col lg={3} md={6} className="mb-3">
+              <Card className="border-0 shadow-sm bg-info text-white">
+                <Card.Body className="text-center">
+                  <i className="bi bi-star fs-1 mb-2 d-block"></i>
+                  <div className="h4 mb-0">
+                    {blogPosts.filter(post => post.featured).length}
+                  </div>
+                  <small>Nổi bật</small>
+                </Card.Body>
+              </Card>
             </Col>
           </Row>
-        </Card.Body>
-      </Card>
 
-      {/* Blog Posts List */}
-      <Card className="shadow-sm">
-        <Tab.Container activeKey={selectedTab} onSelect={setSelectedTab}>
-          <Card.Header className="bg-white border-bottom">
-            <Nav variant="tabs" className="border-0">
-              <Nav.Item>
-                <Nav.Link eventKey="all">
-                  Tất cả ({blogPosts.length})
-                </Nav.Link>
-              </Nav.Item>
-              <Nav.Item>
-                <Nav.Link eventKey="published">
-                  Đã xuất bản ({blogPosts.filter(p => p.status === 'published').length})
-                </Nav.Link>
-              </Nav.Item>
-              <Nav.Item>
-                <Nav.Link eventKey="draft">
-                  Bản nháp ({blogPosts.filter(p => p.status === 'draft').length})
-                </Nav.Link>
-              </Nav.Item>
-              <Nav.Item>
-                <Nav.Link eventKey="featured">
-                  Nổi bật ({blogPosts.filter(p => p.featured).length})
-                </Nav.Link>
-              </Nav.Item>
-            </Nav>
-          </Card.Header>
+          {/* Empty State */}
+          {blogPosts.length === 0 ? (
+            <Card className="shadow-sm mb-4">
+              <Card.Body className="text-center py-5">
+                <i className="bi bi-journal-text text-muted fs-1 mb-3 d-block"></i>
+                <h4 className="text-muted mb-2">Chưa có bài viết nào</h4>
+                <p className="text-muted mb-4">Hãy bắt đầu tạo bài viết đầu tiên của bạn</p>
+                <Button 
+                  variant="primary" 
+                  onClick={handleCreateNew}
+                  disabled={!user?.id && !user?.user_id}
+                >
+                  <i className="bi bi-plus-circle me-2"></i>
+                  Tạo bài viết mới
+                </Button>
+              </Card.Body>
+            </Card>
+          ) : (
+            <>
+              {/* Filters */}
+              <Card className="shadow-sm mb-4">
+                <Card.Body>
+                  <Row>
+                    <Col md={6} lg={3}>
+                      <Form.Group className="mb-3 mb-md-0">
+                        <Form.Control
+                          type="text"
+                          placeholder="Tìm kiếm bài viết..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                      </Form.Group>
+                    </Col>
+                    <Col md={6} lg={3}>
+                      <Form.Select
+                        value={selectedTab}
+                        onChange={(e) => setSelectedTab(e.target.value)}
+                      >
+                        <option value="all">Tất cả bài viết</option>
+                        <option value="published">Đã xuất bản</option>
+                        <option value="draft">Bản nháp</option>
+                        <option value="featured">Nổi bật</option>
+                      </Form.Select>
+                    </Col>
+                  </Row>
+                </Card.Body>
+              </Card>
 
-          <Card.Body className="p-0">
-            {filteredPosts.length > 0 ? (
-              <Table className="mb-0" hover responsive>
-                <thead className="bg-light">
-                  <tr>
-                    <th style={{ width: '40%' }}>Bài viết</th>
-                    <th style={{ width: '15%' }}>Danh mục</th>
-                    <th style={{ width: '15%' }}>Trạng thái</th>
-                    <th style={{ width: '15%' }}>Ngày xuất bản</th>
-                    <th style={{ width: '10%' }}>Lượt xem</th>
-                    <th style={{ width: '5%' }}>Hành động</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredPosts.map(post => (
-                    <tr key={post.id}>
-                      <td>
-                        <div className="d-flex align-items-start">
-                          <img 
-                            src={post.featuredImage} 
-                            alt={post.title}
-                            className="rounded me-3"
-                            style={{ width: '60px', height: '40px', objectFit: 'cover' }}
-                          />
-                          <div>
-                            <div className="fw-bold mb-1">
-                              {post.title}
-                              {post.featured && (
-                                <Badge bg="warning" text="dark" className="ms-2">
-                                  <i className="bi bi-star-fill me-1"></i>
-                                  Nổi bật
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="text-muted small">{post.excerpt.substring(0, 80)}...</div>
-                            <div className="small text-muted">
-                              Tác giả: {post.author} • {post.comments} bình luận
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <Badge bg="light" text="dark">{post.category}</Badge>
-                      </td>
-                      <td>
-                        {getStatusBadge(post.status)}
-                      </td>
-                      <td>
-                        <div className="small">
-                          {formatDate(post.publishDate)}
-                        </div>
-                      </td>
-                      <td>
-                        <div className="small">
-                          <i className="bi bi-eye me-1"></i>
-                          {post.views.toLocaleString()}
-                        </div>
-                      </td>
-                      <td>
-                        <div className="dropdown">
-                          <Button 
-                            variant="outline-secondary" 
-                            size="sm"
-                            data-bs-toggle="dropdown"
-                          >
-                            <i className="bi bi-three-dots"></i>
-                          </Button>
-                          <ul className="dropdown-menu">
-                            <li>
-                              <Link 
-                                className="dropdown-item" 
-                                to={`/admin/blog/edit/${post.id}`}
-                              >
-                                <i className="bi bi-pencil me-2"></i>
-                                Chỉnh sửa
-                              </Link>
-                            </li>
-                            <li>
-                              <Link 
-                                className="dropdown-item" 
-                                to={`/blog/${post.slug}`}
-                                target="_blank"
-                              >
-                                <i className="bi bi-eye me-2"></i>
-                                Xem trước
-                              </Link>
-                            </li>
-                            <li>
-                              <button 
-                                className="dropdown-item"
-                                onClick={() => handleToggleFeatured(post.id)}
-                              >
-                                <i className={`bi bi-star${post.featured ? '-fill' : ''} me-2`}></i>
-                                {post.featured ? 'Bỏ nổi bật' : 'Đặt nổi bật'}
-                              </button>
-                            </li>
-                            <li><hr className="dropdown-divider" /></li>
-                            <li>
-                              <button 
-                                className="dropdown-item text-success"
-                                onClick={() => handleStatusChange(post.id, 'published')}
-                                disabled={post.status === 'published'}
-                              >
-                                <i className="bi bi-check-circle me-2"></i>
-                                Xuất bản
-                              </button>
-                            </li>
-                            <li>
-                              <button 
-                                className="dropdown-item text-warning"
-                                onClick={() => handleStatusChange(post.id, 'draft')}
-                                disabled={post.status === 'draft'}
-                              >
-                                <i className="bi bi-file-earmark me-2"></i>
-                                Chuyển về nháp
-                              </button>
-                            </li>
-                            <li><hr className="dropdown-divider" /></li>
-                            <li>
-                              <button 
-                                className="dropdown-item text-danger"
-                                onClick={() => handleDeletePost(post)}
-                              >
-                                <i className="bi bi-trash me-2"></i>
-                                Xóa
-                              </button>
-                            </li>
-                          </ul>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            ) : (
-              <div className="text-center py-5">
-                <i className="bi bi-newspaper text-muted" style={{ fontSize: '4rem' }}></i>
-                <h5 className="text-muted mt-3">
-                  {searchTerm ? 'Không tìm thấy bài viết nào' : 'Chưa có bài viết nào'}
-                </h5>
-                <p className="text-muted">
-                  {searchTerm 
-                    ? 'Thử thay đổi từ khóa tìm kiếm'
-                    : 'Bắt đầu tạo bài viết đầu tiên của bạn'
-                  }
-                </p>
-                {!searchTerm && (
-                  <Button variant="success" as={Link} to="/admin/blog/create">
-                    <i className="bi bi-plus-circle me-2"></i>
-                    Tạo bài viết mới
-                  </Button>
-                )}
-              </div>
-            )}
-          </Card.Body>
-        </Tab.Container>
-      </Card>
+              {/* Blog Posts Table */}
+              <Card className="shadow-sm">
+                <Card.Body>
+                  <Table responsive hover className="align-middle">
+                    <thead>
+                      <tr>
+                        <th style={{ width: '40%' }}>Bài viết</th>
+                        <th>Tác giả</th>
+                        <th>Ngày xuất bản</th>
+                        <th>Trạng thái</th>
+                        <th>Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredPosts.length === 0 ? (
+                        <tr>
+                          <td colSpan="5" className="text-center py-4">
+                            <i className="bi bi-inbox fs-1 text-muted d-block mb-2"></i>
+                            <p className="text-muted mb-0">Không tìm thấy bài viết nào</p>
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredPosts.map(post => (
+                          <tr key={post.id}>
+                            <td>
+                              <div className="d-flex align-items-center">
+                                {post.featuredImage && (
+                                  <img
+                                    src={post.featuredImage}
+                                    alt={post.title}
+                                    style={{ width: '60px', height: '40px', objectFit: 'cover' }}
+                                    className="me-3 rounded"
+                                  />
+                                )}
+                                <div>
+                                  <h6 className="mb-1">{post.title}</h6>
+                                  <small className="text-muted d-block">
+                                    {post.excerpt?.substring(0, 100)}...
+                                  </small>
+                                </div>
+                              </div>
+                            </td>
+                            <td>{post.author}</td>
+                            <td>{formatDate(post.publishDate)}</td>
+                            <td>{getStatusBadge(post.status)}</td>
+                            <td>
+                              <div className="d-flex gap-2">
+                                <Button
+                                  variant="outline-primary"
+                                  size="sm"
+                                  onClick={() => handleEditPost(post)}
+                                  to={`/admin/blog/edit/${post.id}`}
+                                  title="Chỉnh sửa"
+                                >
+                                  <i className="bi bi-pencil"></i>
+                                </Button>
+                                <Button
+                                  variant={post.featured ? "warning" : "outline-warning"}
+                                  size="sm"
+                                  onClick={() => handleToggleFeatured(post.id)}
+                                  title={post.featured ? "Bỏ nổi bật" : "Đánh dấu nổi bật"}
+                                >
+                                  <i className="bi bi-star-fill"></i>
+                                </Button>
+                                <Button
+                                  variant="outline-danger"
+                                  size="sm"
+                                  onClick={() => handleDeletePost(post)}
+                                  title="Xóa"
+                                >
+                                  <i className="bi bi-trash"></i>
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </Table>
+                </Card.Body>
+              </Card>
+            </>
+          )}
+        </>
+      )}
 
       {/* Delete Confirmation Modal */}
       <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)}>
         <Modal.Header closeButton>
-          <Modal.Title className="text-danger">Xác nhận xóa bài viết</Modal.Title>
+          <Modal.Title>Xác nhận xóa</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {selectedPost && (
-            <>
-              <Alert variant="danger">
-                <i className="bi bi-exclamation-triangle me-2"></i>
-                <strong>Cảnh báo!</strong> Hành động này không thể hoàn tác.
-              </Alert>
-              <p>Bạn có chắc chắn muốn xóa bài viết:</p>
-              <div className="p-3 bg-light rounded">
-                <strong>"{selectedPost.title}"</strong>
-                <div className="text-muted small mt-1">
-                  Tác giả: {selectedPost.author} • {selectedPost.views} lượt xem
-                </div>
-              </div>
-            </>
-          )}
+          Bạn có chắc chắn muốn xóa bài viết "{selectedPost?.title}"?
+          <br />
+          Hành động này không thể hoàn tác.
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
             Hủy
           </Button>
           <Button variant="danger" onClick={confirmDelete}>
-            <i className="bi bi-trash me-2"></i>
             Xóa bài viết
           </Button>
         </Modal.Footer>

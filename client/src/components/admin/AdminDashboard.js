@@ -9,40 +9,44 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, Navigate, Outlet } from 'react-router-dom';
 import { Container, Row, Col, Nav, Card, Alert, Badge } from 'react-bootstrap';
+import { useAuth } from '../context/auth';
 
 // Import các component admin con để routing
 import AdminOverview from './AdminOverview';
 import BlogManagement from './BlogManagement';
+import BlogEditor from './BlogEditor';
 import AdminReports from './AdminReports';
 import UserManagement from './UserManagement';
 import SystemSettings from './SystemSettings';
 
-const AdminDashboard = ({ user }) => {
+const AdminDashboard = () => {
   // Hook lấy thông tin URL hiện tại để xác định tab đang active
   const location = useLocation();
   const [activeTab, setActiveTab] = useState('overview');
+  const { user } = useAuth();
 
   // Effect cập nhật activeTab khi URL thay đổi
   useEffect(() => {
-    const path = location.pathname.split('/').pop();
-    if (path && path !== 'admin') {
-      setActiveTab(path);
+    const pathSegments = location.pathname.split('/');
+    const currentPath = pathSegments[pathSegments.length - 1];
+    const parentPath = pathSegments[pathSegments.length - 2];
+    
+    // Nếu đang ở trang con của blog (create/edit), vẫn giữ blog tab active
+    if (parentPath === 'blog' && (currentPath === 'create' || currentPath.startsWith('edit'))) {
+      setActiveTab('blog');
+    } else if (currentPath && currentPath !== 'admin') {
+      setActiveTab(currentPath);
     } else {
       setActiveTab('overview');
     }
   }, [location.pathname]);
 
-  // Dữ liệu mặc định của admin nếu không có props user
-  const adminUser = user || {
-    id: 1,
-    name: 'Admin ADN LAB',
-    email: 'admin@adnlab.vn',
-    role: 'admin',
-    avatar: null,
-    permissions: ['all']
-  };
+  // Kiểm tra quyền admin
+  if (!user?.role?.id || user.role.id !== '3') {
+    return <Navigate to="/" replace />;
+  }
 
   // Cấu hình menu items cho sidebar
   // Mỗi item chứa: key, label, icon, path, color và description
@@ -99,9 +103,9 @@ const AdminDashboard = ({ user }) => {
             <Card.Header className="bg-danger text-white text-center py-4">
               {/* Avatar hoặc icon mặc định */}
               <div className="mb-3">
-                {adminUser.avatar ? (
+                {user.avatar ? (
                   <img 
-                    src={adminUser.avatar} 
+                    src={user.avatar} 
                     alt="Avatar"
                     className="rounded-circle"
                     style={{ width: '80px', height: '80px', objectFit: 'cover' }}
@@ -115,7 +119,7 @@ const AdminDashboard = ({ user }) => {
               </div>
               
               {/* Tên và role của admin */}
-              <h5 className="mb-1">{adminUser.name}</h5>
+              <h5 className="mb-1">{user.fullname}</h5>
               <Badge bg="warning" text="dark" className="mb-2">
                 <i className="bi bi-crown me-1"></i>
                 Administrator
@@ -125,7 +129,7 @@ const AdminDashboard = ({ user }) => {
               <div className="mt-2">
                 <small className="d-block opacity-75">
                   <i className="bi bi-envelope me-1"></i>
-                  {adminUser.email}
+                  {user.email}
                 </small>
               </div>
             </Card.Header>
@@ -197,16 +201,7 @@ const AdminDashboard = ({ user }) => {
 
         {/* MAIN CONTENT - Khu vực hiển thị nội dung chính */}
         <Col lg={9} md={8}>
-          {/* React Router để hiển thị component tương ứng với đường dẫn */}
-          <Routes>
-            <Route path="/" element={<AdminOverview user={adminUser} />} />
-            <Route path="/overview" element={<AdminOverview user={adminUser} />} />
-            <Route path="/blog/*" element={<BlogManagement user={adminUser} />} />
-            <Route path="/staff/*" element={<UserManagement user={adminUser} />} />
-            <Route path="/reports/*" element={<AdminReports user={adminUser} />} />
-            <Route path="/users/*" element={<UserManagement user={adminUser} />} />
-            <Route path="/settings/*" element={<SystemSettings user={adminUser} />} />
-          </Routes>
+          <Outlet />
         </Col>
       </Row>
     </Container>

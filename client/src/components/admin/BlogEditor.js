@@ -9,22 +9,40 @@
  * - Lên lịch xuất bản
  */
 
-import React, { useState, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Row, Col, Card, Button, Form, Alert, Badge, Tab, Nav, Modal } from 'react-bootstrap';
+import { addBlog, getBlogById, updateBlog } from '../../services/api';
+import { useAuth } from '../context/auth';
 
-const BlogEditor = ({ user }) => {
-  const navigate = useNavigate();
+const BlogEditor = () => {
   const { id } = useParams();
-  const fileInputRef = useRef();
-  const isEditMode = Boolean(id);
+  const navigate = useNavigate();
+  const isEditMode = !!id;
+  const { user } = useAuth();
+
+  // Check user permissions
+  useEffect(() => {
+    if (!user?.id && !user?.user_id) {
+      navigate('/login');
+      return;
+    }
+    if (isEditMode) {
+      fetchBlog();
+    }
+  }, [user, id]);
+
+  const [loading, setLoading] = useState(isEditMode);
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState({ type: '', content: '' });
+  const [selectedImageFile, setSelectedImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
 
   const [formData, setFormData] = useState({
     title: '',
     slug: '',
     excerpt: '',
     content: '',
-    featuredImage: '',
     category: '',
     tags: [],
     status: 'draft',
@@ -33,13 +51,10 @@ const BlogEditor = ({ user }) => {
     seoDescription: '',
     seoKeywords: '',
     publishDate: '',
-    schedulePublish: false
   });
 
   const [newTag, setNewTag] = useState('');
   const [showPreview, setShowPreview] = useState(false);
-  const [message, setMessage] = useState({ type: '', content: '' });
-  const [isSaving, setIsSaving] = useState(false);
 
   const categories = [
     'Xét nghiệm ADN',
@@ -51,22 +66,48 @@ const BlogEditor = ({ user }) => {
     'Gia đình'
   ];
 
+  const fetchBlog = async () => {
+    try {
+      const blog = await getBlogById(id);
+      if (!blog) {
+        setMessage({ type: 'danger', content: 'Không tìm thấy bài viết!' });
+        return;
+      }
+      setFormData({
+        ...blog,
+        tags: blog.tags || [],
+      });
+      if (blog.imageUrl) {
+        setImagePreview(blog.imageUrl);
+      }
+    } catch (error) {
+      console.error('Error fetching blog:', error);
+      setMessage({ type: 'danger', content: 'Lỗi khi tải bài viết: ' + error.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleInputChange = (field, value) => {
-    setFormData({ ...formData, [field]: value });
+    console.log('Input change:', field, value);
     
-    // Auto generate slug from title
     if (field === 'title') {
+      // Tự động tạo slug từ title
       const slug = value
         .toLowerCase()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/[\s_-]+/g, '-')
-        .replace(/^-+|-+$/g, '');
-      setFormData(prev => ({ ...prev, slug }));
-    }
-    
-    // Auto generate SEO title if not manually edited
-    if (field === 'title' && !formData.seoTitle) {
-      setFormData(prev => ({ ...prev, seoTitle: value }));
+        .replace(/[^\w\s-]/g, '') // Loại bỏ ký tự đặc biệt
+        .replace(/\s+/g, '-') // Thay khoảng trắng bằng dấu gạch ngang
+        .replace(/-+/g, '-'); // Loại bỏ nhiều dấu gạch ngang liên tiếp
+      
+      console.log('Generated slug:', slug);
+      
+      setFormData(prev => ({
+        ...prev,
+        title: value,
+        slug: slug
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
     }
   };
 
@@ -90,45 +131,160 @@ const BlogEditor = ({ user }) => {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // In real app, upload to server/cloud storage
-      const imageUrl = URL.createObjectURL(file);
-      setFormData({ ...formData, featuredImage: imageUrl });
+      // Kiểm tra file type
+      if (!file.type.startsWith('image/')) {
+        setMessage({ type: 'danger', content: 'Chỉ chấp nhận file hình ảnh!' });
+        return;
+      }
+
+      // Kiểm tra file size (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setMessage({ type: 'danger', content: 'Kích thước file không được vượt quá 5MB!' });
+        return;
+      }
+
+      setSelectedImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+      setMessage({ type: '', content: '' });
     }
   };
 
-  const handleSave = async (status = 'draft') => {
-    setIsSaving(true);
+  const validateForm = () => {
+    console.log('Validating form...');
     
+    if (!user?.id && !user?.user_id) {
+      console.log('User validation failed:', user);
+      setMessage({ type: 'danger', content: 'Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại!' });
+      return false;
+    }
+    
+    if (!formData.title.trim()) {
+      console.log('Title validation failed');
+      setMessage({ type: 'danger', content: 'Tiêu đề bài viết không được để trống!' });
+      return false;
+    }
+    
+    if (!formData.content.trim()) {
+      console.log('Content validation failed');
+      setMessage({ type: 'danger', content: 'Nội dung bài viết không được để trống!' });
+      return false;
+    }
+
+    if (!isEditMode && !selectedImageFile) {
+      console.log('Image validation failed');
+      setMessage({ type: 'danger', content: 'Vui lòng chọn ảnh cho bài viết!' });
+      return false;
+    }
+
+    console.log('Form validation passed');
+    return true;
+  };
+
+  const handleSave = async (status = 'draft') => {
+    console.log('Starting save with status:', status);
+    console.log('Current form data:', formData);
+    console.log('Selected image:', selectedImageFile);
+    console.log('User info:', user);
+
+    if (!validateForm()) {
+      console.log('Form validation failed');
+      return;
+    }
+
+    setIsSaving(true);
     try {
-      // Validation
-      if (!formData.title.trim()) {
-        setMessage({ type: 'danger', content: 'Tiêu đề bài viết không được để trống!' });
-        setIsSaving(false);
-        return;
+      const form = new FormData();
+      
+      // Add required fields first
+      const userId = user?.id || user?.user_id;
+      console.log('Using userId:', userId);
+      
+      if (!userId) {
+        throw new Error('Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại!');
+      }
+
+      // Kiểm tra quyền admin
+      if (!user?.role?.id || user.role.id !== '3') {
+        console.log('Role check failed:', user?.role);
+        throw new Error('Bạn không có quyền tạo bài viết!');
+      }
+
+      // Add user ID first
+      form.append('userId', userId);
+      
+      // Add other required fields
+      if (!formData.title?.trim()) {
+        throw new Error('Tiêu đề không được để trống!');
+      }
+      form.append('title', formData.title.trim());
+
+      if (!formData.content?.trim()) {
+        throw new Error('Nội dung không được để trống!');
+      }
+      form.append('content', formData.content.trim());
+
+      form.append('status', status);
+      form.append('slug', formData.slug?.trim() || formData.title.trim().toLowerCase().replace(/\s+/g, '-'));
+
+      // Add optional fields
+      if (formData.excerpt) form.append('excerpt', formData.excerpt.trim());
+      if (formData.category) form.append('category', formData.category.trim());
+      if (formData.tags && formData.tags.length > 0) form.append('tags', formData.tags.join(','));
+      if (formData.seoTitle) form.append('seoTitle', formData.seoTitle.trim());
+      if (formData.seoDescription) form.append('seoDescription', formData.seoDescription.trim());
+      if (formData.seoKeywords) form.append('seoKeywords', formData.seoKeywords.trim());
+      form.append('featured', formData.featured ? 'true' : 'false');
+      
+      // Add image if selected
+      if (!selectedImageFile && !isEditMode) {
+        throw new Error('Vui lòng chọn ảnh cho bài viết!');
       }
       
-      if (!formData.content.trim()) {
-        setMessage({ type: 'danger', content: 'Nội dung bài viết không được để trống!' });
-        setIsSaving(false);
-        return;
+      if (selectedImageFile) {
+        // Kiểm tra kích thước file (max 5MB)
+        if (selectedImageFile.size > 5 * 1024 * 1024) {
+          throw new Error('Kích thước ảnh không được vượt quá 5MB!');
+        }
+        
+        // Kiểm tra định dạng file
+        if (!selectedImageFile.type.startsWith('image/')) {
+          throw new Error('File không đúng định dạng hình ảnh!');
+        }
+        
+        // Thêm file hình ảnh vào form với key là 'images'
+        form.append('images', selectedImageFile, selectedImageFile.name);
+      }
+      
+      // Log form data for debugging
+      console.log('Form data being sent:');
+      for (let [key, value] of form.entries()) {
+        if (key === 'images') {
+          console.log('images:', value.name, value.type, value.size);
+        } else {
+          console.log(key, ':', value);
+        }
       }
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Log form data for debugging
+      console.log('Form data entries:');
+      for (let [key, value] of form.entries()) {
+        console.log(key, ':', value);
+      }
 
-      const postData = {
-        ...formData,
-        status,
-        publishDate: status === 'published' ? new Date().toISOString().split('T')[0] : formData.publishDate,
-        author: user?.name || 'Admin',
-        lastModified: new Date().toISOString()
-      };
+      let result;
+      if (isEditMode) {
+        console.log('Updating blog with ID:', id);
+        result = await updateBlog(id, form);
+      } else {
+        console.log('Creating new blog');
+        result = await addBlog(form);
+      }
 
-      console.log('Saving post:', postData);
+      console.log('API response:', result);
 
       setMessage({ 
         type: 'success', 
-        content: `Bài viết đã được ${status === 'published' ? 'xuất bản' : 'lưu'} thành công!` 
+        content: `Bài viết đã được ${isEditMode ? 'cập nhật' : 'tạo'} ${status === 'published' ? 'và xuất bản' : ''} thành công!` 
       });
 
       // Redirect after successful save
@@ -137,7 +293,11 @@ const BlogEditor = ({ user }) => {
       }, 2000);
 
     } catch (error) {
-      setMessage({ type: 'danger', content: 'Có lỗi xảy ra khi lưu bài viết!' });
+      console.error('Error details:', error);
+      setMessage({ 
+        type: 'danger', 
+        content: `Có lỗi xảy ra khi ${isEditMode ? 'cập nhật' : 'tạo'} bài viết: ${error.message}` 
+      });
     } finally {
       setIsSaving(false);
     }
@@ -146,6 +306,19 @@ const BlogEditor = ({ user }) => {
   const handlePreview = () => {
     setShowPreview(true);
   };
+
+  if (loading) {
+    return (
+      <Card className="shadow-sm mb-4">
+        <Card.Body className="text-center py-5">
+          <div className="spinner-border text-primary mb-3" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <p className="text-muted">Đang tải dữ liệu bài viết...</p>
+        </Card.Body>
+      </Card>
+    );
+  }
 
   return (
     <>
@@ -162,13 +335,31 @@ const BlogEditor = ({ user }) => {
               </p>
             </div>
             <div>
-              <Button variant="outline-secondary" onClick={() => navigate('/admin/blog')} className="me-2">
+              <Button 
+                variant="outline-secondary" 
+                onClick={() => navigate('/admin/blog')} 
+                className="me-2"
+                disabled={isSaving}
+              >
                 <i className="bi bi-arrow-left me-2"></i>
                 Quay lại
               </Button>
-              <Button variant="outline-info" onClick={handlePreview} className="me-2">
-                <i className="bi bi-eye me-2"></i>
-                Xem trước
+              <Button
+                variant="primary"
+                onClick={() => handleSave('draft')}
+                disabled={isSaving}
+                className="me-2"
+              >
+                <i className="bi bi-save me-2"></i>
+                Lưu nháp
+              </Button>
+              <Button
+                variant="success"
+                onClick={() => handleSave('published')}
+                disabled={isSaving}
+              >
+                <i className="bi bi-cloud-upload me-2"></i>
+                {isSaving ? 'Đang lưu...' : 'Xuất bản'}
               </Button>
             </div>
           </div>
@@ -232,17 +423,7 @@ const BlogEditor = ({ user }) => {
                 <Form.Control
                   as="textarea"
                   rows={15}
-                  placeholder="Viết nội dung chi tiết bài viết tại đây...
-
-Bạn có thể sử dụng Markdown để định dạng:
-- **text in đậm**
-- *text in nghiêng*
-- # Tiêu đề lớn
-- ## Tiêu đề phụ
-- [link](https://example.com)
-- ![hình ảnh](url)
-
-Hãy viết nội dung chất lượng, có giá trị cho người đọc!"
+                  placeholder="Viết nội dung chi tiết bài viết tại đây..."
                   value={formData.content}
                   onChange={(e) => handleInputChange('content', e.target.value)}
                   style={{ fontFamily: 'monospace' }}
@@ -257,12 +438,52 @@ Hãy viết nội dung chất lượng, có giá trị cho người đọc!"
 
         {/* Sidebar */}
         <Col lg={4}>
+          {/* Featured Image */}
+          <Card className="shadow-sm mb-4">
+            <Card.Header className="bg-white">
+              <h6 className="mb-0">
+                <i className="bi bi-image me-2"></i>
+                Ảnh bài viết
+              </h6>
+            </Card.Header>
+            <Card.Body>
+              <div className="text-center mb-3">
+                {imagePreview ? (
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="img-fluid rounded"
+                    style={{ maxHeight: '200px' }}
+                  />
+                ) : (
+                  <div className="border rounded p-3">
+                    <i className="bi bi-image text-muted" style={{ fontSize: '3rem' }}></i>
+                    <p className="text-muted mb-0">Chưa có ảnh</p>
+                  </div>
+                )}
+              </div>
+              <Form.Group>
+                <Form.Control
+                  type="file"
+                  accept="image/jpeg,image/png"
+                  onChange={handleImageUpload}
+                  className="mb-2"
+                  required={!isEditMode}
+                  name="images"
+                />
+                <Form.Text className="text-muted">
+                  Chọn file ảnh (JPG, PNG) với kích thước tối đa 5MB
+                </Form.Text>
+              </Form.Group>
+            </Card.Body>
+          </Card>
+
           {/* Publishing Options */}
           <Card className="shadow-sm mb-4">
-            <Card.Header className="bg-primary text-white">
+            <Card.Header className="bg-white">
               <h6 className="mb-0">
-                <i className="bi bi-send me-2"></i>
-                Xuất bản
+                <i className="bi bi-gear me-2"></i>
+                Tùy chọn xuất bản
               </h6>
             </Card.Header>
             <Card.Body>
@@ -273,125 +494,19 @@ Hãy viết nội dung chất lượng, có giá trị cho người đọc!"
                   onChange={(e) => handleInputChange('status', e.target.value)}
                 >
                   <option value="draft">Bản nháp</option>
-                  <option value="pending">Chờ duyệt</option>
-                  <option value="published">Đã xuất bản</option>
+                  <option value="published">Xuất bản</option>
                 </Form.Select>
               </Form.Group>
 
               <Form.Group className="mb-3">
                 <Form.Check
                   type="checkbox"
-                  label="Đặt làm bài viết nổi bật"
+                  label="Đánh dấu là bài viết nổi bật"
                   checked={formData.featured}
                   onChange={(e) => handleInputChange('featured', e.target.checked)}
                 />
               </Form.Group>
 
-              <Form.Group className="mb-3">
-                <Form.Check
-                  type="checkbox"
-                  label="Lên lịch xuất bản"
-                  checked={formData.schedulePublish}
-                  onChange={(e) => handleInputChange('schedulePublish', e.target.checked)}
-                />
-                {formData.schedulePublish && (
-                  <Form.Control
-                    type="datetime-local"
-                    value={formData.publishDate}
-                    onChange={(e) => handleInputChange('publishDate', e.target.value)}
-                    className="mt-2"
-                  />
-                )}
-              </Form.Group>
-
-              <div className="d-grid gap-2">
-                <Button 
-                  variant="success" 
-                  onClick={() => handleSave('published')}
-                  disabled={isSaving}
-                >
-                  {isSaving ? (
-                    <><span className="spinner-border spinner-border-sm me-2"></span>Đang lưu...</>
-                  ) : (
-                    <><i className="bi bi-check-circle me-2"></i>Xuất bản</>
-                  )}
-                </Button>
-                <Button 
-                  variant="outline-primary" 
-                  onClick={() => handleSave('draft')}
-                  disabled={isSaving}
-                >
-                  <i className="bi bi-save me-2"></i>
-                  Lưu nháp
-                </Button>
-              </div>
-            </Card.Body>
-          </Card>
-
-          {/* Featured Image */}
-          <Card className="shadow-sm mb-4">
-            <Card.Header className="bg-info text-white">
-              <h6 className="mb-0">
-                <i className="bi bi-image me-2"></i>
-                Hình ảnh đại diện
-              </h6>
-            </Card.Header>
-            <Card.Body>
-              {formData.featuredImage ? (
-                <div className="text-center mb-3">
-                  <img 
-                    src={formData.featuredImage} 
-                    alt="Featured" 
-                    className="img-fluid rounded"
-                    style={{ maxHeight: '200px' }}
-                  />
-                  <div className="mt-2">
-                    <Button 
-                      variant="outline-danger" 
-                      size="sm"
-                      onClick={() => handleInputChange('featuredImage', '')}
-                    >
-                      <i className="bi bi-trash me-1"></i>
-                      Xóa ảnh
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center">
-                  <i className="bi bi-image text-muted" style={{ fontSize: '3rem' }}></i>
-                  <p className="text-muted mt-2">Chưa có hình ảnh đại diện</p>
-                </div>
-              )}
-
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleImageUpload}
-                accept="image/*"
-                style={{ display: 'none' }}
-              />
-              
-              <div className="d-grid">
-                <Button 
-                  variant="outline-info"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <i className="bi bi-upload me-2"></i>
-                  {formData.featuredImage ? 'Đổi ảnh' : 'Tải ảnh lên'}
-                </Button>
-              </div>
-            </Card.Body>
-          </Card>
-
-          {/* Category & Tags */}
-          <Card className="shadow-sm mb-4">
-            <Card.Header className="bg-warning text-dark">
-              <h6 className="mb-0">
-                <i className="bi bi-tags me-2"></i>
-                Phân loại
-              </h6>
-            </Card.Header>
-            <Card.Body>
               <Form.Group className="mb-3">
                 <Form.Label className="fw-bold">Danh mục</Form.Label>
                 <Form.Select
@@ -404,41 +519,12 @@ Hãy viết nội dung chất lượng, có giá trị cho người đọc!"
                   ))}
                 </Form.Select>
               </Form.Group>
-
-              <Form.Group>
-                <Form.Label className="fw-bold">Tags</Form.Label>
-                <div className="mb-2">
-                  {formData.tags.map(tag => (
-                    <Badge 
-                      key={tag} 
-                      bg="primary" 
-                      className="me-1 mb-1"
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => handleRemoveTag(tag)}
-                    >
-                      {tag} <i className="bi bi-x ms-1"></i>
-                    </Badge>
-                  ))}
-                </div>
-                <div className="input-group">
-                  <Form.Control
-                    type="text"
-                    placeholder="Thêm tag..."
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
-                  />
-                  <Button variant="outline-secondary" onClick={handleAddTag}>
-                    <i className="bi bi-plus"></i>
-                  </Button>
-                </div>
-              </Form.Group>
             </Card.Body>
           </Card>
 
           {/* SEO Settings */}
           <Card className="shadow-sm">
-            <Card.Header className="bg-success text-white">
+            <Card.Header className="bg-white">
               <h6 className="mb-0">
                 <i className="bi bi-search me-2"></i>
                 Cài đặt SEO
@@ -449,34 +535,28 @@ Hãy viết nội dung chất lượng, có giá trị cho người đọc!"
                 <Form.Label className="fw-bold">SEO Title</Form.Label>
                 <Form.Control
                   type="text"
-                  placeholder="Tiêu đề hiển thị trên search engine"
+                  placeholder="Tiêu đề SEO..."
                   value={formData.seoTitle}
                   onChange={(e) => handleInputChange('seoTitle', e.target.value)}
                 />
-                <Form.Text className="text-muted">
-                  {formData.seoTitle.length}/60 ký tự
-                </Form.Text>
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label className="fw-bold">Meta Description</Form.Label>
+                <Form.Label className="fw-bold">SEO Description</Form.Label>
                 <Form.Control
                   as="textarea"
-                  rows={3}
-                  placeholder="Mô tả hiển thị trên search engine"
+                  rows={2}
+                  placeholder="Mô tả SEO..."
                   value={formData.seoDescription}
                   onChange={(e) => handleInputChange('seoDescription', e.target.value)}
                 />
-                <Form.Text className="text-muted">
-                  {formData.seoDescription.length}/160 ký tự
-                </Form.Text>
               </Form.Group>
 
               <Form.Group>
-                <Form.Label className="fw-bold">Keywords</Form.Label>
+                <Form.Label className="fw-bold">SEO Keywords</Form.Label>
                 <Form.Control
                   type="text"
-                  placeholder="keyword1, keyword2, keyword3"
+                  placeholder="Từ khóa SEO (phân cách bằng dấu phẩy)..."
                   value={formData.seoKeywords}
                   onChange={(e) => handleInputChange('seoKeywords', e.target.value)}
                 />
@@ -493,9 +573,9 @@ Hãy viết nội dung chất lượng, có giá trị cho người đọc!"
         </Modal.Header>
         <Modal.Body>
           <div className="blog-preview">
-            {formData.featuredImage && (
+            {imagePreview && (
               <img 
-                src={formData.featuredImage} 
+                src={imagePreview} 
                 alt={formData.title}
                 className="img-fluid rounded mb-3"
               />

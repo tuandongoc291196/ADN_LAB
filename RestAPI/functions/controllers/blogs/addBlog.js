@@ -3,38 +3,115 @@ const { checkBlogExists } = require("./blogUtils.js");
 const { checkUserExists } = require("../users/userUtils.js");
 const { getRoleByUserId } = require("../roles/getRoles.js");
 const { randomAlphanumeric } = require("../utils/utilities.js");
-const { uploadMultipleImagesUtil } = require("../utils/imageUtils.js");
+const { bucket } = require("../../config/firebase.js");
 const Busboy = require('busboy');
+const path = require('path');
+const os = require('os');
+const fs = require('fs');
 
 const addBlog = async (req, res) => {
   try {
     let imageUrls = [];
     let formData = {};
+    const uploads = [];
+    
+    console.log('Request headers:', req.headers);
     
     const busboy = Busboy({ headers: req.headers });
+
+    // Generate blog ID first
+    const randomNumbers = await randomAlphanumeric(6, 6);
+    const id = `ADNBLOG${randomNumbers}`;
+    
+    // Handle form fields
+    busboy.on('field', (fieldname, value) => {
+      console.log('Received field:', fieldname, value);
+      formData[fieldname] = value;
+    });
+
+    // Handle file uploads
+    busboy.on('file', (fieldname, file, fileInfo) => {
+      console.log('Processing file:', fieldname, fileInfo);
+      
+      if (!fileInfo.mimetype.startsWith('image/')) {
+        console.log('Invalid file type:', fileInfo.mimetype);
+        file.resume();
+        return;
+      }
+
+      const extension = path.extname(fileInfo.filename);
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const finalFilename = `${id}_IMAGE_${timestamp}${extension}`;
+      const filepath = path.join(os.tmpdir(), finalFilename);
+      console.log('Writing file to:', filepath);
+      
+      const writeStream = fs.createWriteStream(filepath);
+      
+      file.pipe(writeStream);
+
+      const uploadPromise = new Promise((resolve, reject) => {
+        file.on('end', () => {
+          console.log('File write completed:', filepath);
+          
+          bucket.upload(filepath, {
+            destination: `blogs/${finalFilename}`,
+            metadata: {
+              contentType: fileInfo.mimetype
+            }
+          }).then(data => {
+            const file = data[0];
+            const url = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(file.name)}?alt=media`;
+            console.log('File uploaded successfully:', url);
+            
+            fs.unlink(filepath, (err) => {
+              if (err) console.error('Error deleting temp file:', err);
+            });
+            
+            resolve(url);
+          }).catch(err => {
+            console.error('Error uploading file to bucket:', err);
+            fs.unlink(filepath, (unlinkErr) => {
+              if (unlinkErr) console.error('Error deleting temp file:', unlinkErr);
+            });
+            reject(err);
+          });
+        });
+
+        file.on('error', (error) => {
+          console.error('Error processing file:', error);
+          reject(error);
+        });
+      });
+      uploads.push(uploadPromise);
+    });
     
     const parseFormData = new Promise((resolve, reject) => {
-      busboy.on('field', (fieldname, value) => {
-        formData[fieldname] = value;
-      });
-      
       busboy.on('finish', () => {
-        resolve();
+        console.log('Busboy finished processing');
+        Promise.all(uploads)
+          .then(urls => {
+            console.log('All files uploaded:', urls);
+            imageUrls = urls;
+            resolve();
+          })
+          .catch(err => {
+            console.error('Error in file uploads:', err);
+            reject(err);
+          });
       });
       
       busboy.on('error', (error) => {
+        console.error('Busboy error:', error);
         reject(error);
       });
       
-      busboy.end(req.rawBody);
+      // Pipe the request directly to busboy instead of using rawBody
+      req.pipe(busboy);
     });
     
     await parseFormData;
     
     const { userId, title, content, status } = formData;
-
-    const randomNumbers = await randomAlphanumeric(6, 6);
-    const id = `ADNBLOG${randomNumbers}`;
 
     if (!userId) {
       return res.status(400).json({
@@ -83,12 +160,6 @@ const addBlog = async (req, res) => {
         status: "error",
         message: "Blog with this ID already exists",
       });
-    }
-
-    try {
-      imageUrls = await uploadMultipleImagesUtil(req, 'blogs', id);
-    } catch (imageError) {
-      console.log("No images uploaded or image upload failed:", imageError.message);
     }
 
     if (imageUrls.length === 0) {

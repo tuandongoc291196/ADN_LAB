@@ -22,21 +22,16 @@ const getAllBlogs = async (req, res) => {
     console.log("Executing GraphQL query:", GET_BLOGS_QUERY);
     
     const response = await dataConnect.executeGraphql(GET_BLOGS_QUERY);
-
     const responseData = response.data;
 
-    if (!responseData.blogs || responseData.blogs.length === 0) {
-      return res.status(404).json({
-        statusCode: 404,
-        status: "error",
-        message: "No blogs found in the database",
-      });
+    if (!responseData.blogs) {
+      responseData.blogs = [];
     }
 
     res.status(200).json({
       statusCode: 200,
       status: "success",
-      message: "Blogs retrieved successfully",
+      message: responseData.blogs.length > 0 ? "Blogs retrieved successfully" : "No blogs found",
       data: responseData,
     });
   } catch (error) {

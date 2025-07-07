@@ -579,3 +579,207 @@ export const getBookingByUserId = async (userId) => {
     throw new Error('Failed to fetch bookings by user ID: ' + error.message);
   }
 };
+
+// ==================== BLOG API FUNCTIONS ====================
+
+// Lấy danh sách tất cả blogs
+export const getAllBlogs = async () => {
+  try {
+    const token = getToken();
+    if (!token) {
+      throw new Error('Vui lòng đăng nhập lại!');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/blogs`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+    });
+    
+    const data = await response.json();
+    
+    // Kiểm tra nếu response không ok
+    if (!response.ok) {
+      throw new Error(data.message || 'Network response was not ok');
+    }
+    
+    // Đảm bảo luôn trả về mảng
+    return data.data?.blogs || [];
+  } catch (error) {
+    console.error('getAllBlogs error:', error);
+    // Nếu lỗi là "No blogs found", trả về mảng rỗng
+    if (error.message.includes('No blogs found')) {
+      return [];
+    }
+    throw new Error('Failed to fetch blogs: ' + error.message);
+  }
+};
+
+// Lấy blog theo ID
+export const getBlogById = async (id) => {
+  try {
+    const token = getToken();
+    if (!token) {
+      throw new Error('Vui lòng đăng nhập lại!');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/blogs`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ blogId: id }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch blog');
+    }
+
+    const data = await response.json();
+    return data.data?.blog || null;
+  } catch (error) {
+    console.error('Error in getBlogById:', error);
+    throw error;
+  }
+};
+
+const getToken = () => {
+  return localStorage.getItem('token');
+};
+
+export const addBlog = async (formData) => {
+  try {
+    console.log('Form data being sent:');
+    for (let [key, value] of formData.entries()) {
+      if (key === 'images') {
+        console.log('images:', value.name, value.type, value.size);
+      } else {
+        console.log(key, ':', value);
+      }
+    }
+
+    const token = getToken();
+    if (!token) {
+      throw new Error('Vui lòng đăng nhập lại!');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/blogs/add`, {
+      method: 'POST',
+      headers: {
+        // Don't set Content-Type when sending FormData
+        // Let the browser set it automatically with the correct boundary
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      const errorMessage = errorData?.message || response.statusText || 'Có lỗi xảy ra khi tạo bài viết';
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error in addBlog:', error);
+    throw error;
+  }
+};
+
+// Cập nhật blog
+export const updateBlog = async (id, blogData) => {
+  try {
+    const token = getToken();
+    if (!token) {
+      throw new Error('Vui lòng đăng nhập lại!');
+    }
+
+    const formData = new FormData();
+    
+    // Add text fields
+    Object.keys(blogData).forEach(key => {
+      if (key !== 'images') {
+        formData.append(key, blogData[key]);
+      }
+    });
+    
+    // Add image if exists
+    if (blogData.images) {
+      formData.append('images', blogData.images);
+    }
+
+    formData.append('blogId', id);
+
+    const response = await fetch(`${API_BASE_URL}/blogs`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to update blog');
+    }
+
+    const data = await response.json();
+    return data.data?.blog || null;
+  } catch (error) {
+    console.error('Error in updateBlog:', error);
+    throw error;
+  }
+};
+
+// Xóa blog
+export const deleteBlog = async (id) => {
+  try {
+    const token = getToken();
+    if (!token) {
+      throw new Error('Vui lòng đăng nhập lại!');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/blogs`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ blogId: id }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to delete blog');
+    }
+
+    const data = await response.json();
+    return data.success || false;
+  } catch (error) {
+    console.error('Error in deleteBlog:', error);
+    throw error;
+  }
+};
+
+// Cập nhật trạng thái blog
+export const updateBlogStatus = async (blogId, status) => {
+  try {
+    return await updateBlog(blogId, { status });
+  } catch (error) {
+    throw new Error('Failed to update blog status: ' + error.message);
+  }
+};
+
+// Toggle featured status của blog
+export const toggleBlogFeatured = async (blogId, featured) => {
+  try {
+    return await updateBlog(blogId, { featured });
+  } catch (error) {
+    throw new Error('Failed to toggle blog featured: ' + error.message);
+  }
+};
