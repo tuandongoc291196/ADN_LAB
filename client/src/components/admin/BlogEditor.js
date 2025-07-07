@@ -76,8 +76,18 @@ const BlogEditor = () => {
         return;
       }
       setFormData({
-        ...blog,
+        title: blog.title || '',
+        slug: blog.slug || '',
+        excerpt: blog.excerpt || '',
+        content: blog.content || '',
+        category: blog.category || '',
         tags: blog.tags || [],
+        status: blog.status || 'draft',
+        featured: blog.featured || false,
+        seoTitle: blog.seoTitle || '',
+        seoDescription: blog.seoDescription || '',
+        seoKeywords: blog.seoKeywords || '',
+        publishDate: blog.publishDate || '',
       });
       if (blog.imageUrl) {
         setImagePreview(blog.imageUrl);
