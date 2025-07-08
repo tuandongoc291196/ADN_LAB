@@ -2,103 +2,10 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Row, Col, Card, Button, Badge, Alert, Modal, Form } from 'react-bootstrap';
 
-const TestResults = ({ user }) => {
+const TestResults = ({ user, results = [] }) => {
   const [showResultModal, setShowResultModal] = useState(false);
   const [selectedResult, setSelectedResult] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-
-  // Mock data cho các lịch hẹn đã hoàn thành có kết quả
-  const completedAppointments = [
-    {
-      id: 'ADN123458',
-      service: 'Xét nghiệm ADN khai sinh',
-      serviceType: 'administrative',
-      appointmentDate: '2024-01-20',
-      completionDate: '2024-01-23',
-      participants: [
-        { name: 'Nguyễn Văn E', role: 'Cha', relationship: 'Người yêu cầu' },
-        { name: 'Nguyễn Thị F', role: 'Con', relationship: 'Đối tượng xét nghiệm' }
-      ],
-      result: {
-        conclusion: 'POSITIVE',
-        confidence: '99.999%',
-        summary: 'Kết quả xét nghiệm xác nhận mối quan hệ huyết thống cha-con giữa hai đương sự.',
-        details: 'Dựa trên phân tích 21 locus STR, kết quả cho thấy Nguyễn Văn E là cha sinh học của Nguyễn Thị F với độ chính xác 99.999%.',
-        method: 'STR Analysis (Short Tandem Repeat)',
-        sampleType: 'Tế bào má (Buccal Swab)',
-        labCode: 'LAB-ADN-2024-0120-001',
-        technician: 'TS. Nguyễn Văn X',
-        hasLegalValue: true
-      }
-    },
-    {
-      id: 'ADN123457',
-      service: 'Xét nghiệm ADN thai nhi',
-      serviceType: 'civil',
-      appointmentDate: '2024-01-18',
-      completionDate: '2024-01-21',
-      participants: [
-        { name: 'Nguyễn Thị C', role: 'Mẹ mang thai', relationship: 'Người yêu cầu' },
-        { name: 'Nguyễn Văn D', role: 'Cha nghi ngờ', relationship: 'Đối tượng xét nghiệm' }
-      ],
-      result: {
-        conclusion: 'POSITIVE',
-        confidence: '99.99%',
-        summary: 'Kết quả xét nghiệm ADN trước sinh xác nhận mối quan hệ huyết thống cha-con.',
-        details: 'Xét nghiệm được thực hiện an toàn qua mẫu máu tĩnh mạch của mẹ. Kết quả xác nhận Nguyễn Văn D là cha sinh học của thai nhi.',
-        method: 'NIPT (Non-Invasive Prenatal Testing)',
-        sampleType: 'Máu tĩnh mạch mẹ',
-        gestationalAge: '8 tuần',
-        labCode: 'LAB-ADN-2024-0118-002',
-        technician: 'ThS. Trần Thị Y',
-        hasLegalValue: false
-      }
-    },
-    {
-      id: 'ADN123455',
-      service: 'Xét nghiệm ADN huyết thống cha-con',
-      serviceType: 'civil',
-      appointmentDate: '2024-01-10',
-      completionDate: '2024-01-13',
-      participants: [
-        { name: 'Nguyễn Văn A', role: 'Cha nghi ngờ', relationship: 'Người yêu cầu' },
-        { name: 'Nguyễn Văn B', role: 'Con', relationship: 'Đối tượng xét nghiệm' }
-      ],
-      result: {
-        conclusion: 'NEGATIVE',
-        confidence: '99.999%',
-        summary: 'Kết quả xét nghiệm loại trừ mối quan hệ huyết thống cha-con giữa hai đương sự.',
-        details: 'Dựa trên phân tích 21 locus STR, kết quả cho thấy Nguyễn Văn A KHÔNG PHẢI là cha sinh học của Nguyễn Văn B.',
-        method: 'STR Analysis (Short Tandem Repeat)',
-        sampleType: 'Tế bào má (Buccal Swab)',
-        labCode: 'LAB-ADN-2024-0110-003',
-        technician: 'TS. Lê Văn Z',
-        hasLegalValue: false
-      }
-    },
-    {
-      id: 'ADN123461',
-      service: 'Xét nghiệm ADN anh chị em',
-      serviceType: 'civil',
-      appointmentDate: '2024-01-25',
-      completionDate: '2024-01-28',
-      participants: [
-        { name: 'Nguyễn Văn G', role: 'Anh/Em trai', relationship: 'Người yêu cầu' },
-        { name: 'Nguyễn Văn H', role: 'Anh/Em trai', relationship: 'Đối tượng xét nghiệm' }
-      ],
-      result: {
-        conclusion: 'POSITIVE',
-        confidence: '99.9%',
-        summary: 'Kết quả xét nghiệm xác nhận mối quan hệ anh em ruột giữa hai đương sự.',
-        details: 'Phân tích ADN cho thấy hai người có chung cha mẹ sinh học với độ tin cậy cao.',
-        method: 'STR Analysis với hệ thống mở rộng',
-        sampleType: 'Tế bào má (Buccal Swab)',
-        labCode: 'LAB-ADN-2024-0125-004',
-        technician: 'TS. Phạm Thị K',
-        hasLegalValue: false
-      }
-    }
-  ];
 
   const getResultBadge = (conclusion) => {
     switch (conclusion) {
@@ -114,7 +21,7 @@ const TestResults = ({ user }) => {
   };
 
   const getServiceTypeBadge = (serviceType) => {
-    return serviceType === 'administrative' 
+    return serviceType === 'administrative'
       ? <Badge bg="warning" text="dark">Có giá trị pháp lý</Badge>
       : <Badge bg="info">Dân sự</Badge>;
   };
@@ -133,7 +40,7 @@ const TestResults = ({ user }) => {
     return new Date(dateString).toLocaleDateString('vi-VN', options);
   };
 
-  const filteredResults = completedAppointments.filter(appointment => 
+  const filteredResults = results.filter(appointment =>
     appointment.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
     appointment.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     appointment.participants.some(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -243,10 +150,10 @@ const TestResults = ({ user }) => {
                       </div>
 
                       {/* Result Summary */}
-                      <Alert 
+                      <Alert
                         variant={
-                          appointment.result.conclusion === 'POSITIVE' ? 'success' : 
-                          appointment.result.conclusion === 'NEGATIVE' ? 'danger' : 'warning'
+                          appointment.result.conclusion === 'POSITIVE' ? 'success' :
+                            appointment.result.conclusion === 'NEGATIVE' ? 'danger' : 'warning'
                         }
                         className="mb-3 py-2"
                       >
@@ -272,7 +179,7 @@ const TestResults = ({ user }) => {
                     {/* Actions */}
                     <Col lg={4} className="mt-3 mt-lg-0">
                       <div className="d-grid gap-2">
-                        <Button 
+                        <Button
                           variant="primary"
                           onClick={() => handleViewResult(appointment)}
                         >
@@ -280,7 +187,7 @@ const TestResults = ({ user }) => {
                           Xem kết quả chi tiết
                         </Button>
 
-                        <Button 
+                        <Button
                           variant="success"
                           onClick={() => {
                             setSelectedResult(appointment);
@@ -308,7 +215,7 @@ const TestResults = ({ user }) => {
                 {searchTerm ? 'Không tìm thấy kết quả nào' : 'Chưa có kết quả xét nghiệm'}
               </h5>
               <p className="text-muted">
-                {searchTerm 
+                {searchTerm
                   ? 'Thử thay đổi từ khóa tìm kiếm'
                   : 'Kết quả sẽ hiển thị ở đây sau khi xét nghiệm hoàn tất'
                 }
@@ -433,7 +340,7 @@ const TestResults = ({ user }) => {
                   <i className="bi bi-clipboard-check me-2"></i>
                   KẾT QUẢ XÉT NGHIỆM
                 </h5>
-                
+
                 <div className="text-center mb-4">
                   {getResultBadge(selectedResult.result.conclusion)}
                   <div className="h4 text-primary mt-2">
@@ -441,10 +348,10 @@ const TestResults = ({ user }) => {
                   </div>
                 </div>
 
-                <Alert 
+                <Alert
                   variant={
-                    selectedResult.result.conclusion === 'POSITIVE' ? 'success' : 
-                    selectedResult.result.conclusion === 'NEGATIVE' ? 'danger' : 'warning'
+                    selectedResult.result.conclusion === 'POSITIVE' ? 'success' :
+                      selectedResult.result.conclusion === 'NEGATIVE' ? 'danger' : 'warning'
                   }
                   className="text-center"
                 >
@@ -462,7 +369,7 @@ const TestResults = ({ user }) => {
               {selectedResult.result.hasLegalValue && (
                 <Alert variant="warning" className="mb-4">
                   <i className="bi bi-shield-check me-2"></i>
-                  <strong>Giá trị pháp lý:</strong> Kết quả này có đầy đủ giá trị pháp lý và được 
+                  <strong>Giá trị pháp lý:</strong> Kết quả này có đầy đủ giá trị pháp lý và được
                   công nhận bởi các cơ quan tòa án, cơ quan nhà nước trong các thủ tục hành chính.
                 </Alert>
               )}

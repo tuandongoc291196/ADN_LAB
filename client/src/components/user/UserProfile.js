@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { getUserById, updateUserById } from '../../services/api';
 import { Row, Col, Card, Button, Form, Alert, Modal, Badge } from 'react-bootstrap';
 import { uploadAvatar } from '../config/firebase';
@@ -297,7 +296,7 @@ const UserProfile = ({ user }) => {
               <i className="bi bi-person-circle me-2"></i>
               Thông tin cơ bản
             </h5>
-            
+
             {/* Avatar Section - Centered */}
             <Row className="mb-4">
               <Col md={12} className="d-flex flex-column align-items-center justify-content-center position-relative">
@@ -311,7 +310,7 @@ const UserProfile = ({ user }) => {
                     />
                   ) : (
                     <div className="bg-light border rounded-circle d-flex align-items-center justify-content-center"
-                         style={{ width: '120px', height: '120px' }}>
+                      style={{ width: '120px', height: '120px' }}>
                       <i className="bi bi-person fs-1 text-muted"></i>
                     </div>
                   )}
@@ -361,7 +360,7 @@ const UserProfile = ({ user }) => {
                 </div>
               </Col>
             </Row>
-            
+
             <Row>
               <Col md={6} className="mb-3">
                 <Form.Label>Họ và tên *</Form.Label>

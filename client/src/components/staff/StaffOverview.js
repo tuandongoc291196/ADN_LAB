@@ -1,56 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Row, Col, Card, Button, Badge, Alert, ListGroup, ProgressBar } from 'react-bootstrap';
+import { Row, Col, Card, Button, Badge, ListGroup } from 'react-bootstrap';
+import { getBookingByStaffId, getBookingHistory } from '../../services/api';
 
 const StaffOverview = ({ user }) => {
-  const [todayStats, setTodayStats] = useState({
-    kitsToSend: 8,
-    samplesCollected: 12,
-    testsInProgress: 5,
-    resultsToRelease: 3,
-    completedTasks: 15
-  });
-
-  // Mock data cho các task cần làm hôm nay
-  const todayTasks = [
-    {
-      id: 'task-001',
-      type: 'kit-preparation',
-      title: 'Chuẩn bị 3 kit ADN huyết thống',
-      priority: 'high',
-      deadline: '10:00',
-      orderIds: ['ADN123461', 'ADN123462', 'ADN123463'],
-      status: 'pending'
-    },
-    {
-      id: 'task-002',
-      type: 'sample-collection',
-      title: 'Thu mẫu tại nhà - Quận 1',
-      priority: 'urgent',
-      deadline: '14:00',
-      address: '123 Nguyễn Huệ, Q1, TP.HCM',
-      orderIds: ['ADN123464'],
-      status: 'in-progress'
-    },
-    {
-      id: 'task-003',
-      type: 'lab-testing',
-      title: 'Hoàn thành phân tích 2 mẫu ADN',
-      priority: 'medium',
-      deadline: '16:00',
-      orderIds: ['ADN123465', 'ADN123466'],
-      status: 'pending'
-    },
-    {
-      id: 'task-004',
-      type: 'results',
-      title: 'Phê duyệt và gửi 3 kết quả',
-      priority: 'high',
-      deadline: '17:00',
-      orderIds: ['ADN123467', 'ADN123468', 'ADN123469'],
-      status: 'pending'
-    }
-  ];
+  const [todayTasks, setTodayTasks] = useState([]);
 
   // Mock data cho thống kê công việc tuần này
   const weeklyStats = {
@@ -63,21 +17,72 @@ const StaffOverview = ({ user }) => {
     sunday: { kits: 4, samples: 2, tests: 1, results: 1 }
   };
 
-  const getPriorityBadge = (priority) => {
-    const variants = {
-      urgent: 'danger',
-      high: 'warning',
-      medium: 'primary',
-      low: 'secondary'
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        const bookings = await getBookingByStaffId(user.id);
+
+        const tasks = bookings.map((booking, index) => {
+          const methodName = booking.method?.name || '';
+          const isHomeVisit = methodName === 'Lấy mẫu tại nhà';
+          const taskType = isHomeVisit ? 'kit-preparation' : 'sample-collection';
+
+          // Lấy history tương ứng
+          const history = Array.isArray(booking.bookingHistories_on_booking) ? booking.bookingHistories_on_booking : [];
+
+          // Tìm status mới nhất theo createdAt
+          const sorted = [...history].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          const latestStatus = sorted[0]?.status || 'unknown';
+
+          const taskStatus = latestStatus === 'BOOKED' ? 'pending' : latestStatus;
+
+          let deadline = '';
+          try {
+            const [date, startTime] = booking.timeSlot?.id?.split('_') || [];
+            if (date && startTime) {
+              const dateTimeStr = `${date}T${startTime}:00`;
+              const timeObj = new Date(dateTimeStr);
+              timeObj.setMinutes(timeObj.getMinutes() - 30);
+              deadline = timeObj.toLocaleString('vi-VN', {
+                weekday: 'long',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+              });
+            }
+          } catch (e) {
+            deadline = new Date(booking.createdAt).toLocaleString('vi-VN', {
+              weekday: 'long',
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+          }
+
+          return {
+            id: booking.id || `task-${index}`,
+            type: taskType,
+            title: `${isHomeVisit ? 'Chuẩn bị Kit' : 'Thu mẫu'} - ${booking.service?.title || 'Dịch vụ không xác định'}`,
+            priority: 'high',
+            deadline: deadline,
+            address: booking?.informations_on_booking?.[0]?.address || '',
+            orderIds: [booking.id],
+            status: taskStatus
+          };
+        });
+
+        setTodayTasks(tasks);
+      } catch (err) {
+        console.error('Lỗi khi lấy booking hoặc history:', err);
+      }
     };
-    const labels = {
-      urgent: 'Khẩn cấp',
-      high: 'Cao',
-      medium: 'Trung bình',
-      low: 'Thấp'
-    };
-    return <Badge bg={variants[priority]}>{labels[priority]}</Badge>;
-  };
+
+    fetchBookings();
+  }, [user.id]);
 
   const getStatusBadge = (status) => {
     const variants = {
@@ -115,12 +120,6 @@ const StaffOverview = ({ user }) => {
     return links[type] || '/staff';
   };
 
-  const calculateCompletionRate = () => {
-    const total = todayStats.kitsToSend + todayStats.samplesCollected + 
-                  todayStats.testsInProgress + todayStats.resultsToRelease;
-    return Math.round((todayStats.completedTasks / (total + todayStats.completedTasks)) * 100);
-  };
-
   return (
     <div>
       {/* Welcome Header */}
@@ -129,72 +128,12 @@ const StaffOverview = ({ user }) => {
           <h2 className="mb-1">Chào mừng, {user.name}!</h2>
           <p className="text-muted mb-0">
             <i className="bi bi-clock me-1"></i>
-            Hôm nay là {new Date().toLocaleDateString('vi-VN', { 
-              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+            Hôm nay là {new Date().toLocaleDateString('vi-VN', {
+              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
             })}
           </p>
         </div>
-        <div className="text-end">
-          <div className="h4 text-success mb-0">{calculateCompletionRate()}%</div>
-          <small className="text-muted">Tiến độ hôm nay</small>
-        </div>
       </div>
-
-      {/* Quick Stats */}
-      <Row className="mb-4">
-        <Col lg={3} md={6} className="mb-3">
-          <Card className="border-start border-success border-4 shadow-sm">
-            <Card.Body className="d-flex align-items-center">
-              <div className="me-3">
-                <i className="bi bi-box-seam fs-1 text-success"></i>
-              </div>
-              <div>
-                <div className="h4 mb-0">{todayStats.kitsToSend}</div>
-                <div className="text-muted small">Kit cần gửi</div>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col lg={3} md={6} className="mb-3">
-          <Card className="border-start border-warning border-4 shadow-sm">
-            <Card.Body className="d-flex align-items-center">
-              <div className="me-3">
-                <i className="bi bi-droplet fs-1 text-warning"></i>
-              </div>
-              <div>
-                <div className="h4 mb-0">{todayStats.samplesCollected}</div>
-                <div className="text-muted small">Mẫu cần thu</div>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col lg={3} md={6} className="mb-3">
-          <Card className="border-start border-info border-4 shadow-sm">
-            <Card.Body className="d-flex align-items-center">
-              <div className="me-3">
-                <i className="bi bi-eye fs-1 text-info"></i>
-              </div>
-              <div>
-                <div className="h4 mb-0">{todayStats.testsInProgress}</div>
-                <div className="text-muted small">Đang xét nghiệm</div>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col lg={3} md={6} className="mb-3">
-          <Card className="border-start border-danger border-4 shadow-sm">
-            <Card.Body className="d-flex align-items-center">
-              <div className="me-3">
-                <i className="bi bi-file-earmark-check fs-1 text-danger"></i>
-              </div>
-              <div>
-                <div className="h4 mb-0">{todayStats.resultsToRelease}</div>
-                <div className="text-muted small">Kết quả cần trả</div>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
 
       <Row>
         {/* Tasks for Today */}
@@ -212,8 +151,8 @@ const StaffOverview = ({ user }) => {
             <Card.Body className="p-0">
               <ListGroup variant="flush">
                 {todayTasks.map((task, index) => (
-                  <ListGroup.Item 
-                    key={task.id} 
+                  <ListGroup.Item
+                    key={task.id}
                     className="d-flex align-items-center justify-content-between py-3"
                   >
                     <div className="d-flex align-items-center flex-grow-1">
@@ -243,15 +182,15 @@ const StaffOverview = ({ user }) => {
                     </div>
                     <div className="text-end">
                       <div className="mb-2">
-                        {getPriorityBadge(task.priority)}
+                        {/* Đã bỏ getPriorityBadge */}
                       </div>
                       <div className="mb-2">
                         {getStatusBadge(task.status)}
                       </div>
-                      <Button 
-                        as={Link} 
+                      <Button
+                        as={Link}
                         to={getTaskLink(task.type)}
-                        size="sm" 
+                        size="sm"
                         variant="outline-primary"
                       >
                         Xử lý
@@ -274,26 +213,18 @@ const StaffOverview = ({ user }) => {
               </h5>
             </Card.Header>
             <Card.Body>
-              <div className="mb-3">
-                <div className="d-flex justify-content-between align-items-center mb-1">
-                  <small>Hoàn thành hôm nay</small>
-                  <small>{calculateCompletionRate()}%</small>
-                </div>
-                <ProgressBar now={calculateCompletionRate()} variant="success" />
-              </div>
-
               <div className="border-top pt-3">
                 <h6 className="text-muted mb-3">Thống kê theo ngày</h6>
                 {Object.entries(weeklyStats).map(([day, stats]) => (
                   <div key={day} className="d-flex justify-content-between align-items-center mb-2">
                     <small className="text-capitalize">
                       {day === 'monday' ? 'Thứ 2' :
-                       day === 'tuesday' ? 'Thứ 3' :
-                       day === 'wednesday' ? 'Thứ 4' :
-                       day === 'thursday' ? 'Thứ 5' :
-                       day === 'friday' ? 'Thứ 6' :
-                       day === 'saturday' ? 'Thứ 7' :
-                       'Chủ nhật'}
+                        day === 'tuesday' ? 'Thứ 3' :
+                          day === 'wednesday' ? 'Thứ 4' :
+                            day === 'thursday' ? 'Thứ 5' :
+                              day === 'friday' ? 'Thứ 6' :
+                                day === 'saturday' ? 'Thứ 7' :
+                                  'Chủ nhật'}
                     </small>
                     <div className="text-end">
                       <Badge bg="success" className="me-1">{stats.kits}</Badge>
@@ -304,7 +235,6 @@ const StaffOverview = ({ user }) => {
                   </div>
                 ))}
               </div>
-
               <div className="border-top pt-3 mt-3">
                 <small className="text-muted">
                   <Badge bg="success" className="me-1">Kit</Badge>

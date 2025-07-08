@@ -12,7 +12,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Container, Row, Col, Card, Button, Badge, Form, Alert, Tab, Nav } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Badge, Form, Alert } from 'react-bootstrap';
 import { getAllServices, getAllMethods, getMethodsByServiceId, createBooking, getUserById } from '../../services/api'; // API functions
 import { getServiceById, getServicesByType, enrichMethodData, isMethodDisabled, getMethodRestrictionReason } from '../data/services-data'; // Helper functions
 import { getProvinces, getDistricts, getWards } from 'vietnam-provinces';
@@ -55,7 +55,6 @@ const AppointmentBooking = () => {
 
   // VALIDATION STATE
   const [idNumberErrors, setIdNumberErrors] = useState({}); // Lỗi CMND/CCCD
-  const [phoneErrors, setPhoneErrors] = useState({});       // Lỗi số điện thoại
   const [customerErrors, setCustomerErrors] = useState({    // Lỗi thông tin khách hàng
     fullName: '',
     phone: '',
@@ -64,7 +63,6 @@ const AppointmentBooking = () => {
   });
 
   // RELATIONSHIP STATE
-  const [relationshipBetween, setRelationshipBetween] = useState(''); // Quan hệ được chọn
   const [isParticipant1Customer, setIsParticipant1Customer] = useState(false); // Checkbox người tham gia 1 là người đặt lịch
 
   // USER DATA
@@ -96,8 +94,7 @@ const AppointmentBooking = () => {
     "Con trai", "Con gái",
     "Anh", "Chị", "Em trai", "Em gái",
     "Cháu nội", "Cháu ngoại", "Cháu",
-    "Cô", "Dì", "Chú", "Bác", "Cậu",
-    "Chồng", "Vợ", "Chưa xác định"
+    "Cô", "Dì", "Chú", "Bác", "Cậu", "Chưa xác định"
   ];
 
   // Ma trận các cặp quan hệ hợp lệ cho xét nghiệm ADN
@@ -121,6 +118,16 @@ const AppointmentBooking = () => {
     ['Cậu', 'Cháu'],         // Xét nghiệm cậu - cháu
     ['Bác', 'Cháu'],         // Xét nghiệm bác - cháu
     []
+  ];
+
+  const maleRelations = [
+    "Cha", "Ông nội", "Ông ngoại", "Con trai", "Anh", "Em trai",
+    "Cháu nội", "Cháu ngoại", "Cháu", "Chú", "Bác", "Cậu", "Chưa xác định"
+  ];
+
+  const femaleRelations = [
+    "Mẹ", "Bà nội", "Bà ngoại", "Con gái", "Chị", "Em gái",
+    "Cháu nội", "Cháu ngoại", "Cháu", "Cô", "Dì", "Chưa xác định"
   ];
 
   // Lấy danh sách quan hệ hợp lệ dựa trên quan hệ hiện tại
@@ -1512,11 +1519,17 @@ const AppointmentBooking = () => {
                                   >
                                     <option value="">-- Chọn mối quan hệ --</option>
                                     {(() => {
+                                      const gender = bookingData.customerInfo.participants[idx]?.gender;
+                                      const baseRelations = gender === 'male'
+                                        ? maleRelations
+                                        : gender === 'female'
+                                          ? femaleRelations
+                                          : familyRelations;
+
                                       const otherRelation = bookingData.customerInfo.participants[idx === 0 ? 1 : 0]?.relation;
                                       const availableOptions = otherRelation
-                                        ? getValidRelationsForOther(otherRelation)
-                                        : familyRelations;
-
+                                        ? getValidRelationsForOther(otherRelation).filter(r => baseRelations.includes(r))
+                                        : baseRelations;
                                       return availableOptions.map((relation) => (
                                         <option key={relation} value={relation}>
                                           {relation}

@@ -4,8 +4,8 @@ const cors = require('cors');
 const {swaggerUi, swaggerDocs} = require('./config/swagger');
 const {onSchedule} = require("firebase-functions/v2/scheduler");
 
-const { cleanupExpiredBookings } = require("./controllers/scheduledTasks/cleanupExpiredBookings");
-const { cleanupPendingPaymentBookings } = require("./controllers/scheduledTasks/cleanupPendingPaymentBookings");
+const {cleanupExpiredBookings} = require("./controllers/scheduledTasks/cleanupExpiredBookings");
+const {cleanupPendingPaymentBookings} = require("./controllers/scheduledTasks/cleanupPendingPaymentBookings");
 
 const {addUser} = require('./controllers/users/addUser');
 const {getAllUsers, getOneUser, getUsersByRole} = require('./controllers/users/getUsers');
@@ -57,8 +57,6 @@ const {updateBlog} = require('./controllers/blogs/updateBlog');
 
 const app = express();
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 app.use(cors({
   origin: [
     'http://localhost:3000', 
@@ -66,6 +64,15 @@ app.use(cors({
     'https://app-bggwpxm32a-uc.a.run.app'
   ]
 }));
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+app.post('/blogs/add', addBlog);
+app.put('/blogs', updateBlog);
+app.get('/blogs', getAllBlogs);
+app.post('/blogs', getOneBlog);
+app.delete('/blogs', deleteBlog);
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
@@ -91,7 +98,7 @@ app.get('/methods', getAllMethods);
 app.post('/users/add', addUser);
 app.get('/users', getAllUsers);
 app.post('/users', getOneUser);
-app.post ('/users/role', getUsersByRole);
+app.post('/users/role', getUsersByRole);
 app.put('/users/role/staff', updateUserRoleToStaff);
 app.put('/users', updateUser);
 app.put('/users/role/admin', updateUserRoleToAdmin);
@@ -137,12 +144,6 @@ app.post('/payments/add', addPayment);
 app.get('/payments', getAllPayments);
 app.post('/payments/booking', getBookingPayments);
 app.post('/payments/refund', refundPayment);
-
-app.post('/blogs/add', addBlog);
-app.get('/blogs', getAllBlogs);
-app.post('/blogs', getOneBlog);
-app.put('/blogs', updateBlog);
-app.delete('/blogs', deleteBlog);
 
 exports.app = functions.https.onRequest(app);
 exports.cleanupExpiredBookings = onSchedule('every 30 minutes', async (event) => {

@@ -14,7 +14,7 @@ type User @table {
   gender: String
   avatar: String
   email: String! @unique
-  accountStatus: String! @default(value: "inactive")
+  accountStatus: String! @default(value: "active")
   authProvider: String!
   phone: String
   address: String
