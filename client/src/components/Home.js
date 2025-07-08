@@ -317,7 +317,7 @@ const Home = () => {
   const getMethodBadges = (service) => {
     // Get methods directly from service data
     const serviceMethodsList = service.methods_via_ServiceMethod || [];
-    
+
     if (serviceMethodsList.length === 0) {
       return (
         <Badge bg="secondary" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}>

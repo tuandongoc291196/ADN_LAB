@@ -2,49 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Row, Col, Card, Button, Badge, Alert } from 'react-bootstrap';
 
-const ResultsSummary = ({ user }) => {
-  // Mock data cho kết quả mới nhất
-  const recentResults = [
-    {
-      id: 'ADN123458',
-      service: 'Xét nghiệm ADN khai sinh',
-      completionDate: '2024-01-23',
-      result: 'POSITIVE',
-      confidence: '99.999%',
-      hasLegalValue: true,
-      isNew: true
-    },
-    {
-      id: 'ADN123457',
-      service: 'Xét nghiệm ADN thai nhi',
-      completionDate: '2024-01-21',
-      result: 'POSITIVE',
-      confidence: '99.99%',
-      hasLegalValue: false,
-      isNew: false
-    },
-    {
-      id: 'ADN123455',
-      service: 'Xét nghiệm ADN huyết thống cha-con',
-      completionDate: '2024-01-13',
-      result: 'NEGATIVE',
-      confidence: '99.999%',
-      hasLegalValue: false,
-      isNew: false
-    }
-  ];
-
-  // Kết quả đang chờ (đã hoàn thành nhưng chưa xem)
-  const pendingResults = [
-    {
-      id: 'ADN123462',
-      service: 'Xét nghiệm ADN anh chị em',
-      expectedDate: '2024-02-01',
-      status: 'Đang phân tích mẫu tại phòng lab',
-      progress: 85
-    }
-  ];
-
+const ResultsSummary = ({ user, recentResults = [], pendingResults = [] }) => {
   const getResultBadge = (result) => {
     switch (result) {
       case 'POSITIVE':
@@ -178,27 +136,27 @@ const ResultsSummary = ({ user }) => {
                           </p>
                         </div>
                       </div>
-                      
+
                       <div className="mb-2">
                         <div className="d-flex justify-content-between align-items-center mb-1">
                           <small className="text-muted">{pending.status}</small>
                           <small className="fw-bold">{pending.progress}%</small>
                         </div>
                         <div className="progress" style={{ height: '6px' }}>
-                          <div 
+                          <div
                             className="progress-bar bg-warning"
                             style={{ width: `${pending.progress}%` }}
                           ></div>
                         </div>
                       </div>
-                      
+
                       <small className="text-success">
                         <i className="bi bi-calendar-check me-1"></i>
                         Dự kiến: {formatDate(pending.expectedDate)}
                       </small>
                     </div>
                   ))}
-                  
+
                   <div className="d-grid mt-3">
                     <Button variant="outline-warning" size="sm" as={Link} to="/user/appointments">
                       <i className="bi bi-list-ul me-1"></i>

@@ -2,130 +2,12 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Row, Col, Card, Button, Badge, Form, Alert, Modal, Table } from 'react-bootstrap';
 
-const OrderHistory = ({ user }) => {
+const OrderHistory = ({ user, orders = [] }) => {
   const [selectedPeriod, setSelectedPeriod] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
-
-  // Mock order history data
-  const orderHistory = [
-    {
-      id: 'ADN123458',
-      service: 'Xét nghiệm ADN khai sinh',
-      serviceType: 'administrative',
-      orderDate: '2024-01-20',
-      completionDate: '2024-01-23',
-      status: 'completed',
-      amount: 4200000,
-      discount: 0,
-      finalAmount: 4200000,
-      paymentStatus: 'paid',
-      paymentMethod: 'bank_transfer',
-      participants: ['Nguyễn Văn E', 'Nguyễn Thị F'],
-      method: 'at-facility',
-      notes: 'Xét nghiệm có giá trị pháp lý',
-      invoice: 'INV-2024-001',
-      rating: 5,
-      feedback: 'Dịch vụ tuyệt vời, nhân viên chuyên nghiệp'
-    },
-    {
-      id: 'ADN123457',
-      service: 'Xét nghiệm ADN thai nhi',
-      serviceType: 'civil',
-      orderDate: '2024-01-18',
-      completionDate: '2024-01-21',
-      status: 'completed',
-      amount: 5500000,
-      discount: 550000,
-      finalAmount: 4950000,
-      paymentStatus: 'paid',
-      paymentMethod: 'credit_card',
-      participants: ['Nguyễn Thị C', 'Nguyễn Văn D'],
-      method: 'at-facility',
-      notes: 'Áp dụng mã giảm giá FIRST10',
-      invoice: 'INV-2024-002',
-      rating: 5,
-      feedback: 'Kết quả chính xác, tư vấn tốt'
-    },
-    {
-      id: 'ADN123456',
-      service: 'Xét nghiệm ADN huyết thống cha-con',
-      serviceType: 'civil',
-      orderDate: '2024-01-25',
-      completionDate: null,
-      status: 'in-progress',
-      amount: 3500000,
-      discount: 0,
-      finalAmount: 3500000,
-      paymentStatus: 'paid',
-      paymentMethod: 'bank_transfer',
-      participants: ['Nguyễn Văn A', 'Nguyễn Văn B'],
-      method: 'self-sample',
-      notes: 'Đang chờ nhận mẫu từ khách hàng',
-      invoice: 'INV-2024-003',
-      rating: null,
-      feedback: null
-    },
-    {
-      id: 'ADN123455',
-      service: 'Xét nghiệm ADN huyết thống cha-con',
-      serviceType: 'civil',
-      orderDate: '2024-01-10',
-      completionDate: '2024-01-13',
-      status: 'completed',
-      amount: 3500000,
-      discount: 350000,
-      finalAmount: 3150000,
-      paymentStatus: 'paid',
-      paymentMethod: 'cash',
-      participants: ['Nguyễn Văn A', 'Nguyễn Văn B'],
-      method: 'at-facility',
-      notes: 'Khuyến mại thành viên mới',
-      invoice: 'INV-2024-004',
-      rating: 4,
-      feedback: 'Dịch vụ tốt, thời gian nhanh'
-    },
-    {
-      id: 'ADN123459',
-      service: 'Xét nghiệm ADN anh chị em',
-      serviceType: 'civil',
-      orderDate: '2024-01-15',
-      completionDate: null,
-      status: 'cancelled',
-      amount: 4200000,
-      discount: 0,
-      finalAmount: 0,
-      paymentStatus: 'refunded',
-      paymentMethod: 'credit_card',
-      participants: ['Nguyễn Văn G', 'Nguyễn Văn H'],
-      method: 'home-visit',
-      notes: 'Hủy theo yêu cầu khách hàng',
-      invoice: null,
-      rating: null,
-      feedback: null
-    },
-    {
-      id: 'ADN123460',
-      service: 'Xét nghiệm ADN di trú',
-      serviceType: 'administrative',
-      orderDate: '2024-02-01',
-      completionDate: null,
-      status: 'confirmed',
-      amount: 5800000,
-      discount: 0,
-      finalAmount: 5800000,
-      paymentStatus: 'paid',
-      paymentMethod: 'bank_transfer',
-      participants: ['Nguyễn Văn I', 'Nguyễn Thị J'],
-      method: 'at-facility',
-      notes: 'Lịch hẹn trong tương lai',
-      invoice: 'INV-2024-005',
-      rating: null,
-      feedback: null
-    }
-  ];
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -173,13 +55,13 @@ const OrderHistory = ({ user }) => {
   };
 
   const filterOrders = () => {
-    let filtered = orderHistory;
+    let filtered = orders;
 
     // Filter by period
     if (selectedPeriod !== 'all') {
       const now = new Date();
       const filterDate = new Date();
-      
+
       switch (selectedPeriod) {
         case 'last_month':
           filterDate.setMonth(now.getMonth() - 1);
@@ -196,7 +78,7 @@ const OrderHistory = ({ user }) => {
         default:
           break;
       }
-      
+
       filtered = filtered.filter(order => new Date(order.orderDate) >= filterDate);
     }
 
@@ -207,7 +89,7 @@ const OrderHistory = ({ user }) => {
 
     // Filter by search term
     if (searchTerm) {
-      filtered = filtered.filter(order => 
+      filtered = filtered.filter(order =>
         order.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.participants.some(p => p.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -235,14 +117,14 @@ const OrderHistory = ({ user }) => {
   };
 
   const calculateTotalSpent = () => {
-    return orderHistory
+    return orders
       .filter(order => order.status === 'completed')
       .reduce((total, order) => total + order.finalAmount, 0);
   };
 
   const filteredOrders = filterOrders();
   const totalSpent = calculateTotalSpent();
-  const completedOrders = orderHistory.filter(order => order.status === 'completed').length;
+  const completedOrders = orders.filter(order => order.status === 'completed').length;
 
   return (
     <>
@@ -269,7 +151,7 @@ const OrderHistory = ({ user }) => {
             <Card.Body className="d-flex align-items-center">
               <i className="bi bi-cart-check fs-1 me-3"></i>
               <div>
-                <div className="h4 mb-0">{orderHistory.length}</div>
+                <div className="h4 mb-0">{orders.length}</div>
                 <small>Tổng đơn hàng</small>
               </div>
             </Card.Body>
@@ -291,7 +173,7 @@ const OrderHistory = ({ user }) => {
             <Card.Body className="d-flex align-items-center">
               <i className="bi bi-clock fs-1 me-3"></i>
               <div>
-                <div className="h4 mb-0">{orderHistory.filter(o => o.status === 'in-progress').length}</div>
+                <div className="h4 mb-0">{orders.filter(o => o.status === 'in-progress').length}</div>
                 <small>Đang thực hiện</small>
               </div>
             </Card.Body>
@@ -457,13 +339,13 @@ const OrderHistory = ({ user }) => {
                               <div className="small">
                                 <strong className="text-muted">Đánh giá:</strong>
                                 <div className="mt-1">
-                                  {Array.from({length: 5}, (_, i) => (
+                                  {Array.from({ length: 5 }, (_, i) => (
                                     <i key={i} className={`bi bi-star${i < order.rating ? '-fill' : ''} text-warning`}></i>
                                   ))}
                                   <span className="ms-1">({order.rating}/5)</span>
                                 </div>
                                 {order.feedback && (
-                                  <div className="text-muted mt-1" style={{fontSize: '0.8em'}}>
+                                  <div className="text-muted mt-1" style={{ fontSize: '0.8em' }}>
                                     "{order.feedback}"
                                   </div>
                                 )}
@@ -485,7 +367,7 @@ const OrderHistory = ({ user }) => {
                     {/* Actions */}
                     <Col lg={4} className="mt-3 mt-lg-0">
                       <div className="d-grid gap-2">
-                        <Button 
+                        <Button
                           variant="outline-primary"
                           as={Link}
                           to={`/tracking/${order.id}`}
@@ -502,7 +384,7 @@ const OrderHistory = ({ user }) => {
                         )}
 
                         {order.invoice && (
-                          <Button 
+                          <Button
                             variant="outline-info"
                             onClick={() => handleViewInvoice(order)}
                           >
@@ -532,8 +414,8 @@ const OrderHistory = ({ user }) => {
             <div className="text-center py-5">
               <i className="bi bi-inbox text-muted" style={{ fontSize: '4rem' }}></i>
               <h5 className="text-muted mt-3">
-                {searchTerm || selectedStatus !== 'all' || selectedPeriod !== 'all' 
-                  ? 'Không tìm thấy đơn hàng nào' 
+                {searchTerm || selectedStatus !== 'all' || selectedPeriod !== 'all'
+                  ? 'Không tìm thấy đơn hàng nào'
                   : 'Chưa có đơn hàng nào'
                 }
               </h5>
