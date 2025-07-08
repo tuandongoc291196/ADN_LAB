@@ -51,8 +51,28 @@ const Login = ({ setUser }) => {
       
       if (user) {
         try {
-          // Lấy thông tin user từ database
-          const { data: userData } = await getUser(dataConnect, { userId: user.uid });
+          // Thử lấy thông tin user từ database với retry logic cho trường hợp Google Sign-In
+          let userData = null;
+          let retries = 3;
+          
+          while (retries > 0 && !userData?.user) {
+            try {
+              const { data } = await getUser(dataConnect, { userId: user.uid });
+              userData = data;
+              
+              if (userData?.user) {
+                break; // Tìm thấy user, thoát khỏi loop
+              }
+            } catch (error) {
+              console.log(`Retry ${4 - retries}: User not found yet, retrying...`);
+            }
+            
+            retries--;
+            if (retries > 0) {
+              // Đợi 1 giây trước khi thử lại (cho phép Firebase hoàn thành tạo user)
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          }
           
           if (userData && userData.user) {
             const userInfo = userData.user;
@@ -85,7 +105,9 @@ const Login = ({ setUser }) => {
             // Điều hướng theo role
             navigate(getRedirectPath(appUser.role));
           } else {
-            setLoginError('Không tìm thấy thông tin người dùng trong hệ thống.');
+            // Nếu vẫn không tìm thấy sau khi retry, hiển thị lỗi chi tiết hơn
+            console.error('User not found after retries. User UID:', user.uid);
+            setLoginError('Không thể tải thông tin tài khoản. Vui lòng thử đăng xuất và đăng nhập lại.');
           }
         } catch (error) {
           console.error('Error processing user login:', error);
@@ -102,10 +124,24 @@ const Login = ({ setUser }) => {
     try {
       setIsLoading(true);
       setLoginError('');
+      
+      // Gọi hàm signInWithGoogle và đợi hoàn thành
       await signInWithGoogle();
+      
+      // Không cần xử lý gì thêm ở đây vì useEffect sẽ xử lý khi user state thay đổi
     } catch (error) {
-      setLoginError('Đăng nhập Google thất bại. Vui lòng thử lại.');
       console.error('Google sign in error:', error);
+      
+      // Xử lý các loại lỗi khác nhau
+      if (error.code === 'auth/popup-closed-by-user') {
+        setLoginError('Đăng nhập đã bị hủy. Vui lòng thử lại.');
+      } else if (error.code === 'auth/popup-blocked') {
+        setLoginError('Popup đăng nhập bị chặn. Vui lòng cho phép popup và thử lại.');
+      } else if (error.code === 'auth/network-request-failed') {
+        setLoginError('Lỗi kết nối mạng. Vui lòng kiểm tra internet và thử lại.');
+      } else {
+        setLoginError('Đăng nhập Google thất bại. Vui lòng thử lại.');
+      }
     } finally {
       setIsLoading(false);
     }

@@ -137,11 +137,6 @@ const signInWithGoogle = async () => {
   try {
     const res = await signInWithPopup(auth, googleProvider);
     const user = res.user;
-    
-    // Get and store the ID token
-    const token = await user.getIdToken();
-    localStorage.setItem('token', token);
-    
     try {
       const { data: userData } = await getUser(dataConnect, { userId: user.uid });
       console.log("Checking if user exists in database:", userData);
@@ -159,12 +154,13 @@ const signInWithGoogle = async () => {
           avatar: user.photoURL || "",
           phone: "",
           address: "",
-          roleId: "0"
+          roleId: "0"          
         });
       }
     } catch (getUserError) {
       console.log("User error");
-    }    
+    }
+    await setUserOnlineStatus(user.uid, true);    
     const { data: userData } = await getUser(dataConnect, { userId: user.uid });
     localStorage.setItem("user_id", user.uid);
     localStorage.setItem("userData", JSON.stringify(userData.user));
@@ -187,13 +183,9 @@ const logInWithEmailAndPassword = async (email, password) => {
     const res = await signInWithEmailAndPassword(auth, email, password);
     const user = res.user;
 
-    // Get and store the ID token
-    const token = await user.getIdToken();
-    localStorage.setItem('token', token);
-
     // Lấy thông tin người dùng từ Data Connect
     const { data: userData } = await getUser(dataConnect, { userId: user.uid });
-    
+    await setUserOnlineStatus(user.uid, true);  
     localStorage.setItem("user_id", user.uid);
     localStorage.setItem("userData", JSON.stringify(userData.user));
     return res;
@@ -269,7 +261,6 @@ const logout = async () => {
   localStorage.removeItem("user_id");
   localStorage.removeItem("userData");
   localStorage.removeItem("isAuthenticated");
-  localStorage.removeItem("token");
   clearUserCache();  
   signOut(auth);
 };
@@ -309,27 +300,55 @@ async function createOrGetChatRoom(userId1, userId2) {
   }
 }
 
-async function sendMessage(roomId, user, text, recipientId) {
+async function sendMessage(roomId, user, text, recipientId, imageUrl = null) {
   try {
-    // Add message to messages subcollection
-    await addDoc(collection(db, "chat-rooms", roomId, "messages"), {
+    // Prepare message data
+    const messageData = {
       senderId: user.uid,
       senderName: user.displayName || user.fullname,
       senderAvatar: user.photoURL || user.avatar,
-      text: text.trim(),
       timestamp: serverTimestamp(),
       readBy: [user.uid] // Mark as read by sender
-    });
+    };
+
+    // Add text or image based on message type
+    if (imageUrl) {
+      messageData.imageUrl = imageUrl;
+      messageData.text = text || ""; // Optional caption
+      messageData.type = "image";
+    } else {
+      messageData.text = text.trim();
+      messageData.type = "text";
+    }
+
+    // Add message to messages subcollection
+    await addDoc(collection(db, "chat-rooms", roomId, "messages"), messageData);
 
     // Update chat room metadata
     const chatRoomRef = doc(db, "chat-rooms", roomId);
+    const lastMessageText = imageUrl ? "📷 Đã gửi ảnh" : text.trim();
     await updateDoc(chatRoomRef, {
-      lastMessage: text.trim(),
+      lastMessage: lastMessageText,
       lastMessageTime: serverTimestamp(),
       [`unreadCount.${recipientId}`]: increment(1)
     });
   } catch (error) {
     console.error("Error sending message:", error);
+    throw error;
+  }
+}
+
+async function sendImageMessage(roomId, user, file, recipientId, caption = "") {
+  try {
+    // Upload image to Firebase Storage
+    const imageUrl = await uploadChatImage(file, roomId, user.uid);
+    
+    // Send message with image URL
+    await sendMessage(roomId, user, caption, recipientId, imageUrl);
+    
+    return imageUrl;
+  } catch (error) {
+    console.error("Error sending image message:", error);
     throw error;
   }
 }
@@ -756,6 +775,15 @@ export const uploadAvatar = async (file, userId) => {
   return url;
 };
 
+export const uploadChatImage = async (file, chatroomId, userId) => {
+  if (!file || !chatroomId || !userId) throw new Error("Thiếu file, chatroomId hoặc userId");
+  const timestamp = Date.now();
+  const storageRef = ref(storage, `chat/${chatroomId}/${userId}_${timestamp}_${file.name}`);
+  await uploadBytes(storageRef, file);
+  const url = await getDownloadURL(storageRef);
+  return url;
+};
+
 export {
   auth,
   db,
@@ -768,6 +796,7 @@ export {
   logout,
   getMessages,
   sendMessage,
+  sendImageMessage,
   createOrGetChatRoom,
   getUserChatRooms,
   markMessagesAsRead,

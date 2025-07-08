@@ -18,17 +18,65 @@ const getAllBookings = async (req, res) => {
           totalAmount
           createdAt
           updatedAt
+          participants_on_booking {
+            id
+            name
+            age
+            identification
+            gender
+            relationship
+            createdAt
+            updatedAt
+          }
+          bookingHistories_on_booking (orderBy: {createdAt: DESC}) {
+            id
+            description
+            status
+            createdAt
+            updatedAt
+          }
+          informations_on_booking {
+            id
+            name
+            identification
+            address
+            phone
+            email
+            createdAt
+            updatedAt
+          }
+          user {
+            id
+            fullname
+            email
+            phone
+          }
+          staff {
+            id
+            user {
+              fullname
+            }
+          }
           service {
             id
+            title
+            description
+            fullDescription
+            price
+            duration
+            category {
+              id
+              name
+              description
+              hasLegalValue
+            }
           }
           timeSlot {
             id
           }
-          staff {
-            id
-          }
           method {
             id
+            name
           }
         }
       }

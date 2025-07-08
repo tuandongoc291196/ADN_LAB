@@ -15,4 +15,27 @@
     background: var(--color-blue);
     border-radius: var(--border-radius);
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-upload-button {
+    padding: 12px 14px;
+    background: var(--color-gray);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.image-upload-button:hover {
+    background: #ddd;
+}
+
+.image-upload-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
