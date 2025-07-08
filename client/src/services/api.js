@@ -580,6 +580,27 @@ export const getBookingByUserId = async (userId) => {
   }
 };
 
+// Lấy danh sách booking theo staffId
+export const getBookingByStaffId = async (staffId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/bookings/staff`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ staffId }),
+    });
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    const data = await response.json();
+    // API trả về bookings array trực tiếp
+    return data.data?.bookings || data.data || [];
+  } catch (error) {
+    throw new Error('Failed to fetch bookings by staff ID: ' + error.message);
+  }
+};
+
 // ==================== BLOG API FUNCTIONS ====================
 
 // Lấy tất cả bài blog
@@ -723,5 +744,26 @@ export const toggleBlogFeatured = async (blogId, featured) => {
     return await updateBlog(blogId, { featured });
   } catch (error) {
     throw new Error('Failed to toggle blog featured: ' + error.message);
+  }
+};
+
+// Lấy lịch sử booking theo userId hoặc staffId
+export const getBookingHistory = async (payload) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/booking/history`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    const data = await response.json();
+    // API có thể trả về data.data.history hoặc data.data
+    return data.data?.history || data.data || [];
+  } catch (error) {
+    throw new Error('Failed to fetch booking history: ' + error.message);
   }
 };

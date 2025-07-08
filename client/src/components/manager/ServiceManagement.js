@@ -1,16 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Row, Col, Badge, Spinner, Alert, InputGroup, Card } from 'react-bootstrap';
-import { Plus, Pencil, Eye, EyeSlash, CheckCircle, XCircle, Star, StarFill, Search, SortDown, SortUp } from 'react-bootstrap-icons';
-import { 
-  getAllServices, 
-  getAllMethods, 
+import { Button, Modal, Form, Row, Col, Spinner, Alert } from 'react-bootstrap';
+import { SortDown, SortUp } from 'react-bootstrap-icons';
+import {
+  getAllServices,
+  getAllMethods,
   getMethodsByServiceId,
   addService,
-  updateService,
-  addMethodToService,
-  removeMethodFromService
+  updateService
 } from '../../services/api';
-import { enrichMethodData } from '../data/services-data';
 
 function ServiceManagement() {
   const [services, setServices] = useState([]);
@@ -48,13 +45,13 @@ function ServiceManagement() {
     'bi-award', 'bi-gear', 'bi-person', 'bi-person-badge', 'bi-person-circle',
     'bi-person-square', 'bi-person-vcard', 'bi-person-workspace', 'bi-person-video3',
     'bi-person-plus', 'bi-person-check', 'bi-person-x', 'bi-person-dash',
-    'bi-person-bounding-box', 'bi-heart', 'bi-heart-fill', 'bi-heart-pulse-fill', 
+    'bi-person-bounding-box', 'bi-heart', 'bi-heart-fill', 'bi-heart-pulse-fill',
     'bi-heart-half', 'bi-star', 'bi-star-fill', 'bi-star-half', 'bi-award-fill',
-    'bi-shield', 'bi-shield-fill', 'bi-shield-lock', 'bi-shield-lock-fill', 
-    'bi-shield-exclamation', 'bi-shield-x', 'bi-gear-fill', 'bi-gear-wide', 
-    'bi-gear-wide-connected', 'bi-tools', 'bi-wrench', 'bi-wrench-adjustable', 
+    'bi-shield', 'bi-shield-fill', 'bi-shield-lock', 'bi-shield-lock-fill',
+    'bi-shield-exclamation', 'bi-shield-x', 'bi-gear-fill', 'bi-gear-wide',
+    'bi-gear-wide-connected', 'bi-tools', 'bi-wrench', 'bi-wrench-adjustable',
     'bi-wrench-adjustable-circle', 'bi-hammer', 'bi-screwdriver', 'bi-nut', 'bi-nut-fill',
-    'bi-flask-fill', 'bi-beaker', 'bi-beaker-fill', 'bi-droplet', 'bi-droplet-fill', 
+    'bi-flask-fill', 'bi-beaker', 'bi-beaker-fill', 'bi-droplet', 'bi-droplet-fill',
     'bi-droplet-half', 'bi-thermometer', 'bi-thermometer-half', 'bi-thermometer-high',
     'bi-thermometer-low', 'bi-thermometer-snow', 'bi-thermometer-sun',
     'bi-lightning', 'bi-lightning-fill', 'bi-lightning-charge',
@@ -119,15 +116,15 @@ function ServiceManagement() {
   ];
 
   const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [servicesData, methodsData] = await Promise.all([
-          getAllServices(),
-          getAllMethods() 
-        ]);
+    setLoading(true);
+    try {
+      const [servicesData, methodsData] = await Promise.all([
+        getAllServices(),
+        getAllMethods()
+      ]);
 
-        console.log('Raw services data from API:', servicesData);
-        console.log('Sample service object:', servicesData[0]);
+      console.log('Raw services data from API:', servicesData);
+      console.log('Sample service object:', servicesData[0]);
 
       // Fetch methods for each service
       const servicesWithMethods = await Promise.all(
@@ -140,26 +137,26 @@ function ServiceManagement() {
             };
           } catch (error) {
             console.error(`Error fetching methods for service ${service.id}:`, error);
-          return {
-            ...service,
+            return {
+              ...service,
               methods: []
             };
           }
         })
       );
 
-        console.log('Processed services:', servicesWithMethods);
+      console.log('Processed services:', servicesWithMethods);
       console.log('Methods data:', methodsData);
-      
-        setServices(servicesWithMethods);
+
+      setServices(servicesWithMethods);
       setMethods(methodsData);
-        setLoading(false);
-      } catch (err) {
-        console.error('Error:', err);
-        setError(err.message);
-        setLoading(false);
-      }
-    };
+      setLoading(false);
+    } catch (err) {
+      console.error('Error:', err);
+      setError(err.message);
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -248,7 +245,7 @@ function ServiceManagement() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!form.title || !form.description || !form.price || !form.duration || !form.categoryId) {
       setAlert({ show: true, variant: 'danger', message: 'Vui lòng điền đầy đủ thông tin bắt buộc!' });
       return;
@@ -261,38 +258,38 @@ function ServiceManagement() {
 
     setSubmitting(true);
     try {
-    const serviceData = {
-      ...form,
+      const serviceData = {
+        ...form,
         price: parseInt(form.price)
-    };
+      };
 
-    if (modalType === 'add') {
+      if (modalType === 'add') {
         // Gọi API thực tế để thêm dịch vụ với methods
         const serviceDataWithMethods = {
           ...serviceData,
           methods: form.methodIds // Backend yêu cầu methods array
         };
-        
+
         const newService = await addService(serviceDataWithMethods);
-        
+
         // Refresh lại danh sách dịch vụ
         await fetchData();
-      setAlert({ show: true, variant: 'success', message: 'Thêm dịch vụ thành công!' });
+        setAlert({ show: true, variant: 'success', message: 'Thêm dịch vụ thành công!' });
       } else if (modalType === 'edit') {
         // Gọi API thực tế để cập nhật dịch vụ với methods
         const serviceDataWithMethods = {
           ...serviceData,
           methods: form.methodIds // Backend yêu cầu methods array
         };
-        
+
         await updateService(form.id, serviceDataWithMethods);
-        
+
         // Refresh lại danh sách dịch vụ
         await fetchData();
-      setAlert({ show: true, variant: 'success', message: 'Cập nhật dịch vụ thành công!' });
-    }
-      
-    handleCloseModal();
+        setAlert({ show: true, variant: 'success', message: 'Cập nhật dịch vụ thành công!' });
+      }
+
+      handleCloseModal();
     } catch (error) {
       console.error('Submit error:', error);
       setAlert({ show: true, variant: 'danger', message: error.message });
@@ -305,23 +302,23 @@ function ServiceManagement() {
     try {
       const service = services.find(s => s.id === id);
       const newFeaturedStatus = !service.featured;
-      
+
       // Lấy methods hiện tại của service
       const currentMethodIds = service.methods?.map(m => m.id) || [];
-      
+
       // Gọi API thực tế để cập nhật trạng thái featured với methods hiện tại
       await updateService(id, {
         featured: newFeaturedStatus,
         methods: currentMethodIds
       });
-      
+
       // Refresh lại danh sách dịch vụ
       await fetchData();
-      
-      setAlert({ 
-        show: true, 
-        variant: 'success', 
-        message: `Đã ${newFeaturedStatus ? 'đánh dấu' : 'bỏ đánh dấu'} nổi bật cho dịch vụ!` 
+
+      setAlert({
+        show: true,
+        variant: 'success',
+        message: `Đã ${newFeaturedStatus ? 'đánh dấu' : 'bỏ đánh dấu'} nổi bật cho dịch vụ!`
       });
     } catch (error) {
       console.error('Toggle featured error:', error);
@@ -332,30 +329,30 @@ function ServiceManagement() {
   const handleToggleActive = async (id) => {
     try {
       const service = services.find(s => s.id === id);
-      
+
       // Xử lý trường hợp service.isActive có thể là undefined (dịch vụ cũ)
       const currentActiveStatus = service.isActive !== false; // true nếu isActive là true hoặc undefined
       const newActiveStatus = !currentActiveStatus;
-      
+
       // Lấy methods hiện tại của service
       const currentMethodIds = service.methods?.map(m => m.id) || [];
-      
+
       const updateData = {
         isActive: newActiveStatus,
         methods: currentMethodIds
       };
-      
+
       // Gọi API thực tế để cập nhật trạng thái active với methods hiện tại
       await updateService(id, updateData);
-      
+
       // Refresh lại danh sách dịch vụ
       await fetchData();
-      
-    setAlert({ 
-      show: true, 
-      variant: 'success', 
-        message: `Đã ${newActiveStatus ? 'hiển thị' : 'ẩn'} dịch vụ!` 
-    });
+
+      setAlert({
+        show: true,
+        variant: 'success',
+        message: `Đã ${newActiveStatus ? 'hiển thị' : 'ẩn'} dịch vụ!`
+      });
     } catch (error) {
       console.error('Toggle active error:', error);
       setAlert({ show: true, variant: 'danger', message: error.message });
@@ -376,13 +373,13 @@ function ServiceManagement() {
       sortedServices.sort((a, b) => {
         let aValue = a[sortConfig.key];
         let bValue = b[sortConfig.key];
-        
+
         // Handle nested objects
         if (sortConfig.key === 'category') {
           aValue = a.category?.name || '';
           bValue = b.category?.name || '';
         }
-        
+
         if (aValue < bValue) {
           return sortConfig.direction === 'ascending' ? -1 : 1;
         }
@@ -400,7 +397,7 @@ function ServiceManagement() {
       // Filter by search term
       const searchMatch = service.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         service.description?.toLowerCase().includes(searchTerm.toLowerCase());
-      
+
       return searchMatch;
     });
   };
@@ -493,7 +490,7 @@ function ServiceManagement() {
             onChange={(e) => setSearchTerm(e.target.value)}
             style={{ width: '200px' }}
           />
-          <button 
+          <button
             className="btn btn-primary btn-sm"
             onClick={() => handleShowModal('add')}
           >
@@ -505,8 +502,8 @@ function ServiceManagement() {
 
       {/* Alert Messages */}
       {alert.show && (
-        <Alert 
-          variant={alert.variant} 
+        <Alert
+          variant={alert.variant}
           onClose={() => setAlert({ show: false, variant: '', message: '' })}
           dismissible
           className="mb-3"
@@ -559,21 +556,21 @@ function ServiceManagement() {
                         {service.methods?.map(method => {
                           const displayInfo = getMethodDisplayInfo(method.id);
                           return (
-                          <div 
-                            key={method.id}
+                            <div
+                              key={method.id}
                               className={`badge bg-${displayInfo.color} text-wrap`}
-                            style={{ 
-                              width: 'fit-content',
-                              padding: '6px 10px',
+                              style={{
+                                width: 'fit-content',
+                                padding: '6px 10px',
                                 marginBottom: '2px',
                                 borderRadius: '8px',
                                 fontWeight: '500'
-                            }}
-                            title={method.description}
-                          >
+                              }}
+                              title={method.description}
+                            >
                               <i className={`${displayInfo.icon} me-1`}></i>
                               {method.name}
-                          </div>
+                            </div>
                           );
                         })}
                         {(!service.methods || service.methods.length === 0) && (
@@ -589,7 +586,7 @@ function ServiceManagement() {
                         return (
                           <span className={`badge bg-${isActive ? 'success' : 'secondary'}`}>
                             {isActive ? 'Đang hiển thị' : 'Đã ẩn'}
-                      </span>
+                          </span>
                         );
                       })()}
                     </td>
@@ -718,7 +715,7 @@ function ServiceManagement() {
                 <Form.Group className="mb-3">
                   <Form.Label>Icon</Form.Label>
                   <div className="position-relative icon-dropdown-container">
-                    <div 
+                    <div
                       className={`form-control d-flex align-items-center justify-content-between ${modalType === 'view' ? 'bg-light' : ''}`}
                       style={{ cursor: modalType === 'view' ? 'default' : 'pointer' }}
                       onClick={() => modalType !== 'view' && setShowIconDropdown(!showIconDropdown)}
@@ -735,15 +732,15 @@ function ServiceManagement() {
                       </div>
                       {modalType !== 'view' && <i className="bi bi-chevron-down"></i>}
                     </div>
-                    
+
                     {showIconDropdown && modalType !== 'view' && (
-                      <div 
+                      <div
                         className="position-absolute w-100 bg-white border rounded shadow-sm"
-                        style={{ 
-                          top: '100%', 
-                          zIndex: 1000, 
-                          maxHeight: '400px', 
-                          overflowY: 'auto' 
+                        style={{
+                          top: '100%',
+                          zIndex: 1000,
+                          maxHeight: '400px',
+                          overflowY: 'auto'
                         }}
                       >
                         <div className="p-2 border-bottom">
@@ -760,7 +757,7 @@ function ServiceManagement() {
                               <div
                                 key={icon}
                                 className={`col-2 text-center p-2 rounded ${form.icon === icon ? 'bg-primary text-white' : 'hover-bg-light'}`}
-                                style={{ 
+                                style={{
                                   cursor: 'pointer',
                                   fontSize: '1.2rem',
                                   minHeight: '50px',
@@ -843,7 +840,7 @@ function ServiceManagement() {
                     {methods.map(method => {
                       const displayInfo = getMethodDisplayInfo(method.id);
                       const isSelected = form.methodIds.includes(method.id);
-                      
+
                       return (
                         <div key={method.id} className="d-flex align-items-center">
                           <Form.Check
@@ -854,10 +851,10 @@ function ServiceManagement() {
                             className="me-2"
                             disabled={modalType === 'view'}
                           />
-                          <label 
+                          <label
                             htmlFor={`method-${method.id}`}
                             className={`badge bg-${displayInfo.color} p-2`}
-                            style={{ 
+                            style={{
                               cursor: modalType === 'view' ? 'default' : 'pointer',
                               borderRadius: '8px',
                               fontWeight: '500',
@@ -889,7 +886,7 @@ function ServiceManagement() {
                 ) : (
                   modalType === 'add' ? 'Thêm' : 'Cập nhật'
                 )}
-            </Button>
+              </Button>
             )}
           </Modal.Footer>
         </Form>

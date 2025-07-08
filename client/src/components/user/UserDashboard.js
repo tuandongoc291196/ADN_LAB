@@ -35,12 +35,12 @@ const UserDashboard = ({ user }) => {
     const fetchUserData = async () => {
       try {
         setLoading(true);
-        
+
         // Lấy userId từ props user hoặc localStorage
-        const userId = user?.id || user?.user_id || user?.uid || 
-                      JSON.parse(localStorage.getItem('userData'))?.user_id || 
-                      localStorage.getItem('user_id');
-        
+        const userId = user?.id || user?.user_id || user?.uid ||
+          JSON.parse(localStorage.getItem('userData'))?.user_id ||
+          localStorage.getItem('user_id');
+
         if (!userId) {
           console.warn('No user ID found, using mock data');
           setCurrentUser({
@@ -59,9 +59,9 @@ const UserDashboard = ({ user }) => {
         // Gọi API để lấy thông tin user
         const userData = await getUserById(userId);
         console.log('User data from API:', userData);
-        
 
-        
+
+
         if (userData) {
           setCurrentUser({
             ...userData,
@@ -81,7 +81,7 @@ const UserDashboard = ({ user }) => {
         try {
           const appointmentsData = await getBookingByUserId(userId);
           setAppointments(appointmentsData || []);
-          
+
           // Count status
           let completed = 0, inProgress = 0;
           (appointmentsData || []).forEach(b => {
@@ -107,10 +107,10 @@ const UserDashboard = ({ user }) => {
             if (status === 'completed') completed++;
             if (status === 'in-progress') inProgress++;
           });
-          setCounts({ 
-            total: (appointmentsData || []).length, 
-            completed, 
-            inProgress 
+          setCounts({
+            total: (appointmentsData || []).length,
+            completed,
+            inProgress
           });
         } catch (appointmentsErr) {
           console.error('Error fetching appointments:', appointmentsErr);
@@ -233,15 +233,15 @@ const UserDashboard = ({ user }) => {
             <Card.Header className="bg-primary text-white text-center py-4">
               <div className="mb-3">
                 {currentUser.avatar ? (
-                  <img 
-                    src={currentUser.avatar} 
+                  <img
+                    src={currentUser.avatar}
                     alt="Avatar"
                     className="rounded-circle"
                     style={{ width: '80px', height: '80px', objectFit: 'cover' }}
                   />
                 ) : (
                   <div className="bg-white text-primary rounded-circle mx-auto d-flex align-items-center justify-content-center"
-                       style={{ width: '80px', height: '80px' }}>
+                    style={{ width: '80px', height: '80px' }}>
                     <i className="bi bi-person fs-1"></i>
                   </div>
                 )}
@@ -293,9 +293,8 @@ const UserDashboard = ({ user }) => {
                   key={item.key}
                   as={Link}
                   to={item.path}
-                  className={`d-flex align-items-center py-3 px-4 border-0 ${
-                    activeTab === item.key ? `bg-${item.color} bg-opacity-10 text-${item.color} border-end border-${item.color} border-3` : 'text-dark'
-                  }`}
+                  className={`d-flex align-items-center py-3 px-4 border-0 ${activeTab === item.key ? `bg-${item.color} bg-opacity-10 text-${item.color} border-end border-${item.color} border-3` : 'text-dark'
+                    }`}
                   style={{ textDecoration: 'none' }}
                 >
                   <i className={`${item.icon} me-3 fs-5`}></i>

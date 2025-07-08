@@ -98,7 +98,6 @@ const StaffDashboard = () => {
       icon: 'bi-box-seam',
       path: '/staff/kit-preparation',
       color: 'success',
-      badge: 8,
       description: 'Chuẩn bị và gửi kit test'
     },
     {
@@ -116,7 +115,6 @@ const StaffDashboard = () => {
       icon: 'bi-eye',
       path: '/staff/lab-testing',
       color: 'info',
-      badge: 5,
       description: 'Thực hiện phân tích ADN'
     },
     {
@@ -125,7 +123,6 @@ const StaffDashboard = () => {
       icon: 'bi-file-earmark-check',
       path: '/staff/results',
       color: 'danger',
-      badge: 3,
       description: 'Quản lý và trả kết quả'
     },
     {
@@ -148,16 +145,16 @@ const StaffDashboard = () => {
             <Card.Header className="bg-info text-white text-center py-4">
               <div className="mb-3">
                 {currentUser.avatar ? (
-                  <img 
-                    src={currentUser.avatar} 
-                    alt="Avatar" 
+                  <img
+                    src={currentUser.avatar}
+                    alt="Avatar"
                     className="rounded-circle"
                     width="60"
                     height="60"
                   />
                 ) : (
-                  <div className="bg-white bg-opacity-20 rounded-circle d-inline-flex align-items-center justify-content-center" 
-                       style={{ width: '60px', height: '60px' }}>
+                  <div className="bg-white bg-opacity-20 rounded-circle d-inline-flex align-items-center justify-content-center"
+                    style={{ width: '60px', height: '60px' }}>
                     <i className="bi bi-person-badge fs-1 text-white"></i>
                   </div>
                 )}
@@ -174,11 +171,10 @@ const StaffDashboard = () => {
                   key={item.key}
                   as={Link}
                   to={item.path}
-                  className={`d-flex align-items-center py-3 px-4 border-0 ${
-                    activeTab === item.key
+                  className={`d-flex align-items-center py-3 px-4 border-0 ${activeTab === item.key
                       ? `bg-${item.color} bg-opacity-10 text-${item.color} border-end border-${item.color} border-3`
                       : 'text-dark'
-                  }`}
+                    }`}
                   style={{ textDecoration: 'none' }}
                 >
                   <i className={`${item.icon} me-3 fs-5`}></i>
