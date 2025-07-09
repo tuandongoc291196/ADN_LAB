@@ -767,3 +767,23 @@ export const getBookingHistory = async (payload) => {
     throw new Error('Failed to fetch booking history: ' + error.message);
   }
 };
+
+// Thêm mới lịch sử booking
+export const addBookingHistory = async (payload) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/booking/history/add`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    const data = await response.json();
+    return data.data || data;
+  } catch (error) {
+    throw new Error('Failed to add booking history: ' + error.message);
+  }
+};
