@@ -94,10 +94,10 @@ const KitPreparation = ({ user }) => {
       const res = await addBookingHistory(payload);
       console.log('✅ Booking history added:', res);
 
-      alert('Thêm lịch sử thành công!');
+
     } catch (err) {
       console.error('❌ Lỗi khi thêm booking history:', err);
-      alert('Có lỗi xảy ra khi thêm trạng thái!');
+
     }
   };
 
