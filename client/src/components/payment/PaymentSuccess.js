@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Alert, Badge, Modal } from 'react-bootstrap';
 import { getBookingById } from '../../services/api';
 
 const PaymentSuccess = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [paymentResult, setPaymentResult] = useState(null);
   const [paymentMethodInfo, setPaymentMethodInfo] = useState(null);
   const [bookingDetail, setBookingDetail] = useState(null);
@@ -89,6 +90,21 @@ const PaymentSuccess = () => {
         });
     }
   }, [paymentResult?.bookingId]);
+
+  // Nếu thanh toán lỗi hoặc pending, tự động redirect về trang payment sau 3 giây (nếu có bookingId)
+  useEffect(() => {
+    const query = new URLSearchParams(location.search);
+    const resultCode = query.get('resultCode');
+    const orderId = query.get('orderId');
+    const bookingId = orderId ? orderId.match(/MOMO_(ADNLAB\d+)_/)?.[1] : null;
+
+    if (resultCode && resultCode !== '0' && bookingId) {
+      const timer = setTimeout(() => {
+        navigate('/payment', { state: { bookingId } });
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [location.search, navigate]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -195,6 +211,28 @@ const PaymentSuccess = () => {
       date: date || 'N/A',
       time: start && end ? `${start} - ${end}` : 'N/A'
     };
+  }
+
+  if (paymentResult?.resultCode && paymentResult.resultCode !== '0') {
+    // Trường hợp thanh toán chưa thành công hoặc đang xử lý
+    return (
+      <Container className="py-5">
+        <Alert variant="warning" className="text-center">
+          <i className="bi bi-exclamation-triangle me-2"></i>
+          Thanh toán chưa thành công hoặc đang được xử lý.<br />
+          Bạn sẽ được chuyển về trang thanh toán sau vài giây.<br />
+          Nếu không tự động chuyển, vui lòng bấm nút bên dưới để thanh toán lại hoặc liên hệ hỗ trợ nếu cần.
+        </Alert>
+        <div className="text-center mt-4">
+          <Button variant="primary" onClick={() => navigate('/payment', { state: { bookingId: paymentResult.bookingId } })}>
+            Thanh toán lại
+          </Button>
+          <Button variant="outline-secondary" className="ms-3" onClick={() => window.location.reload()}>
+            Kiểm tra lại trạng thái
+          </Button>
+        </div>
+      </Container>
+    );
   }
 
   if (!paymentResult) {
