@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Button, Badge, Alert, Modal, Form, Table, InputGroup } from 'react-bootstrap';
-import { getBookingByStaffId } from '../../services/api';
+import { getBookingByStaffId, addBookingHistory } from '../../services/api';
 const KitPreparation = ({ user }) => {
   const [orders, setOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
-  const [showPrepModal, setShowPrepModal] = useState(false);
   const [showReturnConfirmModal, setShowReturnConfirmModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [returnLoading, setReturnLoading] = useState(false);
@@ -32,7 +31,9 @@ const KitPreparation = ({ user }) => {
               phone: b.informations_on_booking?.[0]?.phone || '',
               service: b.service?.title || 'Không rõ dịch vụ',
               serviceType: b.service?.category?.hasLegalValue ? 'civil' : 'administrative',
-              status: latestStatus === 'BOOKED' ? 'waiting-kit-prep' : latestStatus.toLowerCase(),
+              status: latestStatus === 'BOOKED'
+                ? 'waiting-kit-prep'
+                : latestStatus.toLowerCase().replaceAll('_', '-'),
               orderDate: b.createdAt,
               expectedDate: b.timeSlotId?.split('_')[0], // Lấy ngày từ slot ID
               returnInfo: b.returnInfo || null,
@@ -72,6 +73,7 @@ const KitPreparation = ({ user }) => {
   const getStatusBadge = (status) => {
     const statusConfig = {
       'waiting-kit-prep': { bg: 'warning', text: 'Chờ chuẩn bị kit' },
+      'kit-prepared': { bg: 'danger', text: 'Đã chuẩn bị kit' },
       'kit-sent': { bg: 'primary', text: 'Đã gửi kit' },
       'waiting-sample': { bg: 'secondary', text: 'Chờ nhận mẫu' },
       'sample-received': { bg: 'success', text: 'Đã nhận mẫu' }
@@ -81,34 +83,57 @@ const KitPreparation = ({ user }) => {
     return <Badge bg={config.bg}>{config.text}</Badge>;
   };
 
-  const handlePrepareKit = (order) => {
-    setSelectedOrder(order);
-    setShowPrepModal(true);
+  const handleSubmit = async (bookingId, status, description) => {
+    try {
+      const payload = {
+        bookingId: bookingId,
+        status: status,         // ví dụ: 'KIT_SENT', 'KIT_PREPARED', etc.
+        description: description        // mô tả cụ thể như 'Đã gửi kit qua J&T'
+      };
+
+      const res = await addBookingHistory(payload);
+      console.log('✅ Booking history added:', res);
+
+
+    } catch (err) {
+      console.error('❌ Lỗi khi thêm booking history:', err);
+
+    }
   };
 
-  const handleConfirmPreparation = () => {
-    // Update order status
-    const updatedOrders = orders.map(order =>
-      order.id === selectedOrder.id
-        ? {
-          ...order,
-          status: 'kit-prepared',
-          preparedBy: user.name,
-          preparedDate: new Date().toLocaleString('vi-VN'),
-          trackingNumber: 'VTP' + Date.now().toString().slice(-9)
-        }
-        : order
-    );
-    setOrders(updatedOrders);
-    setShowPrepModal(false);
-    setSelectedOrder(null);
+  const handlePrepareKit = async (order) => {
+    try {
+      // 1. Cập nhật trạng thái UI
+      const updatedOrders = orders.map(o =>
+        o.id === order.id
+          ? {
+            ...o,
+            status: 'kit-prepared',
+            preparedBy: user.name,
+            preparedDate: new Date().toLocaleString('vi-VN'),
+            trackingNumber: 'VTP' + Date.now().toString().slice(-9)
+          }
+          : o
+      );
+      setOrders(updatedOrders);
 
-    setAlert({
-      show: true,
-      message: `Kit cho đơn hàng ${selectedOrder.id} đã được chuẩn bị thành công!`,
-      type: 'success'
-    });
-    setTimeout(() => setAlert({ show: false, message: '', type: '' }), 3000);
+      // 2. Gửi vào lịch sử backend
+      await handleSubmit(order.id, 'KIT_PREPARED', 'Đã chuẩn bị kit');
+
+      // 3. Thông báo
+      setAlert({
+        show: true,
+        message: `Đã chuẩn bị kit cho đơn ${order.id}`,
+        type: 'success'
+      });
+
+    } catch (err) {
+      setAlert({
+        show: true,
+        message: `Có lỗi khi chuẩn bị kit cho đơn ${order.id}`,
+        type: 'danger'
+      });
+    }
   };
 
   const handleSendKit = (orderId) => {
@@ -123,6 +148,7 @@ const KitPreparation = ({ user }) => {
         : order
     );
     setOrders(updatedOrders);
+    handleSubmit(orderId, 'KIT_SENT', 'Đã gửi kit cho khách hàng');
 
     setAlert({
       show: true,
@@ -155,6 +181,7 @@ const KitPreparation = ({ user }) => {
         return order;
       });
       setOrders(updatedOrders);
+      handleSubmit(orderId, 'KIT_RETURNED', 'Đã nhận lại kit từ khách hàng');
 
       // Hiển thị thông báo thành công với hướng dẫn bước tiếp theo
       setAlert({
@@ -250,9 +277,16 @@ const KitPreparation = ({ user }) => {
               </td>
               <td>
                 <div>{order.service}</div>
-                <small className="text-muted">
-                  {order.serviceType === 'civil' ? 'Dân sự' : 'Hành chính'}
-                </small>
+                <div>
+                  <span
+                    className={`badge rounded-pill ${order.serviceType === 'civil'
+                      ? 'bg-success text-white'
+                      : 'bg-warning text-dark'
+                      }`}
+                  >
+                    {order.serviceType === 'civil' ? 'Dân sự' : 'Hành chính'}
+                  </span>
+                </div>
               </td>
               <td>
                 <div>{getStatusBadge(order.status)}</div>
@@ -332,42 +366,6 @@ const KitPreparation = ({ user }) => {
           ))}
         </tbody>
       </Table>
-
-      {/* Kit Preparation Modal */}
-      <Modal show={showPrepModal} onHide={() => setShowPrepModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>
-            <i className="bi bi-box-seam me-2"></i>
-            Chi tiết kit xét nghiệm
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {selectedOrder && (
-            <>
-              {selectedOrder.specialInstructions && (
-                <div className="mt-3">
-                  <h6 className="text-warning">Lưu ý đặc biệt:</h6>
-                  <p className="text-muted">{selectedOrder.specialInstructions}</p>
-                </div>
-              )}
-            </>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowPrepModal(false)}>
-            Đóng
-          </Button>
-          {selectedOrder?.status === 'waiting-kit-prep' && (
-            <Button
-              variant="success"
-              onClick={handleConfirmPreparation}
-            >
-              <i className="bi bi-check-circle me-2"></i>
-              Xác nhận chuẩn bị
-            </Button>
-          )}
-        </Modal.Footer>
-      </Modal>
 
       {/* Kit Return Confirmation Modal */}
       <Modal show={showReturnConfirmModal} onHide={() => setShowReturnConfirmModal(false)}>

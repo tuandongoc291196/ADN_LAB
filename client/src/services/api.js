@@ -472,15 +472,8 @@ export const getBookingById = async (bookingId) => {
     if (!response.ok) throw new Error('Network response was not ok');
 
     const data = await response.json();
-    const booking = data.data?.booking || {};
-
-    // Gộp tất cả vào 1 object để client dùng dễ
-    return {
-      ...booking,
-      information: data.data?.information || [],
-      participants: data.data?.participants || [],
-      history: data.data?.history || []
-    };
+    // Trả về trực tiếp object booking chi tiết
+    return data.data;
   } catch (error) {
     throw new Error('Failed to fetch booking by id: ' + error.message);
   }
@@ -765,5 +758,25 @@ export const getBookingHistory = async (payload) => {
     return data.data?.history || data.data || [];
   } catch (error) {
     throw new Error('Failed to fetch booking history: ' + error.message);
+  }
+};
+
+// Thêm mới lịch sử booking
+export const addBookingHistory = async (payload) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/booking/history/add`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    const data = await response.json();
+    return data.data || data;
+  } catch (error) {
+    throw new Error('Failed to add booking history: ' + error.message);
   }
 };

@@ -1,21 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation, Link, useNavigate } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Alert, Badge, Modal } from 'react-bootstrap';
 import { getBookingById } from '../../services/api';
-// import { getPaymentByBookingId } from '../../services/api'; // Comment out API call for now
 
 const PaymentSuccess = () => {
   const location = useLocation();
-  const navigate = useNavigate();
   const [paymentResult, setPaymentResult] = useState(null);
   const [paymentMethodInfo, setPaymentMethodInfo] = useState(null);
-  const [showReceiptModal, setShowReceiptModal] = useState(false);
-  const [countdown, setCountdown] = useState(10);
   const [bookingDetail, setBookingDetail] = useState(null);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
 
   useEffect(() => {
     const query = new URLSearchParams(location.search);
-    console.log('Query parameters:', query.toString());
 
     const orderId = query.get('orderId');
     const resultCode = query.get('resultCode');
@@ -23,14 +19,10 @@ const PaymentSuccess = () => {
     const partnerCode = query.get('partnerCode');
     const message = query.get('message');
 
-    console.log('Payment callback data:', { orderId, resultCode, amount, partnerCode, message });
-
     if (orderId && resultCode === '0' && partnerCode === 'MOMO') {
       // Extract bookingId from orderId format: MOMO_ADNLAB712881_1751536064022
       const matches = orderId.match(/MOMO_(ADNLAB\d+)_/);
       const bookingId = matches ? matches[1] : null;
-
-      console.log('Extracted bookingId:', bookingId);
 
       if (!bookingId) {
         console.error('Could not extract bookingId from orderId:', orderId);
@@ -63,41 +55,13 @@ const PaymentSuccess = () => {
         name: 'Ví MoMo',
         type: 'online'
       });
-
-      // Try to fetch API data in the background (optional)
-      // getPaymentByBookingId(bookingId)
-      //   .then((dataList) => {
-      //     const payment = dataList?.[0];
-      //     const booking = payment?.booking;
-      //     if (payment && booking) {
-      //       // Update with real data if API succeeds
-      //       setPaymentResult(prev => ({
-      //         ...prev,
-      //         paymentData: {
-      //           customerName: booking.user.fullname,
-      //           customerPhone: booking.user.phone,
-      //           customerEmail: booking.user.email
-      //         },
-      //         bookingData: {
-      //           serviceType: booking.service.category.hasLegalValue ? 'legal' : 'civil',
-      //           collectionMethod: booking.method.id,
-      //           appointmentDate: booking.timeSlot.slotDate,
-      //           appointmentTime: `${booking.timeSlot.startTime} - ${booking.timeSlot.endTime}`
-      //         }
-      //       }));
-      //     }
-      //   })
-      //   .catch((err) => {
-      //     console.warn('⚠️ Không thể tải thông tin chi tiết từ API:', err);
-      //     // Don't navigate away, just use URL parameters
-      //   });
     } else if (resultCode && resultCode !== '0') {
       // Payment failed
       console.error('Payment failed with resultCode:', resultCode);
     } else {
       console.log('No payment callback detected');
     }
-  }, [location, navigate]);
+  }, [location]);
 
   // Lấy thông tin booking chi tiết từ API nếu có bookingId
   useEffect(() => {
@@ -108,13 +72,13 @@ const PaymentSuccess = () => {
           setPaymentResult(prev => ({
             ...prev,
             paymentData: {
-              customerName: booking.information?.[0]?.name || 'Khách hàng',
-              customerPhone: booking.information?.[0]?.phone || 'N/A',
-              customerEmail: booking.information?.[0]?.email || 'N/A',
+              customerName: booking.informations_on_booking?.[0]?.name || booking.user?.fullname || 'Khách hàng',
+              customerPhone: booking.informations_on_booking?.[0]?.phone || booking.user?.phone || 'N/A',
+              customerEmail: booking.informations_on_booking?.[0]?.email || booking.user?.email || 'N/A',
             },
             bookingData: {
-              serviceType: booking.service?.category?.hasLegalValue ? 'administrative' : 'civil',
-              collectionMethod: booking.method?.id || 'unknown',
+              serviceType: booking.service?.category?.hasLegalValue ? 'ADN Hành chính' : 'ADN Dân sự',
+              collectionMethod: booking.method?.name || 'Không xác định', // Sửa ở đây để lấy tên phương thức
               appointmentDate: booking.timeSlot?.slotDate || 'N/A',
               appointmentTime: booking.timeSlot ? `${booking.timeSlot.startTime} - ${booking.timeSlot.endTime}` : 'N/A',
             }
@@ -143,12 +107,6 @@ const PaymentSuccess = () => {
       minute: '2-digit'
     };
     return new Date(dateString).toLocaleDateString('vi-VN', options);
-  };
-
-  const formatTime = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
   };
 
   const getStatusColor = (method) => {
@@ -239,16 +197,6 @@ const PaymentSuccess = () => {
     };
   }
 
-  // Hàm map phương thức lấy mẫu
-  function getMethodName(methodId) {
-    switch (methodId) {
-      case '1': return 'Tự lấy mẫu tại nhà';
-      case '2': return 'Nhân viên tới nhà';
-      case '3': return 'Tại cơ sở';
-      default: return methodId || 'Không xác định';
-    }
-  }
-
   if (!paymentResult) {
     return (
       <Container className="py-5">
@@ -263,6 +211,8 @@ const PaymentSuccess = () => {
   const statusColor = getStatusColor(paymentMethodInfo);
   const statusMessage = getStatusMessage(paymentMethodInfo);
   const nextSteps = getNextSteps(paymentMethodInfo, paymentResult.bookingData);
+
+  const { date: slotDate, time: slotTime } = parseTimeSlotId(bookingDetail?.timeSlot?.id);
 
   return (
     <div>
@@ -341,92 +291,40 @@ const PaymentSuccess = () => {
         <Row>
           {/* Order Details */}
           <Col lg={8} className="mb-4">
-            <Card className="shadow-sm">
-              <Card.Header className={`bg-${statusColor} text-white`}>
-                <h5 className="mb-0">
-                  <i className="bi bi-receipt me-2"></i>
-                  Chi tiết đơn hàng
-                </h5>
+            <Card className="mb-4">
+              <Card.Header className="bg-success text-white text-center fs-5 fw-bold">
+                Chi tiết đơn hàng
               </Card.Header>
               <Card.Body>
                 <Row>
+                  {/* Cột trái: Thông tin dịch vụ & lịch hẹn */}
                   <Col md={6} className="mb-3">
-                    <h6 className="text-primary mb-2">Thông tin dịch vụ</h6>
-                    <div className="mb-2">
-                      <strong>Mã đặt lịch:</strong> {paymentResult.bookingId}
-                    </div>
-                    <div className="mb-2">
-                      <strong>Tên dịch vụ:</strong> {bookingDetail?.service?.id || 'N/A'}
-                    </div>
-                    <div className="mb-2">
-                      <strong>Loại dịch vụ:</strong> {
-                        bookingDetail?.service?.category?.hasLegalValue === true ? 'ADN Hành chính'
-                        : bookingDetail?.service?.category?.hasLegalValue === false ? 'ADN Dân sự'
-                        : bookingDetail?.serviceType === 'administrative' ? 'ADN Hành chính'
-                        : bookingDetail?.serviceType === 'civil' ? 'ADN Dân sự'
-                        : 'Không xác định'
-                      }
-                    </div>
-                    <div className="mb-2">
-                      <strong>Phương thức lấy mẫu:</strong> {getMethodName(bookingDetail?.method?.id)}
+                    <div className="p-3 border rounded bg-light h-100 text-start">
+                      <h6 className="text-primary mb-3">Thông tin dịch vụ</h6>
+                      <div className="mb-2"><strong>Mã đặt lịch:</strong> {paymentResult.bookingId}</div>
+                      <div className="mb-2"><strong>Tên dịch vụ:</strong> {bookingDetail?.service?.title || 'N/A'}</div>
+                      <div className="mb-2"><strong>Loại dịch vụ:</strong> {bookingDetail?.service?.category?.name || 'N/A'}</div>
+                      <div className="mb-2"><strong>Phương thức lấy mẫu:</strong> {bookingDetail?.method?.name || 'N/A'}</div>
+                      <div className="mb-2"><strong>Ngày hẹn:</strong> {bookingDetail?.timeSlot?.slotDate || slotDate}</div>
+                      <div className="mb-2"><strong>Giờ:</strong> {bookingDetail?.timeSlot?.startTime && bookingDetail?.timeSlot?.endTime ? `${bookingDetail.timeSlot.startTime} - ${bookingDetail.timeSlot.endTime}` : slotTime}</div>
                     </div>
                   </Col>
+                  {/* Cột phải: Thông tin thanh toán & khách hàng */}
                   <Col md={6} className="mb-3">
-                    <h6 className="text-primary mb-2">Thông tin thanh toán</h6>
-                    <div className="mb-2">
-                      <strong>Phương thức:</strong> {paymentMethodInfo.name}
-                    </div>
-                    <div className="mb-2">
-                      <strong>Tổng tiền:</strong>
-                      <span className="text-success fw-bold ms-2">
-                        {formatCurrency(paymentResult.amount)}
-                      </span>
-                    </div>
-                    <div className="mb-2">
-                      <strong>Trạng thái:</strong>
-                      <Badge bg={statusColor} className="ms-2">
-                        {paymentMethodInfo?.type === 'online' ? 'Đã thanh toán' :
-                          paymentMethodInfo?.id === 'bank-transfer' ? 'Chờ xác nhận' : 'Chờ thanh toán'}
-                      </Badge>
-                    </div>
-                    <div className="mb-2">
-                      <strong>Thời gian:</strong> {formatDate(paymentResult.timestamp)}
+                    <div className="p-3 border rounded bg-light h-100 text-start">
+                      <h6 className="text-primary mb-3">Thông tin thanh toán</h6>
+                      <div className="mb-2"><strong>Phương thức:</strong> {paymentMethodInfo?.name || 'N/A'}</div>
+                      <div className="mb-2"><strong>Tổng tiền:</strong> <span className="text-success fw-bold">{formatCurrency(paymentResult.amount)}</span></div>
+                      <div className="mb-2"><strong>Trạng thái:</strong> <Badge bg="success">Đã thanh toán</Badge></div>
+                      <div className="mb-2"><strong>Thời gian:</strong> {formatDate(paymentResult.timestamp)}</div>
+                      <hr className="my-3" />
+                      <h6 className="text-primary mb-2">Khách hàng</h6>
+                      <div className="mb-2"><strong>Họ tên:</strong> {paymentResult.paymentData.customerName}</div>
+                      <div className="mb-2"><strong>Điện thoại:</strong> {paymentResult.paymentData.customerPhone}</div>
+                      <div className="mb-2"><strong>Email:</strong> {paymentResult.paymentData.customerEmail}</div>
                     </div>
                   </Col>
                 </Row>
-
-                {/* Lịch hẹn */}
-                {bookingDetail?.timeSlot?.id && (
-                  <div className="mt-3 pt-3 border-top">
-                    <h6 className="text-primary mb-2">Lịch hẹn</h6>
-                    <Row>
-                      {(() => {
-                        const { date, time } = parseTimeSlotId(bookingDetail.timeSlot.id);
-                        return <>
-                          <Col sm={6}>
-                            <strong>Ngày:</strong> {date}
-                          </Col>
-                          <Col sm={6}>
-                            <strong>Giờ:</strong> {time}
-                          </Col>
-                        </>;
-                      })()}
-                    </Row>
-                  </div>
-                )}
-
-                <div className="mt-3 pt-3 border-top">
-                  <h6 className="text-primary mb-2">Thông tin khách hàng</h6>
-                  <Row>
-                    <Col sm={6}>
-                      <div><strong>Họ tên:</strong> {bookingDetail?.information?.[0]?.name || bookingDetail?.information?.[0]?.fullName || 'Khách hàng'}</div>
-                      <div><strong>Điện thoại:</strong> {bookingDetail?.information?.[0]?.phone || 'N/A'}</div>
-                    </Col>
-                    <Col sm={6}>
-                      <div><strong>Email:</strong> {bookingDetail?.information?.[0]?.email || 'N/A'}</div>
-                    </Col>
-                  </Row>
-                </div>
               </Card.Body>
             </Card>
           </Col>
@@ -472,10 +370,6 @@ const PaymentSuccess = () => {
                   <Button variant="outline-secondary" size="sm" onClick={handlePrintReceipt}>
                     <i className="bi bi-printer me-2"></i>
                     In biên lai
-                  </Button>
-                  <Button variant="outline-info" size="sm" onClick={handleDownloadReceipt}>
-                    <i className="bi bi-download me-2"></i>
-                    Tải xuống
                   </Button>
                 </div>
               </Card.Body>
@@ -539,8 +433,7 @@ const PaymentSuccess = () => {
       <Modal show={showReceiptModal} onHide={() => setShowReceiptModal(false)} size="lg">
         <Modal.Header closeButton>
           <Modal.Title>
-            <i className="bi bi-receipt me-2"></i>
-            Hóa đơn thanh toán
+            <i className="bi bi-receipt me-2"></i> Hóa đơn thanh toán
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
@@ -551,7 +444,6 @@ const PaymentSuccess = () => {
             <hr />
             <h5>HÓA ĐƠN DỊCH VỤ</h5>
           </div>
-
           <Row>
             <Col md={6}>
               <strong>Mã đơn hàng:</strong> {paymentResult.bookingId}
@@ -568,9 +460,7 @@ const PaymentSuccess = () => {
               <strong>Email:</strong> {paymentResult.paymentData.customerEmail}
             </Col>
           </Row>
-
           <hr />
-
           <table className="table">
             <thead>
               <tr>
@@ -586,7 +476,7 @@ const PaymentSuccess = () => {
                   Xét nghiệm ADN {paymentResult.bookingData.serviceType === 'civil' ? 'Dân sự' : 'Hành chính'}
                   <br />
                   <small className="text-muted">
-                    Phương thức: {getMethodName(paymentResult.bookingData.collectionMethod)}
+                    Phương thức: {bookingDetail?.method?.name || 'Không xác định'}
                   </small>
                 </td>
                 <td>1</td>
@@ -601,7 +491,6 @@ const PaymentSuccess = () => {
               </tr>
             </tfoot>
           </table>
-
           <div className="mt-4 text-center">
             <div className="text-muted small">
               Cảm ơn bạn đã tin tưởng dịch vụ của ADN LAB!
@@ -615,8 +504,7 @@ const PaymentSuccess = () => {
             Đóng
           </Button>
           <Button variant="primary" onClick={handlePrintReceipt}>
-            <i className="bi bi-printer me-2"></i>
-            In hóa đơn
+            <i className="bi bi-printer me-2"></i> In biên lai
           </Button>
         </Modal.Footer>
       </Modal>
