@@ -245,8 +245,8 @@ const Payment = () => {
                 navigate('/user/appointments', { state: { bookingId } });
             } else {
                 // Thanh toán online
-                alert('Thanh toán thành công!');
-                navigate('/payment-success', { state: { bookingId } });
+            alert('Thanh toán thành công!');
+            navigate('/payment-success', { state: { bookingId } });
             }
 
         } catch (error) {
