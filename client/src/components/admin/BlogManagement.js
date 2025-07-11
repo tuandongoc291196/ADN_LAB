@@ -166,8 +166,12 @@ const BlogManagement = () => {
 
   // Hàm format ngày tháng theo định dạng Việt Nam
   const formatDate = (dateString) => {
-    if (!dateString) return 'Chưa xuất bản';
-    return new Date(dateString).toLocaleDateString('vi-VN');
+    if (!dateString) return 'Chưa có thông tin';
+    return new Date(dateString).toLocaleDateString('vi-VN', {
+      year: 'numeric',
+      month: '2-digit', 
+      day: '2-digit'
+    });
   };
 
   return (
@@ -315,7 +319,7 @@ const BlogManagement = () => {
                       <tr>
                         <th style={{ width: '40%' }}>Bài viết</th>
                         <th>Tác giả</th>
-                        <th>Ngày xuất bản</th>
+                        <th>Ngày tạo</th>
                         <th>Trạng thái</th>
                         <th>Thao tác</th>
                       </tr>
@@ -350,7 +354,7 @@ const BlogManagement = () => {
                               </div>
                             </td>
                             <td>{post.author}</td>
-                            <td>{formatDate(post.publishDate)}</td>
+                            <td>{formatDate(post.createdAt)}</td>
                             <td>{getStatusBadge(post.status)}</td>
                             <td>
                               <div className="d-flex gap-2">

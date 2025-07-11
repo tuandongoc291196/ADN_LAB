@@ -15,6 +15,7 @@ const getAllBlogs = async (req, res) => {
           content
           imageUrl
           status
+          featured
           createdAt
           updatedAt
         }
@@ -74,6 +75,7 @@ const getOneBlog = async (req, res) => {
           content
           imageUrl
           status
+          featured
           createdAt
           updatedAt
         }
@@ -137,6 +139,7 @@ const getBlogsByUser = async (req, res) => {
           content
           imageUrl
           status
+          featured
           createdAt
           updatedAt
         }
@@ -201,6 +204,7 @@ const getOneBlogByBlogId = async (blogId) => {
             content
             imageUrl
             status
+            featured
             createdAt
             updatedAt
         }

@@ -6,7 +6,7 @@ const { randomAlphanumeric } = require("../utils/utilities.js");
 
 const addBlog = async (req, res) => {
   try {
-    const { userId, title, content, status, imageUrl } = req.body;
+    const { userId, title, content, status, imageUrl, featured } = req.body;
 
     if (!userId || !title || !content) {
       return res.status(400).json({ message: "userId, title, and content are required" });
@@ -27,8 +27,8 @@ const addBlog = async (req, res) => {
     }
 
     const CREATE_BLOG_MUTATION = `
-      mutation CreateBlog($id: String!, $userId: String!, $title: String!, $content: String!, $imageUrl: String, $status: String) {
-        blog_insert(data: {id: $id, userId: $userId, title: $title, content: $content, imageUrl: $imageUrl, status: $status})
+      mutation CreateBlog($id: String!, $userId: String!, $title: String!, $content: String!, $imageUrl: String, $status: String, $featured: Boolean) {
+        blog_insert(data: {id: $id, userId: $userId, title: $title, content: $content, imageUrl: $imageUrl, status: $status, featured: $featured})
       }
     `;
 
@@ -38,7 +38,8 @@ const addBlog = async (req, res) => {
       title,
       content,
       imageUrl: imageUrl || null,
-      status: status || "draft"
+      status: status || "draft",
+      featured: featured || false
     };
 
     await dataConnect.executeGraphql(CREATE_BLOG_MUTATION, { variables });

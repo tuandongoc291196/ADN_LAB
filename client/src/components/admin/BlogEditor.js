@@ -460,17 +460,6 @@ const BlogEditor = () => {
             </Card.Header>
             <Card.Body>
               <Form.Group className="mb-3">
-                <Form.Label className="fw-bold">Trạng thái</Form.Label>
-                <Form.Select
-                  value={formData.status}
-                  onChange={(e) => handleInputChange('status', e.target.value)}
-                >
-                  <option value="draft">Bản nháp</option>
-                  <option value="published">Xuất bản</option>
-                </Form.Select>
-              </Form.Group>
-
-              <Form.Group className="mb-3">
                 <Form.Check
                   type="checkbox"
                   label="Đánh dấu là bài viết nổi bật"
