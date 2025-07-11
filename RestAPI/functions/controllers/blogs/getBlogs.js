@@ -2,9 +2,17 @@ const { dataConnect } = require("../../config/firebase.js");
 
 const getAllBlogs = async (req, res) => {
   try {
+    // Lấy role từ xác thực (giả sử đã có middleware gán req.user.role)
+    const userRole = req.user?.role || 'customer';
+
+    // Nếu là admin thì lấy tất cả, còn lại chỉ lấy bài đã xuất bản
+    const whereClause = (userRole === 'admin')
+      ? ''
+      : 'where: {status: {eq: "published"}},';
+
     const GET_BLOGS_QUERY = `
       query GetBlogs @auth(level: USER) {
-        blogs(orderBy: {createdAt: DESC}) {
+        blogs(${whereClause} orderBy: {createdAt: DESC}) {
           id
           user {
             id
