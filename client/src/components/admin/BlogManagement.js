@@ -86,8 +86,7 @@ const BlogManagement = () => {
     // Lọc theo tab được chọn
     const matchesTab = selectedTab === 'all' || 
                       (selectedTab === 'published' && post.status === 'published') ||
-                      (selectedTab === 'draft' && post.status === 'draft') ||
-                      (selectedTab === 'featured' && post.featured);
+                      (selectedTab === 'draft' && post.status === 'draft');
     
     return matchesSearch && matchesTab;
   });
@@ -137,19 +136,6 @@ const BlogManagement = () => {
       return;
     }
     navigate(`/admin/blog/edit/${post.id}`);
-  };
-
-  // Hàm toggle trạng thái featured của bài viết
-  const handleToggleFeatured = async (postId) => {
-    try {
-      const post = blogPosts.find(p => p.id === postId);
-      await toggleBlogFeatured(postId, !post.featured);
-      await fetchBlogs(); // Refresh list
-      setMessage({ type: 'success', content: 'Đã cập nhật trạng thái nổi bật!' });
-    } catch (error) {
-      setMessage({ type: 'danger', content: 'Lỗi khi cập nhật trạng thái: ' + error.message });
-    }
-    setTimeout(() => setMessage({ type: '', content: '' }), 3000);
   };
 
   // Hàm thay đổi trạng thái xuất bản của bài viết
@@ -250,17 +236,6 @@ const BlogManagement = () => {
                 </Card.Body>
               </Card>
             </Col>
-            <Col lg={3} md={6} className="mb-3">
-              <Card className="border-0 shadow-sm bg-info text-white">
-                <Card.Body className="text-center">
-                  <i className="bi bi-star fs-1 mb-2 d-block"></i>
-                  <div className="h4 mb-0">
-                    {blogPosts.filter(post => post.featured).length}
-                  </div>
-                  <small>Nổi bật</small>
-                </Card.Body>
-              </Card>
-            </Col>
           </Row>
 
           {/* Empty State */}
@@ -304,7 +279,6 @@ const BlogManagement = () => {
                         <option value="all">Tất cả bài viết</option>
                         <option value="published">Đã xuất bản</option>
                         <option value="draft">Bản nháp</option>
-                        <option value="featured">Nổi bật</option>
                       </Form.Select>
                     </Col>
                   </Row>
@@ -366,15 +340,6 @@ const BlogManagement = () => {
                                   title="Chỉnh sửa"
                                 >
                                   <i className="bi bi-pencil"></i>
-                                </Button>
-                                <Button
-                                  variant={post.featured ? "warning" : "outline-warning"}
-                                  size="sm"
-                                  className="p-2 d-flex align-items-center justify-content-center"
-                                  onClick={() => handleToggleFeatured(post.id)}
-                                  title={post.featured ? "Bỏ nổi bật" : "Đánh dấu nổi bật"}
-                                >
-                                  <i className="bi bi-star-fill"></i>
                                 </Button>
                                 <Button
                                   variant="outline-danger"

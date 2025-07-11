@@ -4,7 +4,7 @@ const { deleteImageUtil } = require("../utils/imageUtils.js");
 
 const updateBlog = async (req, res) => {
     try {
-        const { blogId, title, content, status, imageUrl, featured, deleteOldImage } = req.body;
+        const { blogId, title, content, status, imageUrl, deleteOldImage } = req.body;
 
         if (!blogId) {
             return res.status(400).json({ message: "blogId is required" });
@@ -20,8 +20,8 @@ const updateBlog = async (req, res) => {
         }
 
         const UPDATE_BLOG_MUTATION = `
-            mutation UpdateBlog($blogId: String!, $title: String, $content: String, $imageUrl: String, $status: String, $featured: Boolean) {
-                blog_update(key: {id: $blogId}, data: {title: $title, content: $content, imageUrl: $imageUrl, status: $status, featured: $featured, updatedAt_expr: "request.time"})
+            mutation UpdateBlog($blogId: String!, $title: String, $content: String, $imageUrl: String, $status: String) {
+                blog_update(key: {id: $blogId}, data: {title: $title, content: $content, imageUrl: $imageUrl, status: $status, updatedAt_expr: "request.time"})
             }
         `;
 
@@ -30,8 +30,7 @@ const updateBlog = async (req, res) => {
             title: title || blog.title,
             content: content || blog.content,
             imageUrl: imageUrl !== undefined ? imageUrl : blog.imageUrl,
-            status: status || blog.status,
-            featured: featured !== undefined ? featured : blog.featured
+            status: status || blog.status
         };
 
         await dataConnect.executeGraphql(UPDATE_BLOG_MUTATION, { variables });
