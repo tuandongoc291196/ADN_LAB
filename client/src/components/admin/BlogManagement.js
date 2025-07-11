@@ -353,16 +353,16 @@ const BlogManagement = () => {
                                 </div>
                               </div>
                             </td>
-                            <td>{post.author}</td>
+                            <td>{post.user?.fullname || 'Không rõ'}</td>
                             <td>{formatDate(post.createdAt)}</td>
                             <td>{getStatusBadge(post.status)}</td>
                             <td>
-                              <div className="d-flex gap-2">
+                              <div className="d-flex justify-content-center align-items-center gap-2">
                                 <Button
                                   variant="outline-primary"
                                   size="sm"
+                                  className="p-2 d-flex align-items-center justify-content-center"
                                   onClick={() => handleEditPost(post)}
-                                  to={`/admin/blog/edit/${post.id}`}
                                   title="Chỉnh sửa"
                                 >
                                   <i className="bi bi-pencil"></i>
@@ -370,6 +370,7 @@ const BlogManagement = () => {
                                 <Button
                                   variant={post.featured ? "warning" : "outline-warning"}
                                   size="sm"
+                                  className="p-2 d-flex align-items-center justify-content-center"
                                   onClick={() => handleToggleFeatured(post.id)}
                                   title={post.featured ? "Bỏ nổi bật" : "Đánh dấu nổi bật"}
                                 >
@@ -378,6 +379,7 @@ const BlogManagement = () => {
                                 <Button
                                   variant="outline-danger"
                                   size="sm"
+                                  className="p-2 d-flex align-items-center justify-content-center"
                                   onClick={() => handleDeletePost(post)}
                                   title="Xóa"
                                 >
