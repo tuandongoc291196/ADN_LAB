@@ -87,6 +87,21 @@ const Payment = () => {
         } else if (location.state && location.state.bookingId) {
             id = location.state.bookingId;
             setBookingId(id);
+            // Luôn fetch lại thông tin booking khi chỉ có bookingId
+            getBookingById(id)
+                .then((data) => {
+                    setBookingData(data); // data là object booking chi tiết
+                    const customerInfo = data.information?.[0] || {};
+                    setPaymentData({
+                        customerName: customerInfo.name || '',
+                        customerPhone: customerInfo.phone || '',
+                        customerEmail: customerInfo.email || '',
+                        bankTransferNote: `Thanh toan xet nghiem ADN ${id}`
+                    });
+                })
+                .catch(() => {
+                    navigate('/appointment');
+                });
         } else {
             navigate('/appointment');
         }
@@ -245,8 +260,8 @@ const Payment = () => {
                 navigate('/user/appointments', { state: { bookingId } });
             } else {
                 // Thanh toán online
-                alert('Thanh toán thành công!');
-                navigate('/payment-success', { state: { bookingId } });
+            alert('Thanh toán thành công!');
+            navigate('/payment-success', { state: { bookingId } });
             }
 
         } catch (error) {
@@ -479,38 +494,7 @@ const Payment = () => {
                                             )}
 
                                             {/* Customer Information Confirmation */}
-                                            <div className="mt-4">
-                                                <h6 className="mb-3">Xác nhận thông tin thanh toán</h6>
-                                                <Row>
-                                                    <Col md={6} className="mb-3">
-                                                        <Form.Label>Họ và tên</Form.Label>
-                                                        <Form.Control
-                                                            type="text"
-                                                            value={paymentData.customerName}
-                                                            onChange={(e) => setPaymentData({ ...paymentData, customerName: e.target.value })}
-                                                            placeholder="Nhập họ tên"
-                                                        />
-                                                    </Col>
-                                                    <Col md={6} className="mb-3">
-                                                        <Form.Label>Số điện thoại</Form.Label>
-                                                        <Form.Control
-                                                            type="tel"
-                                                            value={paymentData.customerPhone}
-                                                            onChange={(e) => setPaymentData({ ...paymentData, customerPhone: e.target.value })}
-                                                            placeholder="Nhập số điện thoại"
-                                                        />
-                                                    </Col>
-                                                </Row>
-                                                <Form.Group className="mb-3">
-                                                    <Form.Label>Email nhận thông báo</Form.Label>
-                                                    <Form.Control
-                                                        type="email"
-                                                        value={paymentData.customerEmail}
-                                                        onChange={(e) => setPaymentData({ ...paymentData, customerEmail: e.target.value })}
-                                                        placeholder="Nhập email nhận hóa đơn"
-                                                    />
-                                                </Form.Group>
-                                            </div>
+
                                         </Card.Body>
                                     </Card>
                                 )}

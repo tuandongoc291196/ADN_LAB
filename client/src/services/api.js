@@ -472,15 +472,8 @@ export const getBookingById = async (bookingId) => {
     if (!response.ok) throw new Error('Network response was not ok');
 
     const data = await response.json();
-    const booking = data.data?.booking || {};
-
-    // Gộp tất cả vào 1 object để client dùng dễ
-    return {
-      ...booking,
-      information: data.data?.information || [],
-      participants: data.data?.participants || [],
-      history: data.data?.history || []
-    };
+    // Trả về trực tiếp object booking chi tiết
+    return data.data;
   } catch (error) {
     throw new Error('Failed to fetch booking by id: ' + error.message);
   }

@@ -86,8 +86,7 @@ const BlogManagement = () => {
     // Lọc theo tab được chọn
     const matchesTab = selectedTab === 'all' || 
                       (selectedTab === 'published' && post.status === 'published') ||
-                      (selectedTab === 'draft' && post.status === 'draft') ||
-                      (selectedTab === 'featured' && post.featured);
+                      (selectedTab === 'draft' && post.status === 'draft');
     
     return matchesSearch && matchesTab;
   });
@@ -139,19 +138,6 @@ const BlogManagement = () => {
     navigate(`/admin/blog/edit/${post.id}`);
   };
 
-  // Hàm toggle trạng thái featured của bài viết
-  const handleToggleFeatured = async (postId) => {
-    try {
-      const post = blogPosts.find(p => p.id === postId);
-      await toggleBlogFeatured(postId, !post.featured);
-      await fetchBlogs(); // Refresh list
-      setMessage({ type: 'success', content: 'Đã cập nhật trạng thái nổi bật!' });
-    } catch (error) {
-      setMessage({ type: 'danger', content: 'Lỗi khi cập nhật trạng thái: ' + error.message });
-    }
-    setTimeout(() => setMessage({ type: '', content: '' }), 3000);
-  };
-
   // Hàm thay đổi trạng thái xuất bản của bài viết
   const handleStatusChange = async (postId, newStatus) => {
     try {
@@ -166,8 +152,12 @@ const BlogManagement = () => {
 
   // Hàm format ngày tháng theo định dạng Việt Nam
   const formatDate = (dateString) => {
-    if (!dateString) return 'Chưa xuất bản';
-    return new Date(dateString).toLocaleDateString('vi-VN');
+    if (!dateString) return 'Chưa có thông tin';
+    return new Date(dateString).toLocaleDateString('vi-VN', {
+      year: 'numeric',
+      month: '2-digit', 
+      day: '2-digit'
+    });
   };
 
   return (
@@ -246,17 +236,6 @@ const BlogManagement = () => {
                 </Card.Body>
               </Card>
             </Col>
-            <Col lg={3} md={6} className="mb-3">
-              <Card className="border-0 shadow-sm bg-info text-white">
-                <Card.Body className="text-center">
-                  <i className="bi bi-star fs-1 mb-2 d-block"></i>
-                  <div className="h4 mb-0">
-                    {blogPosts.filter(post => post.featured).length}
-                  </div>
-                  <small>Nổi bật</small>
-                </Card.Body>
-              </Card>
-            </Col>
           </Row>
 
           {/* Empty State */}
@@ -300,7 +279,6 @@ const BlogManagement = () => {
                         <option value="all">Tất cả bài viết</option>
                         <option value="published">Đã xuất bản</option>
                         <option value="draft">Bản nháp</option>
-                        <option value="featured">Nổi bật</option>
                       </Form.Select>
                     </Col>
                   </Row>
@@ -315,7 +293,7 @@ const BlogManagement = () => {
                       <tr>
                         <th style={{ width: '40%' }}>Bài viết</th>
                         <th>Tác giả</th>
-                        <th>Ngày xuất bản</th>
+                        <th>Ngày tạo</th>
                         <th>Trạng thái</th>
                         <th>Thao tác</th>
                       </tr>
@@ -349,31 +327,24 @@ const BlogManagement = () => {
                                 </div>
                               </div>
                             </td>
-                            <td>{post.author}</td>
-                            <td>{formatDate(post.publishDate)}</td>
+                            <td>{post.user?.fullname || 'Không rõ'}</td>
+                            <td>{formatDate(post.createdAt)}</td>
                             <td>{getStatusBadge(post.status)}</td>
                             <td>
-                              <div className="d-flex gap-2">
+                              <div className="d-flex justify-content-center align-items-center gap-2">
                                 <Button
                                   variant="outline-primary"
                                   size="sm"
+                                  className="p-2 d-flex align-items-center justify-content-center"
                                   onClick={() => handleEditPost(post)}
-                                  to={`/admin/blog/edit/${post.id}`}
                                   title="Chỉnh sửa"
                                 >
                                   <i className="bi bi-pencil"></i>
                                 </Button>
                                 <Button
-                                  variant={post.featured ? "warning" : "outline-warning"}
-                                  size="sm"
-                                  onClick={() => handleToggleFeatured(post.id)}
-                                  title={post.featured ? "Bỏ nổi bật" : "Đánh dấu nổi bật"}
-                                >
-                                  <i className="bi bi-star-fill"></i>
-                                </Button>
-                                <Button
                                   variant="outline-danger"
                                   size="sm"
+                                  className="p-2 d-flex align-items-center justify-content-center"
                                   onClick={() => handleDeletePost(post)}
                                   title="Xóa"
                                 >

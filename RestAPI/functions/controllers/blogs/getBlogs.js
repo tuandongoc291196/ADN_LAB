@@ -58,7 +58,7 @@ const getAllBlogs = async (req, res) => {
     } else {
       const GET_BLOGS_QUERY = `
       query GetBlogs @auth(level: USER) {
-        blogs(orderBy: {createdAt: DESC}) {
+        blogs(${whereClause} orderBy: {createdAt: DESC}) {
           id
           user {
             id

@@ -66,7 +66,7 @@ const addBlog = async (req, res) => {
       title,
       content,
       imageUrl: imageUrl || null,
-      status: status || "DRAFT"
+      status: status || "draft"
     };
 
     await dataConnect.executeGraphql(CREATE_BLOG_MUTATION, { variables });
