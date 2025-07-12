@@ -599,12 +599,10 @@ export const getBookingByStaffId = async (staffId) => {
 // Lấy tất cả bài blog
 export const getAllBlogs = async () => {
   try {
-    const token = getToken();
     const response = await fetch(`${API_BASE_URL}/blogs`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
       },
     });
 
@@ -614,7 +612,7 @@ export const getAllBlogs = async () => {
     }
 
     const data = await response.json();
-    return data.data?.blogs || data.data || [];
+    return data.data || [];
   } catch (error) {
     console.error('Lỗi khi lấy tất cả bài blog:', error);
     throw error;
@@ -624,12 +622,10 @@ export const getAllBlogs = async () => {
 // Lấy chi tiết một bài blog bằng ID
 export const getBlogById = async (id) => {
   try {
-    const token = getToken();
     const response = await fetch(`${API_BASE_URL}/blogs`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({ blogId: id }),
     });
@@ -645,10 +641,6 @@ export const getBlogById = async (id) => {
     console.error(`Lỗi khi lấy bài blog với ID ${id}:`, error);
     throw error;
   }
-};
-
-const getToken = () => {
-  return localStorage.getItem('token');
 };
 
 export const addBlog = async (blogData) => {
@@ -695,16 +687,10 @@ export const updateBlog = async (blogData) => {
 
 export const deleteBlog = async (id) => {
   try {
-    const token = getToken();
-    if (!token) {
-      throw new Error('Vui lòng đăng nhập lại!');
-    }
-
     const response = await fetch(`${API_BASE_URL}/blogs`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({ blogId: id }),
     });
