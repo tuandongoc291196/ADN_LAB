@@ -12,7 +12,7 @@ const {getAllUsers, getOneUser, getUsersByRole} = require('./controllers/users/g
 const {updateUserRoleToStaff, updateUserRoleToAdmin, updateUser, updateUserAccountStatus} = require('./controllers/users/updateUser');
 const {deleteUser} = require('./controllers/users/deleteUser');
 
-const {getStaffById, getStaffs} = require('./controllers/staffs/getStaffs');
+const {getStaffById, getStaffs, getStaffsByPosition} = require('./controllers/staffs/getStaffs');
 const {updateStaff} = require('./controllers/staffs/updateStaff');
 
 const {addService} = require('./controllers/services/addService');
@@ -68,17 +68,17 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.post('/blogs/add', addBlog);
-app.put('/blogs', updateBlog);
-app.get('/blogs', getAllBlogs);
-app.post('/blogs', getOneBlog);
-app.delete('/blogs', deleteBlog);
-
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 app.get('/', (req, res) => {
   res.send("Hey there. We've been trying to reach you concerning your vehicle's extended warrant. For Swagger, visit /api-docs");
 });
+
+app.post('/blogs/add', addBlog);
+app.put('/blogs', updateBlog);
+app.get('/blogs', getAllBlogs);
+app.post('/blogs', getOneBlog);
+app.delete('/blogs', deleteBlog);
 
 app.post('/services/add', addService);
 app.get('/services', getAllServices);
@@ -99,14 +99,15 @@ app.post('/users/add', addUser);
 app.get('/users', getAllUsers);
 app.post('/users', getOneUser);
 app.post('/users/role', getUsersByRole);
-app.put('/users/role/staff', updateUserRoleToStaff);
 app.put('/users', updateUser);
+app.put('/users/role/staff', updateUserRoleToStaff);
 app.put('/users/role/admin', updateUserRoleToAdmin);
 app.put('/users/status', updateUserAccountStatus);
 app.delete('/users', deleteUser);
 
 app.get('/staffs', getStaffs);
 app.post('/staffs', getStaffById);
+app.post('/staffs/position', getStaffsByPosition);
 app.put('/staffs', updateStaff);
 
 app.get('/roles', getAllRoles);
@@ -130,7 +131,7 @@ app.post('/booking/history/add', addBookingHistoryById);
 app.post('/booking/history', getBookingHistories);
 
 app.post('/timeslots/unavailable', getUnavailableTimeSlots);
-app.post('/timeslots/one', getOneTimeSlot);
+app.post('/timeslots', getOneTimeSlot);
 
 app.post('/samples/booking', getSampleBybookingId);
 app.put('/samples', updateSample);

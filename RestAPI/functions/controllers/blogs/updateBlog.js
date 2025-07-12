@@ -7,12 +7,20 @@ const updateBlog = async (req, res) => {
         const { blogId, title, content, status, imageUrl, deleteOldImage } = req.body;
 
         if (!blogId) {
-            return res.status(400).json({ message: "blogId is required" });
+            return res.status(400).json({
+                statusCode: 400,
+                status: "error",
+                message: "blogId is required" 
+            });
         }
 
         const blog = await getOneBlogByBlogId(blogId);
         if (!blog) {
-            return res.status(404).json({ message: `Blog with ID ${blogId} does not exist` });
+            return res.status(404).json({
+                statusCode: 404,
+                status: "error",
+                message: `Blog with ID ${blogId} does not exist` 
+            });
         }
 
         if (deleteOldImage && blog.imageUrl) {

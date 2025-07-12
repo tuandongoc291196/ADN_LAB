@@ -317,6 +317,13 @@ const getBookingByUserId = async (req, res) => {
             id
             status
             createdAt
+          }    
+          bookingHistories_on_booking (orderBy: {createdAt: DESC}) {
+            id
+            description
+            status
+            createdAt
+            updatedAt
           }
         }
       }
@@ -389,17 +396,61 @@ const getBookingbyStaffId = async (req, res) => {
           totalAmount
           createdAt
           updatedAt
+          participants_on_booking {
+            name
+            age
+            gender
+            identification          
+            relationship
+          }
           service {
             id
+            title
+            description
+            fullDescription
+            price
+            duration
+            category {
+              id
+              name
+              description
+              hasLegalValue
+            }
           }
           timeSlot {
             id
           }
           staff {
             id
+            user {
+              fullname
+            }
           }
           method {
             id
+            name
+          }
+          payments_on_booking {
+            id
+            status
+            createdAt
+          }
+          bookingHistories_on_booking (orderBy: {createdAt: DESC}) {
+            id
+            description
+            status
+            createdAt
+            updatedAt
+          }
+          informations_on_booking {
+            id
+            name
+            identification
+            address
+            phone
+            email
+            createdAt
+            updatedAt
           }
         }
       }
@@ -441,16 +492,33 @@ const getBookingbyStaffId = async (req, res) => {
 
 const getBookingByTimeSlotId = async (req, res) => {
   try {
-    const { timeSlotId } = req.body;
+    const {slotDate, startTime, endTime} = req.body;
 
-    if (!timeSlotId) {
+    if (!slotDate) {
       return res.status(400).json({
         statusCode: 400,
         status: "error",
-        message: "timeSlotId is required",
+        message: "slotDate is required",
       });
     }
 
+    if (!startTime) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "startTime is required",
+      });
+    }
+
+    if (!endTime) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "endTime is required",
+      });
+    }
+
+    const timeSlotId = `${slotDate}_${startTime}_${endTime}`;
     if (!await checkTimeSlotExists(timeSlotId)) {
       return res.status(404).json({
         statusCode: 404,

@@ -1,5 +1,5 @@
 const { dataConnect } = require("../../config/firebase.js");
-const {checkUserExists, getActiveStaffWithLowestSlotCountExcluding} = require("../users/userUtils.js");
+const {getActiveStaffWithLowestSlotCountExcluding} = require("../users/userUtils.js");
 const { checkBookingExists, checkUserBookingExists, checkStaffBookingExists } = require("./bookingUtils.js");
 const { addTimeSlot } = require("../timeSlots/addTimeSlot.js");
 const { isTimeFormatValid } = require("../timeSlots/timeSlotUtils.js");
@@ -10,15 +10,7 @@ const { updateTimeSlot } = require("../timeSlots/updateTimeSlot.js");
 
 const updateBookingTime = async (req, res) => {
     try {
-        const {userId, bookingId, slotDate, startTime, endTime} = req.body;
-
-        if(!userId) {
-            return res.status(400).json({
-                statusCode: 400,
-                status: "error",
-                message: "userId is required"
-            });
-        }
+        const {bookingId, slotDate, startTime, endTime} = req.body;
 
         if(!bookingId) {
             return res.status(400).json({
@@ -68,18 +60,20 @@ const updateBookingTime = async (req, res) => {
             });
         }
 
-        if (!(await checkUserExists(userId))) {
-            return res.status(404).json({
-                statusCode: 404,
+        const existingBooking = await getOneBookingById(bookingId);
+        const latestStatus = existingBooking.bookingHistories_on_booking[0].status;
+        
+        if (latestStatus !== "BOOKED" && latestStatus !== "PENDING_PAYMENT") {
+            return res.status(400).json({
+                statusCode: 400,
                 status: "error",
-                message: "User not found",
+                message: "Booking cannot be updated. Current status: " + latestStatus + ". Only bookings with BOOKED or PENDING_PAYMENT status can be updated."
             });
         }
 
         const updateTimeSlotResponse = await addTimeSlot(slotDate, startTime, endTime);
-
-        const existingBooking = await getOneBookingById(bookingId);
         const newTimeSlotId = `${slotDate}_${startTime}_${endTime}`;
+        const userId = existingBooking.userId;
         const oldStaffId = existingBooking.staffId;
         const oldTimeSlotId = existingBooking.timeSlotId;
         let staffId = oldStaffId;
@@ -101,7 +95,7 @@ const updateBookingTime = async (req, res) => {
 
         const UPDATE_BOOKING_MUTATION = `
             mutation UpdateBooking($bookingId: String!, $timeSlotId: String!, $staffId: String!) @auth(level: USER) {
-                booking_update(id: $bookingId, data: {timeSlotId: $timeSlotId, staffId: $staffId})
+                booking_update(id: $bookingId, data: {timeSlotId: $timeSlotId, staffId: $staffId, updatedAt_expr: "request.time"})
             }
         `;
 

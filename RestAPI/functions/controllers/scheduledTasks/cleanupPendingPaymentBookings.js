@@ -23,7 +23,7 @@ const cleanupPendingPaymentBookings = async () => {
         console.log(`Processing booking ${booking.id} with latest history:`, latestHistory);
         console.log(`Status of latest history:`, latestHistory[0]?.status);
         
-        if (latestHistory[0]?.status === "PENDING_PAYMENT") {
+        if (latestHistory[0]?.status === "PENDING_PAYMENT" || latestHistory[0]?.status === "BOOKED" || latestHistory[0]?.status === "UPDATED") {
           console.log(`Marking pending payment booking as cancelled: ${booking.id}`);
           await updateStaffSlotCount(booking.staffId, "decrease");
           await updateTimeSlot(booking.timeSlotId, "decrease");

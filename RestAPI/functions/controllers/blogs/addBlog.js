@@ -8,17 +8,45 @@ const addBlog = async (req, res) => {
   try {
     const { userId, title, content, status, imageUrl } = req.body;
 
-    if (!userId || !title || !content) {
-      return res.status(400).json({ message: "userId, title, and content are required" });
+    if (!userId) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "User ID is required",
+      });
     }
 
     if (!(await checkUserExists(userId))) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "User not found",
+      });
     }
 
     const userRole = await getRoleByUserId(userId);
     if (!userRole || userRole.id !== "3") {
-      return res.status(403).json({ message: "User does not have permission" });
+      return res.status(403).json({
+        statusCode: 403,
+        status: "error",
+        message: "You do not have permission to create a blog",
+      });
+    }
+
+    if (!title) {
+      return res.status(400).json({        
+        statusCode: 400,
+        status: "error",
+        message: "Blog title is required",
+      });
+    }
+    
+    if (!content) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "Blog content is required",
+      });
     }
     
     const id = `ADNBLOG${await randomAlphanumeric(6, 6)}`;

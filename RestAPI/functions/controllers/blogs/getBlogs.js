@@ -1,8 +1,62 @@
 const { dataConnect } = require("../../config/firebase.js");
+const {checkUserExists} = require("../users/userUtils.js");
+const { getRoleByUserId } = require("../roles/roleUtils.js");
 
 const getAllBlogs = async (req, res) => {
   try {
-    const GET_BLOGS_QUERY = `
+    const { userId } = req.body;
+    console.log("Received request to get all blogs for userId:", userId);
+
+    if (!userId) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "userId is required",
+      });
+    }
+
+    if (!await checkUserExists(userId)) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "User not found",
+      });
+    }
+
+    let responseData;
+    const userRole = await getRoleByUserId(userId);
+    if (userRole.id == "0") {
+
+      const variables = {
+        status: "published"
+      };
+
+      const GET_BLOGS_QUERY_CUS = `
+        query GetBlogs ($status: String) {
+          blogs( where: {status: {eq: $status}}orderBy: {createdAt: DESC}) {
+            id
+            user {
+              id
+              fullname
+              avatar
+            }
+            title
+            content
+            imageUrl
+            status
+            createdAt
+            updatedAt
+          }
+        }
+      `; 
+
+      console.log("Executing GraphQL query for customer:", GET_BLOGS_QUERY_CUS, "with variables:", variables);
+      const response = await dataConnect.executeGraphql(GET_BLOGS_QUERY_CUS, {
+        variables: variables,
+      });
+      responseData = response.data.blogs;
+    } else {
+      const GET_BLOGS_QUERY = `
       query GetBlogs @auth(level: USER) {
         blogs(orderBy: {createdAt: DESC}) {
           id
@@ -14,24 +68,21 @@ const getAllBlogs = async (req, res) => {
           title
           content
           imageUrl
+          status
           createdAt
           updatedAt
         }
       }
     `;
-    console.log("Executing GraphQL query:", GET_BLOGS_QUERY);
-    
-    const response = await dataConnect.executeGraphql(GET_BLOGS_QUERY);
-    const responseData = response.data;
-
-    if (!responseData.blogs) {
-      responseData.blogs = [];
+      console.log("Executing GraphQL query:", GET_BLOGS_QUERY);
+      
+      const response = await dataConnect.executeGraphql(GET_BLOGS_QUERY);
+      responseData = response.data;
     }
-
     res.status(200).json({
       statusCode: 200,
       status: "success",
-      message: responseData.blogs.length > 0 ? "Blogs retrieved successfully" : "No blogs found",
+      message: "Blogs retrieved successfully",
       data: responseData,
     });
   } catch (error) {
@@ -48,7 +99,7 @@ const getAllBlogs = async (req, res) => {
 const getOneBlog = async (req, res) => {
   try {
     const { blogId } = req.body;
-
+    console.log("Received request to get blog with ID:", blogId);
     if (!blogId) {
       return res.status(400).json({
         statusCode: 400,
@@ -72,6 +123,7 @@ const getOneBlog = async (req, res) => {
           title
           content
           imageUrl
+          status
           createdAt
           updatedAt
         }
@@ -127,6 +179,14 @@ const getBlogsByUser = async (req, res) => {
       });
     }
 
+    if (!await checkUserExists(userId)) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "User not found",
+      });
+    }
+
     const GET_BLOGS_BY_USER_QUERY = `
       query GetBlogsByUser($userId: String!) @auth(level: USER) {
         blogs(where: {userId: {eq: $userId}}, orderBy: {createdAt: DESC}) {
@@ -134,6 +194,7 @@ const getBlogsByUser = async (req, res) => {
           title
           content
           imageUrl
+          status
           createdAt
           updatedAt
         }
@@ -197,6 +258,7 @@ const getOneBlogByBlogId = async (blogId) => {
             title
             content
             imageUrl
+            status
             createdAt
             updatedAt
         }

@@ -150,7 +150,7 @@ const addPayment = async (req, res) => {
           if (isSuccessful) {
             console.log('Payment confirmed successfully');
             const otherDetails = await getPaymentDataMOMO(result.orderId, result.requestId);
-            const confirmationResult = await handlePaymentConfirmation(bookingId, "MOMO");
+            const confirmationResult = await handlePaymentConfirmation(bookingId, paymentMethod);
             await updatePaymentStatus(paymentId, "SUCCESS", otherDetails);
             console.log("Response data for MOMO payment confirmation:", confirmationResult);
           } else {
@@ -182,7 +182,7 @@ const addPayment = async (req, res) => {
           if (isSuccessful) {
             console.log('Payment confirmed successfully');
             const otherDetails = await getPaymentDataZALOPAY(result.app_trans_id);
-            const confirmationResult = await handlePaymentConfirmation(bookingId, "ZALOPAY");
+            const confirmationResult = await handlePaymentConfirmation(bookingId, paymentMethod);
             await updatePaymentStatus(paymentId, "SUCCESS", otherDetails);
             console.log("Response data for ZALOPAY payment confirmation:", confirmationResult);
           } else {

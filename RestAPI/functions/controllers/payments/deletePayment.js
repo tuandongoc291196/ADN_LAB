@@ -20,7 +20,7 @@ const deletePayment = async (paymentId) => {
         const response = await dataConnect.executeGraphql(DELETE_PAYMENT_MUTATION, { variables: variables });
         
         const responseData = response.data.payment_delete;
-        if (responseData.affected_rows === 0) {
+        if (!responseData) {
             throw new Error("Payment deletion failed or payment not found");
         }
         
@@ -50,8 +50,8 @@ const deletePaymentByBookingId = async (bookingId) => {
         console.log("Executing mutation to delete payment:", DELETE_PAYMENT_MUTATION, "with", variables);
         const response = await dataConnect.executeGraphql(DELETE_PAYMENT_MUTATION, { variables: variables });
         
-        const responseData = response.data.payment_delete;
-        if (responseData.affected_rows === 0) {
+        const responseData = response.data.payment_deleteMany;
+        if (!responseData) {
             throw new Error("Payment deletion failed or payment not found");
         }
         
