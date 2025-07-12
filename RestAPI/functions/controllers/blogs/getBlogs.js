@@ -1,64 +1,10 @@
 const { dataConnect } = require("../../config/firebase.js");
-const {checkUserExists} = require("../users/userUtils.js");
-const { getRoleByUserId } = require("../roles/roleUtils.js");
 
 const getAllBlogs = async (req, res) => {
   try {
-    const { userId } = req.body;
-    console.log("Received request to get all blogs for userId:", userId);
-
-    if (!userId) {
-      return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "userId is required",
-      });
-    }
-
-    if (!await checkUserExists(userId)) {
-      return res.status(404).json({
-        statusCode: 404,
-        status: "error",
-        message: "User not found",
-      });
-    }
-
-    let responseData;
-    const userRole = await getRoleByUserId(userId);
-    if (userRole.id == "0") {
-
-      const variables = {
-        status: "published"
-      };
-
-      const GET_BLOGS_QUERY_CUS = `
-        query GetBlogs ($status: String) {
-          blogs( where: {status: {eq: $status}}orderBy: {createdAt: DESC}) {
-            id
-            user {
-              id
-              fullname
-              avatar
-            }
-            title
-            content
-            imageUrl
-            status
-            createdAt
-            updatedAt
-          }
-        }
-      `; 
-
-      console.log("Executing GraphQL query for customer:", GET_BLOGS_QUERY_CUS, "with variables:", variables);
-      const response = await dataConnect.executeGraphql(GET_BLOGS_QUERY_CUS, {
-        variables: variables,
-      });
-      responseData = response.data.blogs;
-    } else {
       const GET_BLOGS_QUERY = `
       query GetBlogs @auth(level: USER) {
-        blogs(${whereClause} orderBy: {createdAt: DESC}) {
+        blogs(orderBy: {createdAt: DESC}) {
           id
           user {
             id
@@ -68,7 +14,7 @@ const getAllBlogs = async (req, res) => {
           title
           content
           imageUrl
-          status
+          isActive
           createdAt
           updatedAt
         }
@@ -77,8 +23,7 @@ const getAllBlogs = async (req, res) => {
       console.log("Executing GraphQL query:", GET_BLOGS_QUERY);
       
       const response = await dataConnect.executeGraphql(GET_BLOGS_QUERY);
-      responseData = response.data;
-    }
+      const responseData = response.data.blogs;
     res.status(200).json({
       statusCode: 200,
       status: "success",
@@ -123,7 +68,7 @@ const getOneBlog = async (req, res) => {
           title
           content
           imageUrl
-          status
+          isActive
           createdAt
           updatedAt
         }
@@ -258,7 +203,7 @@ const getOneBlogByBlogId = async (blogId) => {
             title
             content
             imageUrl
-            status
+            isActive
             createdAt
             updatedAt
         }
