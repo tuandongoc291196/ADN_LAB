@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Row, Col, Card, Button, Badge, ListGroup } from 'react-bootstrap';
-import { getBookingByStaffId, getBookingHistory } from '../../services/api';
+import { getBookingByStaffId } from '../../services/api';
 
 const StaffOverview = ({ user }) => {
   const [todayTasks, setTodayTasks] = useState([]);
@@ -33,9 +33,40 @@ const StaffOverview = ({ user }) => {
           // Tìm status mới nhất theo createdAt
           const sorted = [...history].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
           const latestStatus = sorted[0]?.status || 'unknown';
+          const expectedDate = booking.timeSlotId?.split('_')[0]; // Lấy ngày từ slot ID
+          const isOverdue = expectedDate && new Date(expectedDate) < new Date(); // 👈 Check quá hạn
 
-          const taskStatus = latestStatus === 'BOOKED' ? 'pending' : latestStatus;
 
+          let taskStatus = 'pending';
+          if (isOverdue && !['COLLECTED', 'KIT_RETURNED', 'EXPIRED', 'FAILED'].includes(latestStatus)) {
+            taskStatus = 'overdue';
+          } else {
+            switch (latestStatus) {
+              case 'BOOKED':
+                taskStatus = 'pending';
+                break;
+              case 'KIT_PREPARED':
+                taskStatus = 'in-progress';
+                break;
+              case 'KIT_SENT':
+                taskStatus = 'in-progress';
+                break;
+              case 'KIT_RETURNED':
+              case 'COLLECTED':
+                taskStatus = 'collected';
+                break;
+              case 'CANCELLED':
+                taskStatus = 'cancel';
+                break;
+              case 'FAILED':
+              case 'EXPIRED':
+                taskStatus = 'overdue';
+                break;
+              default:
+                taskStatus = latestStatus.toLowerCase().replaceAll('_', '-');
+                break;
+            }
+          }
           let deadline = '';
           try {
             const [date, startTime] = booking.timeSlot?.id?.split('_') || [];
@@ -87,14 +118,18 @@ const StaffOverview = ({ user }) => {
   const getStatusBadge = (status) => {
     const variants = {
       pending: 'secondary',
-      'in-progress': 'warning',
+      'in-progress': 'primary',
+      collected: 'info',
       completed: 'success',
+      cancel: 'warning',
       overdue: 'danger'
     };
     const labels = {
       pending: 'Chờ xử lý',
       'in-progress': 'Đang thực hiện',
+      collected: 'Đã thu mẫu',
       completed: 'Hoàn thành',
+      cancel: 'Đã hủy',
       overdue: 'Quá hạn'
     };
     return <Badge bg={variants[status]}>{labels[status]}</Badge>;

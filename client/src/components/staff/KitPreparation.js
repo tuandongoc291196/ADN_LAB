@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Button, Badge, Alert, Modal, Form, Table, InputGroup } from 'react-bootstrap';
 import { getBookingByStaffId, addBookingHistory } from '../../services/api';
+import Swal from 'sweetalert2';
 const KitPreparation = ({ user }) => {
   const [orders, setOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
-  const [showReturnConfirmModal, setShowReturnConfirmModal] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [returnLoading, setReturnLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [alert, setAlert] = useState({ show: false, message: '', type: '' });
-
+  const [showModal, setShowModal] = useState(false);
+  const [modalAction, setModalAction] = useState(null); // 'prepare', 'send', 'confirm'
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [description, setDescription] = useState('');
   // API cho các đơn hàng cần chuẩn bị kit
   useEffect(() => {
     const fetchOrders = async () => {
@@ -24,6 +25,8 @@ const KitPreparation = ({ user }) => {
             const history = Array.isArray(b.bookingHistories_on_booking) ? b.bookingHistories_on_booking : [];
             const sorted = [...history].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             const latestStatus = sorted[0]?.status || 'waiting-kit-prep';
+            const expectedDate = b.timeSlotId?.split('_')[0]; // Lấy ngày từ slot ID
+            const isOverdue = expectedDate && new Date(expectedDate) < new Date(); // 👈 Check quá hạn
 
             return {
               id: b.id,
@@ -31,11 +34,13 @@ const KitPreparation = ({ user }) => {
               phone: b.informations_on_booking?.[0]?.phone || '',
               service: b.service?.title || 'Không rõ dịch vụ',
               serviceType: b.service?.category?.hasLegalValue ? 'civil' : 'administrative',
-              status: latestStatus === 'BOOKED'
-                ? 'waiting-kit-prep'
-                : latestStatus.toLowerCase().replaceAll('_', '-'),
+              status: isOverdue && !['sample-received', 'ready-for-collection'].includes(latestStatus.toLowerCase())
+                ? 'expired'
+                : (latestStatus === 'BOOKED'
+                  ? 'waiting-kit-prep'
+                  : latestStatus.toLowerCase().replaceAll('_', '-')),
               orderDate: b.createdAt,
-              expectedDate: b.timeSlotId?.split('_')[0], // Lấy ngày từ slot ID
+              expectedDate,
               returnInfo: b.returnInfo || null,
               trackingNumber: b.trackingNumber || null,
               specialInstructions: b.specialInstructions || null
@@ -76,13 +81,86 @@ const KitPreparation = ({ user }) => {
       'kit-prepared': { bg: 'danger', text: 'Đã chuẩn bị kit' },
       'kit-sent': { bg: 'primary', text: 'Đã gửi kit' },
       'waiting-sample': { bg: 'secondary', text: 'Chờ nhận mẫu' },
-      'sample-received': { bg: 'success', text: 'Đã nhận mẫu' }
+      'sample-received': { bg: 'success', text: 'Đã nhận mẫu' },
+      expired: { bg: 'danger', text: 'Đã quá hạn' },
+      'kit-returned': { bg: 'info', text: 'Đã nhận lại kit' },
     };
 
     const config = statusConfig[status] || { bg: 'secondary', text: status };
     return <Badge bg={config.bg}>{config.text}</Badge>;
   };
 
+  const openActionModal = (action, order) => {
+    setSelectedOrder(order);
+    setModalAction(action);
+    setDescription('');
+    setShowModal(true);
+  };
+
+  const handleConfirmAction = async () => {
+    if (!selectedOrder || !modalAction || !description.trim()) return;
+    let status = '';
+    let updatedOrders = [];
+
+    try {
+      if (modalAction === 'prepare') {
+        status = 'KIT_PREPARED';
+        updatedOrders = orders.map(o =>
+          o.id === selectedOrder.id
+            ? {
+              ...o,
+              status: 'kit-prepared',
+              preparedBy: user.name,
+              preparedDate: new Date().toLocaleString('vi-VN'),
+              trackingNumber: 'VTP' + Date.now().toString().slice(-9)
+            }
+            : o
+        );
+      } else if (modalAction === 'send') {
+        status = 'KIT_SENT';
+        updatedOrders = orders.map(o =>
+          o.id === selectedOrder.id
+            ? {
+              ...o,
+              status: 'kit-sent',
+              sentDate: new Date().toLocaleString('vi-VN'),
+              estimatedDelivery: new Date(Date.now() + 24 * 60 * 60 * 1000).toLocaleDateString('vi-VN')
+            }
+            : o
+        );
+      } else if (modalAction === 'confirm') {
+        status = 'SAMPLE_RECEIVED';
+        updatedOrders = orders.map(o =>
+          o.id === selectedOrder.id
+            ? {
+              ...o,
+              status: 'sample-received'
+            }
+            : o
+        );
+      }
+
+      await handleSubmit(selectedOrder.id, status, description);
+      setOrders(updatedOrders);
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Thành công!',
+        text: `Đã cập nhật đơn hàng ${selectedOrder.id}`,
+        confirmButtonColor: '#198754'
+      });
+    } catch (err) {
+      console.error('❌ Lỗi khi xử lý hành động:', err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Lỗi!',
+        text: 'Không thể cập nhật đơn hàng. Vui lòng thử lại.',
+        confirmButtonColor: '#d33'
+      });
+    } finally {
+      setShowModal(false);
+    }
+  };
   const handleSubmit = async (bookingId, status, description) => {
     try {
       const payload = {
@@ -102,8 +180,31 @@ const KitPreparation = ({ user }) => {
   };
 
   const handlePrepareKit = async (order) => {
+    const { value: description } = await Swal.fire({
+      title: 'Chuẩn bị kit?',
+      html: `
+      <p>Bạn có chắc chắn muốn chuẩn bị kit cho đơn hàng <strong>${order.id}</strong>?
+      Vui lòng điền nội dung để chứng minh bạn đã thực hiện
+      </p>
+      <input id="swal-desc" class="swal2-input" placeholder="Nhập mô tả..." />
+    `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Xác nhận',
+      cancelButtonText: 'Hủy',
+      confirmButtonColor: '#198754',
+      preConfirm: () => {
+        const val = document.getElementById('swal-desc').value.trim();
+        if (!val) {
+          Swal.showValidationMessage('Vui lòng nhập mô tả!');
+        }
+        return val;
+      }
+    });
+
+    if (!description) return;
+
     try {
-      // 1. Cập nhật trạng thái UI
       const updatedOrders = orders.map(o =>
         o.id === order.id
           ? {
@@ -117,26 +218,49 @@ const KitPreparation = ({ user }) => {
       );
       setOrders(updatedOrders);
 
-      // 2. Gửi vào lịch sử backend
-      await handleSubmit(order.id, 'KIT_PREPARED', 'Đã chuẩn bị kit');
+      await handleSubmit(order.id, 'KIT_PREPARED', description);
 
-      // 3. Thông báo
-      setAlert({
-        show: true,
-        message: `Đã chuẩn bị kit cho đơn ${order.id}`,
-        type: 'success'
+      Swal.fire({
+        icon: 'success',
+        title: 'Thành công',
+        text: `Đã chuẩn bị kit cho đơn ${order.id}`,
+        confirmButtonColor: '#198754'
       });
-
     } catch (err) {
-      setAlert({
-        show: true,
-        message: `Có lỗi khi chuẩn bị kit cho đơn ${order.id}`,
-        type: 'danger'
+      Swal.fire({
+        icon: 'error',
+        title: 'Lỗi',
+        text: `Có lỗi khi chuẩn bị kit cho đơn ${order.id}`,
+        confirmButtonColor: '#d33'
       });
     }
   };
 
-  const handleSendKit = (orderId) => {
+  const handleSendKit = async (orderId) => {
+    const { value: description } = await Swal.fire({
+      title: 'Gửi kit?',
+      html: `
+      <p>Bạn có chắc chắn đã gửi kit cho đơn hàng <strong>${orderId}</strong>?
+      Vui lòng điền nội dung để chứng minh bạn đã thực hiện
+      </p>
+      <input id="swal-desc" class="swal2-input" placeholder="Nhập mô tả..." />
+    `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Xác nhận',
+      cancelButtonText: 'Hủy',
+      confirmButtonColor: '#0d6efd',
+      preConfirm: () => {
+        const val = document.getElementById('swal-desc').value.trim();
+        if (!val) {
+          Swal.showValidationMessage('Vui lòng nhập mô tả!');
+        }
+        return val;
+      }
+    });
+
+    if (!description) return;
+
     const updatedOrders = orders.map(order =>
       order.id === orderId
         ? {
@@ -148,58 +272,68 @@ const KitPreparation = ({ user }) => {
         : order
     );
     setOrders(updatedOrders);
-    handleSubmit(orderId, 'KIT_SENT', 'Đã gửi kit cho khách hàng');
+    await handleSubmit(orderId, 'KIT_SENT', description);
 
-    setAlert({
-      show: true,
-      message: `Kit cho đơn hàng ${orderId} đã được gửi thành công!`,
-      type: 'success'
+    Swal.fire({
+      icon: 'success',
+      title: 'Đã gửi kit',
+      text: `Kit cho đơn hàng ${orderId} đã được gửi thành công!`,
+      confirmButtonColor: '#198754'
     });
-    setTimeout(() => setAlert({ show: false, message: '', type: '' }), 3000);
+  };
+
+  // Xử lý xác nhận đã nhận lại kit
+  const handleConfirmKitReceived = async (order) => {
+    const { value: description } = await Swal.fire({
+      title: 'Xác nhận đã nhận mẫu?',
+      html: `
+      <p>Bạn có chắc chắn đã nhận mẫu xét nghiệm từ đơn hàng <strong>${order.id}</strong>?
+      Vui lòng điền nội dung để chứng minh bạn đã thực hiện
+      </p>
+      <input id="swal-desc" class="swal2-input" placeholder="Nhập mô tả..." />
+    `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'Xác nhận',
+      cancelButtonText: 'Hủy',
+      confirmButtonColor: '#198754',
+      preConfirm: () => {
+        const val = document.getElementById('swal-desc').value.trim();
+        if (!val) {
+          Swal.showValidationMessage('Vui lòng nhập mô tả!');
+        }
+        return val;
+      }
+    });
+
+    if (!description) return;
+
+    try {
+      await handleSubmit(order.id, 'SAMPLE_RECEIVED', description);
+
+      const updated = orders.map(o =>
+        o.id === order.id ? { ...o, status: 'sample-received' } : o
+      );
+      setOrders(updated);
+
+      await Swal.fire({
+        icon: 'success',
+        title: 'Đã xác nhận!',
+        text: `Mẫu từ đơn ${order.id} đã được ghi nhận.`,
+        confirmButtonColor: '#198754'
+      });
+    } catch (err) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Lỗi!',
+        text: 'Không thể xác nhận. Vui lòng thử lại.',
+        confirmButtonColor: '#d33'
+      });
+    }
   };
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('vi-VN');
-  };
-
-  // Hàm xác nhận nhận kit
-  const handleConfirmKitReturn = async (orderId) => {
-    setReturnLoading(true);
-    try {
-      // Cập nhật trạng thái đơn hàng
-      const updatedOrders = orders.map(order => {
-        if (order.id === orderId) {
-          return {
-            ...order,
-            status: 'ready-for-collection', // Chuyển sang trạng thái sẵn sàng thu mẫu
-            receivedDate: new Date().toISOString(),
-            receivedBy: 'NV001', // ID nhân viên thực tế
-            kitReturnConfirmed: true,
-            nextStep: 'sample-collection' // Bước tiếp theo
-          };
-        }
-        return order;
-      });
-      setOrders(updatedOrders);
-      handleSubmit(orderId, 'KIT_RETURNED', 'Đã nhận lại kit từ khách hàng');
-
-      // Hiển thị thông báo thành công với hướng dẫn bước tiếp theo
-      setAlert({
-        show: true,
-        type: 'success',
-        message: `Đã xác nhận nhận kit thành công! Đơn hàng ${orderId} đã chuyển sang bước thu mẫu.`
-      });
-    } catch (error) {
-      // Hiển thị thông báo lỗi
-      setAlert({
-        show: true,
-        type: 'danger',
-        message: 'Có lỗi xảy ra khi xác nhận nhận kit!'
-      });
-    } finally {
-      setReturnLoading(false);
-      setShowReturnConfirmModal(false);
-    }
   };
 
   return (
@@ -247,8 +381,8 @@ const KitPreparation = ({ user }) => {
                 <option value="waiting-kit-prep">Chờ chuẩn bị kit</option>
                 <option value="kit-prepared">Đã chuẩn bị kit</option>
                 <option value="kit-sent">Đã gửi kit</option>
-                <option value="waiting-sample">Chờ nhận mẫu</option>
-                <option value="sample-received">Đã nhận mẫu</option>
+                <option value="waiting-kit">Chờ nhận lại kit</option>
+                <option value="kit-received">Đã nhận mẫu</option>
               </Form.Select>
             </Col>
           </Row>
@@ -301,7 +435,7 @@ const KitPreparation = ({ user }) => {
                     <Button
                       size="sm"
                       variant="success"
-                      onClick={() => handlePrepareKit(order)}
+                      onClick={() => openActionModal('prepare', order)}
                     >
                       <i className="bi bi-box me-1"></i>
                       Chuẩn bị
@@ -311,25 +445,23 @@ const KitPreparation = ({ user }) => {
                     <Button
                       size="sm"
                       variant="primary"
-                      onClick={() => handleSendKit(order.id)}
+                      onClick={() => openActionModal('send', order)}
                     >
                       <i className="bi bi-truck me-1"></i>
                       Gửi Kit
                     </Button>
                   )}
-                  {order.status === 'kit-sent' && order.returnInfo && (
+                  {order.status === 'kit-returned' && (
                     <Button
-                      variant="info"
                       size="sm"
-                      onClick={() => {
-                        setSelectedOrder(order);
-                        setShowReturnConfirmModal(true);
-                      }}
+                      variant="success"
+                      onClick={() => openActionModal('confirm', order)}
                     >
-                      <i className="bi bi-box-arrow-in-down me-1"></i>
-                      Xác nhận nhận kit
+                      <i className="bi bi-check-circle me-1"></i>
+                      Đã nhận kit
                     </Button>
                   )}
+
                   {order.status === 'ready-for-collection' && (
                     <Button
                       variant="success"
@@ -366,51 +498,30 @@ const KitPreparation = ({ user }) => {
           ))}
         </tbody>
       </Table>
-
-      {/* Kit Return Confirmation Modal */}
-      <Modal show={showReturnConfirmModal} onHide={() => setShowReturnConfirmModal(false)}>
+      <Modal show={showModal} onHide={() => setShowModal(false)} centered>
         <Modal.Header closeButton>
-          <Modal.Title>
-            <i className="bi bi-box-arrow-in-down me-2"></i>
-            Xác nhận nhận lại kit
-          </Modal.Title>
+          <Modal.Title>Xác nhận hành động</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <p>Bạn có chắc chắn muốn xác nhận đã nhận lại kit từ đơn hàng <strong>{selectedOrder?.id}</strong>?</p>
-          {selectedOrder?.returnInfo && (
-            <div className="mt-3">
-              <h6>Thông tin gửi lại kit:</h6>
-              <ul className="list-unstyled">
-                <li><strong>Mã vận chuyển:</strong> {selectedOrder.returnInfo.trackingNumber}</li>
-                <li><strong>Đơn vị vận chuyển:</strong> {selectedOrder.returnInfo.carrier}</li>
-                <li><strong>Ngày gửi:</strong> {new Date(selectedOrder.returnInfo.returnDate).toLocaleDateString('vi-VN')}</li>
-                {selectedOrder.returnInfo.note && (
-                  <li><strong>Ghi chú:</strong> {selectedOrder.returnInfo.note}</li>
-                )}
-              </ul>
-            </div>
-          )}
+          <Alert variant="info">
+            Vui lòng nhập mô tả cho hành động với đơn hàng <strong>{selectedOrder?.id}</strong>
+          </Alert>
+          <Form.Group className="mt-3">
+            <Form.Label>Mô tả (bắt buộc)</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              placeholder="Ví dụ: Đã chuẩn bị kit và kiểm tra mã vận đơn"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </Form.Group>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowReturnConfirmModal(false)}>
-            Hủy
-          </Button>
-          <Button
-            variant="primary"
-            onClick={() => handleConfirmKitReturn(selectedOrder.id)}
-            disabled={returnLoading}
-          >
-            {returnLoading ? (
-              <>
-                <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                Đang xử lý...
-              </>
-            ) : (
-              <>
-                <i className="bi bi-box-arrow-in-down me-2"></i>
-                Xác nhận đã nhận kit
-              </>
-            )}
+          <Button variant="secondary" onClick={() => setShowModal(false)}>Hủy</Button>
+          <Button variant="success" disabled={!description.trim()} onClick={handleConfirmAction}>
+            <i className="bi bi-check-circle me-2"></i>
+            Xác nhận
           </Button>
         </Modal.Footer>
       </Modal>
