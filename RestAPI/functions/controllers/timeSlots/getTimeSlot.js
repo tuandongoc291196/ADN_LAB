@@ -64,16 +64,31 @@ const getUnavailableTimeSlots = async (req, res) => {
 
 const getOneTimeSlot = async (req, res) => {
   try {
-    const {timeSlotId} = req.body;
+    const {slotDate, startTime, endTime} = req.body;
 
-    if (!timeSlotId) {
+    if (!slotDate) {
       return res.status(400).json({
         statusCode: 400,
         status: "error",
-        message: "timeSlotId is required",
+        message: "slotDate is required",
+      });
+    }
+    if (!startTime) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "startTime is required",
+      });
+    }
+    if (!endTime) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "endTime is required",
       });
     }
 
+    const timeSlotId = `${slotDate}_${startTime}_${endTime}`;
     const existingTimeSlot = await checkTimeSlotExists(timeSlotId);
     if (!existingTimeSlot) {
       return res.status(404).json({

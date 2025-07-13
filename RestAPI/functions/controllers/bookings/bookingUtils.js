@@ -136,7 +136,7 @@ const checkUserBookingExists = async (userId, timeSlotId) => {
           const latestStatus = bookingHistory[0].status;
           console.log(`Booking ${booking.id} latest status:`, latestStatus);
           
-          if (latestStatus ==  "EXPIRED") {
+          if (latestStatus ==  "EXPIRED" || latestStatus == "CANCELLED") {
             return false;
           } else return true;
         } else {
@@ -238,7 +238,7 @@ const checkStaffBookingExists = async (staffId, timeSlotId) => {
           const latestStatus = bookingHistory[0].status;
           console.log(`Booking ${booking.id} latest status:`, latestStatus);
           
-          if (latestStatus ==  "EXPIRED") {
+          if (latestStatus ==  "EXPIRED" || latestStatus == "CANCELLED") {
             return false;
           } else return true;
         } else {

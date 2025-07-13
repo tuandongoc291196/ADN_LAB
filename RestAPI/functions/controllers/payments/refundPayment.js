@@ -73,7 +73,7 @@ const refundPayment = async (req, res) => {
         });
       }
 
-      responseData = await handleRefundConfirmation(bookingId, "MOMO", refundResult);
+      responseData = await handleRefundConfirmation(bookingId, payment.paymentMethod, refundResult);
 
       console.log("Response data for MOMO refund:", responseData);
     } else if (payment.paymentMethod === "ZALOPAY") {
@@ -87,7 +87,7 @@ const refundPayment = async (req, res) => {
           });
         }
 
-        responseData = await handleRefundConfirmation(bookingId, "ZALOPAY", refundResult);
+        responseData = await handleRefundConfirmation(bookingId, payment.paymentMethod, refundResult);
 
         console.log("Response data for ZALOPAY refund:", responseData);
     }

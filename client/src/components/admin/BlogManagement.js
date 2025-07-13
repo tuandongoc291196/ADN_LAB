@@ -3,16 +3,17 @@
  * MỤC ĐÍCH: Trang quản lý danh sách bài viết blog
  * CHỨC NĂNG:
  * - Hiển thị danh sách tất cả bài viết với pagination
- * - Lọc bài viết theo trạng thái (published/draft/featured)
- * - Tìm kiếm bài viết theo tiêu đề, nội dung, tags
+ * - Lọc bài viết theo trạng thái (active/inactive)
+ * - Tìm kiếm bài viết theo tiêu đề, nội dung
  * - Thao tác CRUD (tạo, đọc, cập nhật, xóa) bài viết
+ * - Bulk actions: chọn nhiều và thao tác hàng loạt
  * - Thống kê tổng quan về blog
  */
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Row, Col, Card, Button, Table, Badge, Form, Modal, Alert, Tab, Nav } from 'react-bootstrap';
-import { getAllBlogs, deleteBlog, updateBlogStatus, toggleBlogFeatured } from '../../services/api';
+import { Row, Col, Card, Button, Table, Badge, Form, Modal, Alert, Tab, Nav, ButtonGroup, Dropdown } from 'react-bootstrap';
+import { getAllBlogs, deleteBlog, updateBlog } from '../../services/api';
 import { useAuth } from '../context/auth';
 
 const BlogManagement = () => {
@@ -27,6 +28,13 @@ const BlogManagement = () => {
   const [message, setMessage] = useState({ type: '', content: '' });
   const [loading, setLoading] = useState(true);
   const [blogPosts, setBlogPosts] = useState([]);
+  
+  // Bulk actions state
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [selectAll, setSelectAll] = useState(false);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [bulkAction, setBulkAction] = useState('');
+  const [processingBulk, setProcessingBulk] = useState(false);
 
   // Check user permissions
   useEffect(() => {
@@ -72,38 +80,66 @@ const BlogManagement = () => {
     navigate('/admin/blog/create');
   };
 
-  // Danh sách categories và statuses để lọc
-  const categories = ['Tất cả', 'Xét nghiệm ADN', 'Hướng dẫn', 'Công nghệ', 'Tin tức'];
-  const statuses = ['Tất cả', 'published', 'draft', 'pending'];
+  // Tính toán thống kê
+  const getStatistics = () => {
+    const totalBlogs = blogPosts.length;
+    const activeBlogs = blogPosts.filter(blog => blog.isActive).length;
+    const inactiveBlogs = totalBlogs - activeBlogs;
+    const activePercentage = totalBlogs > 0 ? Math.round((activeBlogs / totalBlogs) * 100) : 0;
+    const inactivePercentage = totalBlogs > 0 ? Math.round((inactiveBlogs / totalBlogs) * 100) : 0;
+
+    return {
+      total: totalBlogs,
+      active: activeBlogs,
+      inactive: inactiveBlogs,
+      activePercentage,
+      inactivePercentage
+    };
+  };
 
   // Hàm lọc bài viết theo search term và tab được chọn
   const filteredPosts = blogPosts.filter(post => {
-    // Tìm kiếm theo tiêu đề, nội dung hoặc tags
+    // Tìm kiếm theo tiêu đề hoặc nội dung
     const matchesSearch = post.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         post.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         post.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+                         post.content?.toLowerCase().includes(searchTerm.toLowerCase());
     
     // Lọc theo tab được chọn
     const matchesTab = selectedTab === 'all' || 
-                      (selectedTab === 'published' && post.status === 'published') ||
-                      (selectedTab === 'draft' && post.status === 'draft') ||
-                      (selectedTab === 'featured' && post.featured);
+                      (selectedTab === 'active' && post.isActive) ||
+                      (selectedTab === 'inactive' && !post.isActive);
     
     return matchesSearch && matchesTab;
   });
 
-  // Hàm tạo badge hiển thị trạng thái bài viết
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'published':
-        return <Badge bg="success">Đã xuất bản</Badge>;
-      case 'draft':
-        return <Badge bg="secondary">Bản nháp</Badge>;
-      case 'pending':
-        return <Badge bg="warning">Chờ duyệt</Badge>;
-      default:
-        return <Badge bg="light" text="dark">Không xác định</Badge>;
+  // Bulk selection functions
+  const handleSelectAll = (checked) => {
+    setSelectAll(checked);
+    if (checked) {
+      setSelectedItems(filteredPosts.map(post => post.id));
+    } else {
+      setSelectedItems([]);
     }
+  };
+
+  const handleSelectItem = (postId, checked) => {
+    if (checked) {
+      setSelectedItems(prev => [...prev, postId]);
+    } else {
+      setSelectedItems(prev => prev.filter(id => id !== postId));
+    }
+  };
+
+  // Update select all state when items change
+  useEffect(() => {
+    const allSelected = filteredPosts.length > 0 && selectedItems.length === filteredPosts.length;
+    setSelectAll(allSelected);
+  }, [selectedItems, filteredPosts]);
+
+  // Hàm tạo badge hiển thị trạng thái bài viết
+  const getStatusBadge = (isActive) => {
+    return isActive 
+      ? <Badge bg="success">Đang hiển thị</Badge>
+      : <Badge bg="secondary">Đã ẩn</Badge>;
   };
 
   // Handle delete blog
@@ -139,36 +175,99 @@ const BlogManagement = () => {
     navigate(`/admin/blog/edit/${post.id}`);
   };
 
-  // Hàm toggle trạng thái featured của bài viết
-  const handleToggleFeatured = async (postId) => {
+  // Hàm thay đổi trạng thái hiển thị của bài viết (tối ưu)
+  const handleToggleStatus = async (postId, currentStatus) => {
     try {
-      const post = blogPosts.find(p => p.id === postId);
-      await toggleBlogFeatured(postId, !post.featured);
-      await fetchBlogs(); // Refresh list
-      setMessage({ type: 'success', content: 'Đã cập nhật trạng thái nổi bật!' });
+      // Optimistic update - cập nhật UI ngay lập tức
+      setBlogPosts(prev => prev.map(post => 
+        post.id === postId ? { ...post, isActive: !currentStatus } : post
+      ));
+
+      await updateBlog({ 
+        blogId: postId, 
+        isActive: !currentStatus 
+      });
+
+      setMessage({ type: 'success', content: 'Đã cập nhật trạng thái bài viết!' });
     } catch (error) {
+      // Revert nếu có lỗi
+      setBlogPosts(prev => prev.map(post => 
+        post.id === postId ? { ...post, isActive: currentStatus } : post
+      ));
       setMessage({ type: 'danger', content: 'Lỗi khi cập nhật trạng thái: ' + error.message });
     }
     setTimeout(() => setMessage({ type: '', content: '' }), 3000);
   };
 
-  // Hàm thay đổi trạng thái xuất bản của bài viết
-  const handleStatusChange = async (postId, newStatus) => {
-    try {
-      await updateBlogStatus(postId, newStatus);
-      await fetchBlogs(); // Refresh list
-      setMessage({ type: 'success', content: 'Đã cập nhật trạng thái bài viết!' });
-    } catch (error) {
-      setMessage({ type: 'danger', content: 'Lỗi khi cập nhật trạng thái: ' + error.message });
+  // Bulk actions
+  const handleBulkAction = async () => {
+    if (selectedItems.length === 0) {
+      setMessage({ type: 'warning', content: 'Vui lòng chọn ít nhất một bài viết!' });
+      return;
     }
-    setTimeout(() => setMessage({ type: '', content: '' }), 3000);
+
+    setProcessingBulk(true);
+    try {
+      const promises = selectedItems.map(async (postId) => {
+        const post = blogPosts.find(p => p.id === postId);
+        if (!post) return;
+
+        switch (bulkAction) {
+          case 'activate':
+            return updateBlog({ blogId: postId, isActive: true });
+          case 'deactivate':
+            return updateBlog({ blogId: postId, isActive: false });
+          case 'delete':
+            return deleteBlog(postId);
+          default:
+            return Promise.resolve();
+        }
+      });
+
+      await Promise.all(promises);
+      
+      // Refresh data
+      await fetchBlogs();
+      
+      // Clear selection
+      setSelectedItems([]);
+      setSelectAll(false);
+      
+      const actionText = {
+        'activate': 'kích hoạt',
+        'deactivate': 'ẩn',
+        'delete': 'xóa'
+      }[bulkAction];
+      
+      setMessage({ 
+        type: 'success', 
+        content: `Đã ${actionText} ${selectedItems.length} bài viết thành công!` 
+      });
+      
+    } catch (error) {
+      console.error('Bulk action error:', error);
+      setMessage({ 
+        type: 'danger', 
+        content: `Lỗi khi thực hiện thao tác hàng loạt: ${error.message}` 
+      });
+    } finally {
+      setProcessingBulk(false);
+      setShowBulkDeleteModal(false);
+      setBulkAction('');
+    }
   };
 
   // Hàm format ngày tháng theo định dạng Việt Nam
   const formatDate = (dateString) => {
-    if (!dateString) return 'Chưa xuất bản';
-    return new Date(dateString).toLocaleDateString('vi-VN');
+    if (!dateString) return 'Chưa có thông tin';
+    return new Date(dateString).toLocaleDateString('vi-VN', {
+      year: 'numeric',
+      month: '2-digit', 
+      day: '2-digit'
+    });
   };
+
+  const stats = getStatistics();
 
   return (
     <>
@@ -208,188 +307,238 @@ const BlogManagement = () => {
             <div className="spinner-border text-primary mb-3" role="status">
               <span className="visually-hidden">Loading...</span>
             </div>
-            <p className="text-muted">Đang tải danh sách bài viết...</p>
+            <p>Đang tải danh sách bài viết...</p>
           </Card.Body>
         </Card>
       ) : (
         <>
-          {/* Statistics */}
+          {/* Statistics Cards */}
           <Row className="mb-4">
-            <Col lg={3} md={6} className="mb-3">
-              <Card className="border-0 shadow-sm bg-primary text-white">
+            <Col lg={4} md={6} className="mb-3">
+              <Card className="border-0 shadow-sm bg-primary text-white h-100">
                 <Card.Body className="text-center">
-                  <i className="bi bi-newspaper fs-1 mb-2 d-block"></i>
-                  <div className="h4 mb-0">{blogPosts.length}</div>
-                  <small>Tổng bài viết</small>
+                  <div className="d-flex align-items-center justify-content-center mb-2">
+                    <i className="bi bi-newspaper fs-1 me-3"></i>
+                    <div>
+                      <div className="h2 mb-0 fw-bold">{stats.total}</div>
+                      <small>Tổng bài viết</small>
+                    </div>
+                  </div>
+                  <div className="progress bg-white bg-opacity-25" style={{height: '4px'}}>
+                    <div className="progress-bar bg-white" style={{width: '100%'}}></div>
+                  </div>
                 </Card.Body>
               </Card>
             </Col>
-            <Col lg={3} md={6} className="mb-3">
-              <Card className="border-0 shadow-sm bg-success text-white">
+
+            <Col lg={4} md={6} className="mb-3">
+              <Card className="border-0 shadow-sm bg-success text-white h-100">
                 <Card.Body className="text-center">
-                  <i className="bi bi-check-circle fs-1 mb-2 d-block"></i>
-                  <div className="h4 mb-0">
-                    {blogPosts.filter(post => post.status === 'published').length}
+                  <div className="d-flex align-items-center justify-content-center mb-2">
+                    <i className="bi bi-eye fs-1 me-3"></i>
+                    <div>
+                      <div className="h2 mb-0 fw-bold">{stats.active}</div>
+                      <small>Đang hiển thị</small>
+                    </div>
                   </div>
-                  <small>Đã xuất bản</small>
+                  <div className="progress bg-white bg-opacity-25" style={{height: '4px'}}>
+                    <div className="progress-bar bg-white" style={{width: `${stats.activePercentage}%`}}></div>
+                  </div>
+                  <small className="text-white-50">{stats.activePercentage}%</small>
                 </Card.Body>
               </Card>
             </Col>
-            <Col lg={3} md={6} className="mb-3">
-              <Card className="border-0 shadow-sm bg-warning text-dark">
+
+            <Col lg={4} md={6} className="mb-3">
+              <Card className="border-0 shadow-sm bg-secondary text-white h-100">
                 <Card.Body className="text-center">
-                  <i className="bi bi-pencil-square fs-1 mb-2 d-block"></i>
-                  <div className="h4 mb-0">
-                    {blogPosts.filter(post => post.status === 'draft').length}
+                  <div className="d-flex align-items-center justify-content-center mb-2">
+                    <i className="bi bi-eye-slash fs-1 me-3"></i>
+                    <div>
+                      <div className="h2 mb-0 fw-bold">{stats.inactive}</div>
+                      <small>Đã ẩn</small>
+                    </div>
                   </div>
-                  <small>Bản nháp</small>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col lg={3} md={6} className="mb-3">
-              <Card className="border-0 shadow-sm bg-info text-white">
-                <Card.Body className="text-center">
-                  <i className="bi bi-star fs-1 mb-2 d-block"></i>
-                  <div className="h4 mb-0">
-                    {blogPosts.filter(post => post.featured).length}
+                  <div className="progress bg-white bg-opacity-25" style={{height: '4px'}}>
+                    <div className="progress-bar bg-white" style={{width: `${stats.inactivePercentage}%`}}></div>
                   </div>
-                  <small>Nổi bật</small>
+                  <small className="text-white-50">{stats.inactivePercentage}%</small>
                 </Card.Body>
               </Card>
             </Col>
           </Row>
 
-          {/* Empty State */}
-          {blogPosts.length === 0 ? (
-            <Card className="shadow-sm mb-4">
-              <Card.Body className="text-center py-5">
-                <i className="bi bi-journal-text text-muted fs-1 mb-3 d-block"></i>
-                <h4 className="text-muted mb-2">Chưa có bài viết nào</h4>
-                <p className="text-muted mb-4">Hãy bắt đầu tạo bài viết đầu tiên của bạn</p>
-                <Button 
-                  variant="primary" 
-                  onClick={handleCreateNew}
-                  disabled={!user?.id && !user?.user_id}
-                >
-                  <i className="bi bi-plus-circle me-2"></i>
-                  Tạo bài viết mới
-                </Button>
+          {/* Search and Filter */}
+          <Card className="shadow-sm mb-4">
+            <Card.Body>
+              <Row>
+                <Col md={6}>
+                  <Form.Group>
+                    <Form.Label>Tìm kiếm</Form.Label>
+                    <Form.Control
+                      type="text"
+                      placeholder="Tìm theo tiêu đề hoặc nội dung..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </Form.Group>
+                </Col>
+                <Col md={6}>
+                  <Form.Group>
+                    <Form.Label>Lọc theo trạng thái</Form.Label>
+                    <Tab.Container activeKey={selectedTab} onSelect={setSelectedTab}>
+                      <Nav variant="pills" className="flex-row">
+                        <Nav.Item>
+                          <Nav.Link eventKey="all">Tất cả ({blogPosts.length})</Nav.Link>
+                        </Nav.Item>
+                        <Nav.Item>
+                          <Nav.Link eventKey="active">Đang hiển thị ({stats.active})</Nav.Link>
+                        </Nav.Item>
+                        <Nav.Item>
+                          <Nav.Link eventKey="inactive">Đã ẩn ({stats.inactive})</Nav.Link>
+                        </Nav.Item>
+                      </Nav>
+                    </Tab.Container>
+                  </Form.Group>
+                </Col>
+              </Row>
+            </Card.Body>
+          </Card>
+
+          {/* Bulk Actions */}
+          {selectedItems.length > 0 && (
+            <Card className="shadow-sm mb-4 border-warning">
+              <Card.Body className="py-2">
+                <div className="d-flex justify-content-between align-items-center">
+                  <div className="d-flex align-items-center">
+                    <i className="bi bi-check-circle-fill text-warning me-2"></i>
+                    <span className="fw-bold">
+                      Đã chọn {selectedItems.length} bài viết
+                    </span>
+                  </div>
+                  <div className="d-flex gap-2">
+                    <Dropdown>
+                      <Dropdown.Toggle variant="outline-primary" size="sm">
+                        <i className="bi bi-gear me-1"></i>
+                        Thao tác hàng loạt
+                      </Dropdown.Toggle>
+                      <Dropdown.Menu>
+                        <Dropdown.Item onClick={() => { setBulkAction('activate'); setShowBulkDeleteModal(true); }}>
+                          <i className="bi bi-eye me-2"></i>Hiển thị tất cả
+                        </Dropdown.Item>
+                        <Dropdown.Item onClick={() => { setBulkAction('deactivate'); setShowBulkDeleteModal(true); }}>
+                          <i className="bi bi-eye-slash me-2"></i>Ẩn tất cả
+                        </Dropdown.Item>
+                        <Dropdown.Divider />
+                        <Dropdown.Item 
+                          onClick={() => { setBulkAction('delete'); setShowBulkDeleteModal(true); }}
+                          className="text-danger"
+                        >
+                          <i className="bi bi-trash me-2"></i>Xóa tất cả
+                        </Dropdown.Item>
+                      </Dropdown.Menu>
+                    </Dropdown>
+                    <Button 
+                      variant="outline-secondary" 
+                      size="sm"
+                      onClick={() => { setSelectedItems([]); setSelectAll(false); }}
+                    >
+                      <i className="bi bi-x me-1"></i>Bỏ chọn
+                    </Button>
+                  </div>
+                </div>
               </Card.Body>
             </Card>
-          ) : (
-            <>
-              {/* Filters */}
-              <Card className="shadow-sm mb-4">
-                <Card.Body>
-                  <Row>
-                    <Col md={6} lg={3}>
-                      <Form.Group className="mb-3 mb-md-0">
-                        <Form.Control
-                          type="text"
-                          placeholder="Tìm kiếm bài viết..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                      </Form.Group>
-                    </Col>
-                    <Col md={6} lg={3}>
-                      <Form.Select
-                        value={selectedTab}
-                        onChange={(e) => setSelectedTab(e.target.value)}
-                      >
-                        <option value="all">Tất cả bài viết</option>
-                        <option value="published">Đã xuất bản</option>
-                        <option value="draft">Bản nháp</option>
-                        <option value="featured">Nổi bật</option>
-                      </Form.Select>
-                    </Col>
-                  </Row>
-                </Card.Body>
-              </Card>
-
-              {/* Blog Posts Table */}
-              <Card className="shadow-sm">
-                <Card.Body>
-                  <Table responsive hover className="align-middle">
-                    <thead>
-                      <tr>
-                        <th style={{ width: '40%' }}>Bài viết</th>
-                        <th>Tác giả</th>
-                        <th>Ngày xuất bản</th>
-                        <th>Trạng thái</th>
-                        <th>Thao tác</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredPosts.length === 0 ? (
-                        <tr>
-                          <td colSpan="5" className="text-center py-4">
-                            <i className="bi bi-inbox fs-1 text-muted d-block mb-2"></i>
-                            <p className="text-muted mb-0">Không tìm thấy bài viết nào</p>
-                          </td>
-                        </tr>
-                      ) : (
-                        filteredPosts.map(post => (
-                          <tr key={post.id}>
-                            <td>
-                              <div className="d-flex align-items-center">
-                                {post.featuredImage && (
-                                  <img
-                                    src={post.featuredImage}
-                                    alt={post.title}
-                                    style={{ width: '60px', height: '40px', objectFit: 'cover' }}
-                                    className="me-3 rounded"
-                                  />
-                                )}
-                                <div>
-                                  <h6 className="mb-1">{post.title}</h6>
-                                  <small className="text-muted d-block">
-                                    {post.excerpt?.substring(0, 100)}...
-                                  </small>
-                                </div>
-                              </div>
-                            </td>
-                            <td>{post.author}</td>
-                            <td>{formatDate(post.publishDate)}</td>
-                            <td>{getStatusBadge(post.status)}</td>
-                            <td>
-                              <div className="d-flex gap-2">
-                                <Button
-                                  variant="outline-primary"
-                                  size="sm"
-                                  onClick={() => handleEditPost(post)}
-                                  to={`/admin/blog/edit/${post.id}`}
-                                  title="Chỉnh sửa"
-                                >
-                                  <i className="bi bi-pencil"></i>
-                                </Button>
-                                <Button
-                                  variant={post.featured ? "warning" : "outline-warning"}
-                                  size="sm"
-                                  onClick={() => handleToggleFeatured(post.id)}
-                                  title={post.featured ? "Bỏ nổi bật" : "Đánh dấu nổi bật"}
-                                >
-                                  <i className="bi bi-star-fill"></i>
-                                </Button>
-                                <Button
-                                  variant="outline-danger"
-                                  size="sm"
-                                  onClick={() => handleDeletePost(post)}
-                                  title="Xóa"
-                                >
-                                  <i className="bi bi-trash"></i>
-                                </Button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </Table>
-                </Card.Body>
-              </Card>
-            </>
           )}
+
+          {/* Blog Posts Table */}
+          <Card className="shadow-sm">
+            <Card.Header>
+              <div className="d-flex justify-content-between align-items-center">
+                <h5 className="mb-0">Danh sách bài viết ({filteredPosts.length})</h5>
+              </div>
+            </Card.Header>
+            <Card.Body className="p-0">
+              <Table responsive className="mb-0">
+                <thead className="table-light">
+                  <tr>
+                    <th style={{width: '50px'}}>
+                      <Form.Check
+                        type="checkbox"
+                        checked={selectAll}
+                        onChange={(e) => handleSelectAll(e.target.checked)}
+                      />
+                    </th>
+                    <th>Tiêu đề</th>
+                    <th>Tác giả</th>
+                    <th>Trạng thái</th>
+                    <th>Ngày tạo</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredPosts.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="text-center py-4">
+                        <p className="text-muted mb-0">Không tìm thấy bài viết nào.</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredPosts.map(post => (
+                      <tr key={post.id}>
+                        <td>
+                          <Form.Check
+                            type="checkbox"
+                            checked={selectedItems.includes(post.id)}
+                            onChange={(e) => handleSelectItem(post.id, e.target.checked)}
+                          />
+                        </td>
+                        <td>
+                          <div>
+                            <strong>{post.title}</strong>
+                            <br />
+                            <small className="text-muted">
+                              {post.content && post.content.length > 100 
+                                ? post.content.substring(0, 100) + '...' 
+                                : post.content}
+                            </small>
+                          </div>
+                        </td>
+                        <td>{post.user?.fullname || 'Admin'}</td>
+                        <td>{getStatusBadge(post.isActive)}</td>
+                        <td>{formatDate(post.createdAt)}</td>
+                        <td>
+                          <div className="btn-group" role="group">
+                            <Button
+                              size="sm"
+                              variant="outline-primary"
+                              onClick={() => handleEditPost(post)}
+                            >
+                              <i className="bi bi-pencil"></i>
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant={post.isActive ? "outline-warning" : "outline-success"}
+                              onClick={() => handleToggleStatus(post.id, post.isActive)}
+                            >
+                              <i className={`bi bi-${post.isActive ? 'eye-slash' : 'eye'}`}></i>
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline-danger"
+                              onClick={() => handleDeletePost(post)}
+                            >
+                              <i className="bi bi-trash"></i>
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </Table>
+            </Card.Body>
+          </Card>
         </>
       )}
 
@@ -399,16 +548,62 @@ const BlogManagement = () => {
           <Modal.Title>Xác nhận xóa</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          Bạn có chắc chắn muốn xóa bài viết "{selectedPost?.title}"?
-          <br />
-          Hành động này không thể hoàn tác.
+          <p>Bạn có chắc chắn muốn xóa bài viết "<strong>{selectedPost?.title}</strong>"?</p>
+          <p className="text-danger">Hành động này không thể hoàn tác!</p>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
             Hủy
           </Button>
           <Button variant="danger" onClick={confirmDelete}>
-            Xóa bài viết
+            Xóa
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Bulk Action Confirmation Modal */}
+      <Modal show={showBulkDeleteModal} onHide={() => setShowBulkDeleteModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Xác nhận thao tác hàng loạt</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>
+            Bạn có chắc chắn muốn{' '}
+            <strong>
+              {bulkAction === 'activate' && 'kích hoạt'}
+              {bulkAction === 'deactivate' && 'ẩn'}
+              {bulkAction === 'delete' && 'xóa'}
+            </strong>{' '}
+            <strong>{selectedItems.length} bài viết</strong> đã chọn?
+          </p>
+          {bulkAction === 'delete' && (
+            <Alert variant="danger">
+              <i className="bi bi-exclamation-triangle me-2"></i>
+              Hành động xóa không thể hoàn tác!
+            </Alert>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowBulkDeleteModal(false)}>
+            Hủy
+          </Button>
+          <Button 
+            variant={bulkAction === 'delete' ? 'danger' : 'primary'}
+            onClick={handleBulkAction}
+            disabled={processingBulk}
+          >
+            {processingBulk ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Đang xử lý...
+              </>
+            ) : (
+              <>
+                {bulkAction === 'activate' && 'Kích hoạt'}
+                {bulkAction === 'deactivate' && 'Ẩn'}
+                {bulkAction === 'delete' && 'Xóa'}
+              </>
+            )}
           </Button>
         </Modal.Footer>
       </Modal>

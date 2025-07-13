@@ -1,24 +1,58 @@
 const { dataConnect } = require("../../config/firebase.js");
 const { checkBlogExists } = require("./blogUtils.js");
-const { checkUserExists } = require("../users/userUtils.js");
-const { getRoleByUserId } = require("../roles/getRoles.js");
+const {checkUserExists } = require("../users/userUtils.js");
 const { randomAlphanumeric } = require("../utils/utilities.js");
 
 const addBlog = async (req, res) => {
   try {
-    const { userId, title, content, status, imageUrl } = req.body;
+    const {userId, title, content, isActive, imageUrl } = req.body;
 
-    if (!userId || !title || !content) {
-      return res.status(400).json({ message: "userId, title, and content are required" });
+    if (!userId) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "User ID is required",
+      });
     }
 
-    if (!(await checkUserExists(userId))) {
-      return res.status(404).json({ message: "User not found" });
+    if (!await checkUserExists(userId)) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "User not found",
+      });
     }
 
-    const userRole = await getRoleByUserId(userId);
-    if (!userRole || userRole.id !== "3") {
-      return res.status(403).json({ message: "User does not have permission" });
+    if (!title) {
+      return res.status(400).json({        
+        statusCode: 400,
+        status: "error",
+        message: "Blog title is required",
+      });
+    }
+    
+    if (!content) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "Blog content is required",
+      });
+    }
+
+    if (!isActive || typeof isActive !== 'boolean') {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "Blog status is required and must be a boolean",
+      });
+    }
+
+    if (!imageUrl) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "Blog image URL is required",
+      });
     }
     
     const id = `ADNBLOG${await randomAlphanumeric(6, 6)}`;
@@ -27,8 +61,8 @@ const addBlog = async (req, res) => {
     }
 
     const CREATE_BLOG_MUTATION = `
-      mutation CreateBlog($id: String!, $userId: String!, $title: String!, $content: String!, $imageUrl: String, $status: String) {
-        blog_insert(data: {id: $id, userId: $userId, title: $title, content: $content, imageUrl: $imageUrl, status: $status})
+      mutation CreateBlog($id: String!, $userId: String!, $title: String!, $content: String!, $imageUrl: String, $isActive: Boolean) {
+        blog_insert(data: {id: $id, userId: $userId, title: $title, content: $content, imageUrl: $imageUrl, isActive: $isActive})
       }
     `;
 
@@ -38,15 +72,19 @@ const addBlog = async (req, res) => {
       title,
       content,
       imageUrl: imageUrl || null,
-      status: status || "draft"
+      isActive: isActive
     };
 
-    await dataConnect.executeGraphql(CREATE_BLOG_MUTATION, { variables });
+    const response = await dataConnect.executeGraphql(CREATE_BLOG_MUTATION, { 
+      variables: variables 
+    });
 
+    const responseData = response.data.blog_insert;
     res.status(201).json({
       statusCode: 201,
       status: "success",
       message: "Blog created successfully",
+      data: responseData,
     });
 
   } catch (error) {

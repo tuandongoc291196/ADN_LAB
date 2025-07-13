@@ -30,7 +30,7 @@ const addBookingHistory = async (bookingId, status, description) => {
 
         const ADD_BOOKING_HISTORY = `
             mutation CreateBookingHistory($id: String!, $bookingId: String!, $description: String!, $status: String!) @auth(level: USER) {
-                bookingHistory_insert(data: {id: $id, bookingId: $bookingId, description: $description, status: $status})
+                bookingHistory_insert(data: {id: $id, bookingId: $bookingId, description: $description, status: $status, createdAt_expr: "request.time"})
             }
         `;
         

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Spinner, Alert } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
-import { getAllBlogs } from '../services/api'; // Corrected import path
+import { getAllBlogs } from '../services/api';
 
 const Blog = () => {
   const [blogs, setBlogs] = useState([]);
@@ -13,7 +13,9 @@ const Blog = () => {
       try {
         setLoading(true);
         const fetchedBlogs = await getAllBlogs();
-        setBlogs(fetchedBlogs || []);
+        // Chỉ lấy những blog có isActive = true
+        const activeBlogs = fetchedBlogs.filter(blog => blog.isActive);
+        setBlogs(activeBlogs || []);
         setError(null);
       } catch (err) {
         setError('Không thể tải danh sách bài viết. Vui lòng thử lại sau.');
@@ -66,8 +68,10 @@ const Blog = () => {
           <Card.Body className="d-flex flex-column">
             <Card.Title as="h5" className="fw-bold text-primary">{blog.title}</Card.Title>
             <Card.Text className="text-muted flex-grow-1">
-              {/* Giả sử content chứa HTML, cần xử lý an toàn */}
-              <div dangerouslySetInnerHTML={{ __html: blog.content?.substring(0, 100) + '...' }} />
+              {/* Hiển thị nội dung rút gọn (150 ký tự đầu) */}
+              {blog.content && blog.content.length > 150 
+                ? blog.content.substring(0, 150) + '...' 
+                : blog.content}
             </Card.Text>
             <div className="text-muted small mb-3">
               <span>

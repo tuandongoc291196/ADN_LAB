@@ -4,15 +4,23 @@ const { deleteImageUtil } = require("../utils/imageUtils.js");
 
 const updateBlog = async (req, res) => {
     try {
-        const { blogId, title, content, status, imageUrl, deleteOldImage } = req.body;
+        const { blogId, title, content, isActive, imageUrl, deleteOldImage } = req.body;
 
         if (!blogId) {
-            return res.status(400).json({ message: "blogId is required" });
+            return res.status(400).json({
+                statusCode: 400,
+                status: "error",
+                message: "blogId is required" 
+            });
         }
 
         const blog = await getOneBlogByBlogId(blogId);
         if (!blog) {
-            return res.status(404).json({ message: `Blog with ID ${blogId} does not exist` });
+            return res.status(404).json({
+                statusCode: 404,
+                status: "error",
+                message: `Blog with ID ${blogId} does not exist` 
+            });
         }
 
         if (deleteOldImage && blog.imageUrl) {
@@ -20,8 +28,8 @@ const updateBlog = async (req, res) => {
         }
 
         const UPDATE_BLOG_MUTATION = `
-            mutation UpdateBlog($blogId: String!, $title: String, $content: String, $imageUrl: String, $status: String) {
-                blog_update(key: {id: $blogId}, data: {title: $title, content: $content, imageUrl: $imageUrl, status: $status, updatedAt_expr: "request.time"})
+            mutation UpdateBlog($blogId: String!, $title: String, $content: String, $imageUrl: String, $isActive: Boolean) {
+                blog_update(key: {id: $blogId}, data: {title: $title, content: $content, imageUrl: $imageUrl, isActive: $isActive, updatedAt_expr: "request.time"})
             }
         `;
 
@@ -30,7 +38,7 @@ const updateBlog = async (req, res) => {
             title: title || blog.title,
             content: content || blog.content,
             imageUrl: imageUrl !== undefined ? imageUrl : blog.imageUrl,
-            status: status || blog.status
+            isActive: isActive !== undefined ? isActive : blog.isActive
         };
 
         await dataConnect.executeGraphql(UPDATE_BLOG_MUTATION, { variables });

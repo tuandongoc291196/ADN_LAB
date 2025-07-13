@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Alert, Image, Breadcrumb, ListGroup, Spinner } from 'react-bootstrap';
 import { useParams, Link } from 'react-router-dom';
-import { getBlogById, getAllBlogs } from '../services/api'; // Corrected import path
+import { getBlogById, getAllBlogs } from '../services/api';
 
 const BlogDetail = () => {
   const { id } = useParams();
@@ -18,15 +18,19 @@ const BlogDetail = () => {
 
         // Fetch the main blog post
         const foundBlog = await getBlogById(id);
-        if (foundBlog) {
+        if (foundBlog && foundBlog.isActive) {
           setBlog(foundBlog);
         } else {
-          throw new Error('Không thể tìm thấy bài viết.');
+          throw new Error('Không thể tìm thấy bài viết hoặc bài viết đã bị ẩn.');
         }
 
         // Fetch all blogs for the "other blogs" list
         const allBlogs = await getAllBlogs();
-        setOtherBlogs(allBlogs.filter(b => b.id !== id).slice(0, 5)); // Show 5 other blogs
+        // Chỉ lấy những blog active và khác với blog hiện tại
+        const activeOtherBlogs = allBlogs
+          .filter(b => b.id !== id && b.isActive)
+          .slice(0, 5); // Show 5 other blogs
+        setOtherBlogs(activeOtherBlogs);
 
       } catch (err) {
         setError(err.message || 'Đã xảy ra lỗi khi tải dữ liệu. Vui lòng thử lại.');
@@ -102,7 +106,7 @@ const BlogDetail = () => {
                             style={{ maxHeight: '400px', objectFit: 'cover', width: '100%' }}
                             />
                         )}
-                        {/* Use dangerouslySetInnerHTML to render HTML content from the editor */}
+                        {/* Hiển thị nội dung HTML từ rich text editor */}
                         <div className="blog-content lh-lg text-break fs-5" dangerouslySetInnerHTML={{ __html: blog.content }} />
 
                         <hr className="my-4" />

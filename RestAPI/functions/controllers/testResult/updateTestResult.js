@@ -1,10 +1,10 @@
 const { dataConnect } = require("../../config/firebase.js");
-const { checkTestResultExists } = require("../testResult/testResultUtils.js");
+const { checkBookingExists } = require("../bookings/bookingUtils.js");
 
 const updateTestResult = async (req, res) => {
     try {
         const { 
-            resultId, 
+            bookingId, 
             testMethod, 
             positive, 
             accuracy, 
@@ -14,15 +14,15 @@ const updateTestResult = async (req, res) => {
             status 
         } = req.body;
 
-        if (!resultId) {
+        if (!bookingId) {
             return res.status(400).json({
                 statusCode: 400,
                 status: "error",
-                message: "resultId is required"
+                message: "bookingId is required"
             });
         }
 
-        if (!(await checkTestResultExists(resultId))) {
+        if (!(await checkBookingExists(bookingId))) {
             return res.status(404).json({
                 statusCode: 404,
                 status: "error",
@@ -87,13 +87,13 @@ const updateTestResult = async (req, res) => {
           }
 
         const UPDATE_TEST_RESULT = `
-            mutation UpdateTestResult($resultId: String!, $testMethod: String, $positive: Boolean, $accuracy: Float, $testType: String, $reportDate: Date, $resultData: String, $resultNotes: String, $status: String) @auth(level: USER) {
-                testResult_update(key: {id: $resultId}, data: {testMethod: $testMethod, positive: $positive, accuracy: $accuracy, testType: $testType, reportDate: $reportDate, resultData: $resultData, resultNotes: $resultNotes, status: $status, updatedAt_expr: "request.time"})
+            mutation UpdateTestResult($bookingId: String!, $testMethod: String, $positive: Boolean, $accuracy: Float, $testType: String, $reportDate: Date, $resultData: String, $resultNotes: String, $status: String) @auth(level: USER) {
+                testResult_updateMany(where: {bookingId: {eq: $bookingId}}, data: {testMethod: $testMethod, positive: $positive, accuracy: $accuracy, testType: $testType, reportDate: $reportDate, resultData: $resultData, resultNotes: $resultNotes, status: $status, updatedAt_expr: "request.time"})
             }
         `;
 
         const variables = {
-            resultId: resultId,
+            bookingId: bookingId,
             testMethod: testMethod,
             positive: positive,
             accuracy: accuracy,
@@ -104,7 +104,7 @@ const updateTestResult = async (req, res) => {
             status: status
         };
 
-        console.log("Updating test result with ID:", resultId);
+        console.log("Updating test result with ID:", bookingId);
         const response = await dataConnect.executeGraphql(UPDATE_TEST_RESULT, {
             variables: variables
         });
