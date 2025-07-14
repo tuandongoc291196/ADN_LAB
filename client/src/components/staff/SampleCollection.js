@@ -48,7 +48,18 @@ const SampleCollection = ({ user }) => {
               address: b.informations_on_booking?.[0]?.address || '',
               scheduledTime: b.timeSlotId?.split('_')[0] || '',
               participants: b.participants_on_booking || [],
-              status: b.status?.toLowerCase().replaceAll('_', '-') || 'scheduled',
+              status: (() => {
+                const histories = Array.isArray(b.bookingHistories_on_booking) ? b.bookingHistories_on_booking : [];
+
+                const hasSampleCollected = histories.some(h => h.status?.toUpperCase() === 'SAMPLE_COLLECTED');
+                const hasSampleReceived = histories.some(h => h.status?.toUpperCase() === 'SAMPLE_RECEIVED');
+
+                if (hasSampleCollected) return 'collected';
+                if (hasSampleReceived) return 'kit-returned';
+
+                const fallbackStatus = b.status?.toUpperCase() || 'SCHEDULED';
+                return fallbackStatus.toLowerCase().replaceAll('_', '-');
+              })(),
               orderDate: b.createdAt,
               returnedDate: b.returnedDate || '',
               collectedBy: b.collectedBy || '',
@@ -145,7 +156,8 @@ const SampleCollection = ({ user }) => {
             status: 'collected',
             collectedBy: user.name,
             collectedDate: new Date().toLocaleString('vi-VN'),
-            collectionDetails: collectionData
+            collectionDetails: collectionData,
+            showSampleButton: false // Ẩn nút thu mẫu sau khi đã thu
           }
           : sample
       );
@@ -335,7 +347,7 @@ const SampleCollection = ({ user }) => {
                     </td>
                     <td>
                       <div className="d-flex flex-column gap-1">
-                        {sample.showSampleButton && (
+                        {sample.status !== 'collected' && sample.status !== 'transferred' && sample.showSampleButton && (
                           <Button
                             size="sm"
                             variant="success"
