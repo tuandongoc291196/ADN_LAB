@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Button, Badge, Alert, Modal, Form, Table, InputGroup } from 'react-bootstrap';
 import { getBookingByStaffId, addBookingHistory } from '../../services/api';
+import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 const KitPreparation = ({ user }) => {
   const [orders, setOrders] = useState([]);
@@ -12,6 +13,7 @@ const KitPreparation = ({ user }) => {
   const [modalAction, setModalAction] = useState(null); // 'prepare', 'send', 'confirm'
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [description, setDescription] = useState('');
+  const navigate = useNavigate();
   // API cho các đơn hàng cần chuẩn bị kit
   useEffect(() => {
     const fetchOrders = async () => {
@@ -466,7 +468,7 @@ const KitPreparation = ({ user }) => {
                     <Button
                       variant="info"
                       size="sm"
-                      onClick={() => window.location.href = '/staff/sample-collection'}
+                      onClick={() => navigate('/staff/sample-collection')}
                     >
                       <i className="bi bi-arrow-right me-1"></i>
                       Chuyển sang thu mẫu

@@ -102,7 +102,7 @@ const SampleCollection = ({ user }) => {
     const statusConfig = {
       'scheduled': { bg: 'warning', text: 'Đã lên lịch' },
       'waiting-arrival': { bg: 'info', text: 'Chờ khách đến' },
-      'kit-returned': { bg: 'primary', text: 'Kit đã về' },
+      'kit-returned': { bg: 'primary', text: 'Chờ thu mẫu' },
       'collecting': { bg: 'secondary', text: 'Đang thu mẫu' },
       'collected': { bg: 'success', text: 'Đã thu mẫu' },
       'transferred': { bg: 'dark', text: 'Đã chuyển lab' }
@@ -199,6 +199,43 @@ const SampleCollection = ({ user }) => {
       type: 'success'
     });
     setTimeout(() => setAlert({ show: false, message: '', type: '' }), 3000);
+  };
+
+  const handleMarkSampleReceived = async (bookingId) => {
+    try {
+      await addBookingHistory({
+        bookingId,
+        status: 'SAMPLE_RECEIVED',
+        description: 'Kit đã được nhận bởi nhân viên hoặc khách'
+      });
+
+      // Cập nhật lại danh sách samples
+      const updated = samples.map(sample =>
+        sample.id === bookingId
+          ? { ...sample, status: 'kit-returned' }
+          : sample
+      );
+
+      setSamples(updated);
+      setAlert({
+        show: true,
+        message: `Đã xác nhận Kit đã nhận cho đơn hàng ${bookingId}`,
+        type: 'success'
+      });
+      setTimeout(() => setAlert({ show: false, message: '', type: '' }), 3000);
+    } catch (error) {
+      setAlert({
+        show: true,
+        message: `Lỗi khi cập nhật trạng thái SAMPLE_RECEIVED`,
+        type: 'danger'
+      });
+    }
+  };
+
+  const isOverdue = (scheduledTime) => {
+    const now = new Date();
+    const scheduled = new Date(scheduledTime);
+    return !isNaN(scheduled) && scheduled < now;
   };
 
   const formatDateTime = (dateTimeString) => {
@@ -347,7 +384,7 @@ const SampleCollection = ({ user }) => {
                     </td>
                     <td>
                       <div className="d-flex flex-column gap-1">
-                        {sample.status !== 'collected' && sample.status !== 'transferred' && sample.showSampleButton && (
+                        {sample.status !== 'collected' && sample.status !== 'transferred' && sample.showSampleButton && !isOverdue(sample.scheduledTime) && (
                           <Button
                             size="sm"
                             variant="success"
@@ -355,6 +392,16 @@ const SampleCollection = ({ user }) => {
                           >
                             <i className="bi bi-droplet me-1"></i>
                             Thu mẫu
+                          </Button>
+                        )}
+                        {sample.status === 'scheduled' && sample.methodName !== 'Lấy mẫu tại nhà' && !isOverdue(sample.scheduledTime) && (
+                          <Button
+                            size="sm"
+                            variant="warning"
+                            onClick={() => handleMarkSampleReceived(sample.id)}
+                          >
+                            <i className="bi bi-box-arrow-in-down me-1"></i>
+                            Xác nhận có thể thu mẫu
                           </Button>
                         )}
                         {sample.status === 'collected' && (
