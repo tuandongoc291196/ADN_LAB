@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Button, Badge, Alert, Modal, Form, Table, InputGroup, ListGroup } from 'react-bootstrap';
+import { Row, Col, Card, Button, Badge, Alert, Modal, Form, Table, InputGroup } from 'react-bootstrap';
+import { getBookingByStaffId, addBookingHistory, getSamplesByBookingId, updateSample } from '../../services/api';
 
 const SampleCollection = ({ user }) => {
   const [samples, setSamples] = useState([]);
@@ -18,110 +19,71 @@ const SampleCollection = ({ user }) => {
     photos: []
   });
 
-  // Mock data cho các mẫu cần thu
+  // Lấy danh sách mẫu cần thu từ API
   useEffect(() => {
-    const mockSamples = [
-      {
-        id: 'ADN123474',
-        customerName: 'Nguyễn Văn E',
-        phone: '0901111111',
-        service: 'Xét nghiệm ADN khai sinh',
-        serviceType: 'administrative',
-        collectionMethod: 'home-visit',
-        address: '123 Nguyễn Trãi, Q1, TP.HCM',
-        scheduledTime: '2024-01-29 14:00',
-        participants: [
-          { name: 'Nguyễn Văn E', role: 'Cha', age: 35, idCard: '001234567890' },
-          { name: 'Nguyễn Thị F', role: 'Con', age: 8, idCard: '' }
-        ],
-        status: 'scheduled',
-        priority: 'urgent',
-        specialNotes: 'Cần giấy tờ pháp lý, có nhân chứng',
-        contactPerson: 'Nguyễn Văn E',
-        orderDate: '2024-01-27'
-      },
-      {
-        id: 'ADN123475',
-        customerName: 'Trần Thị G',
-        phone: '0902222222',
-        service: 'Xét nghiệm ADN huyết thống',
-        serviceType: 'civil',
-        collectionMethod: 'at-facility',
-        address: 'Phòng lab ADN - 456 Lê Lợi, Q3',
-        scheduledTime: '2024-01-29 10:30',
-        participants: [
-          { name: 'Trần Thị G', role: 'Mẹ', age: 32, idCard: '001234567891' },
-          { name: 'Trần Văn H', role: 'Con', age: 15, idCard: '001234567892' }
-        ],
-        status: 'waiting-arrival',
-        priority: 'high',
-        specialNotes: 'Khách hàng đã đến, chờ thu mẫu',
-        contactPerson: 'Trần Thị G',
-        orderDate: '2024-01-28'
-      },
-      {
-        id: 'ADN123476',
-        customerName: 'Lê Văn I',
-        phone: '0903333333',
-        service: 'Xét nghiệm ADN bí mật',
-        serviceType: 'civil',
-        collectionMethod: 'self-sample',
-        address: 'Kit đã gửi - 789 Hai Bà Trưng, Q1',
-        scheduledTime: '2024-01-28 00:00',
-        participants: [
-          { name: 'Lê Văn I', role: 'Người yêu cầu', age: 28, idCard: '001234567893' },
-          { name: 'Không rõ', role: 'Đối tượng', age: 0, idCard: '' }
-        ],
-        status: 'kit-returned',
-        priority: 'medium',
-        specialNotes: 'Kit đã được gửi về, cần kiểm tra mẫu',
-        contactPerson: 'Lê Văn I',
-        orderDate: '2024-01-25',
-        returnedDate: '2024-01-28 16:30'
-      },
-      {
-        id: 'ADN123477',
-        customerName: 'Phạm Thị J',
-        phone: '0904444444',
-        service: 'Xét nghiệm ADN nhập tịch',
-        serviceType: 'administrative',
-        collectionMethod: 'home-visit',
-        address: '321 Võ Văn Tần, Q3, TP.HCM',
-        scheduledTime: '2024-01-29 16:00',
-        participants: [
-          { name: 'Phạm Thị J', role: 'Mẹ', age: 45, idCard: '001234567894' },
-          { name: 'Phạm Văn K', role: 'Con', age: 20, idCard: '001234567895' },
-          { name: 'Smith John', role: 'Cha (ở Mỹ)', age: 48, idCard: 'Passport: A12345678' }
-        ],
-        status: 'collected',
-        priority: 'high',
-        specialNotes: 'Đã thu mẫu hoàn tất, chờ vận chuyển về lab',
-        contactPerson: 'Phạm Thị J',
-        orderDate: '2024-01-26',
-        collectedBy: 'Nguyễn Văn Staff',
-        collectedDate: '2024-01-28 16:30'
+    const fetchSamples = async () => {
+      try {
+        const bookings = await getBookingByStaffId(user.id);
+
+        const mappedSamples = bookings
+          .filter(b => {
+            // Nếu là phương thức lấy mẫu tại nhà thì chỉ hiện nếu bookingHistories_on_booking có sample_received
+            if (b.method?.name?.toLowerCase() === 'lấy mẫu tại nhà') {
+              return Array.isArray(b.bookingHistories_on_booking)
+                ? b.bookingHistories_on_booking.some(h => h.status?.toLowerCase() === 'sample_received')
+                : false;
+            }
+            return true;
+          })
+          .map(b => {
+            const hasSampleReceived = Array.isArray(b.bookingHistories_on_booking)
+              ? b.bookingHistories_on_booking.some(h => h.status?.toLowerCase() === 'sample_received')
+              : false;
+            return {
+              id: b.id,
+              customerName: b.informations_on_booking?.[0]?.name || 'Không rõ',
+              phone: b.informations_on_booking?.[0]?.phone || '',
+              service: b.service?.title || 'Không rõ dịch vụ',
+              serviceType: b.service?.category?.hasLegalValue ? 'civil' : 'administrative',
+              address: b.informations_on_booking?.[0]?.address || '',
+              scheduledTime: b.timeSlotId?.split('_')[0] || '',
+              participants: b.participants_on_booking || [],
+              status: b.status?.toLowerCase().replaceAll('_', '-') || 'scheduled',
+              orderDate: b.createdAt,
+              returnedDate: b.returnedDate || '',
+              collectedBy: b.collectedBy || '',
+              collectedDate: b.collectedDate || '',
+              methodName: b.method?.name || 'Không rõ',
+              showSampleButton: hasSampleReceived
+            };
+          });
+
+        setSamples(mappedSamples);
+        setFilteredSamples(mappedSamples);
+      } catch (error) {
+        setAlert({ show: true, message: 'Không thể tải danh sách mẫu!', type: 'danger' });
       }
-    ];
-    setSamples(mockSamples);
-    setFilteredSamples(mockSamples);
-  }, []);
+    };
+
+    fetchSamples();
+  }, [user.id]);
 
   // Filter samples based on search and status
   useEffect(() => {
     let filtered = samples;
-    
+
     if (searchTerm) {
-      filtered = filtered.filter(sample => 
+      filtered = filtered.filter(sample =>
         sample.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         sample.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         sample.phone.includes(searchTerm)
       );
     }
-    
+
     if (filterStatus !== 'all') {
       filtered = filtered.filter(sample => sample.status === filterStatus);
     }
-    
+
     setFilteredSamples(filtered);
   }, [searchTerm, filterStatus, samples]);
 
@@ -138,99 +100,97 @@ const SampleCollection = ({ user }) => {
     return <Badge bg={config.bg}>{config.text}</Badge>;
   };
 
-  const getPriorityBadge = (priority) => {
-    const priorityConfig = {
-      'urgent': { bg: 'danger', text: 'Khẩn cấp' },
-      'high': { bg: 'warning', text: 'Cao' },
-      'medium': { bg: 'primary', text: 'Trung bình' },
-      'low': { bg: 'secondary', text: 'Thấp' }
-    };
-    const config = priorityConfig[priority] || { bg: 'secondary', text: 'Không xác định' };
-    return <Badge bg={config.bg}>{config.text}</Badge>;
-  };
-
-  const getCollectionMethodBadge = (method) => {
-    const methodConfig = {
-      'home-visit': { bg: 'info', text: 'Thu tại nhà', icon: 'bi-house' },
-      'at-facility': { bg: 'success', text: 'Thu tại lab', icon: 'bi-hospital' },
-      'self-sample': { bg: 'warning', text: 'Tự thu mẫu', icon: 'bi-box' }
-    };
-    const config = methodConfig[method] || { bg: 'secondary', text: 'Không xác định', icon: 'bi-question' };
-    return (
-      <Badge bg={config.bg}>
-        <i className={`${config.icon} me-1`}></i>
-        {config.text}
-      </Badge>
-    );
-  };
-
   const handleStartCollection = (sample) => {
     setSelectedSample(sample);
-    setCollectionData({
-      collectionTime: new Date().toISOString().slice(0, 16),
-      collectorName: user.name,
-      sampleQuality: 'good',
-      participants: sample.participants.map(p => ({ ...p, sampleCollected: false, sampleQuality: 'good' })),
-      notes: '',
-      photos: []
+    getSamplesByBookingId(sample.id).then(samplesList => {
+      setCollectionData({
+        collectionTime: new Date().toISOString().slice(0, 16),
+        collectorName: user.name || '',
+        samples: samplesList.map(s => ({
+          ...s,
+          sampleQuality: s.sampleQuality || '',
+          sampleConcentration: s.sampleConcentration || '',
+          notes: s.notes || ''
+        })),
+        notes: '',
+        photos: []
+      });
+      setShowCollectionModal(true);
     });
-    setShowCollectionModal(true);
   };
 
   const handleCompleteCollection = () => {
-    // Update sample status
-    const updatedSamples = samples.map(sample => 
-      sample.id === selectedSample.id 
-        ? { 
-            ...sample, 
+    // Gọi updateSample cho từng mẫu và addBookingHistory cho booking
+    Promise.all([
+      Promise.all(
+        (collectionData.samples || []).map(sample =>
+          updateSample({
+            sampleId: sample.id || sample.sampleId,
+            sampleQuality: sample.sampleQuality,
+            sampleConcentration: parseFloat(sample.sampleConcentration),
+            notes: sample.notes
+          })
+        )
+      ),
+      addBookingHistory({
+        bookingId: selectedSample.id,
+        status: 'SAMPLE_COLLECTED',
+        description: 'description'
+      })
+    ]).then(() => {
+      const updatedSamples = samples.map(sample =>
+        sample.id === selectedSample.id
+          ? {
+            ...sample,
             status: 'collected',
             collectedBy: user.name,
             collectedDate: new Date().toLocaleString('vi-VN'),
             collectionDetails: collectionData
           }
-        : sample
-    );
-    setSamples(updatedSamples);
-    setShowCollectionModal(false);
-    setSelectedSample(null);
-    
-    setAlert({ 
-      show: true, 
-      message: `Thu mẫu cho đơn hàng ${selectedSample.id} đã hoàn tất thành công!`,
-      type: 'success' 
+          : sample
+      );
+      setSamples(updatedSamples);
+      setShowCollectionModal(false);
+      setSelectedSample(null);
+      setAlert({
+        show: true,
+        message: `Thu mẫu cho đơn hàng ${selectedSample.id} đã hoàn tất thành công!`,
+        type: 'success'
+      });
+      setTimeout(() => setAlert({ show: false, message: '', type: '' }), 3000);
+    }).catch(() => {
+      setAlert({
+        show: true,
+        message: `Có lỗi khi cập nhật mẫu hoặc trạng thái booking!`,
+        type: 'danger'
+      });
+      setTimeout(() => setAlert({ show: false, message: '', type: '' }), 3000);
     });
-    setTimeout(() => setAlert({ show: false, message: '', type: '' }), 3000);
   };
 
   const handleTransferToLab = (sampleId) => {
-    const updatedSamples = samples.map(sample => 
-      sample.id === sampleId 
-        ? { 
-            ...sample, 
-            status: 'transferred',
-            transferredDate: new Date().toLocaleString('vi-VN'),
-            transferredBy: user.name
-          }
+    const updatedSamples = samples.map(sample =>
+      sample.id === sampleId
+        ? {
+          ...sample,
+          status: 'transferred',
+          transferredDate: new Date().toLocaleString('vi-VN'),
+          transferredBy: user.name
+        }
         : sample
     );
     setSamples(updatedSamples);
-    
-    setAlert({ 
-      show: true, 
+
+    setAlert({
+      show: true,
       message: `Mẫu ${sampleId} đã được chuyển về phòng lab thành công!`,
-      type: 'success' 
+      type: 'success'
     });
     setTimeout(() => setAlert({ show: false, message: '', type: '' }), 3000);
   };
 
   const formatDateTime = (dateTimeString) => {
     return new Date(dateTimeString).toLocaleString('vi-VN');
-  };
-
-  const updateParticipantSampleStatus = (index, field, value) => {
-    const updatedParticipants = [...collectionData.participants];
-    updatedParticipants[index] = { ...updatedParticipants[index], [field]: value };
-    setCollectionData({ ...collectionData, participants: updatedParticipants });
   };
 
   return (
@@ -314,7 +274,6 @@ const SampleCollection = ({ user }) => {
                   <th>Dịch vụ</th>
                   <th>Phương thức</th>
                   <th>Thời gian</th>
-                  <th>Ưu tiên</th>
                   <th>Trạng thái</th>
                   <th>Thao tác</th>
                 </tr>
@@ -323,33 +282,62 @@ const SampleCollection = ({ user }) => {
                 {filteredSamples.map((sample) => (
                   <tr key={sample.id}>
                     <td>
-                      <div className="fw-bold">{sample.id}</div>
+                      <div className="">{sample.id}</div>
                       <small className="text-muted">{sample.participants.length} người</small>
                     </td>
                     <td>
-                      <div className="fw-bold">{sample.customerName}</div>
+                      <div className="">{sample.customerName}</div>
                       <small className="text-muted">{sample.phone}</small>
                     </td>
                     <td>
                       <div>{sample.service}</div>
-                      <small className="text-muted">
+                      <span
+                        className={`badge rounded-pill ${sample.serviceType === 'civil' ? 'bg-success text-white' : 'bg-warning text-dark'}`}
+                        style={{ fontSize: '12px', fontWeight: 500 }}
+                      >
                         {sample.serviceType === 'civil' ? 'Dân sự' : 'Hành chính'}
-                      </small>
+                      </span>
                     </td>
-                    <td>{getCollectionMethodBadge(sample.collectionMethod)}</td>
+                    <td>
+                      {sample.methodName === 'Lấy mẫu tại lab' ? (
+                        <span className="badge rounded-pill bg-primary" style={{ fontSize: '13px', fontWeight: 500 }}>
+                          <i className="bi bi-buildings me-1"></i>Lấy mẫu tại lab
+                        </span>
+                      ) : sample.methodName === 'Lấy mẫu tại nhà' ? (
+                        <span className="badge rounded-pill bg-success" style={{ fontSize: '13px', fontWeight: 500 }}>
+                          <i className="bi bi-house-door me-1"></i>Lấy mẫu tại nhà
+                        </span>
+                      ) : sample.methodName === 'Nhân viên tới nhà lấy mẫu' ? (
+                        <span className="badge rounded-pill bg-warning text-dark" style={{ fontSize: '13px', fontWeight: 500 }}>
+                          <i className="bi bi-truck me-1"></i>Nhân viên tới nhà lấy mẫu
+                        </span>
+                      ) : (
+                        <span className="badge rounded-pill bg-secondary" style={{ fontSize: '13px', fontWeight: 500 }}>
+                          {sample.methodName || 'Không rõ'}
+                        </span>
+                      )}
+                    </td>
                     <td>
                       <div>{formatDateTime(sample.scheduledTime)}</div>
                       {sample.returnedDate && (
                         <small className="text-success">Về: {formatDateTime(sample.returnedDate)}</small>
                       )}
                     </td>
-                    <td>{getPriorityBadge(sample.priority)}</td>
-                    <td>{getStatusBadge(sample.status)}</td>
+                    <td>
+                      {(() => {
+                        const now = new Date();
+                        const scheduled = new Date(sample.scheduledTime);
+                        if (!isNaN(scheduled) && scheduled < now) {
+                          return <Badge bg="danger">Quá hạn</Badge>;
+                        }
+                        return getStatusBadge(sample.status);
+                      })()}
+                    </td>
                     <td>
                       <div className="d-flex flex-column gap-1">
-                        {['scheduled', 'waiting-arrival', 'kit-returned'].includes(sample.status) && (
-                          <Button 
-                            size="sm" 
+                        {sample.showSampleButton && (
+                          <Button
+                            size="sm"
                             variant="success"
                             onClick={() => handleStartCollection(sample)}
                           >
@@ -358,8 +346,8 @@ const SampleCollection = ({ user }) => {
                           </Button>
                         )}
                         {sample.status === 'collected' && (
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             variant="primary"
                             onClick={() => handleTransferToLab(sample.id)}
                           >
@@ -425,17 +413,17 @@ const SampleCollection = ({ user }) => {
                     <Row>
                       <Col md={6} className="mb-3">
                         <Form.Label>Thời gian thu mẫu</Form.Label>
-                        <Form.Control 
-                          type="datetime-local" 
+                        <Form.Control
+                          type="datetime-local"
                           value={collectionData.collectionTime}
-                          onChange={(e) => setCollectionData({...collectionData, collectionTime: e.target.value})}
+                          onChange={(e) => setCollectionData({ ...collectionData, collectionTime: e.target.value })}
                         />
                       </Col>
                       <Col md={6} className="mb-3">
                         <Form.Label>Người thu mẫu</Form.Label>
-                        <Form.Control 
+                        <Form.Control
                           value={collectionData.collectorName}
-                          onChange={(e) => setCollectionData({...collectionData, collectorName: e.target.value})}
+                          onChange={(e) => setCollectionData({ ...collectionData, collectorName: e.target.value })}
                         />
                       </Col>
                     </Row>
@@ -445,43 +433,63 @@ const SampleCollection = ({ user }) => {
 
               {/* Participants */}
               <div className="mb-4">
-                <h6 className="text-primary mb-3">Danh sách người tham gia</h6>
+                <h6 className="text-primary mb-3">Danh sách mẫu</h6>
                 <div className="table-responsive">
                   <Table bordered>
                     <thead className="table-light">
                       <tr>
-                        <th>Họ tên</th>
-                        <th>Vai trò</th>
-                        <th>Tuổi</th>
-                        <th>CCCD/Passport</th>
-                        <th>Thu mẫu</th>
+                        <th>Mã mẫu</th>
+                        <th>Tên người tham gia</th>
                         <th>Chất lượng mẫu</th>
+                        <th>Nồng độ mẫu</th>
+                        <th>Ghi chú</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {collectionData.participants.map((participant, index) => (
-                        <tr key={index}>
-                          <td><strong>{participant.name}</strong></td>
-                          <td>{participant.role}</td>
-                          <td>{participant.age > 0 ? participant.age : 'N/A'}</td>
-                          <td>{participant.idCard || 'Chưa có'}</td>
+                      {collectionData.samples && collectionData.samples.map((sample, idx) => (
+                        <tr key={sample.id || sample.sampleId || idx}>
+                          <td>{sample.id || sample.sampleId}</td>
+                          <td>{sample.participant?.name || sample.name || ''}</td>
                           <td>
-                            <Form.Check 
-                              type="checkbox"
-                              checked={participant.sampleCollected}
-                              onChange={(e) => updateParticipantSampleStatus(index, 'sampleCollected', e.target.checked)}
-                            />
-                          </td>
-                          <td>
-                            <Form.Select 
+                            <Form.Select
                               size="sm"
-                              value={participant.sampleQuality}
-                              onChange={(e) => updateParticipantSampleStatus(index, 'sampleQuality', e.target.value)}
+                              value={sample.sampleQuality}
+                              onChange={e => {
+                                const newSamples = [...collectionData.samples];
+                                newSamples[idx].sampleQuality = e.target.value;
+                                setCollectionData({ ...collectionData, samples: newSamples });
+                              }}
                             >
+                              <option value="">Chọn</option>
+                              <option value="excellent">Xuất sắc</option>
                               <option value="good">Tốt</option>
                               <option value="fair">Khá</option>
                               <option value="poor">Kém</option>
                             </Form.Select>
+                          </td>
+                          <td>
+                            <Form.Control
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={sample.sampleConcentration}
+                              onChange={e => {
+                                const newSamples = [...collectionData.samples];
+                                newSamples[idx].sampleConcentration = e.target.value;
+                                setCollectionData({ ...collectionData, samples: newSamples });
+                              }}
+                            />
+                          </td>
+                          <td>
+                            <Form.Control
+                              type="text"
+                              value={sample.notes}
+                              onChange={e => {
+                                const newSamples = [...collectionData.samples];
+                                newSamples[idx].notes = e.target.value;
+                                setCollectionData({ ...collectionData, samples: newSamples });
+                              }}
+                            />
                           </td>
                         </tr>
                       ))}
@@ -504,21 +512,21 @@ const SampleCollection = ({ user }) => {
               {/* Collection Notes */}
               <div className="mb-4">
                 <h6 className="text-primary mb-3">Ghi chú thu mẫu</h6>
-                <Form.Control 
-                  as="textarea" 
+                <Form.Control
+                  as="textarea"
                   rows={3}
                   placeholder="Ghi chú về quá trình thu mẫu, tình trạng khách hàng, vấn đề gặp phải..."
                   value={collectionData.notes}
-                  onChange={(e) => setCollectionData({...collectionData, notes: e.target.value})}
+                  onChange={(e) => setCollectionData({ ...collectionData, notes: e.target.value })}
                 />
               </div>
 
               {/* Quality Check */}
               <div className="mb-4">
                 <h6 className="text-primary mb-3">Kiểm tra chất lượng tổng thể</h6>
-                <Form.Select 
+                <Form.Select
                   value={collectionData.sampleQuality}
-                  onChange={(e) => setCollectionData({...collectionData, sampleQuality: e.target.value})}
+                  onChange={(e) => setCollectionData({ ...collectionData, sampleQuality: e.target.value })}
                 >
                   <option value="excellent">Xuất sắc - Mẫu rất tốt, đủ lượng</option>
                   <option value="good">Tốt - Mẫu đạt yêu cầu</option>
@@ -533,10 +541,10 @@ const SampleCollection = ({ user }) => {
           <Button variant="secondary" onClick={() => setShowCollectionModal(false)}>
             Hủy
           </Button>
-          <Button 
-            variant="success" 
+          <Button
+            variant="success"
             onClick={handleCompleteCollection}
-            disabled={!collectionData.participants.every(p => p.sampleCollected)}
+            disabled={!(collectionData.samples && collectionData.samples.length > 0 && collectionData.samples.every(s => s.sampleQuality && s.sampleConcentration !== undefined))}
           >
             <i className="bi bi-check-circle me-2"></i>
             Hoàn tất thu mẫu
