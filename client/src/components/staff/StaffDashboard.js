@@ -28,36 +28,50 @@ const StaffDashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
-  const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Use cached user data for instant render
+  const cachedUser = (() => {
+    try {
+      const data = localStorage.getItem('userData');
+      return data ? JSON.parse(data) : null;
+    } catch {
+      return null;
+    }
+  })();
+  const [currentUser, setCurrentUser] = useState(cachedUser);
+  const [loading, setLoading] = useState(!cachedUser);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      setLoading(true);
-      setError(null);
+    // Only fetch if we have a userId
+    let isMounted = true;
+    const storedUserData = localStorage.getItem('userData');
+    let userId = null;
+    if (storedUserData) {
       try {
-        const storedUserData = localStorage.getItem('userData');
-        let userId = null;
-        if (storedUserData) {
-          const userData = JSON.parse(storedUserData);
-          userId = userData.id || userData.user_id || userData.uid;
-        }
-        if (!userId) {
-          setError('Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.');
-          setLoading(false);
-          setTimeout(() => navigate('/login'), 2000);
-          return;
-        }
+        const userData = JSON.parse(storedUserData);
+        userId = userData.id || userData.user_id || userData.uid;
+      } catch {}
+    }
+    if (!userId) {
+      setError('Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.');
+      setTimeout(() => navigate('/login'), 2000);
+      return;
+    }
+    // Fetch in background
+    (async () => {
+      try {
         const user = await getUserById(userId);
-        setCurrentUser(user);
+        if (isMounted) {
+          setCurrentUser(user);
+          localStorage.setItem('userData', JSON.stringify(user));
+        }
       } catch (err) {
-        setError('Không thể lấy thông tin người dùng: ' + err.message);
+        if (isMounted) setError('Không thể lấy thông tin người dùng: ' + err.message);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
-    };
-    fetchUser();
+    })();
+    return () => { isMounted = false; };
   }, [navigate]);
 
   useEffect(() => {
@@ -69,6 +83,7 @@ const StaffDashboard = () => {
   }, [location.pathname]);
 
   if (loading) {
+    // Only show spinner if no cached user
     return (
       <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
         <Spinner animation="border" variant="primary" />
