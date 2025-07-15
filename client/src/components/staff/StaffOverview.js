@@ -222,14 +222,16 @@ const StaffOverview = ({ user }) => {
                       <div className="mb-2">
                         {getStatusBadge(task.status)}
                       </div>
-                      <Button
-                        as={Link}
-                        to={getTaskLink(task.type)}
-                        size="sm"
-                        variant="outline-primary"
-                      >
-                        Xử lý
-                      </Button>
+                      {task.status !== 'overdue' && (
+                        <Button
+                          as={Link}
+                          to={`${getTaskLink(task.type)}/${task.orderIds[0]}`}
+                          size="sm"
+                          variant="outline-primary"
+                        >
+                          Xử lý
+                        </Button>
+                      )}
                     </div>
                   </ListGroup.Item>
                 ))}

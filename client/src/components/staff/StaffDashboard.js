@@ -61,12 +61,11 @@ const StaffDashboard = () => {
   }, [navigate]);
 
   useEffect(() => {
-    const path = location.pathname.split('/').pop();
-    if (path && path !== 'staff') {
-      setActiveTab(path);
-    } else {
-      setActiveTab('overview');
-    }
+    // Improved active tab logic: match menuItems by path prefix
+    const matched = menuItems.find(item =>
+      location.pathname === item.path || location.pathname.startsWith(item.path + '/')
+    );
+    setActiveTab(matched ? matched.key : 'overview');
   }, [location.pathname]);
 
   if (loading) {
@@ -233,10 +232,14 @@ const StaffDashboard = () => {
           <Routes>
             <Route path="/" element={<StaffOverview user={currentUser} />} />
             <Route path="/kit-preparation" element={<KitPreparation user={currentUser} />} />
+            <Route path="/kit-preparation/:bookingId" element={<KitPreparation user={currentUser} />} />
             <Route path="/sample-collection" element={<SampleCollection user={currentUser} />} />
+            <Route path="/sample-collection/:bookingId" element={<SampleCollection user={currentUser} />} />
             <Route path="/lab-testing" element={<LabTesting user={currentUser} />} />
             <Route path="/results" element={<ResultsManagement user={currentUser} />} />
             <Route path="/profile" element={<StaffProfile user={currentUser} />} />
+            {/* Fallback for unknown staff subroutes */}
+            <Route path="*" element={<StaffOverview user={currentUser} />} />
           </Routes>
         </Col>
       </Row>

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Button, Badge, Alert, Modal, Form, Table, InputGroup } from 'react-bootstrap';
 import { getBookingByStaffId, addBookingHistory } from '../../services/api';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import Swal from 'sweetalert2';
 const KitPreparation = ({ user }) => {
   const [orders, setOrders] = useState([]);
+  const { bookingId } = useParams();
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -57,6 +58,18 @@ const KitPreparation = ({ user }) => {
 
     fetchOrders();
   }, [user.id]);
+
+  useEffect(() => {
+    if (bookingId && orders.length > 0) {
+      // Optionally scroll to or highlight the order row
+      const el = document.getElementById(`order-row-${bookingId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('table-primary');
+        setTimeout(() => el.classList.remove('table-primary'), 2000);
+      }
+    }
+  }, [bookingId, orders]);
 
   // Filter orders based on search and status
   useEffect(() => {
@@ -404,8 +417,8 @@ const KitPreparation = ({ user }) => {
           </tr>
         </thead>
         <tbody>
-          {filteredOrders.map(order => (
-            <tr key={order.id}>
+          {filteredOrders.map((order) => (
+            <tr key={order.id} id={`order-row-${order.id}`}>
               <td>{order.id}</td>
               <td>
                 <div>{order.customerName}</div>
