@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { Container, Row, Col, Nav, Card, Alert, Spinner } from 'react-bootstrap';
-import { getUserById } from '../../services/api';
+import { useAuth } from '../context/auth';
 
 // Import staff dashboard components
 import StaffOverview from './StaffOverview';
@@ -27,8 +27,9 @@ function getRoleLabel(role) {
 const StaffDashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('overview');
-  // Use cached user data for instant render
+  const { user } = useAuth();
+
+  // Lấy user từ context, nếu chưa có thì lấy từ localStorage
   const cachedUser = (() => {
     try {
       const data = localStorage.getItem('userData');
@@ -37,11 +38,43 @@ const StaffDashboard = () => {
       return null;
     }
   })();
-  const [currentUser, setCurrentUser] = useState(cachedUser);
-  const [loading, setLoading] = useState(!cachedUser);
-  const [error, setError] = useState(null);
 
-  // Khai báo menuItems trước các useEffect
+  // Nếu user từ context chưa có, dùng cachedUser
+  const [currentUser, setCurrentUser] = useState(user || cachedUser);
+  const [loading, setLoading] = useState(!user && !cachedUser);
+  const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('overview');
+
+  // Xác định tab hiện tại dựa vào pathname
+  useEffect(() => {
+    const path = location.pathname.split('/').pop();
+    if (path && path !== 'staff') {
+      setActiveTab(path);
+    } else {
+      setActiveTab('overview');
+    }
+  }, [location.pathname]);
+
+  // Nếu user context thay đổi, cập nhật currentUser
+  useEffect(() => {
+    if (user) {
+      setCurrentUser(user);
+      setLoading(false);
+      localStorage.setItem('userData', JSON.stringify(user));
+    } else if (cachedUser) {
+      setCurrentUser(cachedUser);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+  }, [user]);
+
+  // Nếu không có user hoặc role không hợp lệ, điều hướng về trang chủ
+  if (!currentUser || !currentUser.role || (currentUser.role.id && currentUser.role.id !== '1' && currentUser.role !== 'staff')) {
+    return <Navigate to="/" replace />;
+  }
+
+  // Menu items
   const menuItems = [
     {
       key: 'overview',
@@ -94,44 +127,8 @@ const StaffDashboard = () => {
     }
   ];
 
+  // Đồng bộ activeTab khi pathname hoặc menuItems thay đổi
   useEffect(() => {
-    // Only fetch if we have a userId
-    let isMounted = true;
-    const storedUserData = localStorage.getItem('userData');
-    let userId = null;
-    if (storedUserData) {
-      try {
-        const userData = JSON.parse(storedUserData);
-        userId = userData.id || userData.user_id || userData.uid;
-      } catch { }
-    }
-    if (!userId) {
-      setError('Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.');
-      setTimeout(() => navigate('/login'), 2000);
-      return;
-    }
-    // Fetch in background
-    (async () => {
-      try {
-        const user = await getUserById(userId);
-        if (isMounted) {
-          setCurrentUser(user);
-          localStorage.setItem('userData', JSON.stringify(user));
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError('Không thể tải thông tin người dùng. Vui lòng thử lại sau.');
-          console.error(err);
-        }
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    })();
-    return () => { isMounted = false; };
-  }, [navigate]);
-
-  useEffect(() => {
-    // Sort menuItems theo path dài nhất trước để tránh match nhầm prefix
     const sortedMenu = [...menuItems].sort((a, b) => b.path.length - a.path.length);
     const matched = sortedMenu.find(item =>
       location.pathname === item.path || location.pathname.startsWith(item.path + '/')
@@ -153,6 +150,18 @@ const StaffDashboard = () => {
     return null;
   }
 
+  // Bổ sung các trường mặc định nếu thiếu
+  const displayUser = {
+    ...currentUser,
+    name: currentUser.fullname || currentUser.name || 'Nhân viên',
+    position: currentUser.position || 'Nhân viên xét nghiệm',
+    employeeId: currentUser.staffId || currentUser.id || 'STF001',
+    totalSamples: currentUser.totalSamples || 120, // TODO: Lấy từ API nếu có
+    completedTests: currentUser.completedTests || 105, // TODO: Lấy từ API nếu có
+    pendingTests: currentUser.pendingTests || 15, // TODO: Lấy từ API nếu có
+    workShift: currentUser.workShift || 'Sáng 8:00 - 12:00', // TODO: Lấy từ API nếu có
+  };
+
   return (
     <Container fluid className="py-4">
       <Row>
@@ -162,9 +171,9 @@ const StaffDashboard = () => {
             {/* Staff Info Header */}
             <Card.Header className="bg-info text-white text-center py-4">
               <div className="mb-3">
-                {currentUser.avatar ? (
+                {displayUser.avatar ? (
                   <img
-                    src={currentUser.avatar}
+                    src={displayUser.avatar}
                     alt="Avatar"
                     className="rounded-circle"
                     width="60"
@@ -177,9 +186,9 @@ const StaffDashboard = () => {
                   </div>
                 )}
               </div>
-              <h5 className="mb-1">{currentUser.fullname}</h5>
-              <p className="mb-1 small opacity-75">{currentUser.email}</p>
-              <p className="mb-1 small opacity-75">{getRoleLabel(currentUser.role)}</p>
+              <h5 className="mb-1">{displayUser.fullname}</h5>
+              <p className="mb-1 small opacity-75">{displayUser.email}</p>
+              <p className="mb-1 small opacity-75">{getRoleLabel(displayUser.role)}</p>
             </Card.Header>
 
             {/* Navigation Menu */}
@@ -213,15 +222,15 @@ const StaffDashboard = () => {
             <Card.Footer className="bg-light">
               <div className="row text-center">
                 <div className="col-4">
-                  <div className="fw-bold text-success">{currentUser.totalSamples}</div>
+                  <div className="fw-bold text-success">{displayUser.totalSamples}</div>
                   <small className="text-muted">Tổng mẫu</small>
                 </div>
                 <div className="col-4">
-                  <div className="fw-bold text-primary">{currentUser.completedTests}</div>
+                  <div className="fw-bold text-primary">{displayUser.completedTests}</div>
                   <small className="text-muted">Hoàn thành</small>
                 </div>
                 <div className="col-4">
-                  <div className="fw-bold text-warning">{currentUser.pendingTests}</div>
+                  <div className="fw-bold text-warning">{displayUser.pendingTests}</div>
                   <small className="text-muted">Đang xử lý</small>
                 </div>
               </div>
@@ -236,7 +245,7 @@ const StaffDashboard = () => {
                 Ca làm việc hôm nay
               </h6>
               <p className="mb-2">
-                <strong>{currentUser.workShift}</strong>
+                <strong>{displayUser.workShift}</strong>
               </p>
               <div className="d-flex justify-content-between align-items-center">
                 <small className="text-muted">Trạng thái</small>
@@ -249,15 +258,15 @@ const StaffDashboard = () => {
         {/* Main Content */}
         <Col lg={9} md={8}>
           <Routes>
-            <Route path="/" element={<StaffOverview user={currentUser} />} />
-            <Route path="/kit-preparation" element={<KitPreparation user={currentUser} />} />
-            <Route path="/kit-preparation/:bookingId" element={<KitPreparation user={currentUser} />} />
-            <Route path="/sample-collection" element={<SampleCollection user={currentUser} />} />
-            <Route path="/sample-collection/:bookingId" element={<SampleCollection user={currentUser} />} />
-            <Route path="/lab-testing" element={<LabTesting user={currentUser} />} />
-            <Route path="/results" element={<ResultsManagement user={currentUser} />} />
-            <Route path="/profile" element={<StaffProfile user={currentUser} />} />
-            <Route path="*" element={<StaffOverview user={currentUser} />} />
+            <Route path="/" element={<StaffOverview user={displayUser} />} />
+            <Route path="/kit-preparation" element={<KitPreparation user={displayUser} />} />
+            <Route path="/kit-preparation/:bookingId" element={<KitPreparation user={displayUser} />} />
+            <Route path="/sample-collection" element={<SampleCollection user={displayUser} />} />
+            <Route path="/sample-collection/:bookingId" element={<SampleCollection user={displayUser} />} />
+            <Route path="/lab-testing" element={<LabTesting user={displayUser} />} />
+            <Route path="/results" element={<ResultsManagement user={displayUser} />} />
+            <Route path="/profile" element={<StaffProfile user={displayUser} />} />
+            <Route path="*" element={<StaffOverview user={displayUser} />} />
           </Routes>
         </Col>
       </Row>

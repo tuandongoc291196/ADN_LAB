@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Badge } from 'react-bootstrap';
 import { getAllServices, getServicesByCategory, getAllMethods } from '../services/api';
@@ -12,7 +12,58 @@ const Home = () => {
   const [error, setError] = useState(null);
   const [hoveredService, setHoveredService] = useState(null);
   const navigate = useNavigate();
-  const storedUserData = localStorage.getItem('userData');
+
+  // Helper function để extract role từ parsed data (copy từ Navbar.js)
+  const extractRole = (parsed) => {
+    let role = '';
+    if (parsed.user_id === 0 || parsed.user_id === '0') {
+      role = 'customer';
+    } else if (parsed.role && typeof parsed.role === 'object' && parsed.role.name) {
+      role = parsed.role.name;
+    } else if (typeof parsed.role === 'string') {
+      role = parsed.role;
+    } else if (parsed.role_string) {
+      role = parsed.role_string;
+    }
+    return (role || '').toLowerCase().trim();
+  };
+
+  // Direct role detection với useMemo để tránh re-render
+  const { userRole, isAdminStaffOrManager, storedUserData } = useMemo(() => {
+    try {
+      const storedUserData = localStorage.getItem('userData');
+      if (!storedUserData) {
+        console.log('=== HOME LOADED ===');
+        console.log('Role: customer (no userData)');
+        console.log('isAdmin: false');
+        console.log('==================');
+        return { userRole: 'customer', isAdminStaffOrManager: false, storedUserData: null };
+      }
+      
+      const parsed = JSON.parse(storedUserData);
+      const role = extractRole(parsed);
+      const finalRole = role || 'customer';
+      const isAdmin = ['admin', 'staff', 'manager'].includes(finalRole);
+      
+      // Debug current role - chỉ log một lần trong useMemo
+      console.log('=== HOME LOADED ===');
+      console.log('Role:', finalRole);
+      console.log('isAdmin:', isAdmin);
+      console.log('==================');
+      
+      return {
+        userRole: finalRole,
+        isAdminStaffOrManager: isAdmin,
+        storedUserData: parsed
+      };
+    } catch (error) {
+      console.error('Error parsing localStorage userData:', error);
+      localStorage.removeItem('userData');
+      return { userRole: 'customer', isAdminStaffOrManager: false, storedUserData: null };
+    }
+  }, []); // Empty dependency - chỉ chạy một lần
+
+  // Function để lấy role từ localStorage - removed old code
 
   // Enhanced inline styles
   const styles = {
@@ -94,15 +145,32 @@ const Home = () => {
   };
 
   useEffect(() => {
+    // Chỉ load services cho customer, admin thì skip
+    if (isAdminStaffOrManager) {
+      console.log('Admin detected - skipping service fetch');
+      setLoading(false);
+      setServices([]);
+      setMethods([]);
+      setError(null);
+      return;
+    }
+    
+    console.log('Customer detected - fetching services');
     fetchServices();
     fetchMethods();
+  }, [isAdminStaffOrManager]); // Dependency để re-run khi role thay đổi
+
+  // Prevent any unwanted redirects on component mount
+  useEffect(() => {
+    // Ensure no redirect happens when component mounts
+    const currentPath = window.location.pathname;
+    console.log('Home component mounted at path:', currentPath);
   }, []);
 
   const fetchServices = async () => {
     try {
       setLoading(true);
       const response = await getAllServices();
-      console.log('Home - Services API response:', response);
 
       if (response && Array.isArray(response)) {
         setServices(response);
@@ -121,7 +189,6 @@ const Home = () => {
   const fetchMethods = async () => {
     try {
       const response = await getAllMethods();
-      console.log('Home - Methods API response:', response);
 
       if (response && Array.isArray(response)) {
         setMethods(response);
@@ -160,6 +227,8 @@ const Home = () => {
         confirmButtonColor: '#3085d6',
       }).then((result) => {
         if (result.isConfirmed) {
+          // Lưu redirect path để sau khi login sẽ về đây
+          sessionStorage.setItem('redirectTo', '/appointment');
           navigate('/login', { state: { redirectTo: '/appointment' } });
         }
       });
@@ -175,8 +244,8 @@ const Home = () => {
     }
   };
 
-  // Get featured services from each category
-  const featuredAdminServices = services
+  // Get featured services from each category - chỉ cho customer
+  const featuredAdminServices = isAdminStaffOrManager ? [] : services
     .filter(service => {
       // Chỉ hiển thị dịch vụ đang active
       if (service.isActive === false) {
@@ -185,15 +254,11 @@ const Home = () => {
 
       const serviceType = getServiceTypeFromCategory(service.category);
       const isFeatured = service.featured === true;
-      // Chỉ log khi cần debug
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`Service ${service.title}: featured=${service.featured}, type=${serviceType}, isFeatured=${isFeatured}`);
-      }
       return serviceType === 'administrative' && isFeatured;
     })
     .slice(0, 2);
 
-  const featuredCivilServices = services
+  const featuredCivilServices = isAdminStaffOrManager ? [] : services
     .filter(service => {
       // Chỉ hiển thị dịch vụ đang active
       if (service.isActive === false) {
@@ -202,28 +267,18 @@ const Home = () => {
 
       const serviceType = getServiceTypeFromCategory(service.category);
       const isFeatured = service.featured === true;
-      // Chỉ log khi cần debug
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`Service ${service.title}: featured=${service.featured}, type=${serviceType}, isFeatured=${isFeatured}`);
-      }
       return serviceType === 'civil' && isFeatured;
     })
     .slice(0, 2);
 
-  // Debug information - chỉ log một lần
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Featured Admin Services:', featuredAdminServices);
-    console.log('Featured Civil Services:', featuredCivilServices);
-
+  // Debug information - chỉ log một lần và chỉ cho customer
+  if (process.env.NODE_ENV === 'development' && !isAdminStaffOrManager && services.length > 0) {
     const totalServices = services.length;
     const featuredServices = services.filter(service => service.featured === true).length;
     const adminServices = services.filter(service => getServiceTypeFromCategory(service.category) === 'administrative').length;
     const civilServices = services.filter(service => getServiceTypeFromCategory(service.category) === 'civil').length;
 
-    console.log(`Total services: ${totalServices}`);
-    console.log(`Featured services: ${featuredServices}`);
-    console.log(`Admin services: ${adminServices}`);
-    console.log(`Civil services: ${civilServices}`);
+    console.log(`Total services: ${totalServices}, Featured: ${featuredServices}, Admin: ${adminServices}, Civil: ${civilServices}`);
   }
 
   // Process workflow data
@@ -381,42 +436,87 @@ const Home = () => {
               </h1>
               <p className="lead mb-4">
                 Công nghệ tiên tiến - Kết quả chính xác 99.999% - Bảo mật tuyệt đối
-                <br />
-                <strong>ADN Dân sự:</strong> Thuận tiện, riêng tư | <strong>ADN Hành chính:</strong> Có giá trị pháp lý
+                {!isAdminStaffOrManager && (
+                  <>
+                    <br />
+                    <strong>ADN Dân sự:</strong> Thuận tiện, riêng tư | <strong>ADN Hành chính:</strong> Có giá trị pháp lý
+                  </>
+                )}
               </p>
-              <Row className="g-3 mb-4">
-                <Col sm={6}>
-                  <Button size="lg" variant="warning" as={Link} to="/services" className="w-100">
-                    <i className="bi bi-grid me-2"></i>
-                    Xem tất cả dịch vụ
-                  </Button>
-                </Col>
-                <Col sm={6}>
-                  <Button
-                    size="lg"
-                    variant="outline-light"
-                    onClick={(e) => handleBookingClick(e, null)}
-                    className="w-100"
-                  >
-                    <i className="bi bi-calendar-plus me-2"></i>
-                    Đặt lịch ngay
-                  </Button>
-                </Col>
-              </Row>
-              <Row className="mt-4 text-center text-lg-start">
-                <Col xs={4} className="mb-3">
-                  <div className="h4 mb-1 text-warning fw-bold">10,000+</div>
-                  <small className="d-block">Khách hàng tin tưởng</small>
-                </Col>
-                <Col xs={4} className="mb-3">
-                  <div className="h4 mb-1 text-warning fw-bold">99.999%</div>
-                  <small className="d-block">Độ chính xác</small>
-                </Col>
-                <Col xs={4} className="mb-3">
-                  <div className="h4 mb-1 text-warning fw-bold">24/7</div>
-                  <small className="d-block">Hỗ trợ khách hàng</small>
-                </Col>
-              </Row>
+              
+              {/* Chỉ hiển thị buttons cho customer */}
+              {!isAdminStaffOrManager && (
+                <>
+                  <Row className="g-3 mb-4">
+                    <Col sm={6}>
+                      <Button size="lg" variant="warning" as={Link} to="/services" className="w-100">
+                        <i className="bi bi-grid me-2"></i>
+                        Xem tất cả dịch vụ
+                      </Button>
+                    </Col>
+                    <Col sm={6}>
+                      <Button
+                        size="lg"
+                        variant="outline-light"
+                        onClick={(e) => handleBookingClick(e, null)}
+                        className="w-100"
+                      >
+                        <i className="bi bi-calendar-plus me-2"></i>
+                        Đặt lịch ngay
+                      </Button>
+                    </Col>
+                  </Row>
+                  <Row className="mt-4 text-center text-lg-start">
+                    <Col xs={4} className="mb-3">
+                      <div className="h4 mb-1 text-warning fw-bold">10,000+</div>
+                      <small className="d-block">Khách hàng tin tưởng</small>
+                    </Col>
+                    <Col xs={4} className="mb-3">
+                      <div className="h4 mb-1 text-warning fw-bold">99.999%</div>
+                      <small className="d-block">Độ chính xác</small>
+                    </Col>
+                    <Col xs={4} className="mb-3">
+                      <div className="h4 mb-1 text-warning fw-bold">24/7</div>
+                      <small className="d-block">Hỗ trợ khách hàng</small>
+                    </Col>
+                  </Row>
+                </>
+              )}
+
+              {/* Thông tin đặc biệt cho admin/staff/manager */}
+              {isAdminStaffOrManager && (
+                <div className="mt-4">
+                  <div className="alert alert-info bg-white bg-opacity-25 border-0 text-white">
+                    <h5 className="mb-3 d-flex align-items-center justify-content-start">
+                      <i className="bi bi-person-badge me-3 fs-4"></i>
+                      <span className="me-3">Chào mừng {userRole.charAt(0).toUpperCase() + userRole.slice(1)}</span>
+                      <Badge 
+                        bg={userRole === 'admin' ? 'danger' : userRole === 'manager' ? 'warning' : 'info'} 
+                        text={userRole === 'manager' ? 'dark' : 'white'}
+                        className="px-4 py-2 d-flex align-items-center"
+                        style={{ 
+                          fontSize: '0.85rem', 
+                          fontWeight: '600',
+                          borderRadius: '25px',
+                          letterSpacing: '0.5px'
+                        }}
+                      >
+                        <i className={`${
+                          userRole === 'admin' ? 'bi-crown' : 
+                          userRole === 'manager' ? 'bi-briefcase' : 
+                          'bi-person-badge'
+                        } me-2`} style={{ fontSize: '0.9rem' }}></i>
+                        {userRole === 'admin' ? 'QUẢN TRỊ VIÊN' : 
+                         userRole === 'manager' ? 'QUẢN LÝ' : 
+                         'NHÂN VIÊN'}
+                      </Badge>
+                    </h5>
+                    <p className="mb-0 ps-5" style={{ fontSize: '0.95rem', lineHeight: '1.5' }}>
+                      Bạn đang truy cập với quyền {userRole}. Vui lòng sử dụng Dashboard để quản lý hệ thống.
+                    </p>
+                  </div>
+                </div>
+              )}
             </Col>
             <Col lg={6} className="text-center">
               <div className="hero-image">
@@ -431,29 +531,32 @@ const Home = () => {
         </Container>
       </section>
 
-      {/* Quick Contact Section */}
-      <section className="text-white py-4" style={styles.quickBookingSection}>
-        <Container>
-          <Row className="align-items-center">
-            <Col md={8}>
-              <h5 className="mb-0">
-                <i className="bi bi-telephone me-2"></i>
-                Cần tư vấn chọn dịch vụ phù hợp? Gọi ngay hotline:
-                <strong className="ms-2">1900 1234</strong>
-              </h5>
-            </Col>
-            <Col md={4} className="text-md-end mt-3 mt-md-0">
-              <Button variant="light" size="lg">
-                <i className="bi bi-chat-dots me-2"></i>
-                Chat với chuyên gia
-              </Button>
-            </Col>
-          </Row>
-        </Container>
-      </section>
+      {/* Chỉ hiển thị các section khác cho customer */}
+      {!isAdminStaffOrManager && (
+        <>
+          {/* Quick Contact Section */}
+          <section className="text-white py-4" style={styles.quickBookingSection}>
+            <Container>
+              <Row className="align-items-center">
+                <Col md={8}>
+                  <h5 className="mb-0">
+                    <i className="bi bi-telephone me-2"></i>
+                    Cần tư vấn chọn dịch vụ phù hợp? Gọi ngay hotline:
+                    <strong className="ms-2">1900 1234</strong>
+                  </h5>
+                </Col>
+                <Col md={4} className="text-md-end mt-3 mt-md-0">
+                  <Button variant="light" size="lg">
+                    <i className="bi bi-chat-dots me-2"></i>
+                    Chat với chuyên gia
+                  </Button>
+                </Col>
+              </Row>
+            </Container>
+          </section>
 
-      {/* Service Comparison Section */}
-      <section className="py-5 bg-light">
+          {/* Service Comparison Section */}
+          <section className="py-5 bg-light">
         <Container>
           <div className="text-center mb-5">
             <h2 className="display-6 fw-bold">So sánh loại hình xét nghiệm ADN</h2>
@@ -861,6 +964,8 @@ const Home = () => {
           </Row>
         </Container>
       </section>
+        </>
+      )}
     </>
   );
 };
