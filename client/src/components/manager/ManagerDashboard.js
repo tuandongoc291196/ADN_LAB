@@ -56,6 +56,7 @@ const ManagerDashboard = () => {
   
   // State quản lý tab đang active
   const [activeTab, setActiveTab] = useState('overview');
+  const [isLoading, setIsLoading] = useState(true);
   // State quản lý thông báo
   const [notifications, setNotifications] = useState([
     { id: 1, message: 'Có 5 lịch hẹn mới cần xác nhận', time: '5 phút trước', read: false },
@@ -73,6 +74,32 @@ const ManagerDashboard = () => {
       setActiveTab('overview');
     }
   }, [location.pathname]);
+
+  // Effect để kiểm tra auth và set loading
+  useEffect(() => {
+    const checkAuth = () => {
+      // Đợi 1400ms để context có thể load hoàn toàn
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 1300); 
+    };
+    
+    checkAuth();
+  }, [user]);
+
+  // Hiển thị loading trong khi kiểm tra auth
+  if (isLoading) {
+    return (
+      <Container fluid className="py-5">
+        <div className="text-center">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <p className="mt-3 text-muted">Đang tải dashboard...</p>
+        </div>
+      </Container>
+    );
+  }
 
   // Kiểm tra quyền manager
   if (!user?.role?.id || user.role.id !== '2') {

@@ -34,10 +34,15 @@ const AdminDashboard = () => {
     const currentPath = pathSegments[2]; // Lấy phần sau /admin/
     const subPath = pathSegments[3]; // Lấy phần sau /admin/xxx/
     
+    // Debug logging (chỉ trong development)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('AdminDashboard URL:', location.pathname, '-> currentPath:', currentPath, 'subPath:', subPath);
+    }
+    
     // Nếu đang ở trang con của blog (create/edit), vẫn giữ blog tab active
     if (currentPath === 'blog' && (subPath === 'create' || subPath === 'edit')) {
       setActiveTab('blog');
-    } else if (currentPath) {
+    } else if (currentPath && currentPath.trim() !== '') {
       setActiveTab(currentPath);
     } else {
       setActiveTab('overview');
@@ -50,7 +55,7 @@ const AdminDashboard = () => {
       // Đợi lâu hơn để context có thể load hoàn toàn
       setTimeout(() => {
         setIsLoading(false);
-      }, 500); // Tăng từ 100ms lên 500ms
+      }, 1300); 
     };
     
     checkAuth();

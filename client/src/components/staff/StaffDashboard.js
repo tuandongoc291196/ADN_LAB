@@ -30,6 +30,7 @@ const StaffDashboard = () => {
   const { user } = useAuth();
   
   const [activeTab, setActiveTab] = useState('overview');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const path = location.pathname.split('/').pop();
@@ -39,6 +40,32 @@ const StaffDashboard = () => {
       setActiveTab('overview');
     }
   }, [location.pathname]);
+
+  // Effect để kiểm tra auth và set loading
+  useEffect(() => {
+    const checkAuth = () => {
+      // Đợi 1400ms để context có thể load hoàn toàn
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 1300); 
+    };
+    
+    checkAuth();
+  }, [user]);
+
+  // Hiển thị loading trong khi kiểm tra auth
+  if (isLoading) {
+    return (
+      <Container fluid className="py-5">
+        <div className="text-center">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <p className="mt-3 text-muted">Đang tải dashboard...</p>
+        </div>
+      </Container>
+    );
+  }
 
   // Kiểm tra quyền staff
   if (!user?.role?.id || user.role.id !== '1') {
