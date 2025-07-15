@@ -487,11 +487,31 @@ const Home = () => {
               {isAdminStaffOrManager && (
                 <div className="mt-4">
                   <div className="alert alert-info bg-white bg-opacity-25 border-0 text-white">
-                    <h5 className="mb-2">
-                      <i className="bi bi-person-badge me-2"></i>
-                      Chào mừng {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
+                    <h5 className="mb-3 d-flex align-items-center justify-content-start">
+                      <i className="bi bi-person-badge me-3 fs-4"></i>
+                      <span className="me-3">Chào mừng {userRole.charAt(0).toUpperCase() + userRole.slice(1)}</span>
+                      <Badge 
+                        bg={userRole === 'admin' ? 'danger' : userRole === 'manager' ? 'warning' : 'info'} 
+                        text={userRole === 'manager' ? 'dark' : 'white'}
+                        className="px-4 py-2 d-flex align-items-center"
+                        style={{ 
+                          fontSize: '0.85rem', 
+                          fontWeight: '600',
+                          borderRadius: '25px',
+                          letterSpacing: '0.5px'
+                        }}
+                      >
+                        <i className={`${
+                          userRole === 'admin' ? 'bi-crown' : 
+                          userRole === 'manager' ? 'bi-briefcase' : 
+                          'bi-person-badge'
+                        } me-2`} style={{ fontSize: '0.9rem' }}></i>
+                        {userRole === 'admin' ? 'QUẢN TRỊ VIÊN' : 
+                         userRole === 'manager' ? 'QUẢN LÝ' : 
+                         'NHÂN VIÊN'}
+                      </Badge>
                     </h5>
-                    <p className="mb-0">
+                    <p className="mb-0 ps-5" style={{ fontSize: '0.95rem', lineHeight: '1.5' }}>
                       Bạn đang truy cập với quyền {userRole}. Vui lòng sử dụng Dashboard để quản lý hệ thống.
                     </p>
                   </div>

@@ -411,11 +411,11 @@ const MainNavbar = ({ setUser }) => {
           <Navbar.Collapse id="navbar-nav">
             {/* Admin/Staff/Manager Navigation */}
             {hasAdminAccess && (
-              <Nav className="me-auto">
+              <Nav className="me-auto align-items-lg-center">
                 <Nav.Link
                   as={Link}
                   to={getDashboardLink(userData?.role_string || 'user')}
-                  className={`fw-medium ${location.pathname.startsWith(getDashboardLink(userData?.role_string || 'user')) ? 'active text-primary' : ''}`}
+                  className={`fw-medium me-lg-3 ${location.pathname.startsWith(getDashboardLink(userData?.role_string || 'user')) ? 'active text-primary' : ''}`}
                   onClick={handleNavClick}
                 >
                   <i className="bi bi-speedometer2 me-2"></i>
@@ -424,20 +424,11 @@ const MainNavbar = ({ setUser }) => {
 
                 {isRole.admin && (
                   <>
-                    <Nav.Link
-                      as={Link}
-                      to="/admin/overview"
-                      className={`fw-medium ${isActive('/admin/overview') ? 'active text-primary' : ''}`}
-                      onClick={handleNavClick}
-                    >
-                      <i className="bi bi-speedometer2 me-2"></i>
-                      Tổng quan
-                    </Nav.Link>
                     
                     <Nav.Link
                       as={Link}
                       to="/admin/blog"
-                      className={`fw-medium ${isActive('/admin/blog') ? 'active text-primary' : ''}`}
+                      className={`fw-medium me-lg-3 ${isActive('/admin/blog') ? 'active text-primary' : ''}`}
                       onClick={handleNavClick}
                     >
                       <i className="bi bi-newspaper me-2"></i>
@@ -447,7 +438,7 @@ const MainNavbar = ({ setUser }) => {
                     <Nav.Link
                       as={Link}
                       to="/admin/users"
-                      className={`fw-medium ${isActive('/admin/users') ? 'active text-primary' : ''}`}
+                      className={`fw-medium me-lg-3 ${isActive('/admin/users') ? 'active text-primary' : ''}`}
                       onClick={handleNavClick}
                     >
                       <i className="bi bi-people me-2"></i>
@@ -457,7 +448,7 @@ const MainNavbar = ({ setUser }) => {
                     <Nav.Link
                       as={Link}
                       to="/admin/reports"
-                      className={`fw-medium ${isActive('/admin/reports') ? 'active text-primary' : ''}`}
+                      className={`fw-medium me-lg-3 ${isActive('/admin/reports') ? 'active text-primary' : ''}`}
                       onClick={handleNavClick}
                     >
                       <i className="bi bi-graph-up me-2"></i>
@@ -467,7 +458,7 @@ const MainNavbar = ({ setUser }) => {
                     <Nav.Link
                       as={Link}
                       to="/admin/settings"
-                      className={`fw-medium ${isActive('/admin/settings') ? 'active text-primary' : ''}`}
+                      className={`fw-medium me-lg-3 ${isActive('/admin/settings') ? 'active text-primary' : ''}`}
                       onClick={handleNavClick}
                     >
                       <i className="bi bi-gear me-2"></i>
@@ -481,7 +472,7 @@ const MainNavbar = ({ setUser }) => {
                     <Nav.Link
                       as={Link}
                       to="/manager/services"
-                      className={`fw-medium ${isActive('/manager/services') ? 'active text-primary' : ''}`}
+                      className={`fw-medium me-lg-3 ${isActive('/manager/services') ? 'active text-primary' : ''}`}
                       onClick={handleNavClick}
                     >
                       <i className="bi bi-gear me-2"></i>
@@ -491,7 +482,7 @@ const MainNavbar = ({ setUser }) => {
                     <Nav.Link
                       as={Link}
                       to="/manager/appointments"
-                      className={`fw-medium ${isActive('/manager/appointments') ? 'active text-primary' : ''}`}
+                      className={`fw-medium me-lg-3 ${isActive('/manager/appointments') ? 'active text-primary' : ''}`}
                       onClick={handleNavClick}
                     >
                       <i className="bi bi-calendar-check me-2"></i>
@@ -501,7 +492,7 @@ const MainNavbar = ({ setUser }) => {
                     <Nav.Link
                       as={Link}
                       to="/manager/staff"
-                      className={`fw-medium ${isActive('/manager/staff') ? 'active text-primary' : ''}`}
+                      className={`fw-medium me-lg-3 ${isActive('/manager/staff') ? 'active text-primary' : ''}`}
                       onClick={handleNavClick}
                     >
                       <i className="bi bi-people me-2"></i>
@@ -511,7 +502,7 @@ const MainNavbar = ({ setUser }) => {
                     <Nav.Link
                       as={Link}
                       to="/manager/reports"
-                      className={`fw-medium ${isActive('/manager/reports') ? 'active text-primary' : ''}`}
+                      className={`fw-medium me-lg-3 ${isActive('/manager/reports') ? 'active text-primary' : ''}`}
                       onClick={handleNavClick}
                     >
                       <i className="bi bi-graph-up me-2"></i>
@@ -521,7 +512,7 @@ const MainNavbar = ({ setUser }) => {
                     <Nav.Link
                       as={Link}
                       to="/manager/feedback"
-                      className={`fw-medium ${isActive('/manager/feedback') ? 'active text-primary' : ''}`}
+                      className={`fw-medium me-lg-3 ${isActive('/manager/feedback') ? 'active text-primary' : ''}`}
                       onClick={handleNavClick}
                     >
                       <i className="bi bi-chat-dots me-2"></i>
@@ -535,7 +526,7 @@ const MainNavbar = ({ setUser }) => {
                     <Nav.Link
                       as={Link}
                       to="/staff/kit-preparation"
-                      className={`fw-medium ${isActive('/staff/kit-preparation') ? 'active text-primary' : ''}`}
+                      className={`fw-medium me-lg-3 ${isActive('/staff/kit-preparation') ? 'active text-primary' : ''}`}
                       onClick={handleNavClick}
                     >
                       <i className="bi bi-box-seam me-2"></i>
@@ -545,7 +536,7 @@ const MainNavbar = ({ setUser }) => {
                     <Nav.Link
                       as={Link}
                       to="/staff/sample-collection"
-                      className={`fw-medium ${isActive('/staff/sample-collection') ? 'active text-primary' : ''}`}
+                      className={`fw-medium me-lg-3 ${isActive('/staff/sample-collection') ? 'active text-primary' : ''}`}
                       onClick={handleNavClick}
                     >
                       <i className="bi bi-droplet me-2"></i>
@@ -555,7 +546,7 @@ const MainNavbar = ({ setUser }) => {
                     <Nav.Link
                       as={Link}
                       to="/staff/lab-testing"
-                      className={`fw-medium ${isActive('/staff/lab-testing') ? 'active text-primary' : ''}`}
+                      className={`fw-medium me-lg-3 ${isActive('/staff/lab-testing') ? 'active text-primary' : ''}`}
                       onClick={handleNavClick}
                     >
                       <i className="bi bi-eye me-2"></i>
@@ -565,7 +556,7 @@ const MainNavbar = ({ setUser }) => {
                     <Nav.Link
                       as={Link}
                       to="/staff/results"
-                      className={`fw-medium ${isActive('/staff/results') ? 'active text-primary' : ''}`}
+                      className={`fw-medium me-lg-3 ${isActive('/staff/results') ? 'active text-primary' : ''}`}
                       onClick={handleNavClick}
                     >
                       <i className="bi bi-file-earmark-check me-2"></i>
@@ -578,11 +569,11 @@ const MainNavbar = ({ setUser }) => {
 
             {/* Main Navigation - Only show for customers */}
             {isCustomer && (
-              <Nav className="me-auto">
+              <Nav className="me-auto align-items-lg-center">
                 <Nav.Link
                   as={Link}
                   to="/"
-                  className={`fw-medium ${isActive('/') ? 'active text-primary' : ''}`}
+                  className={`fw-medium me-lg-3 ${isActive('/') ? 'active text-primary' : ''}`}
                   onClick={handleNavClick}
                 >
                   <i className="bi bi-house me-2"></i>
@@ -598,7 +589,7 @@ const MainNavbar = ({ setUser }) => {
                     </span>
                   }
                   id="services-dropdown"
-                  className={isServiceActive() ? 'active' : ''}
+                  className={`me-lg-3 ${isServiceActive() ? 'active' : ''}`}
                 >
                   <NavDropdown.Item
                     as={Link}
@@ -708,6 +699,7 @@ const MainNavbar = ({ setUser }) => {
                     </span>
                   }
                   id="info-dropdown"
+                  className="me-lg-3"
                 >
                   <NavDropdown.Item
                     as={Link}
@@ -733,7 +725,7 @@ const MainNavbar = ({ setUser }) => {
                 <Nav.Link
                   as={Link}
                   to="/blog"
-                  className={`fw-medium ${location.pathname.startsWith('/blog') ? 'active text-primary' : ''}`}
+                  className={`fw-medium me-lg-3 ${location.pathname.startsWith('/blog') ? 'active text-primary' : ''}`}
                   onClick={handleNavClick}
                 >
                   <i className="bi bi-newspaper me-2"></i>
@@ -743,7 +735,7 @@ const MainNavbar = ({ setUser }) => {
                 <Nav.Link
                   as={Link}
                   to="/tracking"
-                  className={`fw-medium ${isActive('/tracking') ? 'active text-primary' : ''}`}
+                  className={`fw-medium me-lg-3 ${isActive('/tracking') ? 'active text-primary' : ''}`}
                   onClick={handleNavClick}
                 >
                   <i className="bi bi-search me-2"></i>
@@ -951,7 +943,7 @@ const MainNavbar = ({ setUser }) => {
                   </NavDropdown>
                 ) : (
                   <div className="d-flex align-items-center">
-                    <Nav.Link as={Link} to="/login" onClick={handleNavClick}>
+                    <Nav.Link as={Link} to="/login" onClick={handleNavClick} className="me-lg-2">
                       <i className="bi bi-box-arrow-in-right me-1"></i>
                       Đăng nhập
                     </Nav.Link>

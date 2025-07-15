@@ -55,7 +55,7 @@ const AdminDashboard = () => {
       // Đợi lâu hơn để context có thể load hoàn toàn
       setTimeout(() => {
         setIsLoading(false);
-      }, 1300); 
+      }, 1600); 
     };
     
     checkAuth();
@@ -195,69 +195,46 @@ const AdminDashboard = () => {
   ];
 
   return (
-    <Container fluid className="py-4">
+    <>
+      <style>
+        {`
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+        `}
+      </style>
+      <Container fluid className="py-4">
       <Row>
         {/* SIDEBAR - Menu điều hướng bên trái */}
         <Col lg={3} md={4} className="mb-4">
-          <Card className="shadow-sm">
+          <Card className="shadow-lg border-3 border-warning">
             {/* HEADER - Thông tin admin */}
-            <Card.Header className="bg-danger text-white text-center py-4">
+            <Card.Header className="bg-danger text-white text-center py-4 border-bottom border-warning border-3">
               {/* Avatar hoặc icon mặc định */}
               <div className="mb-3">
                 {currentUser.avatar ? (
                   <img 
                     src={currentUser.avatar} 
                     alt="Avatar"
-                    className="rounded-circle"
-                    style={{ width: '80px', height: '80px', objectFit: 'cover' }}
+                    className="rounded-circle border border-warning border-3"
+                    width="60"
+                    height="60"
+                    style={{ boxShadow: '0 0 15px rgba(255,193,7,0.5)' }}
                   />
                 ) : (
-                  <div className="bg-white text-danger rounded-circle mx-auto d-flex align-items-center justify-content-center"
-                       style={{ width: '80px', height: '80px' }}>
-                    <i className="bi bi-shield-check fs-1"></i>
+                  <div className="bg-white bg-opacity-20 rounded-circle d-inline-flex align-items-center justify-content-center border border-warning border-3" 
+                       style={{ width: '60px', height: '60px', boxShadow: '0 0 15px rgba(255,193,7,0.5)' }}>
+                    <i className="bi bi-shield-check fs-1 text-warning" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}></i>
                   </div>
                 )}
               </div>
               
-              {/* Tên và role của admin */}
-              <h5 className="mb-1">{currentUser.fullname || 'Administrator'}</h5>
-              <Badge bg="warning" text="dark" className="mb-2">
-                <i className="bi bi-crown me-1"></i>
-                Administrator
-              </Badge>
-              
-              {/* Email admin */}
-              <div className="mt-2">
-                <small className="d-block opacity-75">
-                  <i className="bi bi-envelope me-1"></i>
-                  {currentUser.email || 'admin@example.com'}
-                </small>
-              </div>
+              {/* Tên và thông tin admin - giống manager */}
+              <h5 className="mb-1 fw-bold text-warning" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)', fontSize: '1.5rem' }}>{currentUser.fullname || 'Administrator'}</h5>
+              <p className="mb-1 small opacity-75">{currentUser.email || 'admin@example.com'}</p>
+              <p className="mb-1 small opacity-75 fw-bold text-warning" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.3)' }}>Quản trị viên hệ thống</p>
             </Card.Header>
-
-            {/* STATS - Thống kê nhanh */}
-            <Card.Body className="py-3">
-              <Row className="text-center g-0">
-                <Col xs={4}>
-                  <div className="py-2">
-                    <div className="h5 mb-0 text-primary">{stats.totalUsers || 0}</div>
-                    <small className="text-muted">Người dùng</small>
-                  </div>
-                </Col>
-                <Col xs={4} className="border-start border-end">
-                  <div className="py-2">
-                    <div className="h5 mb-0 text-success">{stats.totalPosts || 0}</div>
-                    <small className="text-muted">Bài viết</small>
-                  </div>
-                </Col>
-                <Col xs={4}>
-                  <div className="py-2">
-                    <div className="h5 mb-0 text-warning">{stats.totalGuides || 0}</div>
-                    <small className="text-muted">Hướng dẫn</small>
-                  </div>
-                </Col>
-              </Row>
-            </Card.Body>
 
             {/* MENU - Danh sách các trang quản trị */}
             <Nav className="flex-column">
@@ -280,20 +257,20 @@ const AdminDashboard = () => {
               ))}
             </Nav>
 
-            {/* FOOTER - Trạng thái hệ thống */}
+            {/* FOOTER - Thống kê nhanh giống manager */}
             <Card.Footer className="bg-light">
-              <div className="small">
-                <div className="d-flex justify-content-between mb-2">
-                  <span>Hệ thống:</span>
-                  <Badge bg="success">Online</Badge>
+              <div className="row text-center">
+                <div className="col-4">
+                  <div className="fw-bold text-primary">{stats.totalUsers || 0}</div>
+                  <small className="text-muted">Người dùng</small>
                 </div>
-                <div className="d-flex justify-content-between mb-2">
-                  <span>Database:</span>
-                  <Badge bg="success">Connected</Badge>
+                <div className="col-4">
+                  <div className="fw-bold text-success">{stats.totalPosts || 0}</div>
+                  <small className="text-muted">Bài viết</small>
                 </div>
-                <div className="d-flex justify-content-between">
-                  <span>Backup:</span>
-                  <Badge bg="info">Auto</Badge>
+                <div className="col-4">
+                  <div className="fw-bold text-warning">{stats.totalGuides || 0}</div>
+                  <small className="text-muted">Hướng dẫn</small>
                 </div>
               </div>
             </Card.Footer>
@@ -302,6 +279,36 @@ const AdminDashboard = () => {
 
         {/* MAIN CONTENT - Khu vực hiển thị nội dung chính */}
         <Col lg={9} md={8}>
+          {/* Header with Welcome Message - Inspired by Manager */}
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <div>
+              <h2 className="mb-1">
+                Chào mừng, <span className="text-warning fw-bold" style={{ 
+                  textShadow: '2px 2px 4px rgba(0,0,0,0.2)', 
+                  fontSize: '1.1em',
+                  textDecoration: 'underline',
+                  textDecorationColor: '#ffc107'
+                }}>{currentUser.fullname || 'Administrator'}!</span> 
+              </h2>
+              <p className="text-muted mb-0">
+                <i className="bi bi-clock me-1"></i>
+                Hôm nay là {new Date().toLocaleDateString('vi-VN', { 
+                  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+                })}
+              </p>
+            </div>
+            <div className="d-flex align-items-center">
+              <Badge bg="danger" className="me-2 fs-6 px-3 py-2">
+                <i className="bi bi-shield-check me-1"></i>
+                <span className="fw-bold">QUẢN TRỊ VIÊN</span>
+              </Badge>
+              <i className="bi bi-gear-fill text-warning fs-3" style={{ 
+                animation: 'spin 3s linear infinite',
+                filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.3))'
+              }}></i>
+            </div>
+          </div>
+
           <Routes>
             <Route index element={<AdminOverview />} />
             <Route path="overview" element={<AdminOverview />} />
@@ -315,6 +322,7 @@ const AdminDashboard = () => {
         </Col>
       </Row>
     </Container>
+    </>
   );
 };
 

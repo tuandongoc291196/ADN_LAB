@@ -47,7 +47,7 @@ const StaffDashboard = () => {
       // Đợi 1400ms để context có thể load hoàn toàn
       setTimeout(() => {
         setIsLoading(false);
-      }, 1300); 
+      }, 1500); 
     };
     
     checkAuth();
