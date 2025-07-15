@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Button, Badge, Alert, Modal, Form, Table, InputGroup } from 'react-bootstrap';
 import { getBookingByStaffId, addBookingHistory, getSamplesByBookingId, updateSample } from '../../services/api';
-
+import { useParams } from 'react-router-dom';
 const SampleCollection = ({ user }) => {
   const [samples, setSamples] = useState([]);
   const [filteredSamples, setFilteredSamples] = useState([]);
@@ -18,6 +18,7 @@ const SampleCollection = ({ user }) => {
     notes: '',
     photos: []
   });
+  const { bookingId } = useParams(); // Assuming you might need this for routing or fetching specific order details
 
   // Lấy danh sách mẫu cần thu từ API
   useEffect(() => {
@@ -78,6 +79,18 @@ const SampleCollection = ({ user }) => {
 
     fetchSamples();
   }, [user.id]);
+
+  useEffect(() => {
+    if (bookingId && samples.length > 0) {
+      // Optionally scroll to or highlight the sample row
+      const el = document.getElementById(`sample-row-${bookingId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('table-primary');
+        setTimeout(() => el.classList.remove('table-primary'), 2000);
+      }
+    }
+  }, [bookingId, samples]);
 
   // Filter samples based on search and status
   useEffect(() => {
@@ -329,7 +342,7 @@ const SampleCollection = ({ user }) => {
               </thead>
               <tbody>
                 {filteredSamples.map((sample) => (
-                  <tr key={sample.id}>
+                  <tr key={sample.id} id={`sample-row-${sample.id}`}>
                     <td>
                       <div className="">{sample.id}</div>
                       <small className="text-muted">{sample.participants.length} người</small>

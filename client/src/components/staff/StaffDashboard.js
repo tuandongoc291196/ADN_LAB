@@ -28,61 +28,20 @@ const StaffDashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
-  const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Use cached user data for instant render
+  const cachedUser = (() => {
+    try {
+      const data = localStorage.getItem('userData');
+      return data ? JSON.parse(data) : null;
+    } catch {
+      return null;
+    }
+  })();
+  const [currentUser, setCurrentUser] = useState(cachedUser);
+  const [loading, setLoading] = useState(!cachedUser);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const storedUserData = localStorage.getItem('userData');
-        let userId = null;
-        if (storedUserData) {
-          const userData = JSON.parse(storedUserData);
-          userId = userData.id || userData.user_id || userData.uid;
-        }
-        if (!userId) {
-          setError('Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.');
-          setLoading(false);
-          setTimeout(() => navigate('/login'), 2000);
-          return;
-        }
-        const user = await getUserById(userId);
-        setCurrentUser(user);
-      } catch (err) {
-        setError('Không thể lấy thông tin người dùng: ' + err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchUser();
-  }, [navigate]);
-
-  useEffect(() => {
-    const path = location.pathname.split('/').pop();
-    if (path && path !== 'staff') {
-      setActiveTab(path);
-    } else {
-      setActiveTab('overview');
-    }
-  }, [location.pathname]);
-
-  if (loading) {
-    return (
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
-        <Spinner animation="border" variant="primary" />
-      </div>
-    );
-  }
-  if (error) {
-    return <Alert variant="danger" className="mt-4">{error}</Alert>;
-  }
-  if (!currentUser) {
-    return null;
-  }
-
+  // Khai báo menuItems trước các useEffect
   const menuItems = [
     {
       key: 'overview',
@@ -106,7 +65,7 @@ const StaffDashboard = () => {
       icon: 'bi-droplet',
       path: '/staff/sample-collection',
       color: 'warning',
-      badge: currentUser.pendingTests,
+      badge: currentUser?.pendingTests,
       description: 'Tiếp nhận và thu mẫu xét nghiệm'
     },
     {
@@ -134,6 +93,65 @@ const StaffDashboard = () => {
       description: 'Thông tin cá nhân và ca làm việc'
     }
   ];
+
+  useEffect(() => {
+    // Only fetch if we have a userId
+    let isMounted = true;
+    const storedUserData = localStorage.getItem('userData');
+    let userId = null;
+    if (storedUserData) {
+      try {
+        const userData = JSON.parse(storedUserData);
+        userId = userData.id || userData.user_id || userData.uid;
+      } catch { }
+    }
+    if (!userId) {
+      setError('Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.');
+      setTimeout(() => navigate('/login'), 2000);
+      return;
+    }
+    // Fetch in background
+    (async () => {
+      try {
+        const user = await getUserById(userId);
+        if (isMounted) {
+          setCurrentUser(user);
+          localStorage.setItem('userData', JSON.stringify(user));
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError('Không thể tải thông tin người dùng. Vui lòng thử lại sau.');
+          console.error(err);
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    })();
+    return () => { isMounted = false; };
+  }, [navigate]);
+
+  useEffect(() => {
+    // Sort menuItems theo path dài nhất trước để tránh match nhầm prefix
+    const sortedMenu = [...menuItems].sort((a, b) => b.path.length - a.path.length);
+    const matched = sortedMenu.find(item =>
+      location.pathname === item.path || location.pathname.startsWith(item.path + '/')
+    );
+    setActiveTab(matched ? matched.key : 'overview');
+  }, [location.pathname, menuItems]);
+
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
+        <Spinner animation="border" variant="primary" />
+      </div>
+    );
+  }
+  if (error) {
+    return <Alert variant="danger" className="mt-4">{error}</Alert>;
+  }
+  if (!currentUser) {
+    return null;
+  }
 
   return (
     <Container fluid className="py-4">
@@ -172,8 +190,8 @@ const StaffDashboard = () => {
                   as={Link}
                   to={item.path}
                   className={`d-flex align-items-center py-3 px-4 border-0 ${activeTab === item.key
-                      ? `bg-${item.color} bg-opacity-10 text-${item.color} border-end border-${item.color} border-3`
-                      : 'text-dark'
+                    ? `bg-${item.color} bg-opacity-10 text-${item.color} border-end border-${item.color} border-3`
+                    : 'text-dark'
                     }`}
                   style={{ textDecoration: 'none' }}
                 >
@@ -233,10 +251,13 @@ const StaffDashboard = () => {
           <Routes>
             <Route path="/" element={<StaffOverview user={currentUser} />} />
             <Route path="/kit-preparation" element={<KitPreparation user={currentUser} />} />
+            <Route path="/kit-preparation/:bookingId" element={<KitPreparation user={currentUser} />} />
             <Route path="/sample-collection" element={<SampleCollection user={currentUser} />} />
+            <Route path="/sample-collection/:bookingId" element={<SampleCollection user={currentUser} />} />
             <Route path="/lab-testing" element={<LabTesting user={currentUser} />} />
             <Route path="/results" element={<ResultsManagement user={currentUser} />} />
             <Route path="/profile" element={<StaffProfile user={currentUser} />} />
+            <Route path="*" element={<StaffOverview user={currentUser} />} />
           </Routes>
         </Col>
       </Row>

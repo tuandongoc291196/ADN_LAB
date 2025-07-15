@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Button, Badge, Alert, Modal, Form, Table, InputGroup } from 'react-bootstrap';
 import { getBookingByStaffId, addBookingHistory } from '../../services/api';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
 const KitPreparation = ({ user }) => {
   const [orders, setOrders] = useState([]);
@@ -14,6 +14,8 @@ const KitPreparation = ({ user }) => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [description, setDescription] = useState('');
   const navigate = useNavigate();
+  const { bookingId } = useParams(); // Assuming you might need this for routing or fetching specific order details
+
   // API cho các đơn hàng cần chuẩn bị kit
   useEffect(() => {
     const fetchOrders = async () => {
@@ -57,6 +59,18 @@ const KitPreparation = ({ user }) => {
 
     fetchOrders();
   }, [user.id]);
+
+  useEffect(() => {
+    if (bookingId && orders.length > 0) {
+      // Optionally scroll to or highlight the order row
+      const el = document.getElementById(`order-row-${bookingId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('table-primary');
+        setTimeout(() => el.classList.remove('table-primary'), 2000);
+      }
+    }
+  }, [bookingId, orders]);
 
   // Filter orders based on search and status
   useEffect(() => {
@@ -152,7 +166,7 @@ const KitPreparation = ({ user }) => {
         confirmButtonColor: '#198754'
       });
     } catch (err) {
-      console.error('❌ Lỗi khi xử lý hành động:', err);
+      console.error('Lỗi khi xử lý hành động:', err);
       Swal.fire({
         icon: 'error',
         title: 'Lỗi!',
@@ -172,11 +186,11 @@ const KitPreparation = ({ user }) => {
       };
 
       const res = await addBookingHistory(payload);
-      console.log('✅ Booking history added:', res);
+      console.log('Booking history added:', res);
 
 
     } catch (err) {
-      console.error('❌ Lỗi khi thêm booking history:', err);
+      console.error('Lỗi khi thêm booking history:', err);
 
     }
   };
@@ -404,8 +418,8 @@ const KitPreparation = ({ user }) => {
           </tr>
         </thead>
         <tbody>
-          {filteredOrders.map(order => (
-            <tr key={order.id}>
+          {filteredOrders.map((order) => (
+            <tr key={order.id} id={`order-row-${order.id}`}>
               <td>{order.id}</td>
               <td>
                 <div>{order.customerName}</div>
@@ -466,12 +480,13 @@ const KitPreparation = ({ user }) => {
 
                   {order.status === 'sample-received' && (
                     <Button
+                      as={Link}
+                      to={`/staff/sample-collection/${order.id}`}
                       variant="info"
                       size="sm"
-                      onClick={() => navigate('/staff/sample-collection')}
                     >
                       <i className="bi bi-arrow-right me-1"></i>
-                      Chuyển sang thu mẫu
+                      Đến thu mẫu
                     </Button>
                   )}
                   {order.status === 'kit-sent' && order.trackingNumber && (
