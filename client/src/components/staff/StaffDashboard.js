@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { Container, Row, Col, Nav, Card, Alert, Spinner } from 'react-bootstrap';
-import { getUserById } from '../../services/api';
+import { useAuth } from '../context/auth';
 
 // Import staff dashboard components
 import StaffOverview from './StaffOverview';
@@ -27,38 +27,9 @@ function getRoleLabel(role) {
 const StaffDashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  
   const [activeTab, setActiveTab] = useState('overview');
-  const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const storedUserData = localStorage.getItem('userData');
-        let userId = null;
-        if (storedUserData) {
-          const userData = JSON.parse(storedUserData);
-          userId = userData.id || userData.user_id || userData.uid;
-        }
-        if (!userId) {
-          setError('Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.');
-          setLoading(false);
-          setTimeout(() => navigate('/login'), 2000);
-          return;
-        }
-        const user = await getUserById(userId);
-        setCurrentUser(user);
-      } catch (err) {
-        setError('Không thể lấy thông tin người dùng: ' + err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchUser();
-  }, [navigate]);
 
   useEffect(() => {
     const path = location.pathname.split('/').pop();
@@ -69,19 +40,21 @@ const StaffDashboard = () => {
     }
   }, [location.pathname]);
 
-  if (loading) {
-    return (
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
-        <Spinner animation="border" variant="primary" />
-      </div>
-    );
+  // Kiểm tra quyền staff
+  if (!user?.role?.id || user.role.id !== '1') {
+    return <Navigate to="/" replace />;
   }
-  if (error) {
-    return <Alert variant="danger" className="mt-4">{error}</Alert>;
-  }
-  if (!currentUser) {
-    return null;
-  }
+
+  // Tạo currentUser với thông tin từ context
+  const currentUser = {
+    ...user,
+    name: user.fullname || user.name || 'Nhân viên',
+    position: 'Nhân viên xét nghiệm',
+    employeeId: user.staffId || user.id || 'STF001',
+    totalTests: 120, // TODO: Lấy từ API
+    completedTests: 105, // TODO: Lấy từ API
+    pendingResults: 15 // TODO: Lấy từ API
+  };
 
   const menuItems = [
     {

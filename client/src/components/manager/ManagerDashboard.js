@@ -3,9 +3,9 @@
  * Cung cấp giao diện quản lý tổng quan và điều hướng đến các chức năng quản lý
  */
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { Container, Row, Col, Nav, Card, Alert, Badge, Button, Spinner } from 'react-bootstrap';
-import { getUserById } from '../../services/api';
+import { useAuth } from '../context/auth';
 import { 
   Speedometer2, 
   Gear, 
@@ -48,10 +48,12 @@ function getRoleLabel(role) {
  * Component chính cho dashboard quản lý
  * @param {Object} user - Thông tin người dùng quản lý
  */
-const ManagerDashboard = ({ user }) => {
+const ManagerDashboard = () => {
   // Lấy thông tin đường dẫn hiện tại
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  
   // State quản lý tab đang active
   const [activeTab, setActiveTab] = useState('overview');
   // State quản lý thông báo
@@ -59,62 +61,35 @@ const ManagerDashboard = ({ user }) => {
     { id: 1, message: 'Có 5 lịch hẹn mới cần xác nhận', time: '5 phút trước', read: false },
     { id: 2, message: 'Báo cáo doanh thu tháng 3 đã sẵn sàng', time: '1 giờ trước', read: false }
   ]);
-  // State quản lý user data
-  const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  // Fetch user data từ localStorage và API
-  useEffect(() => {
-    const fetchUser = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const storedUserData = localStorage.getItem('userData');
-        let userId = null;
-        if (storedUserData) {
-          const userData = JSON.parse(storedUserData);
-          userId = userData.id || userData.user_id || userData.uid;
-        }
-        if (!userId) {
-          setError('Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.');
-          setLoading(false);
-          setTimeout(() => navigate('/login'), 2000);
-          return;
-        }
-        const userData = await getUserById(userId);
-        
-        // Tạo currentUser với thông tin từ API và fallback
-        const managerUser = {
-          ...userData,
-          name: userData.fullname || userData.name || 'Quản lý',
-          position: 'Quản lý phòng xét nghiệm',
-          employeeId: userData.staffId || userData.id || 'MGR001',
-          totalServices: 5, // TODO: Lấy từ API
-          totalStaff: 10, // TODO: Lấy từ API
-          totalAppointments: 150, // TODO: Lấy từ API
-          totalRevenue: 150000000 // TODO: Lấy từ API
-        };
-        
-        setCurrentUser(managerUser);
-      } catch (err) {
-        setError('Không thể lấy thông tin người dùng: ' + err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchUser();
-  }, [navigate]);
 
   // Cập nhật tab active dựa trên đường dẫn URL
   useEffect(() => {
-    const path = location.pathname.split('/').pop();
-    if (path && path !== 'manager') {
-      setActiveTab(path);
+    const pathSegments = location.pathname.split('/');
+    const currentPath = pathSegments[2]; // Lấy phần sau /manager/
+    
+    if (currentPath) {
+      setActiveTab(currentPath);
     } else {
       setActiveTab('overview');
     }
   }, [location.pathname]);
+
+  // Kiểm tra quyền manager
+  if (!user?.role?.id || user.role.id !== '2') {
+    return <Navigate to="/" replace />;
+  }
+
+  // Tạo currentUser với thông tin từ context
+  const currentUser = {
+    ...user,
+    name: user.fullname || user.name || 'Quản lý',
+    position: 'Quản lý phòng xét nghiệm',
+    employeeId: user.staffId || user.id || 'MGR001',
+    totalServices: 5, // TODO: Lấy từ API
+    totalStaff: 10, // TODO: Lấy từ API
+    totalAppointments: 150, // TODO: Lấy từ API
+    totalRevenue: 150000000 // TODO: Lấy từ API
+  };
 
   // Cấu hình các mục menu trong sidebar
   const menuItems = [
@@ -122,7 +97,7 @@ const ManagerDashboard = ({ user }) => {
       key: 'overview',
       label: 'Tổng quan',
       icon: Speedometer2,
-      path: '/manager',
+      path: '/manager/overview',
       color: 'primary',
       description: 'Dashboard tổng quan quản lý'
     },
@@ -175,20 +150,6 @@ const ManagerDashboard = ({ user }) => {
       description: 'Quản lý thông tin cá nhân'
     }
   ];
-
-  if (loading) {
-    return (
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
-        <Spinner animation="border" variant="primary" />
-      </div>
-    );
-  }
-  if (error) {
-    return <Alert variant="danger" className="mt-4">{error}</Alert>;
-  }
-  if (!currentUser) {
-    return null;
-  }
 
   return (
     <Container fluid className="py-4">
@@ -323,13 +284,14 @@ const ManagerDashboard = ({ user }) => {
           </div>
 
           <Routes>
-            <Route path="/" element={<ManagerOverview user={currentUser} />} />
-            <Route path="/services" element={<ServiceManagement user={currentUser} />} />
-            <Route path="/appointments" element={<AppointmentManagement user={currentUser} />} />
-            <Route path="/staff" element={<StaffManagement user={currentUser} />} />
-            <Route path="/reports" element={<ReportManagement user={currentUser} />} />
-            <Route path="/feedback" element={<FeedbackManagement user={currentUser} />} />
-            <Route path="/profile" element={<ManagerProfile user={currentUser} />} />
+            <Route index element={<ManagerOverview user={currentUser} />} />
+            <Route path="overview" element={<ManagerOverview user={currentUser} />} />
+            <Route path="services" element={<ServiceManagement user={currentUser} />} />
+            <Route path="appointments" element={<AppointmentManagement user={currentUser} />} />
+            <Route path="staff" element={<StaffManagement user={currentUser} />} />
+            <Route path="reports" element={<ReportManagement user={currentUser} />} />
+            <Route path="feedback" element={<FeedbackManagement user={currentUser} />} />
+            <Route path="profile" element={<ManagerProfile user={currentUser} />} />
           </Routes>
         </Col>
       </Row>
