@@ -44,38 +44,6 @@ const StaffDashboard = () => {
   const [loading, setLoading] = useState(!user && !cachedUser);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
-
-  // Xác định tab hiện tại dựa vào pathname
-  useEffect(() => {
-    const path = location.pathname.split('/').pop();
-    if (path && path !== 'staff') {
-      setActiveTab(path);
-    } else {
-      setActiveTab('overview');
-    }
-  }, [location.pathname]);
-
-  // Nếu user context thay đổi, cập nhật currentUser
-  useEffect(() => {
-    if (user) {
-      setCurrentUser(user);
-      setLoading(false);
-      localStorage.setItem('userData', JSON.stringify(user));
-    } else if (cachedUser) {
-      setCurrentUser(cachedUser);
-      setLoading(false);
-    } else {
-      setLoading(true);
-    }
-  }, [user]);
-
-  // Đặt tất cả các hook ở đây, KHÔNG return sớm trước các hook
-
-  // Sau khi đã khai báo xong các hook, mới kiểm tra điều kiện return sớm
-  if (!currentUser || !currentUser.role || (currentUser.role.id && currentUser.role.id !== '1' && currentUser.role !== 'staff')) {
-    return <Navigate to="/" replace />;
-  }
-
   // Menu items
   const menuItems = [
     {
@@ -129,6 +97,31 @@ const StaffDashboard = () => {
     }
   ];
 
+  // Xác định tab hiện tại dựa vào pathname
+  useEffect(() => {
+    const path = location.pathname.split('/').pop();
+    if (path && path !== 'staff') {
+      setActiveTab(path);
+    } else {
+      setActiveTab('overview');
+    }
+  }, [location.pathname]);
+
+  // Nếu user context thay đổi, cập nhật currentUser
+  useEffect(() => {
+    if (user) {
+      setCurrentUser(user);
+      setLoading(false);
+      localStorage.setItem('userData', JSON.stringify(user));
+    } else if (cachedUser) {
+      setCurrentUser(cachedUser);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+  }, [user]);
+
+  // Đặt tất cả các hook ở đây, KHÔNG return sớm trước các hook
   // Đồng bộ activeTab khi pathname hoặc menuItems thay đổi
   useEffect(() => {
     const sortedMenu = [...menuItems].sort((a, b) => b.path.length - a.path.length);
@@ -137,6 +130,11 @@ const StaffDashboard = () => {
     );
     setActiveTab(matched ? matched.key : 'overview');
   }, [location.pathname, menuItems]);
+
+  // Sau khi đã khai báo xong các hook, mới kiểm tra điều kiện return sớm
+  if (!currentUser || !currentUser.role || (currentUser.role.id && currentUser.role.id !== '1' && currentUser.role !== 'staff')) {
+    return <Navigate to="/" replace />;
+  }
 
   if (loading) {
     return (
