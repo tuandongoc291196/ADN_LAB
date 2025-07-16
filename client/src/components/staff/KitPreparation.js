@@ -429,12 +429,12 @@ const KitPreparation = ({ user }) => {
                 <div>{order.service}</div>
                 <div>
                   <span
-                    className={`badge rounded-pill ${order.serviceType === 'civil'
+                    className={`badge rounded-pill ${order.serviceType === 'administrative'
                       ? 'bg-success text-white'
                       : 'bg-warning text-dark'
                       }`}
                   >
-                    {order.serviceType === 'civil' ? 'Dân sự' : 'Hành chính'}
+                    {order.serviceType === 'administrative' ? 'Dân sự' : 'Hành chính'}
                   </span>
                 </div>
               </td>

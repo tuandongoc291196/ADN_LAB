@@ -354,10 +354,10 @@ const SampleCollection = ({ user }) => {
                     <td>
                       <div>{sample.service}</div>
                       <span
-                        className={`badge rounded-pill ${sample.serviceType === 'civil' ? 'bg-success text-white' : 'bg-warning text-dark'}`}
+                        className={`badge rounded-pill ${sample.serviceType === 'civil' ? 'bg-warning text-dark' : 'bg-success text-white'}`}
                         style={{ fontSize: '12px', fontWeight: 500 }}
                       >
-                        {sample.serviceType === 'civil' ? 'Dân sự' : 'Hành chính'}
+                        {sample.serviceType === 'civil' ? 'Hành chính' : 'Dân sự'}
                       </span>
                     </td>
                     <td>
