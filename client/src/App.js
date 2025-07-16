@@ -178,7 +178,8 @@ function App() {
               <Route path="/appointment" element={<AppointmentBooking />} />
               <Route path="/booking-confirmation" element={<BookingConfirmation />} />
               <Route path="/tracking" element={<OrderTracking />} />
-              <Route path="/tracking/:trackingId" element={<OrderTracking />} />
+              <Route path="/tracking/:bookingId" element={<OrderTracking />} />
+              <Route path="/booking/track/:bookingId" element={<OrderTracking />} />
 
               {/* Payment System Routes */}
               <Route path="/payment" element={<Payment />} />
