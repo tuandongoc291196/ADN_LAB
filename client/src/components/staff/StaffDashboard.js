@@ -69,7 +69,9 @@ const StaffDashboard = () => {
     }
   }, [user]);
 
-  // Nếu không có user hoặc role không hợp lệ, điều hướng về trang chủ
+  // Đặt tất cả các hook ở đây, KHÔNG return sớm trước các hook
+
+  // Sau khi đã khai báo xong các hook, mới kiểm tra điều kiện return sớm
   if (!currentUser || !currentUser.role || (currentUser.role.id && currentUser.role.id !== '1' && currentUser.role !== 'staff')) {
     return <Navigate to="/" replace />;
   }
