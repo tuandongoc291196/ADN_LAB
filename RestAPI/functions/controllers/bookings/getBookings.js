@@ -748,6 +748,13 @@ const getBookingsBySlotDate = async (slotDate) => {
             startTime
             endTime
           }
+          bookingHistories_on_booking (orderBy: {createdAt: DESC}) {
+            id
+            description
+            status
+            createdAt
+            updatedAt
+          }
           totalAmount
           createdAt
         }
@@ -787,6 +794,13 @@ const getExpiredBookings = async (currentTime) => {
           id
           staffId
           timeSlotId
+          bookingHistories_on_booking (orderBy: {createdAt: DESC}) {
+            id
+            description
+            status
+            createdAt
+            updatedAt
+          }
         }
       }
     `;
