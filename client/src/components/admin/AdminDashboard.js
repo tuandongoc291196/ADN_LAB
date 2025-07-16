@@ -12,6 +12,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { Container, Row, Col, Nav, Card, Alert, Badge } from 'react-bootstrap';
 import { useAuth } from '../context/auth';
+import { getAllUsers, getAllRoles } from '../../services/api';
 
 // Import các component admin con để routing
 import AdminOverview from './AdminOverview';
@@ -27,6 +28,12 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
+  
+  // State để lưu dữ liệu users để truyền xuống UserManagement
+  const [allUsers, setAllUsers] = useState([]);
+  const [allRoles, setAllRoles] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersError, setUsersError] = useState(null);
 
   // Effect cập nhật activeTab khi URL thay đổi
   useEffect(() => {
@@ -44,10 +51,47 @@ const AdminDashboard = () => {
       setActiveTab('blog');
     } else if (currentPath && currentPath.trim() !== '') {
       setActiveTab(currentPath);
+      
+      // Nếu chuyển đến tab users, load dữ liệu users
+      if (currentPath === 'users' && allUsers.length === 0) {
+        loadUsersData();
+      }
     } else {
       setActiveTab('overview');
     }
-  }, [location.pathname]);
+  }, [location.pathname, allUsers.length]);
+
+  // Function để load dữ liệu users và roles
+  const loadUsersData = async () => {
+    if (usersLoading) return; // Tránh load nhiều lần
+    
+    setUsersLoading(true);
+    setUsersError(null);
+    
+    try {
+      console.log('Loading users data for admin dashboard...');
+      
+      // Load song song users và roles
+      const [usersResponse, rolesResponse] = await Promise.all([
+        getAllUsers(),
+        getAllRoles()
+      ]);
+      
+      setAllUsers(usersResponse || []);
+      setAllRoles(rolesResponse || []);
+      
+      console.log('Users data loaded successfully:', {
+        usersCount: usersResponse?.length || 0,
+        rolesCount: rolesResponse?.length || 0
+      });
+      
+    } catch (error) {
+      console.error('Error loading users data:', error);
+      setUsersError(error.message);
+    } finally {
+      setUsersLoading(false);
+    }
+  };
 
   // Effect để kiểm tra auth và set loading
   useEffect(() => {
@@ -55,7 +99,7 @@ const AdminDashboard = () => {
       // Đợi lâu hơn để context có thể load hoàn toàn
       setTimeout(() => {
         setIsLoading(false);
-      }, 1600); 
+      }, 2500); 
     };
     
     checkAuth();
@@ -130,21 +174,34 @@ const AdminDashboard = () => {
 
   const currentUser = getUserInfo() || {};
 
-  // Lấy thống kê từ localStorage
+  // Lấy thống kê từ localStorage và cập nhật với dữ liệu thực
   const getAdminStats = () => {
     try {
       const adminStats = localStorage.getItem('adminStats');
+      let stats = {
+        totalUsers: 0,
+        totalPosts: 0,
+        totalGuides: 0
+      };
+      
       if (adminStats) {
-        return JSON.parse(adminStats);
+        stats = JSON.parse(adminStats);
       }
+      
+      // Cập nhật số users từ dữ liệu thực nếu có
+      if (allUsers.length > 0) {
+        stats.totalUsers = allUsers.length;
+      }
+      
+      return stats;
     } catch (error) {
       console.error('Error parsing adminStats from localStorage:', error);
+      return {
+        totalUsers: allUsers.length || 0,
+        totalPosts: 0,
+        totalGuides: 0
+      };
     }
-    return {
-      totalUsers: 0,
-      totalPosts: 0,
-      totalGuides: 0
-    };
   };
 
   const stats = getAdminStats();
@@ -316,7 +373,18 @@ const AdminDashboard = () => {
             <Route path="blog/create" element={<BlogEditor />} />
             <Route path="blog/edit/:id" element={<BlogEditor />} />
             <Route path="reports" element={<AdminReports />} />
-            <Route path="users" element={<UserManagement />} />
+            <Route 
+              path="users" 
+              element={
+                <UserManagement 
+                  preloadedUsers={allUsers}
+                  preloadedRoles={allRoles}
+                  usersLoading={usersLoading}
+                  usersError={usersError}
+                  onRefreshUsers={loadUsersData}
+                />
+              } 
+            />
             <Route path="settings" element={<SystemSettings />} />
           </Routes>
         </Col>
