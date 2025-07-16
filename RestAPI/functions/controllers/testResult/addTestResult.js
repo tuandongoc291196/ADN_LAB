@@ -1,5 +1,6 @@
 const { dataConnect } = require("../../config/firebase.js");
 const {getActiveStaffWithLowestSlotCount} = require("../users/userUtils.js");
+const {getOneBookingById} = require("../bookings/getBookings.js");
 
 const createTestResult = async (bookingId) => {
   try {
@@ -9,9 +10,12 @@ const createTestResult = async (bookingId) => {
 
     const managerId = await getActiveStaffWithLowestSlotCount("2");
 
+    const booking = await getOneBookingById(bookingId);
+    const staffId = booking.staffId;
+
     const CREATE_TEST_RESULT_MUTATION = `
-      mutation CreateTestResult($id: String!, $bookingId: String!, $sampleId: String!, $staffId: String!, $managerId: String!, $testMethod: String!, $positive: Boolean!, $accuracy: Float!, $testType: String!, $testDate: Date, $reportDate: Date, $resultData: String, $resultNotes: String, $status: String) @auth(level: USER) {
-        testResult_insert(data: {id: $id, bookingId: $bookingId, sampleId: $sampleId, staffId: $staffId, managerId: $managerId, testMethod: $testMethod, positive: $positive, accuracy: $accuracy, testType: $testType, testDate: $testDate, reportDate: $reportDate, resultData: $resultData, resultNotes: $resultNotes, status: $status})
+      mutation CreateTestResult($id: String!, $bookingId: String!, $staffId: String!, $managerId: String!, $testMethod: String!, $positive: Boolean!, $accuracy: Float!, $testType: String!, $testDate: Date, $reportDate: Date, $resultData: String, $resultNotes: String, $status: String) @auth(level: USER) {
+        testResult_insert(data: {id: $id, bookingId: $bookingId, staffId: $staffId, managerId: $managerId, testMethod: $testMethod, positive: $positive, accuracy: $accuracy, testType: $testType, testDate: $testDate, reportDate: $reportDate, resultData: $resultData, resultNotes: $resultNotes, status: $status})
       }
     `;
     const testResultId = `${bookingId}_RESULT`;
@@ -19,8 +23,7 @@ const createTestResult = async (bookingId) => {
     const variables = {
       id: testResultId,
       bookingId: bookingId,
-      sampleId: "",
-      staffId: "",
+      staffId: staffId,
       managerId: managerId,
       testMethod: "Standard Analysis",
       positive: false,
