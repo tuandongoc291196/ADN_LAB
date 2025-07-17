@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Button, Badge, Alert, Modal, Form, Table, InputGroup } from 'react-bootstrap';
+import { Row, Col, Card, Button, Badge, Alert, Modal, Form, Table, InputGroup, Tabs, Tab } from 'react-bootstrap';
 import { getBookingByStaffId, addBookingHistory, getSamplesByBookingId, updateSample } from '../../services/api';
 import { useParams } from 'react-router-dom';
 const SampleCollection = ({ user }) => {
@@ -19,6 +19,7 @@ const SampleCollection = ({ user }) => {
     photos: []
   });
   const { bookingId } = useParams(); // Assuming you might need this for routing or fetching specific order details
+  const [activeTab, setActiveTab] = useState('pending');
 
   // Lấy danh sách mẫu cần thu từ API
   useEffect(() => {
@@ -37,9 +38,18 @@ const SampleCollection = ({ user }) => {
             return true;
           })
           .map(b => {
-            const hasSampleReceived = Array.isArray(b.bookingHistories_on_booking)
-              ? b.bookingHistories_on_booking.some(h => h.status?.toLowerCase() === 'sample_received')
-              : false;
+            const histories = Array.isArray(b.bookingHistories_on_booking) ? b.bookingHistories_on_booking : [];
+            const hasSampleReceived = histories.some(h => h.status?.toLowerCase() === 'sample_received');
+            // Lấy status mới nhất
+            const sorted = [...histories].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            const latestStatus = sorted[0]?.status?.toUpperCase() || '';
+            let status = (() => {
+              if (latestStatus === 'EXPIRED') return 'overdue';
+              if (histories.some(h => h.status?.toUpperCase() === 'SAMPLE_COLLECTED')) return 'collected';
+              if (histories.some(h => h.status?.toUpperCase() === 'SAMPLE_RECEIVED')) return 'kit-returned';
+              const fallbackStatus = b.status?.toUpperCase() || 'SCHEDULED';
+              return fallbackStatus.toLowerCase().replaceAll('_', '-');
+            })();
             return {
               id: b.id,
               customerName: b.informations_on_booking?.[0]?.name || 'Không rõ',
@@ -49,18 +59,7 @@ const SampleCollection = ({ user }) => {
               address: b.informations_on_booking?.[0]?.address || '',
               scheduledTime: b.timeSlotId?.split('_')[0] || '',
               participants: b.participants_on_booking || [],
-              status: (() => {
-                const histories = Array.isArray(b.bookingHistories_on_booking) ? b.bookingHistories_on_booking : [];
-
-                const hasSampleCollected = histories.some(h => h.status?.toUpperCase() === 'SAMPLE_COLLECTED');
-                const hasSampleReceived = histories.some(h => h.status?.toUpperCase() === 'SAMPLE_RECEIVED');
-
-                if (hasSampleCollected) return 'collected';
-                if (hasSampleReceived) return 'kit-returned';
-
-                const fallbackStatus = b.status?.toUpperCase() || 'SCHEDULED';
-                return fallbackStatus.toLowerCase().replaceAll('_', '-');
-              })(),
+              status: status,
               orderDate: b.createdAt,
               returnedDate: b.returnedDate || '',
               collectedBy: b.collectedBy || '',
@@ -96,6 +95,9 @@ const SampleCollection = ({ user }) => {
   useEffect(() => {
     let filtered = samples;
 
+    // Ẩn đơn quá hạn chỉ dựa vào status
+    filtered = filtered.filter(sample => sample.status !== 'overdue');
+
     if (searchTerm) {
       filtered = filtered.filter(sample =>
         sample.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -111,6 +113,10 @@ const SampleCollection = ({ user }) => {
     setFilteredSamples(filtered);
   }, [searchTerm, filterStatus, samples]);
 
+  // Chia mẫu thành 2 nhóm
+  const pendingSamples = filteredSamples.filter(s => s.status !== 'collected');
+  const completedSamples = filteredSamples.filter(s => s.status === 'collected');
+
   const getStatusBadge = (status) => {
     const statusConfig = {
       'scheduled': { bg: 'warning', text: 'Đã lên lịch' },
@@ -118,7 +124,8 @@ const SampleCollection = ({ user }) => {
       'kit-returned': { bg: 'primary', text: 'Chờ thu mẫu' },
       'collecting': { bg: 'secondary', text: 'Đang thu mẫu' },
       'collected': { bg: 'success', text: 'Đã thu mẫu' },
-      'transferred': { bg: 'dark', text: 'Đã chuyển lab' }
+      'transferred': { bg: 'dark', text: 'Đã chuyển lab' },
+      'overdue': { bg: 'danger', text: 'Quá hạn' }
     };
     const config = statusConfig[status] || { bg: 'secondary', text: 'Không xác định' };
     return <Badge bg={config.bg}>{config.text}</Badge>;
@@ -177,12 +184,37 @@ const SampleCollection = ({ user }) => {
       setSamples(updatedSamples);
       setShowCollectionModal(false);
       setSelectedSample(null);
-      setAlert({
-        show: true,
-        message: `Thu mẫu cho đơn hàng ${selectedSample.id} đã hoàn tất thành công!`,
-        type: 'success'
-      });
-      setTimeout(() => setAlert({ show: false, message: '', type: '' }), 3000);
+      // Hiện swal, sau khi bấm OK mới chuyển tab và scroll
+      if (window.Swal) {
+        window.Swal.fire({
+          icon: 'success',
+          title: 'Thành công!',
+          text: `Thu mẫu cho đơn hàng ${selectedSample.id} đã hoàn tất thành công!`,
+          confirmButtonText: 'OK',
+          confirmButtonColor: '#198754'
+        }).then(() => {
+          setActiveTab('completed');
+          setTimeout(() => {
+            const el = document.getElementById(`sample-row-${selectedSample.id}`);
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              el.classList.add('table-primary');
+              setTimeout(() => el.classList.remove('table-primary'), 2000);
+            }
+          }, 400);
+        });
+      } else {
+        // Fallback nếu không có Swal
+        setActiveTab('completed');
+        setTimeout(() => {
+          const el = document.getElementById(`sample-row-${selectedSample.id}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('table-primary');
+            setTimeout(() => el.classList.remove('table-primary'), 2000);
+          }
+        }, 400);
+      }
     }).catch(() => {
       setAlert({
         show: true,
@@ -245,12 +277,6 @@ const SampleCollection = ({ user }) => {
     }
   };
 
-  const isOverdue = (scheduledTime) => {
-    const now = new Date();
-    const scheduled = new Date(scheduledTime);
-    return !isNaN(scheduled) && scheduled < now;
-  };
-
   const formatDateTime = (dateTimeString) => {
     return new Date(dateTimeString).toLocaleString('vi-VN');
   };
@@ -303,15 +329,16 @@ const SampleCollection = ({ user }) => {
                 <option value="collecting">Đang thu mẫu</option>
                 <option value="collected">Đã thu mẫu</option>
                 <option value="transferred">Đã chuyển lab</option>
+                <option value="overdue">Quá hạn</option>
               </Form.Select>
             </Col>
             <Col lg={3} className="mb-3 d-flex align-items-end">
               <div className="w-100">
-                <Badge bg="warning" className="me-2">
+                <Badge bg="primary" className="me-2">
                   Cần thu: {samples.filter(s => ['scheduled', 'waiting-arrival', 'kit-returned'].includes(s.status)).length}
                 </Badge>
                 <Badge bg="success">
-                  Hoàn thành: {samples.filter(s => s.status === 'collected').length}
+                  Đã thu mẫu: {samples.filter(s => s.status === 'collected').length}
                 </Badge>
               </div>
             </Col>
@@ -319,129 +346,219 @@ const SampleCollection = ({ user }) => {
         </Card.Body>
       </Card>
 
-      {/* Samples Table */}
-      <Card className="shadow-sm">
-        <Card.Header className="bg-light">
-          <div className="d-flex justify-content-between align-items-center">
-            <h5 className="mb-0">Danh sách mẫu cần thu ({filteredSamples.length})</h5>
-          </div>
-        </Card.Header>
-        <Card.Body className="p-0">
-          <div className="table-responsive">
-            <Table hover className="mb-0">
-              <thead className="table-light">
-                <tr>
-                  <th>Mã đơn</th>
-                  <th>Khách hàng</th>
-                  <th>Dịch vụ</th>
-                  <th>Phương thức</th>
-                  <th>Thời gian</th>
-                  <th>Trạng thái</th>
-                  <th>Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredSamples.map((sample) => (
-                  <tr key={sample.id} id={`sample-row-${sample.id}`}>
-                    <td>
-                      <div className="">{sample.id}</div>
-                      <small className="text-muted">{sample.participants.length} người</small>
-                    </td>
-                    <td>
-                      <div className="">{sample.customerName}</div>
-                      <small className="text-muted">{sample.phone}</small>
-                    </td>
-                    <td>
-                      <div>{sample.service}</div>
-                      <span
-                        className={`badge rounded-pill ${sample.serviceType === 'civil' ? 'bg-warning text-dark' : 'bg-success text-white'}`}
-                        style={{ fontSize: '12px', fontWeight: 500 }}
-                      >
-                        {sample.serviceType === 'civil' ? 'Hành chính' : 'Dân sự'}
-                      </span>
-                    </td>
-                    <td>
-                      {sample.methodName === 'Lấy mẫu tại lab' ? (
-                        <span className="badge rounded-pill bg-primary" style={{ fontSize: '13px', fontWeight: 500 }}>
-                          <i className="bi bi-buildings me-1"></i>Lấy mẫu tại lab
-                        </span>
-                      ) : sample.methodName === 'Lấy mẫu tại nhà' ? (
-                        <span className="badge rounded-pill bg-success" style={{ fontSize: '13px', fontWeight: 500 }}>
-                          <i className="bi bi-house-door me-1"></i>Lấy mẫu tại nhà
-                        </span>
-                      ) : sample.methodName === 'Nhân viên tới nhà lấy mẫu' ? (
-                        <span className="badge rounded-pill bg-warning text-dark" style={{ fontSize: '13px', fontWeight: 500 }}>
-                          <i className="bi bi-truck me-1"></i>Nhân viên tới nhà lấy mẫu
-                        </span>
-                      ) : (
-                        <span className="badge rounded-pill bg-secondary" style={{ fontSize: '13px', fontWeight: 500 }}>
-                          {sample.methodName || 'Không rõ'}
-                        </span>
-                      )}
-                    </td>
-                    <td>
-                      <div>{formatDateTime(sample.scheduledTime)}</div>
-                      {sample.returnedDate && (
-                        <small className="text-success">Về: {formatDateTime(sample.returnedDate)}</small>
-                      )}
-                    </td>
-                    <td>
-                      {(() => {
-                        const now = new Date();
-                        const scheduled = new Date(sample.scheduledTime);
-                        if (!isNaN(scheduled) && scheduled < now) {
-                          return <Badge bg="danger">Quá hạn</Badge>;
-                        }
-                        return getStatusBadge(sample.status);
-                      })()}
-                    </td>
-                    <td>
-                      <div className="d-flex flex-column gap-1">
-                        {sample.status !== 'collected' && sample.status !== 'transferred' && sample.showSampleButton && !isOverdue(sample.scheduledTime) && (
-                          <Button
-                            size="sm"
-                            variant="success"
-                            onClick={() => handleStartCollection(sample)}
+      {/* Tabs */}
+      <Tabs activeKey={activeTab} onSelect={setActiveTab} className="mb-3">
+        <Tab eventKey="pending" title={<span><i className="bi bi-list-ol me-2"></i>Đang chờ</span>}>
+          {/* Table cho mẫu chưa thu */}
+          <Card className="shadow-sm">
+            <Card.Header className="bg-light">
+              <div className="d-flex justify-content-between align-items-center">
+                <h5 className="mb-0">Danh sách mẫu cần thu ({pendingSamples.length})</h5>
+              </div>
+            </Card.Header>
+            <Card.Body className="p-0">
+              <div className="table-responsive">
+                <Table hover className="mb-0">
+                  <thead className="table-light">
+                    <tr>
+                      <th>Mã đơn</th>
+                      <th>Khách hàng</th>
+                      <th>Dịch vụ</th>
+                      <th>Phương thức</th>
+                      <th>Thời gian</th>
+                      <th>Trạng thái</th>
+                      <th>Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pendingSamples.map((sample) => (
+                      <tr key={sample.id} id={`sample-row-${sample.id}`}>
+                        <td>
+                          <div className="">{sample.id}</div>
+                          <small className="text-muted">{sample.participants.length} người</small>
+                        </td>
+                        <td>
+                          <div className="">{sample.customerName}</div>
+                          <small className="text-muted">{sample.phone}</small>
+                        </td>
+                        <td>
+                          <div>{sample.service}</div>
+                          <span
+                            className={`badge rounded-pill ${sample.serviceType === 'civil' ? 'bg-warning text-dark' : 'bg-success text-white'}`}
+                            style={{ fontSize: '12px', fontWeight: 500 }}
                           >
-                            <i className="bi bi-droplet me-1"></i>
-                            Thu mẫu
-                          </Button>
-                        )}
-                        {sample.status === 'scheduled' && sample.methodName !== 'Lấy mẫu tại nhà' && !isOverdue(sample.scheduledTime) && (
-                          <Button
-                            size="sm"
-                            variant="warning"
-                            onClick={() => handleMarkSampleReceived(sample.id)}
+                            {sample.serviceType === 'civil' ? 'Hành chính' : 'Dân sự'}
+                          </span>
+                        </td>
+                        <td>
+                          {sample.methodName === 'Lấy mẫu tại lab' ? (
+                            <span className="badge rounded-pill bg-primary" style={{ fontSize: '13px', fontWeight: 500 }}>
+                              <i className="bi bi-buildings me-1"></i>Lấy mẫu tại lab
+                            </span>
+                          ) : sample.methodName === 'Lấy mẫu tại nhà' ? (
+                            <span className="badge rounded-pill bg-success" style={{ fontSize: '13px', fontWeight: 500 }}>
+                              <i className="bi bi-house-door me-1"></i>Lấy mẫu tại nhà
+                            </span>
+                          ) : sample.methodName === 'Nhân viên tới nhà lấy mẫu' ? (
+                            <span className="badge rounded-pill bg-warning text-dark" style={{ fontSize: '13px', fontWeight: 500 }}>
+                              <i className="bi bi-truck me-1"></i>Nhân viên tới nhà lấy mẫu
+                            </span>
+                          ) : (
+                            <span className="badge rounded-pill bg-secondary" style={{ fontSize: '13px', fontWeight: 500 }}>
+                              {sample.methodName || 'Không rõ'}
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          <div>{formatDateTime(sample.scheduledTime)}</div>
+                          {sample.returnedDate && (
+                            <small className="text-success">Về: {formatDateTime(sample.returnedDate)}</small>
+                          )}
+                        </td>
+                        <td>
+                          {getStatusBadge(sample.status)}
+                        </td>
+                        <td>
+                          <div className="d-flex flex-column gap-1">
+                            {sample.status !== 'collected' && sample.status !== 'transferred' && sample.showSampleButton && sample.status !== 'overdue' && (
+                              <Button
+                                size="sm"
+                                variant="success"
+                                onClick={() => handleStartCollection(sample)}
+                              >
+                                <i className="bi bi-droplet me-1"></i>
+                                Thu mẫu
+                              </Button>
+                            )}
+                            {sample.status === 'scheduled' && sample.methodName !== 'Lấy mẫu tại nhà' && sample.status !== 'overdue' && (
+                              <Button
+                                size="sm"
+                                variant="warning"
+                                onClick={() => handleMarkSampleReceived(sample.id)}
+                              >
+                                <i className="bi bi-box-arrow-in-down me-1"></i>
+                                Xác nhận
+                              </Button>
+                            )}
+                            {sample.status === 'collected' && (
+                              <Button
+                                size="sm"
+                                variant="primary"
+                                onClick={() => handleTransferToLab(sample.id)}
+                              >
+                                <i className="bi bi-arrow-right me-1"></i>
+                                Chuyển lab
+                              </Button>
+                            )}
+                            {sample.status === 'transferred' && (
+                              <Badge bg="success" className="p-2">
+                                <i className="bi bi-check-circle me-1"></i>
+                                Hoàn tất
+                              </Badge>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
+            </Card.Body>
+          </Card>
+        </Tab>
+        <Tab eventKey="completed" title={<span><i className="bi bi-check-circle me-2"></i>Đã Thu Mẫu</span>}>
+          {/* Table cho mẫu đã thu */}
+          <Card className="shadow-sm">
+            <Card.Header className="bg-light">
+              <div className="d-flex justify-content-between align-items-center">
+                <h5 className="mb-0">Danh sách mẫu đã thu ({completedSamples.length})</h5>
+              </div>
+            </Card.Header>
+            <Card.Body className="p-0">
+              <div className="table-responsive">
+                <Table hover className="mb-0">
+                  <thead className="table-light">
+                    <tr>
+                      <th>Mã đơn</th>
+                      <th>Khách hàng</th>
+                      <th>Dịch vụ</th>
+                      <th>Phương thức</th>
+                      <th>Thời gian</th>
+                      <th>Trạng thái</th>
+                      <th>Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {completedSamples.map((sample) => (
+                      <tr key={sample.id} id={`sample-row-${sample.id}`}>
+                        <td>
+                          <div className="">{sample.id}</div>
+                          <small className="text-muted">{sample.participants.length} người</small>
+                        </td>
+                        <td>
+                          <div className="">{sample.customerName}</div>
+                          <small className="text-muted">{sample.phone}</small>
+                        </td>
+                        <td>
+                          <div>{sample.service}</div>
+                          <span
+                            className={`badge rounded-pill ${sample.serviceType === 'civil' ? 'bg-warning text-dark' : 'bg-success text-white'}`}
+                            style={{ fontSize: '12px', fontWeight: 500 }}
                           >
-                            <i className="bi bi-box-arrow-in-down me-1"></i>
-                            Xác nhận có thể thu mẫu
-                          </Button>
-                        )}
-                        {sample.status === 'collected' && (
-                          <Button
-                            size="sm"
-                            variant="primary"
-                            onClick={() => handleTransferToLab(sample.id)}
-                          >
-                            <i className="bi bi-arrow-right me-1"></i>
-                            Chuyển lab
-                          </Button>
-                        )}
-                        {sample.status === 'transferred' && (
-                          <Badge bg="success" className="p-2">
-                            <i className="bi bi-check-circle me-1"></i>
-                            Hoàn tất
-                          </Badge>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          </div>
-        </Card.Body>
-      </Card>
+                            {sample.serviceType === 'civil' ? 'Hành chính' : 'Dân sự'}
+                          </span>
+                        </td>
+                        <td>
+                          {sample.methodName === 'Lấy mẫu tại lab' ? (
+                            <span className="badge rounded-pill bg-primary" style={{ fontSize: '13px', fontWeight: 500 }}>
+                              <i className="bi bi-buildings me-1"></i>Lấy mẫu tại lab
+                            </span>
+                          ) : sample.methodName === 'Lấy mẫu tại nhà' ? (
+                            <span className="badge rounded-pill bg-success" style={{ fontSize: '13px', fontWeight: 500 }}>
+                              <i className="bi bi-house-door me-1"></i>Lấy mẫu tại nhà
+                            </span>
+                          ) : sample.methodName === 'Nhân viên tới nhà lấy mẫu' ? (
+                            <span className="badge rounded-pill bg-warning text-dark" style={{ fontSize: '13px', fontWeight: 500 }}>
+                              <i className="bi bi-truck me-1"></i>Nhân viên tới nhà lấy mẫu
+                            </span>
+                          ) : (
+                            <span className="badge rounded-pill bg-secondary" style={{ fontSize: '13px', fontWeight: 500 }}>
+                              {sample.methodName || 'Không rõ'}
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          <div>{formatDateTime(sample.scheduledTime)}</div>
+                          {sample.returnedDate && (
+                            <small className="text-success">Về: {formatDateTime(sample.returnedDate)}</small>
+                          )}
+                        </td>
+                        <td>
+                          {getStatusBadge(sample.status)}
+                        </td>
+                        <td>
+                          <div className="d-flex flex-column gap-1">
+                            {sample.status === 'collected' && (
+                              <Button
+                                size="sm"
+                                variant="primary"
+                                onClick={() => handleTransferToLab(sample.id)}
+                              >
+                                <i className="bi bi-arrow-right me-1"></i>
+                                Chuyển lab
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
+            </Card.Body>
+          </Card>
+        </Tab>
+      </Tabs>
 
       {/* Sample Collection Modal */}
       <Modal show={showCollectionModal} onHide={() => setShowCollectionModal(false)} size="xl">

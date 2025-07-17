@@ -33,7 +33,7 @@ const LabTesting = ({ user }) => {
             const history = Array.isArray(b.bookingHistories_on_booking) ? b.bookingHistories_on_booking : [];
             const sorted = [...history].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
             const latestStatus = sorted[sorted.length - 1]?.status;
-            return latestStatus === 'SAMPLE_COLLECTED';
+            return ['SAMPLE_COLLECTED', 'RESULT_PENDING', 'ANALYSIS_COMPLETE'].includes(latestStatus);
           })
           .map(b => {
             const history = Array.isArray(b.bookingHistories_on_booking) ? b.bookingHistories_on_booking : [];
@@ -91,7 +91,7 @@ const LabTesting = ({ user }) => {
       'need-retest': { bg: 'danger', text: 'Cần xét lại' },
       'sample-collected': { bg: 'warning', text: 'Chờ xét nghiệm' },
       'testing-started': { bg: 'info', text: 'Đang xét nghiệm' },
-      'result-pending': { bg: 'info', text: 'Chờ kết quả' }
+      'result-pending': { bg: 'info', text: 'Đã xét nghiệm' }
     };
     const config = statusConfig[status] || { bg: 'secondary', text: 'Không xác định' };
     return <Badge bg={config.bg}>{config.text}</Badge>;
@@ -224,40 +224,14 @@ const LabTesting = ({ user }) => {
           </Card>
         </Col>
         <Col lg={3} md={6} className="mb-3">
-          <Card className="border-start border-info border-4 shadow-sm">
-            <Card.Body className="d-flex align-items-center">
-              <div className="me-3">
-                <i className="bi bi-arrow-repeat fs-1 text-info"></i>
-              </div>
-              <div>
-                <div className="h4 mb-0">{tests.filter(t => ['in-analysis', 'quality-check'].includes(t.status)).length}</div>
-                <div className="text-muted small">Đang phân tích</div>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col lg={3} md={6} className="mb-3">
           <Card className="border-start border-success border-4 shadow-sm">
             <Card.Body className="d-flex align-items-center">
               <div className="me-3">
                 <i className="bi bi-check-circle fs-1 text-success"></i>
               </div>
               <div>
-                <div className="h4 mb-0">{tests.filter(t => t.status === 'analysis-complete').length}</div>
+                <div className="h4 mb-0">{tests.filter(t => t.status === 'result-pending').length}</div>
                 <div className="text-muted small">Hoàn thành</div>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col lg={3} md={6} className="mb-3">
-          <Card className="border-start border-danger border-4 shadow-sm">
-            <Card.Body className="d-flex align-items-center">
-              <div className="me-3">
-                <i className="bi bi-exclamation-triangle fs-1 text-danger"></i>
-              </div>
-              <div>
-                <div className="h4 mb-0">{tests.filter(t => t.priority === 'urgent').length}</div>
-                <div className="text-muted small">Khẩn cấp</div>
               </div>
             </Card.Body>
           </Card>
@@ -294,11 +268,11 @@ const LabTesting = ({ user }) => {
             </Col>
             <Col lg={3} className="mb-3 d-flex align-items-end">
               <div className="w-100">
-                <Badge bg="info" className="me-2">
-                  Đang xử lý: {tests.filter(t => ['in-analysis', 'quality-check'].includes(t.status)).length}
+                <Badge bg="warning" className="me-2">
+                  Đang xử lý: {tests.filter(t => ['sample-collected'].includes(t.status)).length}
                 </Badge>
-                <Badge bg="success">
-                  Hoàn thành: {tests.filter(t => t.status === 'analysis-complete').length}
+                <Badge bg="info">
+                  Hoàn thành: {tests.filter(t => t.status === 'result-pending').length}
                 </Badge>
               </div>
             </Col>
@@ -405,7 +379,7 @@ const LabTesting = ({ user }) => {
         <Tab eventKey="completed" title={
           <span>
             <i className="bi bi-check-circle me-2"></i>
-            Hoàn thành ({tests.filter(t => t.status === 'analysis-complete').length})
+            Hoàn thành ({tests.filter(t => t.status === 'result-pending').length})
           </span>
         }>
           {/* Completed Table */}
@@ -421,20 +395,23 @@ const LabTesting = ({ user }) => {
                       <th>Mã đơn</th>
                       <th>Khách hàng</th>
                       <th>Dịch vụ</th>
-                      <th>Kết quả</th>
+                      <th>Phương thức</th>
                       <th>Ngày hoàn thành</th>
-                      <th>Người thực hiện</th>
+                      <th>Trạng thái</th>
                       <th>Thao tác</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredTests.filter(t => t.status === 'analysis-complete').map((test) => (
+                    {filteredTests.filter(t => t.status === 'result-pending').map((test) => (
                       <tr key={test.id}>
                         <td>
-                          <div className="fw-bold">{test.id}</div>
-                          <small className="text-muted">{test.labCode}</small>
+                          <div>{test.id}</div>
+                          <small className="text-muted">{test.participants?.length || 0} người</small>
                         </td>
-                        <td>{test.customerName}</td>
+                        <td>
+                          <div>{test.customerName}</div>
+                          <small className="text-muted">{test.phone}</small>
+                        </td>
                         <td>
                           <div>{test.service?.title || 'Không rõ'}</div>
                           <span
@@ -444,32 +421,41 @@ const LabTesting = ({ user }) => {
                               }`}
                             style={{ fontSize: '12px', fontWeight: 500 }}
                           >
-                            {test.service?.category?.hasLegalValue ? 'Dân sự' : 'Hành chính'}
+                            {test.service?.category?.hasLegalValue ? 'Hành chính' : 'Dân sự'}
                           </span>
                         </td>
                         <td>
-                          {test.result && (
-                            <div>
-                              <Badge bg={test.result.conclusion === 'POSITIVE' ? 'success' : 'danger'}>
-                                {test.result.conclusion}
-                              </Badge>
-                              <div className="small text-muted">
-                                Độ tin cậy: {test.result.confidence}
-                              </div>
-                            </div>
+                          {test.methodName === 'Lấy mẫu tại lab' ? (
+                            <span className="badge rounded-pill bg-primary" style={{ fontSize: '13px', fontWeight: 500 }}>
+                              <i className="bi bi-buildings me-1"></i>Lấy mẫu tại lab
+                            </span>
+                          ) : test.methodName === 'Lấy mẫu tại nhà' ? (
+                            <span className="badge rounded-pill bg-success" style={{ fontSize: '13px', fontWeight: 500 }}>
+                              <i className="bi bi-house-door me-1"></i>Lấy mẫu tại nhà
+                            </span>
+                          ) : test.methodName === 'Nhân viên tới nhà lấy mẫu' ? (
+                            <span className="badge rounded-pill bg-warning text-dark" style={{ fontSize: '13px', fontWeight: 500 }}>
+                              <i className="bi bi-truck me-1"></i>Nhân viên tới nhà lấy mẫu
+                            </span>
+                          ) : (
+                            <span className="badge rounded-pill bg-secondary" style={{ fontSize: '13px', fontWeight: 500 }}>
+                              {test.methodName || 'Không rõ'}
+                            </span>
                           )}
                         </td>
-                        <td>{formatDateTime(test.completedDate)}</td>
-                        <td>{test.startedBy}</td>
+                        <td>{formatDateTime(test.createdAt)}</td>
+                        <td>{getStatusBadge(test.status)}</td>
                         <td>
-                          <Button
-                            size="sm"
-                            variant="outline-primary"
-                            onClick={() => handleOpenTestModal(test)}
-                          >
-                            <i className="bi bi-eye me-1"></i>
-                            Xem chi tiết
-                          </Button>
+                          {test.status === 'result-pending' && (
+                            <Button
+                              size="sm"
+                              variant="outline-primary"
+                              onClick={() => handleOpenTestModal(test)}
+                            >
+                              <i className="bi bi-eye me-1"></i>
+                              Xem chi tiết
+                            </Button>
+                          )}
                         </td>
                       </tr>
                     ))}

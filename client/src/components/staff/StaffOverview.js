@@ -34,7 +34,7 @@ const StaffOverview = ({ user }) => {
           const sorted = [...history].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
           const latestStatus = sorted[0]?.status || 'unknown';
           const expectedDate = booking.timeSlotId?.split('_')[0]; // Lấy ngày từ slot ID
-          const isOverdue = expectedDate && new Date(expectedDate) < new Date(); // 👈 Check quá hạn
+          // const isOverdue = expectedDate && new Date(expectedDate) < new Date(); // 👈 Check quá hạn
 
           // Kiểm tra quá hạn
           let taskStatus = '';
@@ -81,9 +81,9 @@ const StaffOverview = ({ user }) => {
               break;
           }
           // Sau khi mapping xong mới kiểm tra quá hạn
-          if (isOverdue && !['collected', 'kit-returned', 'analysis-complete', 'reviewed', 'delivered', 'cancelled'].includes(taskStatus)) {
-            taskStatus = 'overdue';
-          }
+          // if (isOverdue && !['collected', 'kit-returned', 'analysis-complete', 'reviewed', 'delivered', 'cancelled'].includes(taskStatus)) {
+          //   taskStatus = 'overdue';
+          // }
           let deadline = '';
           try {
             const [date, startTime] = booking.timeSlot?.id?.split('_') || [];

@@ -28,23 +28,29 @@ const KitPreparation = ({ user }) => {
             // Tìm status mới nhất từ history (nếu có)
             const history = Array.isArray(b.bookingHistories_on_booking) ? b.bookingHistories_on_booking : [];
             const sorted = [...history].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            const latestStatus = sorted[0]?.status || 'waiting-kit-prep';
-            const expectedDate = b.timeSlotId?.split('_')[0]; // Lấy ngày từ slot ID
-            const isOverdue = expectedDate && new Date(expectedDate) < new Date(); // 👈 Check quá hạn
-
+            const latestStatus = sorted[0]?.status?.toUpperCase() || '';
+            let mappedStatus = '';
+            if (latestStatus === 'EXPIRED') {
+              mappedStatus = 'expired';
+            } else if (latestStatus === 'BOOKED') {
+              mappedStatus = 'waiting-kit-prep';
+            } else if (latestStatus) {
+              mappedStatus = latestStatus.toLowerCase().replaceAll('_', '-');
+            } else {
+              mappedStatus = 'sample-received'; // Mặc định nếu không xác định
+            }
+            // Nếu mappedStatus rỗng hoặc không nằm trong statusConfig thì cũng gán 'sample-received'
+            const validStatuses = ['waiting-kit-prep', 'kit-prepared', 'kit-sent', 'waiting-sample', 'sample-received', 'expired', 'kit-returned'];
+            if (!validStatuses.includes(mappedStatus)) mappedStatus = 'sample-received';
             return {
               id: b.id,
               customerName: b.informations_on_booking?.[0]?.name || 'Không rõ',
               phone: b.informations_on_booking?.[0]?.phone || '',
               service: b.service?.title || 'Không rõ dịch vụ',
               serviceType: b.service?.category?.hasLegalValue ? 'civil' : 'administrative',
-              status: isOverdue && !['sample-received', 'ready-for-collection'].includes(latestStatus.toLowerCase())
-                ? 'expired'
-                : (latestStatus === 'BOOKED'
-                  ? 'waiting-kit-prep'
-                  : latestStatus.toLowerCase().replaceAll('_', '-')),
+              status: mappedStatus,
               orderDate: b.createdAt,
-              expectedDate,
+              expectedDate: b.timeSlotId?.split('_')[0],
               returnInfo: b.returnInfo || null,
               trackingNumber: b.trackingNumber || null,
               specialInstructions: b.specialInstructions || null
@@ -75,6 +81,9 @@ const KitPreparation = ({ user }) => {
   // Filter orders based on search and status
   useEffect(() => {
     let filtered = orders;
+
+    // Ẩn đơn quá hạn
+    filtered = filtered.filter(order => order.status !== 'expired');
 
     if (searchTerm) {
       filtered = filtered.filter(order =>
