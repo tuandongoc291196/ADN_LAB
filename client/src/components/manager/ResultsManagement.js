@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Button, Badge, Alert, Modal, Form, Table, InputGroup, Tabs, Tab } from 'react-bootstrap';
 import { getAllBookings, getTestResultByBookingId, updateTestResult, getSamplesByBookingId, addBookingHistory, getBookingById } from '../../services/api';
+import Swal from 'sweetalert2';
 
 const ResultsManagement = ({ user }) => {
     const [results, setResults] = useState([]);
@@ -64,7 +65,7 @@ const ResultsManagement = ({ user }) => {
                     labCode: b.labCode || '',
                     completedDate: b.completedDate || b.updatedAt || (Array.isArray(b.bookingHistories_on_booking) && b.bookingHistories_on_booking[0]?.createdAt) || '',
                     technician: b.staff?.user?.fullname || '',
-                    status: 'result-pending',
+                    status: 'result-pending' || 'complete',
                     priority: b.priority || 'medium',
                     hasLegalValue: b.service?.category?.hasLegalValue || false,
                     result: b.result || {},
@@ -200,28 +201,56 @@ const ResultsManagement = ({ user }) => {
         });
         setTimeout(() => setAlert({ show: false, message: '', type: '' }), 3000);
     };
-    const handleCompleteAnalysis = () => {
-        const updatedResults = results.map(result =>
-            result.id === selectedTest.id
-                ? {
-                    ...result,
-                    status: 'analysis-complete',
-                    completedDate: new Date().toLocaleString('vi-VN'),
-                    progress: 100,
-                    result: testResults
-                }
-                : result
-        );
-        setResults(updatedResults);
-        setShowTestModal(false);
-        setSelectedTest(null);
+    const handleCompleteAnalysis = async () => {
+        if (!selectedTest) return;
+        try {
+            await updateTestResult({
+                bookingId: selectedTest.id,
+                testMethod: testResults.method,
+                positive: testResults.positive,
+                accuracy: parseFloat(testResults.confidence),
+                testType: testResults.serviceType,
+                resultData: testResults.conclusion,
+                resultNotes: testResults.notes,
+                status: 'analysis-complete',
+            });
+            await addBookingHistory({ bookingId: selectedTest.id, status: 'COMPLETE', description: 'hẹ hẹ' });
+            const updatedResults = results.map(result =>
+                result.id === selectedTest.id
+                    ? {
+                        ...result,
+                        status: 'analysis-complete',
+                        completedDate: new Date().toLocaleString('vi-VN'),
+                        progress: 100,
+                        result: testResults
+                    }
+                    : result
+            );
+            setResults(updatedResults);
+            setShowTestModal(false);
+            setSelectedTest(null);
 
-        setAlert({
-            show: true,
-            message: `Xét nghiệm ${selectedTest.id} đã hoàn thành và ghi nhận kết quả!`,
-            type: 'success'
-        });
-        setTimeout(() => setAlert({ show: false, message: '', type: '' }), 3000);
+            setAlert({
+                show: true,
+                message: `Xét nghiệm ${selectedTest.id} đã hoàn thành và ghi nhận kết quả!`,
+                type: 'success'
+            });
+            setTimeout(() => setAlert({ show: false, message: '', type: '' }), 3000);
+
+            // Hiển thị thông báo Swal
+            Swal.fire({
+                icon: 'success',
+                title: 'Thành công!',
+                text: `Đã trả kết quả cho mã đơn ${selectedTest.id} thành công!`,
+                confirmButtonText: 'OK'
+            });
+        } catch (err) {
+            setAlert({
+                show: true,
+                message: 'Lỗi khi cập nhật kết quả xét nghiệm: ' + err.message,
+                type: 'danger'
+            });
+        }
     };
 
     const formatDateTime = (dateTimeString) => {
@@ -298,19 +327,7 @@ const ResultsManagement = ({ user }) => {
                         </Card.Body>
                     </Card>
                 </Col>
-                <Col lg={3} md={6} className="mb-3">
-                    <Card className="border-start border-danger border-4 shadow-sm">
-                        <Card.Body className="d-flex align-items-center">
-                            <div className="me-3">
-                                <i className="bi bi-exclamation-triangle fs-1 text-danger"></i>
-                            </div>
-                            <div>
-                                <div className="h4 mb-0">{results.filter(r => r.priority === 'urgent').length}</div>
-                                <div className="text-muted small">Khẩn cấp</div>
-                            </div>
-                        </Card.Body>
-                    </Card>
-                </Col>
+
             </Row>
 
             {/* Filters */}
@@ -445,6 +462,7 @@ const ResultsManagement = ({ user }) => {
                                                                     labCode: booking?.labCode || '',
                                                                     markers: [],
                                                                     qualityScore: '',
+                                                                    relationship: booking?.participant?.[0]?.relationship || '',
                                                                     notes: '',
                                                                     bookingId: booking?.id || '',
                                                                     customerName: booking?.informations_on_booking?.[0]?.name || '',
@@ -491,8 +509,6 @@ const ResultsManagement = ({ user }) => {
                                             <th>Dịch vụ</th>
                                             <th>Kết quả</th>
                                             <th>Ngày hoàn thành</th>
-                                            <th>Thời gian chờ</th>
-                                            <th>Ưu tiên</th>
                                             <th>Thao tác</th>
                                         </tr>
                                     </thead>
@@ -617,6 +633,75 @@ const ResultsManagement = ({ user }) => {
                         </Card.Body>
                     </Card>
                 </Tab>
+
+                <Tab eventKey="complete" title={
+                    <span>
+                        <i className="bi bi-clipboard-check me-2"></i>
+                        Đã hoàn tất
+                    </span>
+                }>
+                    {/* Complete Results Table */}
+                    <Card className="shadow-sm">
+                        <Card.Header className="bg-light">
+                            <h5 className="mb-0">Kết quả đã hoàn tất</h5>
+                        </Card.Header>
+                        <Card.Body className="p-0">
+                            <div className="table-responsive">
+                                <Table hover className="mb-0">
+                                    <thead className="table-light">
+                                        <tr>
+                                            <th>Mã đơn</th>
+                                            <th>Khách hàng</th>
+                                            <th>Dịch vụ</th>
+                                            <th>Kỹ thuật viên</th>
+                                            <th>Ngày hoàn thành</th>
+                                            <th>Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {filteredResults.filter(r => r.status === 'complete').map((result) => (
+                                            <tr key={result.id}>
+                                                <td>
+                                                    <div className="fw-bold">{result.id}</div>
+                                                    <small className="text-muted">{result.labCode}</small>
+                                                </td>
+                                                <td>
+                                                    <div className="fw-bold">{result.customerName}</div>
+                                                    <small className="text-muted">{result.phone}</small>
+                                                </td>
+                                                <td>
+                                                    <div>{result.serviceName}</div>
+                                                    <div className="mt-1">
+                                                        <Badge bg="secondary">{result.categoryName}</Badge>
+                                                        {result.hasLegalValue ? (
+                                                            <Badge bg="warning" text="dark" className="ms-2">Hành chính</Badge>
+                                                        ) : (
+                                                            <Badge bg="success" text='white' className="ms-2">Dân sự</Badge>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td>{result.technician}</td>
+                                                <td>{formatDateTime(result.completedDate)}</td>
+                                                <td>
+                                                    <div className="d-flex flex-column gap-1">
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline-primary"
+                                                            onClick={() => handleViewResult(result)}
+                                                        >
+                                                            <i className="bi bi-eye me-1"></i>
+                                                            Xem chi tiết
+                                                        </Button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </Table>
+                            </div>
+                        </Card.Body>
+                    </Card>
+                </Tab>
             </Tabs>
 
             {/* Result Detail Modal */}
@@ -710,7 +795,7 @@ const ResultsManagement = ({ user }) => {
                                             {selectedResult.participants.map((participant, index) => (
                                                 <tr key={index}>
                                                     <td><strong>{participant.name}</strong></td>
-                                                    <td>{participant.role}</td>
+                                                    <td>{participant.relationship}</td>
                                                     <td>{index === 0 ? 'Người yêu cầu' : 'Đối tượng xét nghiệm'}</td>
                                                 </tr>
                                             ))}
