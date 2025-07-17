@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Button, Badge, Alert, Modal, Form, Table, InputGroup, Tabs, Tab } from 'react-bootstrap';
 import { getBookingByStaffId, addBookingHistory, getSamplesByBookingId, updateSample } from '../../services/api';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
+
 const SampleCollection = ({ user }) => {
   const [samples, setSamples] = useState([]);
   const [filteredSamples, setFilteredSamples] = useState([]);
@@ -20,6 +22,7 @@ const SampleCollection = ({ user }) => {
   });
   const { bookingId } = useParams(); // Assuming you might need this for routing or fetching specific order details
   const [activeTab, setActiveTab] = useState('pending');
+  const navigate = useNavigate();
 
   // Lấy danh sách mẫu cần thu từ API
   useEffect(() => {
@@ -185,26 +188,13 @@ const SampleCollection = ({ user }) => {
       setShowCollectionModal(false);
       setSelectedSample(null);
       // Hiện swal, sau khi bấm OK mới chuyển tab và scroll
-      if (window.Swal) {
-        window.Swal.fire({
-          icon: 'success',
-          title: 'Thành công!',
-          text: `Thu mẫu cho đơn hàng ${selectedSample.id} đã hoàn tất thành công!`,
-          confirmButtonText: 'OK',
-          confirmButtonColor: '#198754'
-        }).then(() => {
-          setActiveTab('completed');
-          setTimeout(() => {
-            const el = document.getElementById(`sample-row-${selectedSample.id}`);
-            if (el) {
-              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              el.classList.add('table-primary');
-              setTimeout(() => el.classList.remove('table-primary'), 2000);
-            }
-          }, 400);
-        });
-      } else {
-        // Fallback nếu không có Swal
+      Swal.fire({
+        icon: 'success',
+        title: 'Thành công!',
+        text: `Thu mẫu cho đơn hàng ${selectedSample.id} đã hoàn tất thành công!`,
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#198754'
+      }).then(() => {
         setActiveTab('completed');
         setTimeout(() => {
           const el = document.getElementById(`sample-row-${selectedSample.id}`);
@@ -214,7 +204,7 @@ const SampleCollection = ({ user }) => {
             setTimeout(() => el.classList.remove('table-primary'), 2000);
           }
         }, 400);
-      }
+      });
     }).catch(() => {
       setAlert({
         show: true,
@@ -243,7 +233,8 @@ const SampleCollection = ({ user }) => {
       message: `Mẫu ${sampleId} đã được chuyển về phòng lab thành công!`,
       type: 'success'
     });
-    setTimeout(() => setAlert({ show: false, message: '', type: '' }), 3000);
+    setTimeout(() => setAlert({ show: false, message: '', type: '' }), 1000);
+    navigate(`/staff/lab-testing/${sampleId}`);
   };
 
   const handleMarkSampleReceived = async (bookingId) => {

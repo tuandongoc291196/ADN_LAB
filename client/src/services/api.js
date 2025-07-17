@@ -875,3 +875,44 @@ export const getBookingsByUserId = async (userId) => {
     throw new Error('Failed to fetch bookings by user: ' + error.message);
   }
 };
+
+// Lấy kết quả xét nghiệm theo bookingId
+export const getTestResultByBookingId = async (bookingId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/testresult/booking`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ bookingId }),
+    });
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    const data = await response.json();
+    return data.data || data;
+  } catch (error) {
+    throw new Error('Failed to fetch test result by bookingId: ' + error.message);
+  }
+};
+
+// Cập nhật kết quả xét nghiệm
+export const updateTestResult = async (payload) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/testresult`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to update test result');
+    }
+    const data = await response.json();
+    return data.data || data;
+  } catch (error) {
+    throw new Error('Failed to update test result: ' + error.message);
+  }
+};

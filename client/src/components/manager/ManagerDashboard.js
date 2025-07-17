@@ -6,13 +6,13 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { Container, Row, Col, Nav, Card, Alert, Badge, Button, Spinner } from 'react-bootstrap';
 import { useAuth } from '../context/auth';
-import { 
-  Speedometer2, 
-  Gear, 
-  CalendarCheck, 
-  People, 
-  GraphUp, 
-  ChatDots, 
+import {
+  Speedometer2,
+  Gear,
+  CalendarCheck,
+  People,
+  GraphUp,
+  ChatDots,
   BoxArrowRight,
   StarFill,
   Star,
@@ -30,6 +30,7 @@ import StaffManagement from './StaffManagement';
 import ReportManagement from './ReportManagement';
 import FeedbackManagement from './FeedbackManagement';
 import ManagerProfile from './ManagerProfile';
+import ResultsManagement from './ResultsManagement';
 
 // Thêm hàm getRoleLabel để mapping role sang tiếng Việt
 function getRoleLabel(role) {
@@ -53,7 +54,7 @@ const ManagerDashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  
+
   // State quản lý tab đang active
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoading, setIsLoading] = useState(true);
@@ -67,7 +68,7 @@ const ManagerDashboard = () => {
   useEffect(() => {
     const pathSegments = location.pathname.split('/');
     const currentPath = pathSegments[2]; // Lấy phần sau /manager/
-    
+
     if (currentPath) {
       setActiveTab(currentPath);
     } else {
@@ -81,9 +82,9 @@ const ManagerDashboard = () => {
       // Đợi 1400ms để context có thể load hoàn toàn
       setTimeout(() => {
         setIsLoading(false);
-      }, 1500); 
+      }, 1500);
     };
-    
+
     checkAuth();
   }, [user]);
 
@@ -145,6 +146,14 @@ const ManagerDashboard = () => {
       description: 'Theo dõi và quản lý lịch hẹn'
     },
     {
+      key: 'results',
+      label: 'Quản lý kết quả',
+      icon: GraphUp,
+      path: '/manager/results',
+      color: 'primary',
+      description: 'Quản lý kết quả xét nghiệm ADN'
+    },
+    {
       key: 'staff',
       label: 'Quản lý nhân viên',
       icon: People,
@@ -176,6 +185,7 @@ const ManagerDashboard = () => {
       color: 'dark',
       description: 'Quản lý thông tin cá nhân'
     }
+
   ];
 
   return (
@@ -188,16 +198,16 @@ const ManagerDashboard = () => {
             <Card.Header className="bg-warning text-dark text-center py-4">
               <div className="mb-3">
                 {currentUser.avatar ? (
-                  <img 
-                    src={currentUser.avatar} 
-                    alt="Avatar" 
+                  <img
+                    src={currentUser.avatar}
+                    alt="Avatar"
                     className="rounded-circle"
                     width="60"
                     height="60"
                   />
                 ) : (
-                  <div className="bg-white bg-opacity-20 rounded-circle d-inline-flex align-items-center justify-content-center" 
-                       style={{ width: '60px', height: '60px' }}>
+                  <div className="bg-white bg-opacity-20 rounded-circle d-inline-flex align-items-center justify-content-center"
+                    style={{ width: '60px', height: '60px' }}>
                     <i className="bi bi-person-badge fs-1 text-dark"></i>
                   </div>
                 )}
@@ -214,11 +224,10 @@ const ManagerDashboard = () => {
                   key={item.key}
                   as={Link}
                   to={item.path}
-                  className={`d-flex align-items-center py-3 px-4 border-0 ${
-                    activeTab === item.key
-                      ? `bg-${item.color} bg-opacity-10 text-${item.color} border-end border-${item.color} border-3`
-                      : 'text-dark'
-                  }`}
+                  className={`d-flex align-items-center py-3 px-4 border-0 ${activeTab === item.key
+                    ? `bg-${item.color} bg-opacity-10 text-${item.color} border-end border-${item.color} border-3`
+                    : 'text-dark'
+                    }`}
                   style={{ textDecoration: 'none' }}
                 >
                   <span className="me-3">
@@ -284,8 +293,8 @@ const ManagerDashboard = () => {
               <h2 className="mb-1">Chào mừng, {currentUser.name}!</h2>
               <p className="text-muted mb-0">
                 <Clock className="me-1" />
-                Hôm nay là {new Date().toLocaleDateString('vi-VN', { 
-                  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+                Hôm nay là {new Date().toLocaleDateString('vi-VN', {
+                  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
                 })}
               </p>
             </div>
@@ -295,8 +304,8 @@ const ManagerDashboard = () => {
                   {notifications.some(n => !n.read) ? <BellFill /> : <Bell />}
                 </Button>
                 {notifications.some(n => !n.read) && (
-                  <Badge 
-                    bg="danger" 
+                  <Badge
+                    bg="danger"
                     className="position-absolute top-0 start-100 translate-middle rounded-circle"
                     style={{ transform: 'translate(-50%, -50%)' }}
                   >
@@ -315,6 +324,7 @@ const ManagerDashboard = () => {
             <Route path="overview" element={<ManagerOverview user={currentUser} />} />
             <Route path="services" element={<ServiceManagement user={currentUser} />} />
             <Route path="appointments" element={<AppointmentManagement user={currentUser} />} />
+            <Route path="results" element={<ResultsManagement user={currentUser} />} />
             <Route path="staff" element={<StaffManagement user={currentUser} />} />
             <Route path="reports" element={<ReportManagement user={currentUser} />} />
             <Route path="feedback" element={<FeedbackManagement user={currentUser} />} />
@@ -336,8 +346,8 @@ const ManagerOverview = ({ user }) => {
           <h2 className="mb-1">Chào mừng, {user.fullname}!</h2>
           <p className="text-muted mb-0">
             <Clock className="me-1" />
-            Hôm nay là {new Date().toLocaleDateString('vi-VN', { 
-              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+            Hôm nay là {new Date().toLocaleDateString('vi-VN', {
+              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
             })}
           </p>
         </div>
