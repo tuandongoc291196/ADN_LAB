@@ -1,7 +1,6 @@
 const { updateStaffSlotCount } = require("../users/updateUser.js");
 const { updateTimeSlot } = require("../timeSlots/updateTimeSlot.js");
 const { addBookingHistory } = require("../bookingHistory/addBookingHistory.js");
-const { getBookingHistoryByBookingId } = require("../bookingHistory/getBookingHistory.js");
 const { getBookingsBySlotDate } = require("../bookings/getBookings.js");
 const {deletePaymentByBookingId} = require("../payments/deletePayment.js");
 
@@ -18,12 +17,12 @@ const cleanupPendingPaymentBookings = async () => {
     
     for (const booking of todayBookings) {
       try {
-        const latestHistory = await getBookingHistoryByBookingId(booking.id);
+        const latestHistory = booking.bookingHistories_on_booking?.[0];
         
         console.log(`Processing booking ${booking.id} with latest history:`, latestHistory);
-        console.log(`Status of latest history:`, latestHistory[0]?.status);
+        console.log(`Status of latest history:`, latestHistory?.status);
         
-        if (latestHistory[0]?.status === "PENDING_PAYMENT" || latestHistory[0]?.status === "BOOKED" || latestHistory[0]?.status === "UPDATED") {
+        if (latestHistory?.status === "PENDING_PAYMENT" || latestHistory?.status === "BOOKED" || latestHistory?.status === "UPDATED") {
           console.log(`Marking pending payment booking as cancelled: ${booking.id}`);
           await updateStaffSlotCount(booking.staffId, "decrease");
           await updateTimeSlot(booking.timeSlotId, "decrease");
@@ -31,7 +30,7 @@ const cleanupPendingPaymentBookings = async () => {
           await addBookingHistory(booking.id, "EXPIRED", "Booking expired due to pending payment - automatically cancelled at end of day");
           console.log(`Successfully marked booking as expired: ${booking.id}`);
         } else {
-          console.log(`Booking ${booking.id} has status ${latestHistory[0]?.status}, skipping cleanup`);
+          console.log(`Booking ${booking.id} has status ${latestHistory?.status}, skipping cleanup`);
         }
       } catch (bookingError) {
         console.error(`Error processing booking ${booking.id}:`, bookingError);

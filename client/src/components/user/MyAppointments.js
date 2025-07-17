@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Row, Col, Card, Button, Badge, Form, Alert, Modal, Tab, Tabs, ProgressBar, Spinner } from 'react-bootstrap';
-import { getBookingByUserId } from '../../services/api';
+import { getBookingByUserId, addBookingHistory } from '../../services/api';
 import { METHOD_MAPPING } from '../data/services-data';
+import Swal from 'sweetalert2';
 
 const MyAppointments = ({ user }) => {
   const [selectedTab, setSelectedTab] = useState('all');
@@ -15,7 +16,13 @@ const MyAppointments = ({ user }) => {
   const [error, setError] = useState(null);
   const [timeFilter, setTimeFilter] = useState('all'); // all, 1week, 1month, 3months, 6months, 12months
   const [statusFilter, setStatusFilter] = useState('all'); // all, confirmed, in-progress, completed, cancelled
-
+  const [showReceiveModal, setShowReceiveModal] = useState(false);
+  const [selectedReceiveAppointmentId, setSelectedReceiveAppointmentId] = useState(null);
+  const [showSelfCollectModal, setShowSelfCollectModal] = useState(false);
+  const [selectedSelfCollectAppointmentId, setSelectedSelfCollectAppointmentId] = useState(null);
+  const [showSendSampleModal, setShowSendSampleModal] = useState(false);
+  const [selectedSendSampleAppointmentId, setSelectedSendSampleAppointmentId] = useState(null);
+  const [description, setDescription] = useState('');
   // Fetch appointments from API
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -69,18 +76,18 @@ const MyAppointments = ({ user }) => {
 
   const getEstimatedCompletion = (date, status) => {
     if (status === 'completed') return null;
-    
+
     // Validate date
     if (!date || date === '') return null;
-    
+
     try {
       const appointmentDate = new Date(date);
-      
+
       // Check if date is valid
       if (isNaN(appointmentDate.getTime())) {
         return null;
       }
-      
+
       const estimatedDate = new Date(appointmentDate.getTime() + (7 * 24 * 60 * 60 * 1000));
       return estimatedDate.toISOString().split('T')[0];
     } catch (error) {
@@ -95,7 +102,7 @@ const MyAppointments = ({ user }) => {
     const timeSlotId = booking.timeSlotId;
     let date = '';
     let time = '';
-    
+
     if (timeSlotId) {
       try {
         // Parse timeSlotId format: "2025-07-13_09:00_10:00"
@@ -119,7 +126,7 @@ const MyAppointments = ({ user }) => {
     // Determine status based on booking data
     const createdAt = new Date(booking.createdAt);
     const now = new Date();
-    
+
     let isUpcoming = false;
     if (timeSlotId) {
       try {
@@ -134,7 +141,7 @@ const MyAppointments = ({ user }) => {
         isUpcoming = false;
       }
     }
-    
+
     let status = 'confirmed';
     if (isUpcoming) {
       status = 'confirmed';
@@ -164,13 +171,13 @@ const MyAppointments = ({ user }) => {
     const serviceName = booking.service?.title || 'Dịch vụ xét nghiệm ADN';
     let serviceType = 'civil'; // default
     let categoryName = 'ADN Dân sự'; // default
-    
+
     // Use category data directly from booking.service.category (new API structure)
     if (booking.service?.category) {
       const hasLegalValue = booking.service.category.hasLegalValue;
       const isAdministrative = hasLegalValue === true || hasLegalValue === 'true' || hasLegalValue === 1 || hasLegalValue === '1';
       const isCivil = hasLegalValue === false || hasLegalValue === 'false' || hasLegalValue === 0 || hasLegalValue === '0';
-      
+
       if (isAdministrative) {
         serviceType = 'administrative';
         categoryName = booking.service.category.name || 'ADN Hành chính';
@@ -200,11 +207,15 @@ const MyAppointments = ({ user }) => {
 
     // Get staff information from nested data
     const staffName = booking.staff?.user?.fullname || `Nhân viên ${booking.staffId}`;
+    const bookingHistories = Array.isArray(booking.bookingHistories_on_booking)
+      ? booking.bookingHistories_on_booking
+      : [];
+
+    const sortedHistories = [...bookingHistories].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const latestHistoryStatus = sortedHistories[0]?.status || '';
 
     // Get participants from nested data
     const participants = booking.participants_on_booking || [];
-
-
 
     return {
       id: booking.id,
@@ -224,19 +235,39 @@ const MyAppointments = ({ user }) => {
       canReschedule: status === 'confirmed',
       nextAction: getNextAction(status),
       notes: getNotes(status),
-      estimatedCompletion: getEstimatedCompletion(date, status)
+      estimatedCompletion: getEstimatedCompletion(date, status),
+      latestHistoryStatus: latestHistoryStatus
     };
   };
 
+  const updateBookingStatusLocally = (bookingId, status, description) => {
+    setAppointments(prev =>
+      prev.map(booking =>
+        booking.id === bookingId
+          ? {
+            ...booking,
+            bookingHistories_on_booking: [
+              ...booking.bookingHistories_on_booking,
+              {
+                status,
+                description,
+                createdAt: new Date().toISOString()
+              }
+            ]
+          }
+          : booking
+      )
+    );
+  };
   // Transform all appointments - handle async transformation
   const [transformedAppointments, setTransformedAppointments] = useState([]);
-  
+
   useEffect(() => {
     if (appointments.length === 0) {
       setTransformedAppointments([]);
       return;
     }
-    
+
     try {
       const transformed = appointments.map(transformBookingData);
       setTransformedAppointments(transformed);
@@ -280,7 +311,7 @@ const MyAppointments = ({ user }) => {
       filtered = filtered.filter(apt =>
         apt.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
         apt.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (apt.participants && apt.participants.some(p => 
+        (apt.participants && apt.participants.some(p =>
           p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           (p.relationship && p.relationship.toLowerCase().includes(searchTerm.toLowerCase()) && p.relationship !== 'Chưa xác định')
         ))
@@ -291,7 +322,7 @@ const MyAppointments = ({ user }) => {
     if (timeFilter !== 'all') {
       const now = new Date();
       const cutoffDate = new Date();
-      
+
       switch (timeFilter) {
         case '1week':
           cutoffDate.setDate(now.getDate() - 7);
@@ -311,7 +342,7 @@ const MyAppointments = ({ user }) => {
         default:
           break;
       }
-      
+
       filtered = filtered.filter(apt => {
         try {
           const appointmentDate = new Date(apt.date);
@@ -332,12 +363,12 @@ const MyAppointments = ({ user }) => {
       try {
         const dateA = new Date(a.date);
         const dateB = new Date(b.date);
-        
+
         // Handle invalid dates
         if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) return 0;
         if (isNaN(dateA.getTime())) return 1;
         if (isNaN(dateB.getTime())) return -1;
-        
+
         return dateB - dateA;
       } catch (error) {
         console.error('Error sorting appointments:', error);
@@ -372,13 +403,13 @@ const MyAppointments = ({ user }) => {
 
   const formatDate = (dateString) => {
     if (!dateString || dateString === '') return 'Chưa xác định';
-    
+
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) {
         return 'Chưa xác định';
       }
-      
+
       const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
       return date.toLocaleDateString('vi-VN', options);
     } catch (error) {
@@ -389,7 +420,7 @@ const MyAppointments = ({ user }) => {
 
   const isUpcoming = (dateString) => {
     if (!dateString || dateString === '') return false;
-    
+
     try {
       const date = new Date(dateString);
       return !isNaN(date.getTime()) && date > new Date();
@@ -414,11 +445,11 @@ const MyAppointments = ({ user }) => {
       <Row className="mb-4">
         <Col>
           <div className="d-flex align-items-center mb-1">
-            <h2 className="mb-1" style={{textAlign: 'left'}}>
+            <h2 className="mb-1" style={{ textAlign: 'left' }}>
               Lịch hẹn của tôi
             </h2>
           </div>
-          <p className="text-muted mb-0" style={{textAlign: 'left'}}>Quản lý và theo dõi tất cả lịch hẹn xét nghiệm</p>
+          <p className="text-muted mb-0" style={{ textAlign: 'left' }}>Quản lý và theo dõi tất cả lịch hẹn xét nghiệm</p>
         </Col>
       </Row>
 
@@ -554,11 +585,11 @@ const MyAppointments = ({ user }) => {
                         {/* Appointment Header */}
                         <div className="d-flex justify-content-between align-items-start mb-3">
                           <div>
-                            <h5 className="mb-2 d-flex align-items-center" style={{gap: 8}}>
-                              <span className={`badge ${appointment.serviceType === 'administrative' ? 'bg-warning text-dark' : 'bg-success'}`} style={{borderRadius: '8px', padding: '6px 12px', fontWeight: 500}}>
+                            <h5 className="mb-2 d-flex align-items-center" style={{ gap: 8 }}>
+                              <span className={`badge ${appointment.serviceType === 'administrative' ? 'bg-warning text-dark' : 'bg-success'}`} style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: 500 }}>
                                 {appointment.categoryName}
                               </span>
-                              <span style={{fontWeight: 500, fontSize: 18}}>{appointment.service}</span>
+                              <span style={{ fontWeight: 500, fontSize: 18 }}>{appointment.service}</span>
                             </h5>
                             <div className="d-flex align-items-center gap-3 text-muted mb-2">
                               <span className="text-muted small">
@@ -592,10 +623,10 @@ const MyAppointments = ({ user }) => {
 
                         {/* Participants */}
                         <div className="mb-3">
-                          <strong className="text-muted small" style={{textAlign: 'left', display: 'block'}}>Người tham gia:</strong>
+                          <strong className="text-muted small" style={{ textAlign: 'left', display: 'block' }}>Người tham gia:</strong>
                           <div className="mt-1">
                             {appointment.participants && appointment.participants.length > 0 ? (
-                              <table className="table table-bordered table-sm mt-2" style={{maxWidth: 600}}>
+                              <table className="table table-bordered table-sm mt-2" style={{ maxWidth: 600 }}>
                                 <thead>
                                   <tr className="text-muted small">
                                     <th>Tên</th>
@@ -607,7 +638,7 @@ const MyAppointments = ({ user }) => {
                                 <tbody>
                                   {appointment.participants.map((participant, idx) => (
                                     <tr key={idx} className="text-muted small">
-                                      <td style={{fontWeight: 500}}>{participant.name}</td>
+                                      <td style={{ fontWeight: 500 }}>{participant.name}</td>
                                       <td>{participant.age}</td>
                                       <td>{participant.relationship || 'Chưa xác định'}</td>
                                       <td>{participant.gender === 'male' ? 'Nam' : participant.gender === 'female' ? 'Nữ' : 'Khác'}</td>
@@ -657,7 +688,7 @@ const MyAppointments = ({ user }) => {
                       {/* Actions */}
                       <Col lg={4} className="mt-3 mt-lg-0">
                         <div className="d-grid gap-2">
-                          <Button
+                          {/* <Button
                             variant="outline-primary"
                             as={Link}
                             to={`/tracking/${appointment.id}`}
@@ -696,7 +727,70 @@ const MyAppointments = ({ user }) => {
                           <Button variant="outline-secondary">
                             <i className="bi bi-chat-dots me-2"></i>
                             Hỗ trợ
-                          </Button>
+                          </Button> */}
+                          {appointment.latestHistoryStatus === 'KIT_SENT' && (
+                            <>
+                              <Alert variant="info" className="py-2">
+                                <i className="bi bi-truck me-2"></i>
+                                <strong>Kit đã đến nơi!</strong>
+                              </Alert>
+                              <Button
+                                variant="success"
+                                onClick={() => {
+                                  setSelectedReceiveAppointmentId(appointment.id);
+                                  setShowReceiveModal(true);
+                                }}
+                              >
+                                <i className="bi bi-box-arrow-in-down me-2"></i>
+                                Đã nhận kit
+                              </Button>
+
+                            </>
+                          )}
+                          {appointment.latestHistoryStatus === 'KIT_RECEIVED' && (
+                            <>
+                              <Alert variant="success" className="py-2">
+                                <i className="bi bi-box-arrow-in-down me-2"></i>
+                                <strong>Đã nhận kit thành công!</strong>
+                              </Alert>
+                              <Button
+                                variant="warning"
+                                onClick={() => {
+                                  setSelectedSelfCollectAppointmentId(appointment.id);
+                                  setShowSelfCollectModal(true);
+                                }}
+                              >
+                                <i className="bi bi-check2-circle me-2"></i>
+                                Tự thu mẫu
+                              </Button>
+                            </>
+                          )}
+                          {appointment.latestHistoryStatus === 'SELF_COLLECTED' && (
+                            <>
+                              <Alert variant="info" className="py-2">
+                                <i className="bi bi-hourglass-split me-2"></i>
+                                <strong>Bạn đã tự thu mẫu</strong><br />
+                                Vui lòng gửi mẫu về phòng lab theo hướng dẫn.
+                              </Alert>
+                              <Button
+                                variant="primary"
+                                onClick={() => {
+                                  setSelectedSendSampleAppointmentId(appointment.id);
+                                  setShowSendSampleModal(true);
+                                }}
+                              >
+                                <i className="bi bi-send-check me-2"></i>
+                                Gửi lại kit
+                              </Button>
+                            </>
+                          )}
+                          {appointment.latestHistoryStatus === 'KIT_RETURNED' && (
+                            <Alert variant="info" className="py-2">
+                              <i className="bi bi-activity me-2"></i>
+                              <strong>Mẫu của bạn đang được phân tích</strong><br />
+                              Chúng tôi đã nhận được mẫu xét nghiệm và đang tiến hành xử lý. Kết quả sẽ sớm có.
+                            </Alert>
+                          )}
                         </div>
                       </Col>
                     </Row>
@@ -836,6 +930,188 @@ const MyAppointments = ({ user }) => {
           </Button>
         </Modal.Footer>
       </Modal>
+      <Modal show={showReceiveModal} onHide={() => setShowReceiveModal(false)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Xác nhận đã nhận kit</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Alert variant="info">
+            <i className="bi bi-truck me-2"></i>
+            <strong>Kit đã được giao đến địa chỉ của bạn.</strong><br />
+            Vui lòng xác nhận để chúng tôi có thể theo dõi tiến độ xét nghiệm chính xác hơn.
+          </Alert>
+          <Form.Group className="mt-3">
+            <Form.Label>Mô tả thông tin(bắt buộc)</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              placeholder="Ví dụ: Đã nhận kit từ bưu tá Giao hàng nhanh lúc 9h sáng"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </Form.Group>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowReceiveModal(false)}>Đóng</Button>
+          <Button
+            variant="success"
+            disabled={!description.trim()}
+            onClick={async () => {
+              try {
+                await addBookingHistory({
+                  bookingId: selectedReceiveAppointmentId,
+                  status: 'KIT_RECEIVED',
+                  description
+                });
+                updateBookingStatusLocally(selectedReceiveAppointmentId, 'KIT_RECEIVED', description);
+                Swal.fire({
+                  icon: 'success',
+                  title: 'Xác nhận thành công!',
+                  text: 'Chúng tôi đã ghi nhận thông tin.',
+                  confirmButtonColor: '#198754'
+                });
+                setShowReceiveModal(false);
+                setDescription('');
+              } catch (err) {
+                Swal.fire({
+                  icon: 'error',
+                  title: 'Lỗi!',
+                  text: 'Không thể xác nhận. Vui lòng thử lại.',
+                  confirmButtonColor: '#d33'
+                });
+              }
+            }}
+          >
+            <i className="bi bi-check-circle me-2"></i>
+            Xác nhận
+          </Button>
+        </Modal.Footer>
+      </Modal>
+      <Modal
+        show={showSelfCollectModal}
+        onHide={() => setShowSelfCollectModal(false)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Xác nhận tự thu mẫu</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Alert variant="warning">
+            <i className="bi bi-droplet me-2"></i>
+            <strong>Bạn đã tự thu mẫu thành công?</strong><br />
+            Vui lòng xác nhận để chúng tôi sắp xếp tiếp nhận và phân tích mẫu xét nghiệm.
+          </Alert>
+          <Form.Group className="mt-3">
+            <Form.Label>Mô tả thông tin(bắt buộc)</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              placeholder="Ví dụ: Đã nhận kit từ bưu tá Giao hàng nhanh lúc 9h sáng"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </Form.Group>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowSelfCollectModal(false)}>
+            Đóng
+          </Button>
+          <Button
+            variant="success"
+            onClick={async () => {
+              try {
+                await addBookingHistory({
+                  bookingId: selectedSelfCollectAppointmentId,
+                  status: 'SELF_COLLECTED',
+                  description
+                });
+                updateBookingStatusLocally(selectedSelfCollectAppointmentId, 'SELF_COLLECTED', description);
+                Swal.fire({
+                  icon: 'success',
+                  title: 'Đã xác nhận tự thu mẫu!',
+                  text: 'Hãy đảm bảo gửi mẫu về trung tâm đúng hướng dẫn.',
+                  confirmButtonColor: '#198754'
+                });
+                setShowSelfCollectModal(false);
+                setDescription('');
+              } catch (error) {
+                Swal.fire({
+                  icon: 'error',
+                  title: 'Lỗi',
+                  text: 'Không thể xác nhận. Vui lòng thử lại.',
+                  confirmButtonColor: '#d33'
+                });
+              }
+            }}
+          >
+            <i className="bi bi-check-circle me-2"></i>
+            Xác nhận
+          </Button>
+        </Modal.Footer>
+      </Modal>
+      <Modal
+        show={showSendSampleModal}
+        onHide={() => setShowSendSampleModal(false)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Xác nhận đã gửi mẫu về phòng lab</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Alert variant="primary">
+            <i className="bi bi-truck me-2"></i>
+            <strong>Bạn đã gửi mẫu về trung tâm xét nghiệm?</strong><br />
+            Vui lòng xác nhận để chúng tôi tiến hành tiếp nhận và phân tích mẫu.
+          </Alert>
+          <Form.Group className="mt-3">
+            <Form.Label>Mô tả thông tin(bắt buộc)</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              placeholder="Ví dụ: Đã nhận kit từ bưu tá Giao hàng nhanh lúc 9h sáng"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </Form.Group>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowSendSampleModal(false)}>
+            Đóng
+          </Button>
+          <Button
+            variant="success"
+            onClick={async () => {
+              try {
+                await addBookingHistory({
+                  bookingId: selectedSendSampleAppointmentId,
+                  status: 'KIT_RETURNED',
+                  description
+                });
+                updateBookingStatusLocally(selectedSendSampleAppointmentId, 'KIT_RETURNED', description);
+                Swal.fire({
+                  icon: 'success',
+                  title: 'Đã xác nhận gửi mẫu!',
+                  text: 'Chúng tôi sẽ tiến hành xét nghiệm.',
+                  confirmButtonColor: '#198754'
+                });
+                setShowSendSampleModal(false);
+                setDescription('');
+              } catch (error) {
+                Swal.fire({
+                  icon: 'error',
+                  title: 'Lỗi',
+                  text: 'Không thể xác nhận. Vui lòng thử lại.',
+                  confirmButtonColor: '#d33'
+                });
+              }
+            }}
+          >
+            <i className="bi bi-check-circle me-2"></i>
+            Xác nhận
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
     </>
   );
 };

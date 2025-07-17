@@ -132,6 +132,18 @@ function App() {
     checkAuthStatus();
   }, []);
 
+  // Prevent unwanted redirects on page reload
+  useEffect(() => {
+    const currentPath = window.location.pathname;
+    console.log('App loaded at path:', currentPath);
+    
+    // Nếu user đã đăng nhập và không phải trang login/register thì lưu current path
+    const savedUser = localStorage.getItem('user');
+    if (savedUser && !['/login', '/register', '/reset'].includes(currentPath)) {
+      sessionStorage.setItem('lastVisitedPath', currentPath);
+    }
+  }, []);
+
   // Show loading spinner while checking auth
   if (isLoading) {
     return <LoadingSpinner />;
@@ -166,7 +178,8 @@ function App() {
               <Route path="/appointment" element={<AppointmentBooking />} />
               <Route path="/booking-confirmation" element={<BookingConfirmation />} />
               <Route path="/tracking" element={<OrderTracking />} />
-              <Route path="/tracking/:trackingId" element={<OrderTracking />} />
+              <Route path="/tracking/:bookingId" element={<OrderTracking />} />
+              <Route path="/booking/track/:bookingId" element={<OrderTracking />} />
 
               {/* Payment System Routes */}
               <Route path="/payment" element={<Payment />} />
@@ -191,16 +204,7 @@ function App() {
               <Route path="/manager/*" element={<ManagerDashboard />} />
 
               {/* Admin Dashboard Routes */}
-              <Route path="/admin" element={<AdminDashboard />}>
-                <Route index element={<Navigate to="/admin/overview" replace />} />
-                <Route path="overview" element={<AdminOverview />} />
-                <Route path="blog" element={<BlogManagement />} />
-                <Route path="blog/create" element={<BlogEditor />} />
-                <Route path="blog/edit/:id" element={<BlogEditor />} />
-                <Route path="reports" element={<AdminReports />} />
-                <Route path="users" element={<UserManagement />} />
-                <Route path="settings" element={<SystemSettings />} />
-              </Route>
+              <Route path="/admin/*" element={<AdminDashboard />} />
 
               {/* Information & Library Pages */}
               <Route path="/library" element={<div className="container py-5"><h2>Thư viện ADN</h2><p>Thư viện kiến thức đang được phát triển...</p></div>} />

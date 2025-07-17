@@ -766,3 +766,112 @@ export const addBookingHistory = async (payload) => {
     throw new Error('Failed to add booking history: ' + error.message);
   }
 };
+
+// Lấy danh sách mẫu theo bookingId
+export const getSamplesByBookingId = async (bookingId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/samples/booking`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ bookingId }),
+    });
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    const data = await response.json();
+    // API có thể trả về data.data.samples hoặc data.data
+    return data.data?.samples || data.data || [];
+  } catch (error) {
+    throw new Error('Failed to fetch samples by bookingId: ' + error.message);
+  }
+};
+
+// Cập nhật chất lượng mẫu
+export const updateSample = async ({ sampleId, sampleQuality, sampleConcentration, notes }) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/samples`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ sampleId, sampleQuality, sampleConcentration, notes }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to update sample quality');
+    }
+    const data = await response.json();
+    return data.data || data;
+  } catch (error) {
+    throw new Error('Failed to update sample quality: ' + error.message);
+  }
+};
+
+// Lấy tất cả payment
+export const getAllPayments = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/payments`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error('getAllPayments error:', error);
+    throw new Error('Failed to fetch payments: ' + error.message);
+  }
+};
+
+// Lấy tất cả booking
+export const getAllBookings = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/bookings`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error('getAllBookings error:', error);
+    throw new Error('Failed to fetch bookings: ' + error.message);
+  }
+};
+
+// Lấy booking theo userId
+export const getBookingsByUserId = async (userId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/bookings/user`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error('getBookingsByUserId error:', error);
+    throw new Error('Failed to fetch bookings by user: ' + error.message);
+  }
+};

@@ -4,7 +4,6 @@ const { processZaloPayPayment, getPaymentDataZALOPAY } = require('./zaloPayPayme
 const {getOneBookingById} = require('../bookings/getBookings');
 const {checkBookingExists} = require('../bookings/bookingUtils');
 const {addBookingHistory} = require('../bookingHistory/addBookingHistory');
-const {getBookingHistoryByBookingId} = require('../bookingHistory/getBookingHistory');
 const {updatePaymentStatus} = require('./updatePayments');
 const {deletePayment} = require('./deletePayment');
 const {getPaymentByBookingId} = require('./getPayments');
@@ -82,7 +81,10 @@ const addPayment = async (req, res) => {
       });
     }
 
-    const bookingHistory = await getBookingHistoryByBookingId(bookingId);
+    const record = await getOneBookingById(bookingId);
+    console.log("Data for booking:", record);
+
+    const bookingHistory = record.bookingHistories_on_booking;
     if (bookingHistory && bookingHistory.length > 0) {
       const latestStatus = bookingHistory[0].status;
       console.log("Latest booking status:", latestStatus);
@@ -121,9 +123,6 @@ const addPayment = async (req, res) => {
         });
       }
     }
-
-    const record = await getOneBookingById(bookingId);
-    console.log("Data for booking:", record);
 
     const amount = record.totalAmount;
     if (!amount) {

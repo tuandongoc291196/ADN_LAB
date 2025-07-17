@@ -121,20 +121,6 @@ const AdminOverview = ({ user }) => {
 
   return (
     <div>
-      {/* Page Header */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h2 className="mb-1">
-            <i className="bi bi-speedometer2 text-danger me-2"></i>
-            Dashboard Tổng Quan
-          </h2>
-          <p className="text-muted mb-0">Chào mừng trở lại, {user?.name || 'Admin'}!</p>
-        </div>
-        <Button variant="outline-danger">
-          <i className="bi bi-download me-2"></i>
-          Xuất báo cáo
-        </Button>
-      </div>
 
       {/* Key Metrics Cards */}
       <Row className="mb-4">

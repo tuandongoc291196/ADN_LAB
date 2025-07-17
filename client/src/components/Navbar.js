@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Navbar, Nav, NavDropdown, Container, Button, Badge, Image } from 'react-bootstrap';
 import { auth, logout } from './config/firebase';
@@ -12,10 +12,10 @@ const MainNavbar = ({ setUser }) => {
   const [expanded, setExpanded] = useState(false);
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const [userAuth, loadingAuth] = useAuthState(auth);
-  const [userData, setUserData] = useState(null);
   const [logoUrl] = useState('https://firebasestorage.googleapis.com/v0/b/su25-swp391-g8.firebasestorage.app/o/assets%2Flogo.png?alt=media&token=1c903ba1-852a-4f5b-b498-97c31ffbb742');
 
   const getAdministrativeCategories = () => {
@@ -56,169 +56,252 @@ const MainNavbar = ({ setUser }) => {
     }
   };
 
-  // Effect: Lấy userData từ localStorage hoặc Firebase, đồng bộ state user
-  const storedUserData = localStorage.getItem('userData');
-  useEffect(() => {
-    // Kiểm tra nếu vừa đăng xuất thì reset user
-    const justLoggedOut = sessionStorage.getItem('justLoggedOut') === 'true';
-    if (justLoggedOut) {
-      sessionStorage.removeItem('justLoggedOut');
-      return;
+  // Helper function để extract role từ parsed data
+  const extractRole = (parsed) => {
+    let role = '';
+    if (parsed.user_id === 0 || parsed.user_id === '0') {
+      role = 'customer';
+    } else if (parsed.role && typeof parsed.role === 'object' && parsed.role.name) {
+      role = parsed.role.name;
+    } else if (typeof parsed.role === 'string') {
+      role = parsed.role;
+    } else if (parsed.role_string) {
+      role = parsed.role_string;
     }
-    // Lấy userData mới nhất từ localStorage mỗi lần render
-    if (storedUserData) {
-      const parsed = JSON.parse(storedUserData);
-      // Ưu tiên lấy role từ role.name nếu có, chuẩn hóa role
-      let role = '';
-      if (parsed.user_id === 0 || parsed.user_id === '0') {
-        role = 'customer';
-      } else if (parsed.role && typeof parsed.role === 'object' && parsed.role.name) {
-        role = parsed.role.name;
-      } else if (typeof parsed.role === 'string') {
-        role = parsed.role;
-      } else if (parsed.role_string) {
-        role = parsed.role_string;
-      }
-      role = (role || '').toLowerCase().trim();
-      // Chỉ giữ lại các trường user cần thiết cho UI, loại bỏ các trường cũ không còn dùng
-      const enhancedUser = {
-        id: parsed.id || parsed.user_id || '',
-        user_id: parsed.user_id || parsed.id || '',
-        email: parsed.email || '',
-        fullname: parsed.fullname || '',
-        avatar: parsed.avatar || '',
-        phone: parsed.phone || '',
-        role: parsed.role || { name: role },
-        accountStatus: parsed.accountStatus || '',
-        authProvider: parsed.authProvider || '',
-        createdAt: parsed.createdAt || '',
-        lastLogin: parsed.lastLogin || '',
-        gender: parsed.gender || '',
-        address: parsed.address || '',
-        role_string: role, // role chuẩn hóa dạng string
-        isAdmin: ['admin', 'manager', 'staff'].includes(role) // flag phân quyền
-      };
-      setUserData(enhancedUser);
-      setUser(enhancedUser);
-    } else if (auth.currentUser) {
-      // Nếu không có localStorage nhưng đã login Firebase → gọi API lấy user
-      const fetchUserData = async () => {
-        try {
-          const res = await fetch(`https://app-bggwpxm32a-uc.a.run.app/users`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ userId: auth.currentUser.uid }),
-          });
-          const result = await res.json();
-          const userInfo = result.data;
-          const role = userInfo?.role?.name?.toLowerCase() || 'customer';
-          // Chỉ giữ lại các trường user cần thiết cho UI, loại bỏ các trường cũ không còn dùng
-          const enhancedUser = {
-            id: userInfo.id || userInfo.user_id || '',
-            user_id: userInfo.user_id || userInfo.id || '',
-            email: userInfo.email || '',
-            fullname: userInfo.fullname || '',
-            avatar: userInfo.avatar || '',
-            phone: userInfo.phone || '',
-            role: userInfo.role || { name: role },
-            accountStatus: userInfo.accountStatus || '',
-            authProvider: userInfo.authProvider || '',
-            createdAt: userInfo.createdAt || '',
-            lastLogin: userInfo.lastLogin || '',
-            gender: userInfo.gender || '',
-            address: userInfo.address || '',
-            role_string: role, // role chuẩn hóa dạng string
-            isAdmin: ['admin', 'manager', 'staff'].includes(role) // flag phân quyền
-          };
-          // Ghi đè localStorage chỉ với các trường mới nhất
-          localStorage.setItem('userData', JSON.stringify(enhancedUser));
-          localStorage.setItem('isAuthenticated', 'true');
-          setUserData(enhancedUser);
-          setUser(enhancedUser);
-        } catch (error) {
-          console.error('Error fetching user data:', error);
-        }
-      };
-      fetchUserData();
-    }
-  }, [storedUserData, setUser]);
+    return (role || '').toLowerCase().trim();
+  };
 
-  useEffect(() => {
-    const handleUserDataUpdate = () => {
+  // Helper function để tạo enhanced user object
+  const createEnhancedUser = (parsed, role) => ({
+    id: parsed.id || parsed.user_id || '',
+    user_id: parsed.user_id || parsed.id || '',
+    email: parsed.email || '',
+    fullname: parsed.fullname || '',
+    avatar: parsed.avatar || '',
+    phone: parsed.phone || '',
+    role: parsed.role || { name: role },
+    accountStatus: parsed.accountStatus || '',
+    authProvider: parsed.authProvider || '',
+    createdAt: parsed.createdAt || '',
+    lastLogin: parsed.lastLogin || '',
+    gender: parsed.gender || '',
+    address: parsed.address || '',
+    role_string: role,
+    isAdmin: ['admin', 'manager', 'staff'].includes(role)
+  });
+
+  // Lấy userData từ localStorage ngay lập tức (sync) để badge hiển thị nhanh
+  const getUserDataFromStorage = () => {
+    try {
       const storedUserData = localStorage.getItem('userData');
-      if (storedUserData) {
-        const parsed = JSON.parse(storedUserData);
-        // Ưu tiên lấy role từ role.name nếu có, chuẩn hóa role
-        let role = '';
-        if (parsed.user_id === 0 || parsed.user_id === '0') {
-          role = 'customer';
-        } else if (parsed.role && typeof parsed.role === 'object' && parsed.role.name) {
-          role = parsed.role.name;
-        } else if (typeof parsed.role === 'string') {
-          role = parsed.role;
-        } else if (parsed.role_string) {
-          role = parsed.role_string;
-        }
-        role = (role || '').toLowerCase().trim();
-        const enhancedUser = {
-          id: parsed.id || parsed.user_id || '',
-          user_id: parsed.user_id || parsed.id || '',
-          email: parsed.email || '',
-          fullname: parsed.fullname || '',
-          avatar: parsed.avatar || '',
-          phone: parsed.phone || '',
-          role: parsed.role || { name: role },
-          accountStatus: parsed.accountStatus || '',
-          authProvider: parsed.authProvider || '',
-          createdAt: parsed.createdAt || '',
-          lastLogin: parsed.lastLogin || '',
-          gender: parsed.gender || '',
-          address: parsed.address || '',
-          role_string: role,
-          isAdmin: ['admin', 'manager', 'staff'].includes(role)
-        };
-        setUserData(enhancedUser);
-        setUser(enhancedUser);
+      if (!storedUserData) return null;
+      
+      const parsed = JSON.parse(storedUserData);
+      const role = extractRole(parsed);
+      return createEnhancedUser(parsed, role);
+    } catch (error) {
+      console.error('Error parsing localStorage userData:', error);
+      localStorage.removeItem('userData');
+      return null;
+    }
+  };
+
+  // Khởi tạo userData ngay lập tức từ localStorage
+  const [userData, setUserData] = useState(() => getUserDataFromStorage());
+
+  // Function để refresh userData từ localStorage (có thể gọi từ bên ngoài)
+  const refreshUserData = () => {
+    const freshUserData = getUserDataFromStorage();
+    if (freshUserData) {
+      setUserData(freshUserData);
+      setUser(freshUserData);
+    }
+  };
+
+  // Expose refresh function to window for external access
+  useEffect(() => {
+    window.refreshNavbarUserData = refreshUserData;
+    return () => {
+      delete window.refreshNavbarUserData;
+    };
+  }, []);
+
+  // Effect: Cập nhật userData ngay khi userAuth thay đổi (đăng nhập thành công)
+  useEffect(() => {
+    if (userAuth) {
+      // Thử lấy userData fresh từ localStorage ngay khi đăng nhập
+      const freshUserData = getUserDataFromStorage();
+      if (freshUserData && (!userData || userData.user_id !== freshUserData.user_id)) {
+        setUserData(freshUserData);
+        setUser(freshUserData);
+      }
+
+      // Nếu chưa có userData, polling localStorage trong 5 giây đầu
+      if (!userData) {
+        let attempts = 0;
+        const maxAttempts = 20; // 5 giây với interval 250ms
+        
+        const polling = setInterval(() => {
+          attempts++;
+          const pollingUserData = getUserDataFromStorage();
+          
+          if (pollingUserData) {
+            setUserData(pollingUserData);
+            setUser(pollingUserData);
+            clearInterval(polling);
+          } else if (attempts >= maxAttempts) {
+            clearInterval(polling);
+          }
+        }, 250); // Check mỗi 250ms
+
+        return () => clearInterval(polling);
+      }
+    } else if (!userAuth && userData) {
+      // Đăng xuất - clear userData
+      setUserData(null);
+      setUser(null);
+    }
+  }, [userAuth]); // Chỉ phụ thuộc vào userAuth
+
+  // Effect: Lắng nghe thay đổi localStorage để cập nhật userData real-time
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const freshUserData = getUserDataFromStorage();
+      if (freshUserData && userAuth) {
+        setUserData(freshUserData);
+        setUser(freshUserData);
       }
     };
-    window.addEventListener('userDataUpdated', handleUserDataUpdate);
-    return () => window.removeEventListener('userDataUpdated', handleUserDataUpdate);
-  }, [setUser]);
 
-  console.log('userData', userData);
+    // Lắng nghe sự kiện storage change
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [userAuth]);
 
-  // Handler: Đăng xuất, clear localStorage, reset state, chuyển về trang chủ
+  // Effect: Đồng bộ với parent component khi userData thay đổi
+  useEffect(() => {
+    if (userData) {
+      setUser(userData);
+    }
+  }, [userData, setUser]);
+
+  // Memoized helper functions để tránh re-computation không cần thiết
+  const userRole = useMemo(() => {
+    return userData?.role_string?.toLowerCase() || '';
+  }, [userData?.role_string]);
+
+  const hasAdminAccess = useMemo(() => {
+    return ['admin', 'manager', 'staff'].includes(userRole);
+  }, [userRole]);
+
+  const isCustomer = useMemo(() => {
+    return !userRole || userRole === 'customer';
+  }, [userRole]);
+
+  // Helper để kiểm tra role cụ thể
+  const isRole = useMemo(() => ({
+    admin: userRole === 'admin',
+    manager: userRole === 'manager', 
+    staff: userRole === 'staff',
+    customer: userRole === 'customer'
+  }), [userRole]);
+
+  // Handler: Đăng xuất mượt mà với loading state và confirmation
   const handleLogout = async () => {
     try {
-      // Đăng xuất Firebase trước
-      await logout();
+      // Hiển thị dialog xác nhận đăng xuất
+      const result = await Swal.fire({
+        title: 'Xác nhận đăng xuất',
+        text: 'Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Đăng xuất',
+        cancelButtonText: 'Hủy',
+        reverseButtons: true
+      });
 
-      // Clear localStorage
-      localStorage.removeItem('user_id');
+      if (!result.isConfirmed) {
+        return; // User cancelled logout
+      }
+
+      // Set loading state
+      setIsLoggingOut(true);
+
+      // Show loading toast
+      Swal.fire({
+        title: 'Đang đăng xuất...',
+        text: 'Vui lòng chờ một chút',
+        icon: 'info',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      // Clear user data immediately for smooth UI transition
+      setUserData(null);
+      setUser(null);
+
+      // Clear localStorage và sessionStorage
       localStorage.removeItem('userData');
       localStorage.removeItem('user');
+      localStorage.removeItem('currentUser');
+      localStorage.removeItem('loginData');
       localStorage.removeItem('isAuthenticated');
-      sessionStorage.setItem('justLoggedOut', 'true');
+      sessionStorage.clear();
 
-      // Reset user state
-      setUser(null);
-      setUserData(null);
+      // Đăng xuất Firebase
+      await logout();
 
-      // Chuyển về trang chủ
-      navigate('/', { replace: true });
+      // Close loading and show success
+      Swal.close();
+      
+      // Show success message và reload trang
+      setTimeout(() => {
+        Swal.fire({
+          title: 'Đăng xuất thành công!',
+          text: 'Cảm ơn bạn đã sử dụng dịch vụ',
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end'
+        }).then(() => {
+          // Navigate về trang chủ thay vì reload
+          navigate('/', { replace: true });
+        });
+      }, 300);
 
     } catch (error) {
       console.error('Logout error:', error);
-      // Nếu có lỗi, vẫn clear data và chuyển trang
-      localStorage.removeItem('user_id');
-      localStorage.removeItem('userData');
-      localStorage.removeItem('user');
-      localStorage.removeItem('isAuthenticated');
-      setUser(null);
+      
+      // Clear data anyway
       setUserData(null);
-      navigate('/', { replace: true });
+      setUser(null);
+      localStorage.clear();
+      sessionStorage.clear();
+
+      // Show error and reload
+      Swal.fire({
+        title: 'Lỗi đăng xuất',
+        text: 'Có lỗi xảy ra, nhưng bạn đã được đăng xuất',
+        icon: 'warning',
+        timer: 2000,
+        showConfirmButton: false
+      }).then(() => {
+        // Navigate về trang chủ thay vì reload
+        navigate('/', { replace: true });
+      });
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -236,14 +319,14 @@ const MainNavbar = ({ setUser }) => {
     return location.pathname.startsWith('/services');
   };
 
-  // Helper: Kiểm tra quyền admin/staff/manager
-  const hasAdminAccess = () => {
-    return userData?.isAdmin === true;
-  };
-
-  // Helper: Kiểm tra user là customer
-  const isCustomer = () => {
-    return userData?.role_string === 'customer' || !userData?.role_string;
+  // Handler: Xử lý click logo về home
+  const handleLogoClick = (e) => {
+    e.preventDefault();
+    handleNavClick(); // Đóng navbar nếu đang mở
+    // Chỉ navigate về home khi user thực sự click logo, không phải khi reload
+    if (location.pathname !== '/') {
+      navigate('/', { replace: true }); // Navigate về trang chủ
+    }
   };
 
   // Handler for booking button
@@ -258,6 +341,8 @@ const MainNavbar = ({ setUser }) => {
         confirmButtonColor: '#3085d6',
       }).then((result) => {
         if (result.isConfirmed) {
+          // Lưu redirect path để sau khi login sẽ về đây
+          sessionStorage.setItem('redirectTo', '/appointment');
           navigate('/login', { state: { redirectTo: '/appointment' } });
         }
       });
@@ -278,7 +363,11 @@ const MainNavbar = ({ setUser }) => {
       >
         <Container>
           {/* Brand Logo */}
-          <Navbar.Brand as={Link} to="/" className="fw-bold d-flex align-items-center">
+          <Navbar.Brand 
+            onClick={handleLogoClick} 
+            className="fw-bold d-flex align-items-center" 
+            style={{ cursor: 'pointer' }}
+          >
             {/* Logo Section */}
             <div className="me-2 d-flex align-items-center justify-content-center" style={{ width: '50px', height: '50px' }}>
               {logoUrl ? (
@@ -320,13 +409,171 @@ const MainNavbar = ({ setUser }) => {
           <Navbar.Toggle aria-controls="navbar-nav" />
 
           <Navbar.Collapse id="navbar-nav">
+            {/* Admin/Staff/Manager Navigation */}
+            {hasAdminAccess && (
+              <Nav className="me-auto align-items-lg-center">
+                <Nav.Link
+                  as={Link}
+                  to={getDashboardLink(userData?.role_string || 'user')}
+                  className={`fw-medium me-lg-3 ${location.pathname.startsWith(getDashboardLink(userData?.role_string || 'user')) ? 'active text-primary' : ''}`}
+                  onClick={handleNavClick}
+                >
+                  <i className="bi bi-speedometer2 me-2"></i>
+                  Dashboard
+                </Nav.Link>
+
+                {isRole.admin && (
+                  <>
+                    
+                    <Nav.Link
+                      as={Link}
+                      to="/admin/blog"
+                      className={`fw-medium me-lg-3 ${isActive('/admin/blog') ? 'active text-primary' : ''}`}
+                      onClick={handleNavClick}
+                    >
+                      <i className="bi bi-newspaper me-2"></i>
+                      Quản lý Blog
+                    </Nav.Link>
+                    
+                    <Nav.Link
+                      as={Link}
+                      to="/admin/users"
+                      className={`fw-medium me-lg-3 ${isActive('/admin/users') ? 'active text-primary' : ''}`}
+                      onClick={handleNavClick}
+                    >
+                      <i className="bi bi-people me-2"></i>
+                      Quản lý tài khoản
+                    </Nav.Link>
+                    
+                    <Nav.Link
+                      as={Link}
+                      to="/admin/reports"
+                      className={`fw-medium me-lg-3 ${isActive('/admin/reports') ? 'active text-primary' : ''}`}
+                      onClick={handleNavClick}
+                    >
+                      <i className="bi bi-graph-up me-2"></i>
+                      Báo cáo & Thống kê
+                    </Nav.Link>
+                    
+                    <Nav.Link
+                      as={Link}
+                      to="/admin/settings"
+                      className={`fw-medium me-lg-3 ${isActive('/admin/settings') ? 'active text-primary' : ''}`}
+                      onClick={handleNavClick}
+                    >
+                      <i className="bi bi-gear me-2"></i>
+                      Cài đặt
+                    </Nav.Link>
+                  </>
+                )}
+
+                {isRole.manager && (
+                  <>
+                    <Nav.Link
+                      as={Link}
+                      to="/manager/services"
+                      className={`fw-medium me-lg-3 ${isActive('/manager/services') ? 'active text-primary' : ''}`}
+                      onClick={handleNavClick}
+                    >
+                      <i className="bi bi-gear me-2"></i>
+                      Quản lý dịch vụ
+                    </Nav.Link>
+                    
+                    <Nav.Link
+                      as={Link}
+                      to="/manager/appointments"
+                      className={`fw-medium me-lg-3 ${isActive('/manager/appointments') ? 'active text-primary' : ''}`}
+                      onClick={handleNavClick}
+                    >
+                      <i className="bi bi-calendar-check me-2"></i>
+                      Quản lý lịch hẹn
+                    </Nav.Link>
+                    
+                    <Nav.Link
+                      as={Link}
+                      to="/manager/staff"
+                      className={`fw-medium me-lg-3 ${isActive('/manager/staff') ? 'active text-primary' : ''}`}
+                      onClick={handleNavClick}
+                    >
+                      <i className="bi bi-people me-2"></i>
+                      Quản lý nhân viên
+                    </Nav.Link>
+                    
+                    <Nav.Link
+                      as={Link}
+                      to="/manager/reports"
+                      className={`fw-medium me-lg-3 ${isActive('/manager/reports') ? 'active text-primary' : ''}`}
+                      onClick={handleNavClick}
+                    >
+                      <i className="bi bi-graph-up me-2"></i>
+                      Báo cáo
+                    </Nav.Link>
+                    
+                    <Nav.Link
+                      as={Link}
+                      to="/manager/feedback"
+                      className={`fw-medium me-lg-3 ${isActive('/manager/feedback') ? 'active text-primary' : ''}`}
+                      onClick={handleNavClick}
+                    >
+                      <i className="bi bi-chat-dots me-2"></i>
+                      Phản hồi
+                    </Nav.Link>
+                  </>
+                )}
+
+                {isRole.staff && (
+                  <>
+                    <Nav.Link
+                      as={Link}
+                      to="/staff/kit-preparation"
+                      className={`fw-medium me-lg-3 ${isActive('/staff/kit-preparation') ? 'active text-primary' : ''}`}
+                      onClick={handleNavClick}
+                    >
+                      <i className="bi bi-box-seam me-2"></i>
+                      Chuẩn bị Kit
+                    </Nav.Link>
+                    
+                    <Nav.Link
+                      as={Link}
+                      to="/staff/sample-collection"
+                      className={`fw-medium me-lg-3 ${isActive('/staff/sample-collection') ? 'active text-primary' : ''}`}
+                      onClick={handleNavClick}
+                    >
+                      <i className="bi bi-droplet me-2"></i>
+                      Thu mẫu
+                    </Nav.Link>
+                    
+                    <Nav.Link
+                      as={Link}
+                      to="/staff/lab-testing"
+                      className={`fw-medium me-lg-3 ${isActive('/staff/lab-testing') ? 'active text-primary' : ''}`}
+                      onClick={handleNavClick}
+                    >
+                      <i className="bi bi-eye me-2"></i>
+                      Xét nghiệm
+                    </Nav.Link>
+                    
+                    <Nav.Link
+                      as={Link}
+                      to="/staff/results"
+                      className={`fw-medium me-lg-3 ${isActive('/staff/results') ? 'active text-primary' : ''}`}
+                      onClick={handleNavClick}
+                    >
+                      <i className="bi bi-file-earmark-check me-2"></i>
+                      Kết quả
+                    </Nav.Link>
+                  </>
+                )}
+              </Nav>
+            )}
+
             {/* Main Navigation - Only show for customers */}
-            {isCustomer() && (
-              <Nav className="me-auto">
+            {isCustomer && (
+              <Nav className="me-auto align-items-lg-center">
                 <Nav.Link
                   as={Link}
                   to="/"
-                  className={`fw-medium ${isActive('/') ? 'active text-primary' : ''}`}
+                  className={`fw-medium me-lg-3 ${isActive('/') ? 'active text-primary' : ''}`}
                   onClick={handleNavClick}
                 >
                   <i className="bi bi-house me-2"></i>
@@ -342,7 +589,7 @@ const MainNavbar = ({ setUser }) => {
                     </span>
                   }
                   id="services-dropdown"
-                  className={isServiceActive() ? 'active' : ''}
+                  className={`me-lg-3 ${isServiceActive() ? 'active' : ''}`}
                 >
                   <NavDropdown.Item
                     as={Link}
@@ -452,6 +699,7 @@ const MainNavbar = ({ setUser }) => {
                     </span>
                   }
                   id="info-dropdown"
+                  className="me-lg-3"
                 >
                   <NavDropdown.Item
                     as={Link}
@@ -477,7 +725,7 @@ const MainNavbar = ({ setUser }) => {
                 <Nav.Link
                   as={Link}
                   to="/blog"
-                  className={`fw-medium ${location.pathname.startsWith('/blog') ? 'active text-primary' : ''}`}
+                  className={`fw-medium me-lg-3 ${location.pathname.startsWith('/blog') ? 'active text-primary' : ''}`}
                   onClick={handleNavClick}
                 >
                   <i className="bi bi-newspaper me-2"></i>
@@ -487,7 +735,7 @@ const MainNavbar = ({ setUser }) => {
                 <Nav.Link
                   as={Link}
                   to="/tracking"
-                  className={`fw-medium ${isActive('/tracking') ? 'active text-primary' : ''}`}
+                  className={`fw-medium me-lg-3 ${isActive('/tracking') ? 'active text-primary' : ''}`}
                   onClick={handleNavClick}
                 >
                   <i className="bi bi-search me-2"></i>
@@ -497,12 +745,12 @@ const MainNavbar = ({ setUser }) => {
             )}
 
             {/* Spacer for admin/staff/manager to push user menu to right */}
-            {!isCustomer() && <div className="me-auto"></div>}
+            {!isCustomer && <div className="me-auto"></div>}
 
             {/* Right Side Actions */}
             <Nav className="align-items-lg-center">
               {/* Hotline Info - Desktop only - Only show for customers */}
-              {isCustomer() && (
+              {isCustomer && (
                 <Nav.Item className="d-none d-lg-block me-3">
                   <div className="text-center">
                     <div className="small text-muted">Hotline 24/7</div>
@@ -512,7 +760,7 @@ const MainNavbar = ({ setUser }) => {
               )}
 
               {/* Booking Button - Only show for customers */}
-              {isCustomer() && (
+              {isCustomer && (
                 <Nav.Item className="me-lg-3">
                   <Button
                     variant="warning"
@@ -552,6 +800,7 @@ const MainNavbar = ({ setUser }) => {
                         <span className="me-1">
                           {userData?.fullname || userAuth.displayName || userAuth.email}
                         </span>
+                        {/* Badge role: chỉ hiển thị khi đã có userData */}
                         {userData?.role_string && getRoleBadge(userData.role_string)}
                       </span>
                     }
@@ -559,7 +808,7 @@ const MainNavbar = ({ setUser }) => {
                     align="end"
                   >
                     {/* Dashboard Links based on role */}
-                    {hasAdminAccess() && (
+                    {hasAdminAccess && (
                       <>
                         <NavDropdown.Item
                           as={Link}
@@ -580,11 +829,19 @@ const MainNavbar = ({ setUser }) => {
                     )}
 
                     {/* Admin specific links */}
-                    {userData?.role_string === 'admin' && (
+                    {isRole.admin && (
                       <>
+                        <NavDropdown.Item as={Link} to="/admin/overview" onClick={handleNavClick}>
+                          <i className="bi bi-speedometer2 me-2"></i>
+                          Tổng quan
+                        </NavDropdown.Item>
+                        <NavDropdown.Item as={Link} to="/admin/blog" onClick={handleNavClick}>
+                          <i className="bi bi-newspaper me-2"></i>
+                          Quản lý Blog
+                        </NavDropdown.Item>
                         <NavDropdown.Item as={Link} to="/admin/users" onClick={handleNavClick}>
                           <i className="bi bi-people me-2"></i>
-                          Quản lý người dùng
+                          Quản lý tài khoản
                         </NavDropdown.Item>
                         <NavDropdown.Item as={Link} to="/admin/reports" onClick={handleNavClick}>
                           <i className="bi bi-graph-up me-2"></i>
@@ -592,34 +849,101 @@ const MainNavbar = ({ setUser }) => {
                         </NavDropdown.Item>
                         <NavDropdown.Item as={Link} to="/admin/settings" onClick={handleNavClick}>
                           <i className="bi bi-gear me-2"></i>
-                          Cài đặt hệ thống
+                          Cài đặt
                         </NavDropdown.Item>
                         <NavDropdown.Divider />
                       </>
                     )}
 
-                    {/* Regular user links */}
+                    {/* Manager specific links */}
+                    {isRole.manager && (
+                      <>
+                        <NavDropdown.Item as={Link} to="/manager/services" onClick={handleNavClick}>
+                          <i className="bi bi-gear me-2"></i>
+                          Quản lý dịch vụ
+                        </NavDropdown.Item>
+                        <NavDropdown.Item as={Link} to="/manager/appointments" onClick={handleNavClick}>
+                          <i className="bi bi-calendar-check me-2"></i>
+                          Quản lý lịch hẹn
+                        </NavDropdown.Item>
+                        <NavDropdown.Item as={Link} to="/manager/staff" onClick={handleNavClick}>
+                          <i className="bi bi-people me-2"></i>
+                          Quản lý nhân viên
+                        </NavDropdown.Item>
+                        <NavDropdown.Item as={Link} to="/manager/reports" onClick={handleNavClick}>
+                          <i className="bi bi-graph-up me-2"></i>
+                          Báo cáo
+                        </NavDropdown.Item>
+                        <NavDropdown.Item as={Link} to="/manager/feedback" onClick={handleNavClick}>
+                          <i className="bi bi-chat-dots me-2"></i>
+                          Phản hồi
+                        </NavDropdown.Item>
+                        <NavDropdown.Divider />
+                      </>
+                    )}
+
+                    {/* Staff specific links */}
+                    {isRole.staff && (
+                      <>
+                        <NavDropdown.Item as={Link} to="/staff/kit-preparation" onClick={handleNavClick}>
+                          <i className="bi bi-box-seam me-2"></i>
+                          Chuẩn bị Kit
+                        </NavDropdown.Item>
+                        <NavDropdown.Item as={Link} to="/staff/sample-collection" onClick={handleNavClick}>
+                          <i className="bi bi-droplet me-2"></i>
+                          Thu mẫu
+                        </NavDropdown.Item>
+                        <NavDropdown.Item as={Link} to="/staff/lab-testing" onClick={handleNavClick}>
+                          <i className="bi bi-eye me-2"></i>
+                          Xét nghiệm
+                        </NavDropdown.Item>
+                        <NavDropdown.Item as={Link} to="/staff/results" onClick={handleNavClick}>
+                          <i className="bi bi-file-earmark-check me-2"></i>
+                          Kết quả
+                        </NavDropdown.Item>
+                        <NavDropdown.Divider />
+                      </>
+                    )}
+
+                    {/* Regular user links - show for everyone */}
                     <NavDropdown.Item as={Link} to="/user/profile" onClick={handleNavClick}>
                       <i className="bi bi-person me-2"></i>
                       Hồ sơ cá nhân
                     </NavDropdown.Item>
-                    <NavDropdown.Item as={Link} to="/user/appointments" onClick={handleNavClick}>
-                      <i className="bi bi-calendar-event me-2"></i>
-                      Lịch hẹn của tôi
-                    </NavDropdown.Item>
-                    <NavDropdown.Item as={Link} to="/user/results" onClick={handleNavClick}>
-                      <i className="bi bi-file-earmark-check me-2"></i>
-                      Kết quả xét nghiệm
-                    </NavDropdown.Item>
+
+                    {/* Customer specific links */}
+                    {isCustomer && (
+                      <>
+                        <NavDropdown.Item as={Link} to="/user/appointments" onClick={handleNavClick}>
+                          <i className="bi bi-calendar-event me-2"></i>
+                          Lịch hẹn của tôi
+                        </NavDropdown.Item>
+                        <NavDropdown.Item as={Link} to="/user/results" onClick={handleNavClick}>
+                          <i className="bi bi-file-earmark-check me-2"></i>
+                          Kết quả xét nghiệm
+                        </NavDropdown.Item>
+                      </>
+                    )}
                     <NavDropdown.Divider />
-                    <NavDropdown.Item onClick={handleLogout}>
-                      <i className="bi bi-box-arrow-right me-2"></i>
-                      Đăng xuất
+                    <NavDropdown.Item onClick={handleLogout} disabled={isLoggingOut}>
+                      {isLoggingOut ? (
+                        <>
+                          <div className="spinner-border spinner-border-sm me-2" role="status">
+                            <span className="visually-hidden">Loading...</span>
+                          </div>
+                          Đang đăng xuất...
+                        </>
+                      ) : (
+                        <>
+                          <i className="bi bi-box-arrow-right me-2"></i>
+                          Đăng xuất
+                        </>
+                      )}
                     </NavDropdown.Item>
                   </NavDropdown>
                 ) : (
                   <div className="d-flex align-items-center">
-                    <Nav.Link as={Link} to="/login" onClick={handleNavClick}>
+                    <Nav.Link as={Link} to="/login" onClick={handleNavClick} className="me-lg-2">
                       <i className="bi bi-box-arrow-in-right me-1"></i>
                       Đăng nhập
                     </Nav.Link>
@@ -632,7 +956,7 @@ const MainNavbar = ({ setUser }) => {
               </Nav>
 
               {/* Mobile Hotline - Only show for customers */}
-              {isCustomer() && (
+              {isCustomer && (
                 <Nav.Item className="d-lg-none mt-3 pt-3 border-top">
                   <div className="text-center">
                     <div className="mb-2">

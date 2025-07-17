@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Row, Col, Card, Button, Badge, ListGroup } from 'react-bootstrap';
-import { getBookingByStaffId, getBookingHistory } from '../../services/api';
+import { getBookingByStaffId } from '../../services/api';
 
 const StaffOverview = ({ user }) => {
   const [todayTasks, setTodayTasks] = useState([]);
@@ -33,9 +33,57 @@ const StaffOverview = ({ user }) => {
           // Tìm status mới nhất theo createdAt
           const sorted = [...history].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
           const latestStatus = sorted[0]?.status || 'unknown';
+          const expectedDate = booking.timeSlotId?.split('_')[0]; // Lấy ngày từ slot ID
+          // const isOverdue = expectedDate && new Date(expectedDate) < new Date(); // 👈 Check quá hạn
 
-          const taskStatus = latestStatus === 'BOOKED' ? 'pending' : latestStatus;
-
+          // Kiểm tra quá hạn
+          let taskStatus = '';
+          switch (latestStatus) {
+            case 'BOOKED':
+              taskStatus = isHomeVisit ? 'waiting-kit-prep' : 'waiting-sample';
+              break;
+            case 'KIT_PREPARED':
+              taskStatus = 'kit-prepared';
+              break;
+            case 'KIT_SENT':
+              taskStatus = 'kit-sent';
+              break;
+            case 'SAMPLE_RECEIVED':
+              taskStatus = isHomeVisit ? 'kit-returned' : 'sample-received';
+              break;
+            case 'SAMPLE_COLLECTED':
+              taskStatus = 'collected';
+              break;
+            case 'IN_ANALYSIS':
+              taskStatus = 'in-analysis';
+              break;
+            case 'QUALITY_CHECK':
+              taskStatus = 'quality-check';
+              break;
+            case 'ANALYSIS_COMPLETE':
+              taskStatus = 'analysis-complete';
+              break;
+            case 'REVIEWED':
+              taskStatus = 'reviewed';
+              break;
+            case 'DELIVERED':
+              taskStatus = 'delivered';
+              break;
+            case 'CANCELLED':
+              taskStatus = 'cancelled';
+              break;
+            case 'FAILED':
+            case 'EXPIRED':
+              taskStatus = 'overdue';
+              break;
+            default:
+              taskStatus = latestStatus.toLowerCase().replaceAll('_', '-');
+              break;
+          }
+          // Sau khi mapping xong mới kiểm tra quá hạn
+          // if (isOverdue && !['collected', 'kit-returned', 'analysis-complete', 'reviewed', 'delivered', 'cancelled'].includes(taskStatus)) {
+          //   taskStatus = 'overdue';
+          // }
           let deadline = '';
           try {
             const [date, startTime] = booking.timeSlot?.id?.split('_') || [];
@@ -69,9 +117,13 @@ const StaffOverview = ({ user }) => {
             title: `${isHomeVisit ? 'Chuẩn bị Kit' : 'Thu mẫu'} - ${booking.service?.title || 'Dịch vụ không xác định'}`,
             priority: 'high',
             deadline: deadline,
-            address: booking?.informations_on_booking?.[0]?.address || '',
+            information: booking?.informations_on_booking?.[0]?.note || booking?.informations_on_booking?.[0]?.name || '',
+            methodName: booking?.method?.name || '',
+            categoryName: booking?.service?.category?.name || '',
             orderIds: [booking.id],
-            status: taskStatus
+            status: taskStatus,
+            isHomeVisit: isHomeVisit,
+            serviceTitle: booking.service?.title || '',
           };
         });
 
@@ -86,16 +138,36 @@ const StaffOverview = ({ user }) => {
 
   const getStatusBadge = (status) => {
     const variants = {
-      pending: 'secondary',
-      'in-progress': 'warning',
-      completed: 'success',
-      overdue: 'danger'
+      'waiting-kit-prep': 'secondary',
+      'waiting-sample': 'secondary',
+      'kit-prepared': 'warning',
+      'kit-sent': 'primary',
+      'kit-returned': 'info',
+      'sample-received': 'info',
+      'collected': 'success',
+      'in-analysis': 'primary',
+      'quality-check': 'info',
+      'analysis-complete': 'success',
+      'reviewed': 'primary',
+      'delivered': 'success',
+      'cancelled': 'danger',
+      'overdue': 'danger'
     };
     const labels = {
-      pending: 'Chờ xử lý',
-      'in-progress': 'Đang thực hiện',
-      completed: 'Hoàn thành',
-      overdue: 'Quá hạn'
+      'waiting-kit-prep': 'Chờ chuẩn bị kit',
+      'waiting-sample': 'Chờ thu mẫu',
+      'kit-prepared': 'Đã chuẩn bị kit',
+      'kit-sent': 'Đã gửi kit',
+      'kit-returned': 'Đã nhận kit',
+      'sample-received': 'Đã nhận mẫu',
+      'collected': 'Đã thu mẫu',
+      'in-analysis': 'Đang phân tích',
+      'quality-check': 'Kiểm tra chất lượng',
+      'analysis-complete': 'Hoàn thành xét nghiệm',
+      'reviewed': 'Đã duyệt',
+      'delivered': 'Đã trả kết quả',
+      'cancelled': 'Đã hủy',
+      'overdue': 'Quá hạn'
     };
     return <Badge bg={variants[status]}>{labels[status]}</Badge>;
   };
@@ -110,7 +182,11 @@ const StaffOverview = ({ user }) => {
     return icons[type] || 'bi-list-task';
   };
 
-  const getTaskLink = (type) => {
+  const getTaskLink = (type, status, isHomeVisit) => {
+    // Nếu là lấy mẫu tại nhà và đã nhận kit thì chuyển sang thu mẫu
+    if (isHomeVisit && (status === 'sample-received' || status === 'kit-returned')) {
+      return '/staff/sample-collection';
+    }
     const links = {
       'kit-preparation': '/staff/kit-preparation',
       'sample-collection': '/staff/sample-collection',
@@ -119,6 +195,15 @@ const StaffOverview = ({ user }) => {
     };
     return links[type] || '/staff';
   };
+
+  // Sắp xếp tasks: các đơn overdue/cancelled xuống cuối
+  const sortedTasks = [
+    ...todayTasks.filter(task => !['overdue', 'cancelled'].includes(task.status)),
+    ...todayTasks.filter(task => ['overdue', 'cancelled'].includes(task.status))
+  ];
+  // Đếm số lượng
+  const normalCount = todayTasks.filter(task => !['overdue', 'cancelled'].includes(task.status)).length;
+  const specialCount = todayTasks.filter(task => ['overdue', 'cancelled'].includes(task.status)).length;
 
   return (
     <div>
@@ -145,12 +230,15 @@ const StaffOverview = ({ user }) => {
                   <i className="bi bi-list-task me-2"></i>
                   Công việc hôm nay
                 </h5>
-                <Badge bg="primary">{todayTasks.length} nhiệm vụ</Badge>
+                <div>
+                  <Badge bg="primary" className="me-2">{normalCount} cần xử lý</Badge>
+                  <Badge bg="danger">{specialCount} quá hạn/đã hủy</Badge>
+                </div>
               </div>
             </Card.Header>
             <Card.Body className="p-0">
               <ListGroup variant="flush">
-                {todayTasks.map((task, index) => (
+                {sortedTasks.map((task, index) => (
                   <ListGroup.Item
                     key={task.id}
                     className="d-flex align-items-center justify-content-between py-3"
@@ -160,16 +248,34 @@ const StaffOverview = ({ user }) => {
                         <i className={`${getTaskIcon(task.type)} fs-4 text-primary`}></i>
                       </div>
                       <div className="flex-grow-1">
-                        <div className="fw-bold">{task.title}</div>
-                        <div className="text-muted small">
+                        <div className="fw-bold" style={{ fontWeight: 700, fontSize: '1.1rem', textAlign: 'center' }}>{task.serviceTitle || task.title.replace(/^(Chuẩn bị Kit|Thu mẫu) - /, '')}</div>
+                        <div className="d-flex justify-content-center align-items-center mb-1 mt-1">
+                          {task.categoryName && (
+                            <span className={`badge rounded-pill ${task.categoryName === 'ADN DÂN SỰ' ? 'bg-success text-white' : 'bg-warning text-dark'}`}
+                              style={{ fontSize: '0.6em' }}>
+                              {`${task.categoryName}`}
+                            </span>
+                          )}
+                        </div>
+                        {task.methodName && (
+                          <div className="d-flex justify-content-center align-items-center mb-1">
+                            <span className={`badge rounded-pill ${task.methodName.includes('tại nhà') ? 'bg-success text-white' : task.methodName.includes('lab') ? 'bg-primary text-white' : 'bg-warning text-dark'}`}
+                              style={{ fontSize: '0.6em', display: 'flex', alignItems: 'center', gap: '0.3em' }}>
+                              {task.methodName.includes('tại nhà') && <i className="bi bi-house-door-fill me-1"></i>}
+                              {task.methodName.includes('nhân viên') && <i className="bi bi-truck me-1"></i>}
+                              {task.methodName.includes('lab') && <i className="bi bi-building me-1"></i>}
+                              {task.methodName}
+                            </span>
+                          </div>
+                        )}
+                        {task.information && (
+                          <div className="fw-bold text-dark mb-1" style={{ fontSize: '1em' }}>
+                            <i className="bi bi-info-circle me-1"></i>{task.information}
+                          </div>
+                        )}
+                        <div className="text-muted small mb-1" style={{ fontSize: '0.9em' }}>
                           <i className="bi bi-clock me-1"></i>
                           Deadline: {task.deadline}
-                          {task.address && (
-                            <>
-                              <i className="bi bi-geo-alt ms-3 me-1"></i>
-                              {task.address}
-                            </>
-                          )}
                         </div>
                         <div className="mt-1">
                           {task.orderIds.map(orderId => (
@@ -187,14 +293,16 @@ const StaffOverview = ({ user }) => {
                       <div className="mb-2">
                         {getStatusBadge(task.status)}
                       </div>
-                      <Button
-                        as={Link}
-                        to={getTaskLink(task.type)}
-                        size="sm"
-                        variant="outline-primary"
-                      >
-                        Xử lý
-                      </Button>
+                      {!['overdue', 'cancelled', 'collected', 'analysis-complete', 'reviewed', 'delivered'].includes(task.status) && (
+                        <Button
+                          as={Link}
+                          to={`${getTaskLink(task.type, task.status, task.isHomeVisit)}/${task.orderIds[0]}`}
+                          size="sm"
+                          variant="outline-primary"
+                        >
+                          Xử lý
+                        </Button>
+                      )}
                     </div>
                   </ListGroup.Item>
                 ))}
@@ -242,36 +350,6 @@ const StaffOverview = ({ user }) => {
                   <Badge bg="info" className="me-1">Test</Badge>
                   <Badge bg="danger">KQ</Badge>
                 </small>
-              </div>
-            </Card.Body>
-          </Card>
-
-          {/* Quick Actions */}
-          <Card className="shadow-sm mt-3">
-            <Card.Header className="bg-light">
-              <h6 className="mb-0">
-                <i className="bi bi-lightning me-2"></i>
-                Thao tác nhanh
-              </h6>
-            </Card.Header>
-            <Card.Body>
-              <div className="d-grid gap-2">
-                <Button as={Link} to="/staff/kit-preparation" variant="success" size="sm">
-                  <i className="bi bi-box-seam me-2"></i>
-                  Chuẩn bị Kit
-                </Button>
-                <Button as={Link} to="/staff/sample-collection" variant="warning" size="sm">
-                  <i className="bi bi-droplet me-2"></i>
-                  Thu mẫu
-                </Button>
-                <Button as={Link} to="/staff/lab-testing" variant="info" size="sm">
-                  <i className="bi bi-eye me-2"></i>
-                  Xét nghiệm
-                </Button>
-                <Button as={Link} to="/staff/results" variant="danger" size="sm">
-                  <i className="bi bi-file-earmark-check me-2"></i>
-                  Trả kết quả
-                </Button>
               </div>
             </Card.Body>
           </Card>
