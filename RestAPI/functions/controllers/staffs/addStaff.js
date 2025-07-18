@@ -10,14 +10,15 @@ const addStaff = async (userId, positionId) => {
     }
 
     const ADD_USER_TO_TABLES = `
-    mutation AddMinimalStaffMember($id: String!, $positionId: String!) @auth(level: USER) {
-      staff_insert(data: {id: $id, positionId: $positionId})
-    }
+      mutation AddMinimalStaffMember($id: String!, $positionId: String!, $hireDate: Date!) @auth(level: USER) {
+        staff_insert(data: {id: $id, positionId: $positionId, hireDate: $hireDate})
+      }
     `;
 
     const variables = {
       id: userId,
       positionId: positionId,
+      hireDate: new Date().toISOString().split('T')[0],
     };
 
     const response = await dataConnect.executeGraphql(ADD_USER_TO_TABLES, {

@@ -827,65 +827,92 @@ const getExpiredBookings = async (currentTime) => {
 
 const getBookingsManager = async (req, res) => {
   try {
-    const GET_MY_BOOKINGS_QUERY = `
-      query GetMyBookings @auth(level: USER) {
-        bookings(orderBy: { createdAt: DESC }) {
-          id
-          userId
-          staffId
-          timeSlotId
-          serviceId
-          methodId
-          totalAmount
-          createdAt
-          updatedAt
-          informations_on_booking {
-            name
-            phone
-          }
-          user {
+    const { managerId } = req.body;
+
+    if (!managerId) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "managerId is required",
+      });
+    }
+
+    if (!await checkStaffExists(managerId, "2")) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "Manager not found",
+        error: "Manager with the provided ID does not exist",
+      });
+    }
+
+    const GET_BOOKINGS_BY_MANAGER_QUERY = `
+      query GetBookingsByManager($managerId: String!) @auth(level: USER) {
+        testResults( where: {managerId: { eq: $managerId }}) {
+          booking {
             id
-            fullname
-            email
-            phone
-          }
-          staff {
-            id
-            user {
-              fullname
-            }
-          }
-          service {
-            title
-            category {
+            userId
+            staffId
+            timeSlotId
+            serviceId
+            methodId
+            totalAmount
+            createdAt
+            updatedAt
+            informations_on_booking {
               name
-              hasLegalValue
+              phone
+            }
+            user {
+              id
+              fullname
+              email
+              phone
+            }
+            staff {
+              id
+              user {
+                fullname
+              }
+            }
+            service {
+              title
+              category {
+                name
+                hasLegalValue
+              }
             }
           }
         }
       }
     `;
 
-    const response = await dataConnect.executeGraphql(GET_MY_BOOKINGS_QUERY);
+    const variables = { 
+      managerId: managerId 
+    };
+    const response = await dataConnect.executeGraphql(GET_BOOKINGS_BY_MANAGER_QUERY, {
+      variables: variables
+    });
 
-    const responseData = response.data;
+    const responseData = response.data.testResults;
 
-    if (!responseData.bookings || responseData.bookings.length === 0) {
+    if (!responseData || responseData.length === 0) {
       return res.status(404).json({
         statusCode: 404,
         status: "error",
-        message: "There is no booking in the database",
+        message: "No bookings found for the given manager ID",
       });
     }
     
     res.status(200).json({
       statusCode: 200,
-      status: "success",
+      status: "SUCCESS",
       message: "Bookings retrieved successfully",
+      count: responseData.length,
       data: responseData,
     });
   } catch (error) {
-    console.error("Error fetching bookings:", error);
+    console.error("Error fetching bookings by manager:", error);
     res.status(500).json({
       statusCode: 500,
       status: "error",

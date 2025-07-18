@@ -177,28 +177,28 @@ const getTestResultByUserId = async (req, res) => {
     }
 };
 
-const getTestResultByStaffId = async (req, res) => {
+const getTestResultSampleByManagerId = async (req, res) => {
     try {
-        const { staffId } = req.body;
-        if (!staffId) {
+        const { managerId } = req.body;
+        if (!managerId) {
             return res.status(400).json({
                 statusCode: 400,
                 status: "error",
-                message: "staffId is required"
+                message: "managerId is required"
             });
         }
 
-        if (!(await checkStaffExists(staffId))) {
+        if (!(await checkStaffExists(managerId, "2"))) {
             return res.status(404).json({
                 statusCode: 404,
                 status: "error",
-                message: "Staff member not found"
+                message: "manager member not found"
             });
         }
         
         const GET_TEST_RESULT_BY_STAFF_QUERY = `
-          query GetStaffTestResults($staffId: String!) @auth(level: USER) {
-            testResults(where: {staffId: {eq: $staffId}}, orderBy: {createdAt: DESC}) {
+          query GetManagerTestResults($managerId: String!) @auth(level: USER) {
+            testResults(where: {managerId: {eq: $managerId}}, orderBy: {createdAt: DESC}) {
               id
               booking {
                 user {
@@ -206,6 +206,15 @@ const getTestResultByStaffId = async (req, res) => {
                 }
                 service {
                   title
+                }
+                samples_on_booking {
+                  id
+                  sampleConcentration
+                  sampleQuality
+                  participant {
+                    name
+                    relationship
+                  }
                 }
               }
               staff {
@@ -237,7 +246,7 @@ const getTestResultByStaffId = async (req, res) => {
         `;
 
         const variables = { 
-          staffId: staffId
+          managerId: managerId
         };
 
         const response = await dataConnect.executeGraphql(GET_TEST_RESULT_BY_STAFF_QUERY, {
@@ -269,5 +278,5 @@ const getTestResultByStaffId = async (req, res) => {
 module.exports = {
     getTestResultByBookingId, 
     getTestResultByUserId,
-    getTestResultByStaffId
+    getTestResultSampleByManagerId
 };
