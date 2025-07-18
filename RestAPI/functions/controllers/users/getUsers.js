@@ -4,16 +4,33 @@ const { checkRoleExists } = require("../roles/roleUtils.js");
 
 const getAllUsers = async (req, res) => {
   try {
-    const variables = {
-      "limit": 20,
-      "offset": 0
-    };
-    
-    const GET_USERS_QUERY = "query GetUsers($limit: Int, $offset: Int) @auth(level: USER) { users(limit: $limit, offset: $offset, orderBy: { createdAt: DESC }) { id fullname email accountStatus role { id name } createdAt lastLogin } }";
-    console.log("Executing GraphQL query:", GET_USERS_QUERY, "with variables:", variables);
-    const response = await dataConnect.executeGraphql(GET_USERS_QUERY, {
-      variables: variables,
-    });
+    const GET_USERS_QUERY = `
+      query GetUsers @auth(level: USER) { 
+        users(orderBy: { createdAt: DESC }) {
+          id 
+          fullname 
+          email 
+          accountStatus 
+          role { 
+            id 
+            name 
+          } 
+          createdAt 
+          lastLogin
+          bookings_on_user {
+            payments_on_booking {
+              paymentMethod
+              status
+            }
+            id
+            totalAmount
+            timeSlotId
+          }
+        } 
+      }
+    `;
+    console.log("Executing GraphQL query:", GET_USERS_QUERY);
+    const response = await dataConnect.executeGraphql(GET_USERS_QUERY);
 
     const responseData = response.data || [];
 

@@ -114,6 +114,7 @@ const getSampleBybookingId = async (req, res) => {
                 name
                 age
                 gender
+                relationship
                 }
             }
         }

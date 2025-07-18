@@ -111,7 +111,6 @@ const getAllBookings = async (req, res) => {
   }
 };
 
-
 const getOneBooking = async (req, res) => {
   try {
     const { bookingId } = req.body;
@@ -826,6 +825,76 @@ const getExpiredBookings = async (currentTime) => {
   }
 };
 
+const getBookingsManager = async (req, res) => {
+  try {
+    const GET_MY_BOOKINGS_QUERY = `
+      query GetMyBookings @auth(level: USER) {
+        bookings(orderBy: { createdAt: DESC }) {
+          id
+          userId
+          staffId
+          timeSlotId
+          serviceId
+          methodId
+          totalAmount
+          createdAt
+          updatedAt
+          informations_on_booking {
+            name
+            phone
+          }
+          user {
+            id
+            fullname
+            email
+            phone
+          }
+          staff {
+            id
+            user {
+              fullname
+            }
+          }
+          service {
+            title
+            category {
+              name
+              hasLegalValue
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await dataConnect.executeGraphql(GET_MY_BOOKINGS_QUERY);
+
+    const responseData = response.data;
+
+    if (!responseData.bookings || responseData.bookings.length === 0) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "There is no booking in the database",
+      });
+    }
+    
+    res.status(200).json({
+      statusCode: 200,
+      status: "success",
+      message: "Bookings retrieved successfully",
+      data: responseData,
+    });
+  } catch (error) {
+    console.error("Error fetching bookings:", error);
+    res.status(500).json({
+      statusCode: 500,
+      status: "error",
+      message: "Failed to retrieve bookings",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getAllBookings,
   getOneBooking,
@@ -834,5 +903,6 @@ module.exports = {
   getBookingByTimeSlotId,
   getOneBookingById,
   getBookingsBySlotDate,
-  getExpiredBookings
+  getExpiredBookings,
+  getBookingsManager
 };
