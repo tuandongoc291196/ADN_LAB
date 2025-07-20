@@ -30,7 +30,7 @@ const {deleteRole} = require('./controllers/roles/deleteRole');
 const {addRole} = require('./controllers/roles/addRole');
 
 const {addBooking} = require('./controllers/bookings/addBooking');
-const {getAllBookings, getOneBooking, getBookingByTimeSlotId, getBookingByUserId, getBookingbyStaffId} = require('./controllers/bookings/getBookings');
+const {getAllBookings, getOneBooking, getBookingByTimeSlotId, getBookingByUserId, getBookingbyStaffId, getBookingsManager} = require('./controllers/bookings/getBookings');
 const {deleteBookingById} = require('./controllers/bookings/deleteBooking');
 const {cancelBookingByUser, cancelBookingByManager} = require('./controllers/bookings/cancelBooking');
 const {updateBookingTime} = require('./controllers/bookings/updateBooking');
@@ -43,7 +43,7 @@ const {getUnavailableTimeSlots, getOneTimeSlot} = require('./controllers/timeSlo
 const {getSampleBybookingId} = require('./controllers/sample/getSamples');
 const {updateSample} = require('./controllers/sample/updateSample');
 
-const {getTestResultByBookingId, getTestResultByUserId, getTestResultByStaffId} = require('./controllers/testResult/getTestResult');
+const {getTestResultByBookingId, getTestResultByUserId, getTestResultSampleByManagerId} = require('./controllers/testResult/getTestResult');
 const {updateTestResult} = require('./controllers/testResult/updateTestResult');
 
 const {addPayment} = require('./controllers/payments/addPayment');
@@ -54,6 +54,9 @@ const {addBlog} = require('./controllers/blogs/addBlog');
 const {getAllBlogs, getOneBlog} = require('./controllers/blogs/getBlogs');
 const {deleteBlog} = require('./controllers/blogs/deleteBlog');
 const {updateBlog} = require('./controllers/blogs/updateBlog');
+
+const {addFeedback} = require('./controllers/feedback/addFeedback');
+const {getAllFeedback, getBookingFeedback, getServiceFeedback} = require('./controllers/feedback/getFeedbacks');
 
 const app = express();
 
@@ -118,6 +121,7 @@ app.post('/roles/add', addRole);
 
 app.post('/bookings/add', addBooking);
 app.get('/bookings', getAllBookings);
+app.post('/bookings/manager', getBookingsManager);
 app.post('/bookings', getOneBooking);
 app.post('/bookings/timeslot', getBookingByTimeSlotId);
 app.post('/bookings/user', getBookingByUserId);
@@ -138,13 +142,18 @@ app.put('/samples', updateSample);
 
 app.post('/testresult/booking', getTestResultByBookingId);
 app.post('/testresult/user', getTestResultByUserId);
-app.post('/testresult/staff', getTestResultByStaffId);
+app.post('/testresult&sample/manager', getTestResultSampleByManagerId);
 app.put('/testresult', updateTestResult);
 
 app.post('/payments/add', addPayment);
 app.get('/payments', getAllPayments);
 app.post('/payments/booking', getBookingPayments);
 app.post('/payments/refund', refundPayment);
+
+app.post('/feedbacks/add', addFeedback);
+app.get('/feedbacks', getAllFeedback);
+app.post('/feedbacks/booking', getBookingFeedback);
+app.post('/feedbacks/service', getServiceFeedback);
 
 exports.app = functions.https.onRequest(app);
 exports.cleanupExpiredBookings = onSchedule('every 30 minutes', async (event) => {

@@ -109,7 +109,7 @@ const updateTestResult = async (req, res) => {
             variables: variables
         });
 
-        const responseData = response.data.testResult_update;
+        const responseData = response.data.testResult_updateMany;
         if (!responseData) {
             return res.status(500).json({
                 statusCode: 500,

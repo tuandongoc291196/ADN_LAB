@@ -56,14 +56,19 @@ const OrderTracking = () => {
         if (methodId === '0' || methodName.includes('tự') || methodName.includes('self') || methodName.includes('kit')) {
             return [
                 'CREATED', 
+                'PENDING_PAYMENT',
                 'PAYMENT_CONFIRMED', 
+                'BOOKED',
+
+                'PENDING',
                 'KIT_PREPARED', 
-                'KIT_SENT', 
+                'KIT_SENT',
                 'KIT_RECEIVED', 
                 'SELF_COLLECTED',
                 'KIT_RETURNED', 
-                'SAMPLE_PROCESSING', 
-                'RESULT_AVAILABLE'
+
+                'RESULT_PENDING', 
+                'COMPLETED'
             ];
         }
         
@@ -71,7 +76,16 @@ const OrderTracking = () => {
         if (methodId === '1' || methodName.includes('tại nhà') || methodName.includes('home') || methodName.includes('visit')) {
             return [
                 'CREATED', 
+                'PENDING_PAYMENT',
                 'PAYMENT_CONFIRMED', 
+                'BOOKED',
+                'KIT_PREPARED',
+                'KIT_SENT',
+                'KIT_RECEIVED',
+                'SELF_COLLECTED',
+                'KIT_RETURNED',
+
+                'PENDING',  
                 'STAFF_ASSIGNED', 
                 'SAMPLE_COLLECTED', 
                 'SAMPLE_PROCESSING', 
@@ -83,7 +97,16 @@ const OrderTracking = () => {
         if (methodId === '2' || methodName.includes('tại lab') || methodName.includes('cơ sở') || methodName.includes('lab') || methodName.includes('facility')) {
             return [
                 'CREATED', 
+                'PENDING_PAYMENT',
                 'PAYMENT_CONFIRMED', 
+                'BOOKED',
+                'KIT_PREPARED',
+                'KIT_SENT',
+                'KIT_RECEIVED',
+                'SELF_COLLECTED',
+                'KIT_RETURNED',
+
+                'PENDING',
                 'SAMPLE_COLLECTED', 
                 'SAMPLE_PROCESSING', 
                 'RESULT_AVAILABLE'
