@@ -14,7 +14,7 @@ import {
   Alert, InputGroup, Dropdown, Pagination, Toast, ToastContainer,
   Tab, Tabs, ProgressBar
 } from 'react-bootstrap';
-import { getStaffListByRole, getAllRoles, getAllUsers, addUser, getUserById, updateUserById, getAllPayments, getAllBookings, getBookingsByUserId } from '../../services/api';
+import { getStaffListByRole, getAllRoles, getAllUsers, addUser, getUserById, updateUserById, updateUserAccountStatus } from '../../services/api';
 import { getProvinces, getDistricts, getWards } from 'vietnam-provinces';
 
 function findCodeByName(list, name) {
@@ -95,15 +95,7 @@ const UserManagement = ({
   const [roleOptions, setRoleOptions] = useState(preloadedRoles || []);
   const [loadingRoles, setLoadingRoles] = useState(false);
 
-  // New state for payments and bookings
-  const [payments, setPayments] = useState([]);
-  const [bookings, setBookings] = useState([]);
-  const [loadingPayments, setLoadingPayments] = useState(false);
-  const [loadingBookings, setLoadingBookings] = useState(false);
 
-  // New state for user bookings
-  const [userBookings, setUserBookings] = useState({});
-  const [loadingUserBookings, setLoadingUserBookings] = useState(false);
 
   // Effect tự động cập nhật địa chỉ đầy đủ khi các trường địa chỉ thay đổi
   useEffect(() => {
@@ -208,37 +200,7 @@ const UserManagement = ({
     }
   }, [allUsers.length, preloadedUsers]);
 
-  // Effect to fetch all payments
-  useEffect(() => {
-    const fetchPayments = async () => {
-      setLoadingPayments(true);
-      try {
-        const allPayments = await getAllPayments();
-        setPayments(allPayments || []);
-      } catch (err) {
-        // Xử lý lỗi một cách im lặng
-      } finally {
-        setLoadingPayments(false);
-      }
-    };
-    fetchPayments();
-  }, []);
 
-  // Effect to fetch all bookings
-  useEffect(() => {
-    const fetchBookings = async () => {
-      setLoadingBookings(true);
-      try {
-        const allBookings = await getAllBookings();
-        setBookings(allBookings || []);
-      } catch (err) {
-        // Xử lý lỗi một cách im lặng
-      } finally {
-        setLoadingBookings(false);
-      }
-    };
-    fetchBookings();
-  }, []);
 
   // Filter users
   const filteredUsers = Array.isArray(usersList) 
@@ -305,46 +267,7 @@ const UserManagement = ({
     : [];
   const totalManagerPages = Math.ceil((filteredManagers?.length || 0) / itemsPerPage);
 
-  // Tạo hàm fetchUserBookings với useCallback
-  const fetchUserBookings = useCallback(async (users) => {
-    if (!users || users.length === 0) return;
-    
-    // Kiểm tra xem có cần fetch lại hay không
-    const needToFetch = users.some(user => 
-      user && user.id && !userBookings[user.id]
-    );
-    
-    if (!needToFetch) return;
-    
-    setLoadingUserBookings(true);
-    try {
-      // Tạo một object để lưu trữ bookings của mỗi user
-      const bookingsData = {...userBookings};
-      
-      // Lấy bookings cho mỗi user đang hiển thị mà chưa có dữ liệu
-      await Promise.all(users.map(async (user) => {
-        if (!user || !user.id || bookingsData[user.id]) return;
-        
-        try {
-          const userBookingData = await getBookingsByUserId(user.id);
-          bookingsData[user.id] = userBookingData;
-        } catch (err) {
-          bookingsData[user.id] = [];
-        }
-      }));
-      
-      setUserBookings(bookingsData);
-    } catch (err) {
-      // Xử lý lỗi một cách im lặng
-    } finally {
-      setLoadingUserBookings(false);
-    }
-  }, [userBookings]);
 
-  // Effect to fetch bookings for visible users
-  useEffect(() => {
-    fetchUserBookings(currentUsers);
-  }, [currentUsers, fetchUserBookings]);
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -388,10 +311,13 @@ const UserManagement = ({
         }).finally(() => setLoadingRoles(false));
       }
       
-      // Reset form cho create
+      // Reset form cho create - chỉ cần các field cơ bản
       setFormData({
         fullname: '',
         email: '',
+        password: '',
+        role: 'customer',
+        // Các field khác không cần thiết cho create
         phone: '',
         address: '',
         addressDetail: '',
@@ -399,11 +325,9 @@ const UserManagement = ({
         district: '',
         city: '',
         gender: '',
-        role: 'customer',
         accountStatus: 'active',
         authProvider: '',
-        avatar: '',
-        password: ''
+        avatar: ''
       });
       setEditingUser(null);
     } else if (userItem && (type === 'edit' || type === 'view')) {
@@ -438,7 +362,7 @@ const UserManagement = ({
             
             setFormData({
               fullname: user.fullname || '',
-              email: user.email || '',
+              email: user.email || '', // Read-only trong edit mode
               phone: user.phone || '',
               address: user.address || '',
               addressDetail,
@@ -446,10 +370,11 @@ const UserManagement = ({
               district,
               city,
               gender: user.gender || '',
-              role: user.role?.name || 'customer',
+              role: user.role?.name || 'customer', // Không thể edit role trực tiếp
               accountStatus: user.accountStatus || 'active',
               authProvider: user.authProvider || '',
-              avatar: user.avatar || ''
+              avatar: user.avatar || '',
+              password: '' // Không cần password trong edit mode
             });
             
             // Load roles cho edit
@@ -478,15 +403,17 @@ const UserManagement = ({
   const handleSaveUser = async () => {
     try {
       if (editingUser) {
-        // Update existing user - tạo address giống như UserProfile
-        const provinces = getProvinces();
-        const districts = getDistricts();
-        const wards = getWards();
+        // Update existing user theo API updateUser
+        const { fullname, gender, avatar, phone, address } = formData;
         
-        // Tạo dữ liệu update
+        // Tạo dữ liệu update chỉ với các field được backend hỗ trợ
         const updateData = {
-          ...formData,
-          id: editingUser.id
+          userId: editingUser.id,
+          fullname,
+          gender,
+          avatar,
+          phone,
+          address
         };
         
         // Gọi API update
@@ -507,17 +434,17 @@ const UserManagement = ({
         // Create new user
         const { fullname, email, password, role } = formData;
         
-        // Validate các trường bắt buộc
-        if (!fullname || !email || !password || !role) {
+        // Validate các trường bắt buộc cho create
+        if (!email || !password || !fullname || !role) {
           setError('Vui lòng điền đầy đủ thông tin bắt buộc');
           return;
         }
         
-        // Tạo dữ liệu mới
+        // Tạo dữ liệu mới theo API addUser
         const userData = {
           email,
           password,
-          name: fullname,
+          name: fullname, // Backend expects 'name', not 'fullname'
           roleId: role === 'customer' ? '3' : role === 'staff' ? '2' : '1'
         };
         
@@ -548,8 +475,10 @@ const UserManagement = ({
     setShowToast(true);
   };
 
-  const handleStatusChange = async (id, newStatus) => {
+    const handleStatusChange = async (id, newStatus) => {
     if (!id) return;
+    
+    console.log(`🔄 Attempting to update user ${id} status to ${newStatus}`);
     
     try {
       // Cập nhật trạng thái trước trong UI để phản hồi ngay lập tức
@@ -558,8 +487,10 @@ const UserManagement = ({
       setStaffList(prev => prev.map(u => u.id === id ? {...u, accountStatus: newStatus} : u));
       setManagerList(prev => prev.map(u => u.id === id ? {...u, accountStatus: newStatus} : u));
       
-      // Gọi API để cập nhật
-      await updateUserById(id, { accountStatus: newStatus });
+      console.log(`📡 Calling updateUserAccountStatus API...`);
+      // Gọi API để cập nhật trạng thái sử dụng endpoint chuyên biệt
+      const result = await updateUserAccountStatus(id, newStatus);
+      console.log(`✅ API call successful:`, result);
       
       // Hiển thị thông báo thành công
       setToastMessage(`Đã ${newStatus === 'active' ? 'kích hoạt' : 'vô hiệu hóa'} tài khoản`);
@@ -570,6 +501,7 @@ const UserManagement = ({
         onRefreshUsers();
       }
     } catch (err) {
+      console.error(`❌ Error updating user status:`, err);
       // Nếu có lỗi, khôi phục trạng thái cũ
       const oldStatus = newStatus === 'active' ? 'inactive' : 'active';
       setAllUsers(prev => prev.map(u => u.id === id ? {...u, accountStatus: oldStatus} : u));
@@ -577,15 +509,16 @@ const UserManagement = ({
       setStaffList(prev => prev.map(u => u.id === id ? {...u, accountStatus: oldStatus} : u));
       setManagerList(prev => prev.map(u => u.id === id ? {...u, accountStatus: oldStatus} : u));
       
-      setError('Có lỗi xảy ra khi cập nhật trạng thái người dùng');
-      console.error('Error updating user status:', err);
+      setError(`Có lỗi xảy ra khi cập nhật trạng thái người dùng: ${err.message}`);
     }
   };
 
-  const handleDeleteUser = async (id) => {
+    const handleDeleteUser = async (id) => {
     if (!id) return;
     
-    if (window.confirm('Bạn có chắc chắn muốn xóa người dùng này?')) {
+    if (window.confirm('Bạn có chắc chắn muốn vô hiệu hóa tài khoản này?')) {
+      console.log(`🗑️ Attempting to deactivate user ${id}`);
+      
       try {
         // Cập nhật trạng thái trước trong UI
         setAllUsers(prev => prev.map(u => u.id === id ? {...u, accountStatus: 'inactive'} : u));
@@ -593,8 +526,10 @@ const UserManagement = ({
         setStaffList(prev => prev.map(u => u.id === id ? {...u, accountStatus: 'inactive'} : u));
         setManagerList(prev => prev.map(u => u.id === id ? {...u, accountStatus: 'inactive'} : u));
         
-        // Gọi API để cập nhật
-        await updateUserById(id, { accountStatus: 'inactive' });
+        console.log(`📡 Calling updateUserAccountStatus API to deactivate...`);
+        // Gọi API để cập nhật trạng thái thành inactive sử dụng endpoint chuyên biệt
+        const result = await updateUserAccountStatus(id, 'inactive');
+        console.log(`✅ User deactivated successfully:`, result);
         
         // Hiển thị thông báo thành công
         setToastMessage('Đã vô hiệu hóa tài khoản người dùng');
@@ -605,8 +540,8 @@ const UserManagement = ({
           onRefreshUsers();
         }
       } catch (err) {
-        setError('Có lỗi xảy ra khi xóa người dùng');
-        console.error('Error deleting user:', err);
+        console.error(`❌ Error deactivating user:`, err);
+        setError(`Có lỗi xảy ra khi vô hiệu hóa người dùng: ${err.message}`);
       }
     }
   };
@@ -621,23 +556,31 @@ const UserManagement = ({
     return new Date(timestamp).toLocaleString('vi-VN');
   };
 
-  // Function to get booking/test count for a specific user
-  const getUserTestCount = (userId) => {
-    if (!userId || !userBookings[userId]) return 0;
-    return userBookings[userId].length;
+  // Function to get booking/test count for a specific user using data from getAllUsers
+  const getUserTestCount = (user) => {
+    if (!user || !user.bookings_on_user || !Array.isArray(user.bookings_on_user)) return 0;
+    return user.bookings_on_user.length;
   };
 
-  // Function to get total payment amount for a specific user
-  const getUserTotalPayment = (userId) => {
-    if (!userId || !userBookings[userId]) return 0;
+  // Function to get total payment amount for a specific user using data from getAllUsers
+  const getUserTotalPayment = (user) => {
+    if (!user || !user.bookings_on_user || !Array.isArray(user.bookings_on_user)) return 0;
     
-    // Tính tổng số tiền từ tất cả booking của user
-    return userBookings[userId].reduce((total, booking) => {
-      // Lấy amount từ booking hoặc payment trong booking
-      const amount = booking.amount || 
-                    (booking.payment ? booking.payment.amount : 0) || 
-                    (booking.totalAmount || 0);
-      return total + amount;
+    // Tính tổng số tiền từ tất cả booking của user, chỉ tính payment thành công
+    return user.bookings_on_user.reduce((total, booking) => {
+      // Kiểm tra payment trong booking
+      if (booking.payments_on_booking && Array.isArray(booking.payments_on_booking)) {
+        // Tính tổng từ các payment có status thành công (SUCCESS)
+        const hasSuccessfulPayment = booking.payments_on_booking.some(
+          payment => payment.status === 'SUCCESS'
+        );
+        
+        // Nếu có payment thành công, thêm totalAmount của booking vào tổng
+        if (hasSuccessfulPayment) {
+          return total + (booking.totalAmount || 0);
+        }
+      }
+      return total;
     }, 0);
   };
 
@@ -715,10 +658,10 @@ const UserManagement = ({
                 <small>{formatLastLogin(userItem.lastLogin)}</small>
               </td>
               <td className="text-center">
-                <span className="fw-medium">{getUserTestCount(userItem.id)}</span>
+                <span className="fw-medium">{getUserTestCount(userItem)}</span>
               </td>
               <td className="text-end">
-                <span className="fw-medium">{formatCurrency(getUserTotalPayment(userItem.id))}</span>
+                <span className="fw-medium">{formatCurrency(getUserTotalPayment(userItem))}</span>
               </td>
               <td className="text-center">
                 <Dropdown className="position-static" drop={index === currentUsers.length - 1 ? 'up' : 'down'} align="end">
@@ -1552,7 +1495,7 @@ const UserManagement = ({
                               </div>
                               <div>
                                 <h6 className="mb-0 text-muted">Tổng xét nghiệm</h6>
-                                <h3 className="mb-0">{getUserTestCount(editingUser.id)}</h3>
+                                <h3 className="mb-0">{getUserTestCount(editingUser)}</h3>
                               </div>
                             </div>
                           </Col>
@@ -1563,7 +1506,7 @@ const UserManagement = ({
                               </div>
                               <div>
                                 <h6 className="mb-0 text-muted">Tổng chi tiêu</h6>
-                                <h3 className="mb-0">{formatCurrency(getUserTotalPayment(editingUser.id))} VND</h3>
+                                <h3 className="mb-0">{formatCurrency(getUserTotalPayment(editingUser))} VND</h3>
                               </div>
                             </div>
                           </Col>
@@ -1576,6 +1519,13 @@ const UserManagement = ({
             </div>
           ) : (
             <Form>
+              {modalType === 'edit' && (
+                <Alert variant="info" className="mb-4">
+                  <i className="bi bi-info-circle me-2"></i>
+                  <strong>Lưu ý:</strong> Email và vai trò không thể thay đổi. Để thay đổi vai trò, vui lòng liên hệ quản trị viên.
+                </Alert>
+              )}
+              
               {/* Form fields */}
               <Row className="mb-3">
                 <Col md={6}>
@@ -1594,177 +1544,189 @@ const UserManagement = ({
                   </Form.Group>
                 </Col>
                 <Col md={6}>
-                  <Form.Group className="mb-3">
+                                    <Form.Group className="mb-3">
                     <Form.Label className="fw-medium">
                       <i className="bi bi-envelope-fill text-primary me-2"></i>
-                      Email <span className="text-danger">*</span>
+                      Email {modalType === 'create' && <span className="text-danger">*</span>}
                     </Form.Label>
-                    <Form.Control
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      required
-                      className="border-0 shadow-sm"
-                    />
+                      <Form.Control
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        required={modalType === 'create'}
+                        readOnly={modalType === 'edit'}
+                        className={`border-0 shadow-sm ${modalType === 'edit' ? 'bg-light' : ''}`}
+                      />
+                      {modalType === 'edit' && (
+                        <Form.Text className="text-muted">
+                          <i className="bi bi-info-circle me-1"></i>
+                          Email không thể thay đổi sau khi tạo tài khoản
+                        </Form.Text>
+                      )}
                   </Form.Group>
                 </Col>
               </Row>
 
-              <Row className="mb-3">
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label className="fw-medium">
-                      <i className="bi bi-telephone-fill text-primary me-2"></i>
-                      Số điện thoại
-                    </Form.Label>
-                    <Form.Control
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className="border-0 shadow-sm"
-                    />
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label className="fw-medium">
-                      <i className="bi bi-gender-ambiguous text-primary me-2"></i>
-                      Giới tính
-                    </Form.Label>
-                    <Form.Select
-                      value={formData.gender}
-                      onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                      className="border-0 shadow-sm"
-                    >
-                      <option value="">Chọn giới tính</option>
-                      <option value="male">Nam</option>
-                      <option value="female">Nữ</option>
-                      <option value="other">Khác</option>
-                    </Form.Select>
-                  </Form.Group>
-                </Col>
-              </Row>
-
-              <div className="card border-0 shadow-sm mb-4">
-                <div className="card-header bg-white py-3">
-                  <h5 className="card-title mb-0">
-                    <i className="bi bi-geo-alt-fill text-primary me-2"></i>
-                    Thông tin địa chỉ
-                  </h5>
-                </div>
-                <div className="card-body">
-                  <Row className="mb-3">
-                    <Col md={12}>
-                      <Form.Group className="mb-3">
-                        <Form.Label className="fw-medium">Địa chỉ chi tiết</Form.Label>
+                            {/* Chỉ hiển thị phone và gender trong edit mode */}
+              {modalType === 'edit' && (
+                <Row className="mb-3">
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label className="fw-medium">
+                        <i className="bi bi-telephone-fill text-primary me-2"></i>
+                        Số điện thoại
+                      </Form.Label>
                         <Form.Control
-                          type="text"
-                          value={formData.addressDetail}
-                          onChange={(e) => setFormData({ ...formData, addressDetail: e.target.value })}
-                          placeholder="Số nhà, tên đường..."
-                          className="border-0 shadow-sm"
+                          type="tel"
+                          value={formData.phone}
+                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        className="border-0 shadow-sm"
                         />
-                      </Form.Group>
-                    </Col>
-                  </Row>
+                    </Form.Group>
+                      </Col>
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label className="fw-medium">
+                        <i className="bi bi-gender-ambiguous text-primary me-2"></i>
+                        Giới tính
+                      </Form.Label>
+                        <Form.Select
+                          value={formData.gender}
+                          onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                        className="border-0 shadow-sm"
+                        >
+                          <option value="">Chọn giới tính</option>
+                          <option value="male">Nam</option>
+                          <option value="female">Nữ</option>
+                          <option value="other">Khác</option>
+                        </Form.Select>
+                    </Form.Group>
+                      </Col>
+                    </Row>
+              )}
+              {/* Chỉ hiển thị địa chỉ trong edit mode */}
+              {modalType === 'edit' && (
+                <div className="card border-0 shadow-sm mb-4">
+                  <div className="card-header bg-white py-3">
+                    <h5 className="card-title mb-0">
+                      <i className="bi bi-geo-alt-fill text-primary me-2"></i>
+                      Thông tin địa chỉ
+                    </h5>
+                  </div>
+                  <div className="card-body">
+                    <Row className="mb-3">
+                      <Col md={12}>
+                        <Form.Group className="mb-3">
+                          <Form.Label className="fw-medium">Địa chỉ chi tiết</Form.Label>
+                          <Form.Control
+                            type="text"
+                            value={formData.addressDetail}
+                            onChange={(e) => setFormData({ ...formData, addressDetail: e.target.value })}
+                            placeholder="Số nhà, tên đường..."
+                            className="border-0 shadow-sm"
+                          />
+                        </Form.Group>
+                      </Col>
+                    </Row>
 
-                  <Row className="mb-3">
-                    <Col md={4}>
-                      <Form.Group className="mb-3">
-                        <Form.Label className="fw-medium">Tỉnh/Thành phố</Form.Label>
+                    <Row className="mb-3">
+                      <Col md={4}>
+                        <Form.Group className="mb-3">
+                          <Form.Label className="fw-medium">Tỉnh/Thành phố</Form.Label>
                         <Form.Select
                           value={formData.city}
-                          onChange={(e) => {
-                            setFormData({ 
-                              ...formData, 
+                            onChange={(e) => {
+                              setFormData({ 
+                                ...formData, 
                               city: e.target.value,
                               district: '',
                               ward: ''
-                            });
-                          }}
-                          className="border-0 shadow-sm"
-                        >
-                          <option value="">Chọn Tỉnh/Thành phố</option>
-                          {getProvinces().map(province => (
-                            <option key={province.code} value={province.code}>
-                              {province.name}
-                            </option>
+                              });
+                            }}
+                            className="border-0 shadow-sm"
+                          >
+                            <option value="">Chọn Tỉnh/Thành phố</option>
+                            {getProvinces().map(province => (
+                              <option key={province.code} value={province.code}>
+                                {province.name}
+                              </option>
                           ))}
                         </Form.Select>
-                      </Form.Group>
-                    </Col>
-                    <Col md={4}>
-                      <Form.Group className="mb-3">
-                        <Form.Label className="fw-medium">Quận/Huyện</Form.Label>
+                        </Form.Group>
+                      </Col>
+                      <Col md={4}>
+                        <Form.Group className="mb-3">
+                          <Form.Label className="fw-medium">Quận/Huyện</Form.Label>
                         <Form.Select
                           value={formData.district}
-                          onChange={(e) => {
-                            setFormData({ 
-                              ...formData, 
+                            onChange={(e) => {
+                              setFormData({ 
+                                ...formData, 
                               district: e.target.value,
                               ward: ''
-                            });
+                              });
                           }}
                           disabled={!formData.city}
-                          className="border-0 shadow-sm"
-                        >
-                          <option value="">Chọn Quận/Huyện</option>
-                          {formData.city && getDistricts()
-                            .filter(d => d.province_code === formData.city)
-                            .map(district => (
-                              <option key={district.code} value={district.code}>
-                                {district.name}
-                              </option>
-                            ))}
+                            className="border-0 shadow-sm"
+                          >
+                            <option value="">Chọn Quận/Huyện</option>
+                            {formData.city && getDistricts()
+                              .filter(d => d.province_code === formData.city)
+                              .map(district => (
+                                <option key={district.code} value={district.code}>
+                                  {district.name}
+                                </option>
+                          ))}
                         </Form.Select>
-                      </Form.Group>
-                    </Col>
-                    <Col md={4}>
-                      <Form.Group className="mb-3">
-                        <Form.Label className="fw-medium">Phường/Xã</Form.Label>
+                        </Form.Group>
+                      </Col>
+                      <Col md={4}>
+                        <Form.Group className="mb-3">
+                          <Form.Label className="fw-medium">Phường/Xã</Form.Label>
                         <Form.Select
                           value={formData.ward}
-                          onChange={(e) => {
-                            setFormData({ 
-                              ...formData, 
-                              ward: e.target.value 
-                            });
-                          }}
+                            onChange={(e) => {
+                              setFormData({ 
+                                ...formData, 
+                                ward: e.target.value 
+                              });
+                            }}
                           disabled={!formData.district}
-                          className="border-0 shadow-sm"
-                        >
-                          <option value="">Chọn Phường/Xã</option>
-                          {formData.district && getWards()
-                            .filter(w => w.district_code === formData.district)
-                            .map(ward => (
-                              <option key={ward.code} value={ward.code}>
-                                {ward.name}
-                              </option>
-                            ))}
+                            className="border-0 shadow-sm"
+                          >
+                            <option value="">Chọn Phường/Xã</option>
+                            {formData.district && getWards()
+                              .filter(w => w.district_code === formData.district)
+                              .map(ward => (
+                                <option key={ward.code} value={ward.code}>
+                                  {ward.name}
+                                </option>
+                          ))}
                         </Form.Select>
-                      </Form.Group>
-                    </Col>
-                  </Row>
+                        </Form.Group>
+                      </Col>
+                    </Row>
 
-                  <Row>
-                    <Col md={12}>
-                      <Form.Group className="mb-0">
-                        <Form.Label className="fw-medium">Địa chỉ đầy đủ</Form.Label>
+                    <Row>
+                      <Col md={12}>
+                        <Form.Group className="mb-0">
+                          <Form.Label className="fw-medium">Địa chỉ đầy đủ</Form.Label>
                         <Form.Control
                           type="text"
                           value={formData.address}
-                          readOnly
-                          className="border-0 shadow-sm bg-light"
+                            readOnly
+                            className="border-0 shadow-sm bg-light"
                         />
-                        <Form.Text className="text-muted">
-                          <i className="bi bi-info-circle me-1"></i>
-                          Địa chỉ đầy đủ được tự động tạo từ các thông tin bên trên
-                        </Form.Text>
-                      </Form.Group>
-                    </Col>
-                  </Row>
+                          <Form.Text className="text-muted">
+                            <i className="bi bi-info-circle me-1"></i>
+                            Địa chỉ đầy đủ được tự động tạo từ các thông tin bên trên
+                          </Form.Text>
+                        </Form.Group>
+                      </Col>
+                    </Row>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="card border-0 shadow-sm mb-4">
                 <div className="card-header bg-white py-3">
@@ -1784,8 +1746,8 @@ const UserManagement = ({
                         <Form.Select
                           value={formData.role}
                           onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                          disabled={loadingRoles}
-                          className="border-0 shadow-sm"
+                          disabled={loadingRoles || modalType === 'edit'}
+                          className={`border-0 shadow-sm ${modalType === 'edit' ? 'bg-light' : ''}`}
                         >
                           <option value="">Chọn vai trò</option>
                           {roleOptions.map((role) => (
@@ -1799,30 +1761,36 @@ const UserManagement = ({
                         {loadingRoles && <div className="text-center mt-2"><span className="spinner-border spinner-border-sm"></span> Đang tải...</div>}
                         <Form.Text className="text-muted mt-2">
                           <i className="bi bi-info-circle me-1"></i>
-                          Chọn vai trò phù hợp để phân quyền cho người dùng
+                          {modalType === 'edit' 
+                            ? 'Vai trò không thể thay đổi trực tiếp. Liên hệ admin để thay đổi vai trò.'
+                            : 'Chọn vai trò phù hợp để phân quyền cho người dùng'
+                          }
                         </Form.Text>
                       </Form.Group>
                     </Col>
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label className="fw-medium">
-                          <i className="bi bi-shield-fill-check text-primary me-2"></i>
-                          Trạng thái tài khoản
-                        </Form.Label>
+                                        {/* Chỉ hiển thị trạng thái trong edit mode */}
+                    {modalType === 'edit' && (
+                      <Col md={6}>
+                        <Form.Group className="mb-3">
+                          <Form.Label className="fw-medium">
+                            <i className="bi bi-shield-fill-check text-primary me-2"></i>
+                            Trạng thái tài khoản
+                          </Form.Label>
                         <Form.Select
                           value={formData.accountStatus}
                           onChange={(e) => setFormData({ ...formData, accountStatus: e.target.value })}
-                          className="border-0 shadow-sm"
-                        >
-                          <option value="active" className="text-success">✓ Hoạt động - Cho phép đăng nhập</option>
-                          <option value="inactive" className="text-danger">✗ Không hoạt động - Chặn đăng nhập</option>
+                            className="border-0 shadow-sm"
+                          >
+                            <option value="active" className="text-success">✓ Hoạt động - Cho phép đăng nhập</option>
+                            <option value="inactive" className="text-danger">✗ Không hoạt động - Chặn đăng nhập</option>
                         </Form.Select>
-                        <Form.Text className="text-muted mt-2">
-                          <i className="bi bi-info-circle me-1"></i>
-                          Chọn "Hoạt động" để cho phép đăng nhập hoặc "Không hoạt động" để chặn đăng nhập
-                        </Form.Text>
-                      </Form.Group>
-                    </Col>
+                          <Form.Text className="text-muted mt-2">
+                            <i className="bi bi-info-circle me-1"></i>
+                            Chọn "Hoạt động" để cho phép đăng nhập hoặc "Không hoạt động" để chặn đăng nhập
+                          </Form.Text>
+                        </Form.Group>
+                      </Col>
+                    )}
                   </Row>
                 </div>
               </div>

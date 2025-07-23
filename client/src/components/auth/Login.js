@@ -20,6 +20,7 @@ import {
   signInWithGoogle,
   dataConnect
 } from '../config/firebase';
+import { signOut } from 'firebase/auth';
 import {
   getUser
 } from '../../lib/dataconnect';
@@ -77,6 +78,18 @@ const Login = ({ setUser }) => {
           if (userData && userData.user) {
             const userInfo = userData.user;
             
+            // ⚠️ KIỂM TRA TRẠNG THÁI TÀI KHOẢN
+            if (userInfo.accountStatus === 'inactive') {
+              console.log('🚫 Account is inactive:', userInfo.email);
+              setLoginError('Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.');
+              
+              // Đăng xuất khỏi Firebase Auth
+              await signOut(auth);
+              return;
+            }
+            
+            console.log('✅ Account status check passed:', userInfo.accountStatus);
+            
             // Tạo object chứa thông tin user cho app
             const appUser = {
               ...userInfo,
@@ -87,6 +100,7 @@ const Login = ({ setUser }) => {
               avatar: userInfo.avatar,
               verified: user.emailVerified,
               phone: userInfo.phone,
+              accountStatus: userInfo.accountStatus, // Thêm accountStatus vào appUser
               // Xác định department dựa trên role
               department: userInfo.role?.name === 'admin' ? 'Administration' : 
                          userInfo.role?.name === 'staff' ? 'Laboratory' :
