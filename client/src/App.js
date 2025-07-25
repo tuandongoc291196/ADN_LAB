@@ -34,7 +34,6 @@ import Payment from './components/payment/Payment';
 import PaymentSuccess from './components/payment/PaymentSuccess';
 
 // Additional Components
-import Sitemap from './components/Sitemap';
 import LoadingSpinner from './components/common/LoadingSpinner';
 
 // Test Results Components
@@ -381,9 +380,6 @@ function App() {
                   </div>
                 </div>
               } />
-
-              {/* Utility Pages */}
-              <Route path="/sitemap" element={<Sitemap />} />
 
               {/* 404 Page - Enhanced */}
               <Route path="*" element={

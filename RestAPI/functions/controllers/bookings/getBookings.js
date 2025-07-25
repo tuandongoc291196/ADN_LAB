@@ -111,7 +111,6 @@ const getAllBookings = async (req, res) => {
   }
 };
 
-
 const getOneBooking = async (req, res) => {
   try {
     const { bookingId } = req.body;
@@ -826,6 +825,103 @@ const getExpiredBookings = async (currentTime) => {
   }
 };
 
+const getBookingsManager = async (req, res) => {
+  try {
+    const { managerId } = req.body;
+
+    if (!managerId) {
+      return res.status(400).json({
+        statusCode: 400,
+        status: "error",
+        message: "managerId is required",
+      });
+    }
+
+    if (!await checkStaffExists(managerId, "2")) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "Manager not found",
+        error: "Manager with the provided ID does not exist",
+      });
+    }
+
+    const GET_BOOKINGS_BY_MANAGER_QUERY = `
+      query GetBookingsByManager($managerId: String!) @auth(level: USER) {
+        testResults( where: {managerId: { eq: $managerId }}) {
+          booking {
+            id
+            userId
+            staffId
+            timeSlotId
+            serviceId
+            methodId
+            totalAmount
+            createdAt
+            updatedAt
+            informations_on_booking {
+              name
+              phone
+            }
+            user {
+              id
+              fullname
+              email
+              phone
+            }
+            staff {
+              id
+              user {
+                fullname
+              }
+            }
+            service {
+              title
+              category {
+                name
+                hasLegalValue
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const variables = { 
+      managerId: managerId 
+    };
+    const response = await dataConnect.executeGraphql(GET_BOOKINGS_BY_MANAGER_QUERY, {
+      variables: variables
+    });
+
+    const responseData = response.data.testResults;
+
+    if (!responseData || responseData.length === 0) {
+      return res.status(404).json({
+        statusCode: 404,
+        status: "error",
+        message: "No bookings found for the given manager ID",
+      });
+    }
+    
+    res.status(200).json({
+      statusCode: 200,
+      status: "SUCCESS",
+      message: "Bookings retrieved successfully",
+      count: responseData.length,
+      data: responseData,
+    });
+  } catch (error) {
+    console.error("Error fetching bookings by manager:", error);
+    res.status(500).json({
+      statusCode: 500,
+      status: "error",
+      message: "Failed to retrieve bookings",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getAllBookings,
   getOneBooking,
@@ -834,5 +930,6 @@ module.exports = {
   getBookingByTimeSlotId,
   getOneBookingById,
   getBookingsBySlotDate,
-  getExpiredBookings
+  getExpiredBookings,
+  getBookingsManager
 };

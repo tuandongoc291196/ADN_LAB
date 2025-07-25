@@ -1,129 +1,831 @@
 openapi: 3.0.0
 info:
-  title: ADN Lab API
-  description: API documentation for ADN Lab management system
+  title: ADN LAB API
   version: 1.0.0
+  description: Comprehensive API for ADN LAB - DNA Testing Laboratory Management System
   contact:
-    name: ADN Lab Team
+    name: ADN LAB Support
     email: support@adnlab.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: http://localhost:5001
-    description: Development server
   - url: https://app-bggwpxm32a-uc.a.run.app
     description: Production server
+  - url: http://localhost:5001
+    description: Development server
 
-tags:
-  - name: Blogs
-    description: Blog management endpoints
-  - name: Services
-    description: Service management endpoints
-  - name: Methods
-    description: Method management endpoints
-  - name: Users
-    description: User management endpoints
-  - name: Staffs
-    description: Staff management endpoints
-  - name: Roles
-    description: Role management endpoints
-  - name: Bookings
-    description: Booking management endpoints
-  - name: Booking History
-    description: Booking history endpoints
-  - name: Time Slots
-    description: Time slot management endpoints
-  - name: Samples
-    description: Sample management endpoints
-  - name: Test Results
-    description: Test result management endpoints
-  - name: Payments
-    description: Payment management endpoints
+components:
+  schemas:
+    # Core Models
+    User:
+      type: object
+      required:
+        - id
+        - fullname
+        - email
+        - roleId
+        - authProvider
+      properties:
+        id:
+          type: string
+          description: Unique user identifier
+        fullname:
+          type: string
+          description: User's full name
+        gender:
+          type: string
+          enum: [male, female, other]
+        avatar:
+          type: string
+          description: URL to user's avatar image
+        email:
+          type: string
+          format: email
+          description: User's email address
+        accountStatus:
+          type: string
+          enum: [active, inactive, suspended]
+          default: active
+        authProvider:
+          type: string
+          description: Authentication provider (Firebase, Google, etc.)
+        phone:
+          type: string
+          description: User's phone number
+        address:
+          type: string
+          description: User's address
+        roleId:
+          type: string
+          description: Reference to user's role
+        createdAt:
+          type: string
+          format: date-time
+        lastLogin:
+          type: string
+          format: date-time
+
+    Staff:
+      type: object
+      required:
+        - id
+        - positionId
+      properties:
+        id:
+          type: string
+          description: Staff ID (same as User ID)
+        hireDate:
+          type: string
+          format: date
+        slot:
+          type: integer
+          description: Number of active slots/bookings
+          default: 0
+        specification:
+          type: array
+          items:
+            type: string
+          description: Staff specializations
+        certifications:
+          type: array
+          items:
+            type: string
+          description: Staff certifications
+        positionId:
+          type: string
+          description: Reference to staff position
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Role:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          description: Role identifier
+        name:
+          type: string
+          description: Role name
+        description:
+          type: string
+          description: Role description
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Service:
+      type: object
+      required:
+        - id
+        - title
+        - description
+        - price
+        - duration
+        - categoryId
+      properties:
+        id:
+          type: string
+          description: Service identifier
+        title:
+          type: string
+          description: Service title
+        description:
+          type: string
+          description: Short service description
+        fullDescription:
+          type: string
+          description: Detailed service description
+        price:
+          type: number
+          format: float
+          description: Service price
+        duration:
+          type: string
+          description: Service duration
+        categoryId:
+          type: string
+          description: Reference to service category
+        icon:
+          type: string
+          description: Service icon URL
+        isActive:
+          type: boolean
+          default: true
+        featured:
+          type: boolean
+          default: false
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ServiceCategory:
+      type: object
+      required:
+        - id
+        - name
+        - hasLegalValue
+      properties:
+        id:
+          type: string
+          description: Category identifier
+        name:
+          type: string
+          description: Category name
+        description:
+          type: string
+          description: Category description
+        hasLegalValue:
+          type: boolean
+          description: Whether category has legal value
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Method:
+      type: object
+      required:
+        - id
+        - name
+        - price
+      properties:
+        id:
+          type: string
+          description: Method identifier
+        name:
+          type: string
+          description: Method name
+        description:
+          type: string
+          description: Method description
+        price:
+          type: number
+          format: float
+          description: Method price
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Booking:
+      type: object
+      required:
+        - id
+        - userId
+        - staffId
+        - serviceId
+        - methodId
+        - totalAmount
+      properties:
+        id:
+          type: string
+          description: Booking identifier
+        userId:
+          type: string
+          description: Reference to user who made the booking
+        staffId:
+          type: string
+          description: Reference to assigned staff
+        timeSlotId:
+          type: string
+          description: Reference to time slot
+        serviceId:
+          type: string
+          description: Reference to booked service
+        methodId:
+          type: string
+          description: Reference to testing method
+        totalAmount:
+          type: number
+          format: float
+          description: Total booking amount
+        expiresAt:
+          type: string
+          format: date-time
+          description: Booking expiration time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Payment:
+      type: object
+      required:
+        - id
+        - bookingId
+        - amount
+        - paymentMethod
+      properties:
+        id:
+          type: string
+          description: Payment identifier
+        bookingId:
+          type: string
+          description: Reference to booking
+        amount:
+          type: number
+          format: float
+          description: Payment amount
+        paymentMethod:
+          type: string
+          enum: [momo, zalopay, cash, bank_transfer]
+          description: Payment method
+        status:
+          type: string
+          enum: [pending, completed, failed, refunded]
+          default: pending
+        paymentDate:
+          type: string
+          format: date
+        refundDetail:
+          type: string
+          description: Refund details if applicable
+        otherDetails:
+          type: array
+          items:
+            type: string
+          description: Additional payment details
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Blog:
+      type: object
+      required:
+        - id
+        - userId
+        - title
+        - content
+        - isActive
+      properties:
+        id:
+          type: string
+          description: Blog identifier
+        userId:
+          type: string
+          description: Reference to blog author
+        title:
+          type: string
+          description: Blog title
+        content:
+          type: string
+          description: Blog content
+        imageUrl:
+          type: string
+          description: Blog image URL
+        isActive:
+          type: boolean
+          default: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Feedback:
+      type: object
+      required:
+        - id
+        - bookingId
+        - rating
+      properties:
+        id:
+          type: string
+          description: Feedback identifier
+        bookingId:
+          type: string
+          description: Reference to booking
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Rating from 1 to 5
+        comment:
+          type: string
+          description: Feedback comment
+        createdAt:
+          type: string
+          format: date-time
+
+    Participant:
+      type: object
+      required:
+        - id
+        - bookingId
+        - name
+        - age
+        - gender
+      properties:
+        id:
+          type: string
+          description: Participant identifier
+        bookingId:
+          type: string
+          description: Reference to booking
+        name:
+          type: string
+          description: Participant name
+        age:
+          type: integer
+          description: Participant age
+        identification:
+          type: string
+          description: Participant ID number
+        gender:
+          type: string
+          enum: [male, female, other]
+        relationship:
+          type: string
+          description: Relationship to booking user
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Information:
+      type: object
+      required:
+        - id
+        - bookingId
+        - name
+        - identification
+        - address
+        - phone
+      properties:
+        id:
+          type: string
+          description: Information identifier
+        bookingId:
+          type: string
+          description: Reference to booking
+        name:
+          type: string
+          description: Contact name
+        identification:
+          type: string
+          description: Contact ID number
+        address:
+          type: string
+          description: Contact address
+        phone:
+          type: string
+          description: Contact phone number
+        email:
+          type: string
+          format: email
+          description: Contact email
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Sample:
+      type: object
+      required:
+        - id
+        - bookingId
+        - sampleQuality
+      properties:
+        id:
+          type: string
+          description: Sample identifier
+        bookingId:
+          type: string
+          description: Reference to booking
+        staffId:
+          type: string
+          description: Reference to staff who collected sample
+        participantId:
+          type: string
+          description: Reference to participant
+        collectionDate:
+          type: string
+          format: date
+        sampleQuality:
+          type: string
+          enum: [excellent, good, fair, poor]
+        sampleConcentration:
+          type: number
+          format: float
+        notes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    TestResult:
+      type: object
+      required:
+        - id
+        - bookingId
+        - staffId
+        - managerId
+        - testMethod
+        - positive
+        - accuracy
+        - testType
+      properties:
+        id:
+          type: string
+          description: Test result identifier
+        bookingId:
+          type: string
+          description: Reference to booking
+        staffId:
+          type: string
+          description: Reference to staff who performed test
+        managerId:
+          type: string
+          description: Reference to manager who approved result
+        testMethod:
+          type: string
+          description: Testing method used
+        positive:
+          type: boolean
+          description: Test result (positive/negative)
+        accuracy:
+          type: number
+          format: float
+          description: Test accuracy percentage
+        testType:
+          type: string
+          description: Type of test performed
+        testDate:
+          type: string
+          format: date
+        reportDate:
+          type: string
+          format: date
+        resultData:
+          type: string
+          description: Raw test result data
+        resultNotes:
+          type: string
+          description: Additional notes about the result
+        status:
+          type: string
+          enum: [pending, completed, verified]
+          default: pending
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # Request/Response Models
+    ApiResponse:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+        status:
+          type: string
+          enum: [success, error]
+        message:
+          type: string
+        data:
+          type: object
+        error:
+          type: string
+
+    AddUserRequest:
+      type: object
+      required:
+        - email
+        - password
+        - name
+        - roleId
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+        name:
+          type: string
+        roleId:
+          type: string
+
+    AddServiceRequest:
+      type: object
+      required:
+        - title
+        - description
+        - fullDescription
+        - price
+        - duration
+        - categoryId
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        fullDescription:
+          type: string
+        price:
+          type: number
+          format: float
+        duration:
+          type: string
+        categoryId:
+          type: string
+        icon:
+          type: string
+        featured:
+          type: boolean
+        isActive:
+          type: boolean
+        methods:
+          type: array
+          items:
+            type: string
+
+    AddBookingRequest:
+      type: object
+      required:
+        - userId
+        - slotDate
+        - startTime
+        - endTime
+        - methodId
+        - serviceId
+        - totalAmount
+      properties:
+        userId:
+          type: string
+        slotDate:
+          type: string
+          format: date
+        startTime:
+          type: string
+          pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'
+        endTime:
+          type: string
+          pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'
+        methodId:
+          type: string
+        serviceId:
+          type: string
+        totalAmount:
+          type: number
+          format: float
+        participants:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              age:
+                type: integer
+              identification:
+                type: string
+              gender:
+                type: string
+              relationship:
+                type: string
+        information:
+          type: object
+          properties:
+            name:
+              type: string
+            identification:
+              type: string
+            address:
+              type: string
+            phone:
+              type: string
+            email:
+              type: string
+
+    AddPaymentRequest:
+      type: object
+      required:
+        - bookingId
+        - amount
+        - paymentMethod
+      properties:
+        bookingId:
+          type: string
+        amount:
+          type: number
+          format: float
+        paymentMethod:
+          type: string
+          enum: [momo, zalopay, cash, bank_transfer]
+
+    AddBlogRequest:
+      type: object
+      required:
+        - userId
+        - title
+        - content
+        - isActive
+        - imageUrl
+      properties:
+        userId:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+        isActive:
+          type: boolean
+        imageUrl:
+          type: string
+
+    AddFeedbackRequest:
+      type: object
+      required:
+        - bookingId
+        - rating
+      properties:
+        bookingId:
+          type: string
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
 
 paths:
-  /:
-    get:
-      tags:
-        - General
-      summary: API health check
-      description: Basic health check endpoint
-      responses:
-        '200':
-          description: API is running
-          content:
-            text/plain:
-              schema:
-                type: string
-                example: "Hey there. We've been trying to reach you concerning your vehicle's extended warrant. For Swagger, visit /api-docs"
-
   # Blog endpoints
   /blogs/add:
     post:
       tags:
         - Blogs
-      summary: Add a new blog
+      summary: Create a new blog post
+      description: Create a new blog post with title, content, and image
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                title:
-                  type: string
-                content:
-                  type: string
-                author:
-                  type: string
-                category:
-                  type: string
+              $ref: '#/components/schemas/AddBlogRequest'
       responses:
-        '200':
+        '201':
           description: Blog created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
         '400':
-          description: Bad request
+          description: Bad request - missing required fields
+        '404':
+          description: User not found
+        '409':
+          description: Blog ID conflict
+        '500':
+          description: Internal server error
 
   /blogs:
     get:
       tags:
         - Blogs
-      summary: Get all blogs
+      summary: Get all blog posts
+      description: Retrieve all blog posts with pagination support
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+        - in: query
+          name: isActive
+          schema:
+            type: boolean
       responses:
         '200':
-          description: List of all blogs
+          description: Blogs retrieved successfully
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                  status:
+                    type: string
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Blog'
     post:
       tags:
         - Blogs
-      summary: Get one blog by ID
+      summary: Get a specific blog post
+      description: Retrieve a specific blog post by ID
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - id
               properties:
                 id:
                   type: string
       responses:
         '200':
-          description: Blog details
+          description: Blog retrieved successfully
         '404':
           description: Blog not found
     put:
       tags:
         - Blogs
-      summary: Update a blog
+      summary: Update a blog post
+      description: Update an existing blog post
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - id
               properties:
                 id:
                   type: string
@@ -131,163 +833,240 @@ paths:
                   type: string
                 content:
                   type: string
+                imageUrl:
+                  type: string
+                isActive:
+                  type: boolean
       responses:
         '200':
           description: Blog updated successfully
+        '404':
+          description: Blog not found
     delete:
       tags:
         - Blogs
-      summary: Delete a blog
+      summary: Delete a blog post
+      description: Delete a specific blog post by ID
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - id
               properties:
                 id:
                   type: string
       responses:
         '200':
           description: Blog deleted successfully
+        '404':
+          description: Blog not found
 
   # Service endpoints
   /services/add:
     post:
       tags:
         - Services
-      summary: Add a new service
+      summary: Create a new service
+      description: Create a new DNA testing service
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                description:
-                  type: string
-                price:
-                  type: number
-                categoryId:
-                  type: string
+              $ref: '#/components/schemas/AddServiceRequest'
       responses:
-        '200':
+        '201':
           description: Service created successfully
+        '400':
+          description: Bad request - missing required fields
+        '404':
+          description: Category not found
+        '409':
+          description: Service already exists
+        '500':
+          description: Internal server error
 
   /services:
     get:
       tags:
         - Services
       summary: Get all services
+      description: Retrieve all DNA testing services
+      parameters:
+        - in: query
+          name: isActive
+          schema:
+            type: boolean
+        - in: query
+          name: featured
+          schema:
+            type: boolean
       responses:
         '200':
-          description: List of all services
+          description: Services retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Service'
     post:
       tags:
         - Services
-      summary: Get one service by ID
+      summary: Get a specific service
+      description: Retrieve a specific service by ID
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - id
               properties:
                 id:
                   type: string
       responses:
         '200':
-          description: Service details
+          description: Service retrieved successfully
+        '404':
+          description: Service not found
     put:
       tags:
         - Services
       summary: Update a service
+      description: Update an existing service
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - id
               properties:
                 id:
                   type: string
-                name:
+                title:
                   type: string
                 description:
                   type: string
+                fullDescription:
+                  type: string
                 price:
                   type: number
+                  format: float
+                duration:
+                  type: string
+                categoryId:
+                  type: string
+                icon:
+                  type: string
+                isActive:
+                  type: boolean
+                featured:
+                  type: boolean
       responses:
         '200':
           description: Service updated successfully
+        '404':
+          description: Service not found
     delete:
       tags:
         - Services
       summary: Delete a service
+      description: Delete a specific service by ID
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - id
               properties:
                 id:
                   type: string
       responses:
         '200':
           description: Service deleted successfully
+        '404':
+          description: Service not found
 
   /services/category:
     post:
       tags:
         - Services
-      summary: Get services by category ID
+      summary: Get services by category
+      description: Retrieve services filtered by category ID
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - categoryId
               properties:
                 categoryId:
                   type: string
       responses:
         '200':
-          description: List of services in category
+          description: Services retrieved successfully
+        '404':
+          description: Category not found
 
   /services/status:
     put:
       tags:
         - Services
       summary: Update service status
+      description: Update the active status of a service
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - id
+                - isActive
               properties:
                 id:
                   type: string
-                status:
-                  type: string
+                isActive:
+                  type: boolean
       responses:
         '200':
-          description: Service status updated
+          description: Service status updated successfully
+        '404':
+          description: Service not found
 
   /services/featured:
     put:
       tags:
         - Services
       summary: Update service featured status
+      description: Update the featured status of a service
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - id
+                - featured
               properties:
                 id:
                   type: string
@@ -295,276 +1074,337 @@ paths:
                   type: boolean
       responses:
         '200':
-          description: Service featured status updated
-
-  # Method Service endpoints
-  /method/services:
-    post:
-      tags:
-        - Methods
-      summary: Get method services
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                methodId:
-                  type: string
-      responses:
-        '200':
-          description: List of method services
-
-  /service/methods:
-    post:
-      tags:
-        - Methods
-      summary: Get services by method ID
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                methodId:
-                  type: string
-      responses:
-        '200':
-          description: List of services for method
-
-  # Method endpoints
-  /methods:
-    get:
-      tags:
-        - Methods
-      summary: Get all methods
-      responses:
-        '200':
-          description: List of all methods
-    post:
-      tags:
-        - Methods
-      summary: Get one method by ID
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                id:
-                  type: string
-      responses:
-        '200':
-          description: Method details
+          description: Service featured status updated successfully
+        '404':
+          description: Service not found
 
   # User endpoints
   /users/add:
     post:
       tags:
         - Users
-      summary: Add a new user
+      summary: Create a new user
+      description: Create a new user account
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                email:
-                  type: string
-                password:
-                  type: string
-                name:
-                  type: string
-                role:
-                  type: string
+              $ref: '#/components/schemas/AddUserRequest'
       responses:
-        '200':
+        '201':
           description: User created successfully
+        '400':
+          description: Bad request - missing required fields
+        '404':
+          description: Role not found
+        '409':
+          description: User already exists
+        '500':
+          description: Internal server error
 
   /users:
     get:
       tags:
         - Users
       summary: Get all users
+      description: Retrieve all user accounts
+      parameters:
+        - in: query
+          name: accountStatus
+          schema:
+            type: string
+            enum: [active, inactive, suspended]
       responses:
         '200':
-          description: List of all users
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
     post:
       tags:
         - Users
-      summary: Get one user by ID
+      summary: Get a specific user
+      description: Retrieve a specific user by ID
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - id
               properties:
                 id:
                   type: string
       responses:
         '200':
-          description: User details
+          description: User retrieved successfully
+        '404':
+          description: User not found
     put:
       tags:
         - Users
       summary: Update a user
+      description: Update user information
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - id
               properties:
                 id:
                   type: string
-                name:
+                fullname:
                   type: string
-                email:
+                gender:
+                  type: string
+                avatar:
+                  type: string
+                phone:
+                  type: string
+                address:
                   type: string
       responses:
         '200':
           description: User updated successfully
+        '404':
+          description: User not found
     delete:
       tags:
         - Users
       summary: Delete a user
+      description: Delete a specific user by ID
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - id
               properties:
                 id:
                   type: string
       responses:
         '200':
           description: User deleted successfully
+        '404':
+          description: User not found
 
   /users/role:
     post:
       tags:
         - Users
       summary: Get users by role
+      description: Retrieve users filtered by role ID
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - roleId
               properties:
-                role:
+                roleId:
                   type: string
       responses:
         '200':
-          description: List of users with specified role
+          description: Users retrieved successfully
+        '404':
+          description: Role not found
 
   /users/role/staff:
     put:
       tags:
         - Users
       summary: Update user role to staff
+      description: Update a user's role to staff
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - id
+                - positionId
               properties:
                 id:
                   type: string
+                positionId:
+                  type: string
       responses:
         '200':
-          description: User role updated to staff
+          description: User role updated to staff successfully
+        '404':
+          description: User not found
 
   /users/role/admin:
     put:
       tags:
         - Users
       summary: Update user role to admin
+      description: Update a user's role to admin
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - id
               properties:
                 id:
                   type: string
       responses:
         '200':
-          description: User role updated to admin
+          description: User role updated to admin successfully
+        '404':
+          description: User not found
 
   /users/status:
     put:
       tags:
         - Users
       summary: Update user account status
+      description: Update a user's account status
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - id
+                - accountStatus
               properties:
                 id:
                   type: string
-                status:
+                accountStatus:
                   type: string
+                  enum: [active, inactive, suspended]
       responses:
         '200':
-          description: User account status updated
+          description: User account status updated successfully
+        '404':
+          description: User not found
 
   # Staff endpoints
   /staffs:
     get:
       tags:
-        - Staffs
-      summary: Get all staffs
+        - Staff
+      summary: Get all staff members
+      description: Retrieve all staff members
       responses:
         '200':
-          description: List of all staffs
+          description: Staff members retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Staff'
     post:
       tags:
-        - Staffs
-      summary: Get staff by ID
+        - Staff
+      summary: Get a specific staff member
+      description: Retrieve a specific staff member by ID
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - id
               properties:
                 id:
                   type: string
       responses:
         '200':
-          description: Staff details
+          description: Staff member retrieved successfully
+        '404':
+          description: Staff member not found
     put:
       tags:
-        - Staffs
-      summary: Update staff information
+        - Staff
+      summary: Update a staff member
+      description: Update staff member information
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - id
               properties:
                 id:
                   type: string
-                name:
+                hireDate:
                   type: string
-                position:
+                  format: date
+                specification:
+                  type: array
+                  items:
+                    type: string
+                certifications:
+                  type: array
+                  items:
+                    type: string
+                positionId:
                   type: string
       responses:
         '200':
-          description: Staff updated successfully
+          description: Staff member updated successfully
+        '404':
+          description: Staff member not found
+
+  /staffs/position:
+    post:
+      tags:
+        - Staff
+      summary: Get staff members by position
+      description: Retrieve staff members filtered by position ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - positionId
+              properties:
+                positionId:
+                  type: string
+      responses:
+        '200':
+          description: Staff members retrieved successfully
+        '404':
+          description: Position not found
 
   # Role endpoints
   /roles:
@@ -572,239 +1412,361 @@ paths:
       tags:
         - Roles
       summary: Get all roles
+      description: Retrieve all system roles
       responses:
         '200':
-          description: List of all roles
+          description: Roles retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Role'
     post:
       tags:
         - Roles
-      summary: Get one role by ID
+      summary: Get a specific role
+      description: Retrieve a specific role by ID
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - id
               properties:
                 id:
                   type: string
       responses:
         '200':
-          description: Role details
+          description: Role retrieved successfully
+        '404':
+          description: Role not found
     put:
       tags:
         - Roles
       summary: Update a role
+      description: Update role information
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - id
               properties:
                 id:
                   type: string
                 name:
                   type: string
-                permissions:
-                  type: array
-                  items:
-                    type: string
+                description:
+                  type: string
       responses:
         '200':
           description: Role updated successfully
+        '404':
+          description: Role not found
     delete:
       tags:
         - Roles
       summary: Delete a role
+      description: Delete a specific role by ID
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - id
               properties:
                 id:
                   type: string
       responses:
         '200':
           description: Role deleted successfully
+        '404':
+          description: Role not found
 
   /roles/add:
     post:
       tags:
         - Roles
-      summary: Add a new role
+      summary: Create a new role
+      description: Create a new system role
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - name
               properties:
                 name:
                   type: string
-                permissions:
-                  type: array
-                  items:
-                    type: string
+                description:
+                  type: string
       responses:
-        '200':
+        '201':
           description: Role created successfully
+        '400':
+          description: Bad request - missing required fields
+        '409':
+          description: Role already exists
+        '500':
+          description: Internal server error
 
   # Booking endpoints
   /bookings/add:
     post:
       tags:
         - Bookings
-      summary: Add a new booking
+      summary: Create a new booking
+      description: Create a new service booking
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                userId:
-                  type: string
-                serviceId:
-                  type: string
-                timeSlotId:
-                  type: string
-                staffId:
-                  type: string
+              $ref: '#/components/schemas/AddBookingRequest'
       responses:
-        '200':
+        '201':
           description: Booking created successfully
+        '400':
+          description: Bad request - missing required fields
+        '404':
+          description: User, service, or method not found
+        '409':
+          description: Booking conflict
+        '500':
+          description: Internal server error
 
   /bookings:
     get:
       tags:
         - Bookings
       summary: Get all bookings
+      description: Retrieve all bookings
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
       responses:
         '200':
-          description: List of all bookings
+          description: Bookings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Booking'
     post:
       tags:
         - Bookings
-      summary: Get one booking by ID
+      summary: Get a specific booking
+      description: Retrieve a specific booking by ID
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - id
               properties:
                 id:
                   type: string
       responses:
         '200':
-          description: Booking details
+          description: Booking retrieved successfully
+        '404':
+          description: Booking not found
     delete:
       tags:
         - Bookings
-      summary: Delete booking by ID
+      summary: Delete a booking
+      description: Delete a specific booking by ID
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - id
               properties:
                 id:
                   type: string
       responses:
         '200':
           description: Booking deleted successfully
+        '404':
+          description: Booking not found
+
+  /bookings/manager:
+    post:
+      tags:
+        - Bookings
+      summary: Get bookings for manager
+      description: Retrieve bookings with manager-specific information
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                startDate:
+                  type: string
+                  format: date
+                endDate:
+                  type: string
+                  format: date
+      responses:
+        '200':
+          description: Bookings retrieved successfully
 
   /bookings/timeslot:
     post:
       tags:
         - Bookings
-      summary: Get booking by time slot ID
+      summary: Get bookings by time slot
+      description: Retrieve bookings for a specific time slot
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - timeSlotId
               properties:
                 timeSlotId:
                   type: string
       responses:
         '200':
-          description: Booking details for time slot
+          description: Bookings retrieved successfully
+        '404':
+          description: Time slot not found
 
   /bookings/user:
     post:
       tags:
         - Bookings
-      summary: Get bookings by user ID
+      summary: Get bookings by user
+      description: Retrieve bookings for a specific user
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - userId
               properties:
                 userId:
                   type: string
       responses:
         '200':
-          description: List of user bookings
+          description: Bookings retrieved successfully
+        '404':
+          description: User not found
 
   /bookings/staff:
     post:
       tags:
         - Bookings
-      summary: Get bookings by staff ID
+      summary: Get bookings by staff
+      description: Retrieve bookings assigned to a specific staff member
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - staffId
               properties:
                 staffId:
                   type: string
       responses:
         '200':
-          description: List of staff bookings
+          description: Bookings retrieved successfully
+        '404':
+          description: Staff member not found
 
   /bookings/cancel/user:
     post:
       tags:
         - Bookings
       summary: Cancel booking by user
+      description: Cancel a booking initiated by the user
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - id
+                - userId
               properties:
-                bookingId:
+                id:
                   type: string
                 userId:
                   type: string
+                reason:
+                  type: string
       responses:
         '200':
-          description: Booking cancelled by user
+          description: Booking cancelled successfully
+        '404':
+          description: Booking not found
+        '403':
+          description: Unauthorized to cancel this booking
 
   /bookings/cancel/manager:
     post:
       tags:
         - Bookings
       summary: Cancel booking by manager
+      description: Cancel a booking initiated by a manager
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - id
+                - managerId
               properties:
-                bookingId:
+                id:
                   type: string
                 managerId:
                   type: string
@@ -812,68 +1774,103 @@ paths:
                   type: string
       responses:
         '200':
-          description: Booking cancelled by manager
+          description: Booking cancelled successfully
+        '404':
+          description: Booking not found
+        '403':
+          description: Unauthorized to cancel this booking
 
   /bookings/time:
     put:
       tags:
         - Bookings
       summary: Update booking time
+      description: Update the time slot of a booking
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - id
+                - slotDate
+                - startTime
+                - endTime
               properties:
-                bookingId:
+                id:
                   type: string
-                newTimeSlotId:
+                slotDate:
                   type: string
+                  format: date
+                startTime:
+                  type: string
+                  pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'
+                endTime:
+                  type: string
+                  pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'
       responses:
         '200':
-          description: Booking time updated
+          description: Booking time updated successfully
+        '404':
+          description: Booking not found
+        '409':
+          description: Time slot conflict
 
   # Booking History endpoints
   /booking/history/add:
     post:
       tags:
         - Booking History
-      summary: Add booking history by ID
+      summary: Add booking history entry
+      description: Add a new entry to booking history
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - bookingId
+                - description
+                - status
               properties:
                 bookingId:
                   type: string
-                action:
+                description:
                   type: string
-                details:
+                status:
                   type: string
       responses:
-        '200':
-          description: Booking history added
+        '201':
+          description: Booking history entry created successfully
+        '400':
+          description: Bad request - missing required fields
+        '404':
+          description: Booking not found
 
   /booking/history:
     post:
       tags:
         - Booking History
-      summary: Get booking histories
+      summary: Get booking history
+      description: Retrieve history entries for a specific booking
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - bookingId
               properties:
                 bookingId:
                   type: string
       responses:
         '200':
-          description: List of booking histories
+          description: Booking history retrieved successfully
+        '404':
+          description: Booking not found
 
   # Time Slot endpoints
   /timeslots/unavailable:
@@ -881,331 +1878,553 @@ paths:
       tags:
         - Time Slots
       summary: Get unavailable time slots
+      description: Retrieve unavailable time slots for a specific date range
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - startDate
+                - endDate
               properties:
-                date:
+                startDate:
                   type: string
                   format: date
-                staffId:
+                endDate:
                   type: string
+                  format: date
       responses:
         '200':
-          description: List of unavailable time slots
+          description: Unavailable time slots retrieved successfully
 
-  /timeslots/one:
+  /timeslots:
     post:
       tags:
         - Time Slots
-      summary: Get one time slot
+      summary: Get a specific time slot
+      description: Retrieve a specific time slot by ID
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - id
               properties:
                 id:
                   type: string
       responses:
         '200':
-          description: Time slot details
+          description: Time slot retrieved successfully
+        '404':
+          description: Time slot not found
+
+  # Method endpoints
+  /methods:
+    get:
+      tags:
+        - Methods
+      summary: Get all methods
+      description: Retrieve all testing methods
+      responses:
+        '200':
+          description: Methods retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Method'
+    post:
+      tags:
+        - Methods
+      summary: Get a specific method
+      description: Retrieve a specific testing method by ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: string
+      responses:
+        '200':
+          description: Method retrieved successfully
+        '404':
+          description: Method not found
+
+  # Method Service endpoints
+  /method/services:
+    post:
+      tags:
+        - Method Services
+      summary: Get services for a method
+      description: Retrieve services that support a specific method
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - methodId
+              properties:
+                methodId:
+                  type: string
+      responses:
+        '200':
+          description: Services retrieved successfully
+        '404':
+          description: Method not found
+
+  /service/methods:
+    post:
+      tags:
+        - Method Services
+      summary: Get methods for a service
+      description: Retrieve methods supported by a specific service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - serviceId
+              properties:
+                serviceId:
+                  type: string
+      responses:
+        '200':
+          description: Methods retrieved successfully
+        '404':
+          description: Service not found
 
   # Sample endpoints
   /samples/booking:
     post:
       tags:
         - Samples
-      summary: Get sample by booking ID
+      summary: Get samples by booking
+      description: Retrieve samples for a specific booking
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - bookingId
               properties:
                 bookingId:
                   type: string
       responses:
         '200':
-          description: Sample details for booking
+          description: Samples retrieved successfully
+        '404':
+          description: Booking not found
 
   /samples:
     put:
       tags:
         - Samples
-      summary: Update sample
+      summary: Update a sample
+      description: Update sample information
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - id
               properties:
                 id:
                   type: string
-                status:
+                staffId:
                   type: string
-                results:
-                  type: object
+                collectionDate:
+                  type: string
+                  format: date
+                sampleQuality:
+                  type: string
+                  enum: [excellent, good, fair, poor]
+                sampleConcentration:
+                  type: number
+                  format: float
+                notes:
+                  type: string
       responses:
         '200':
           description: Sample updated successfully
+        '404':
+          description: Sample not found
 
   # Test Result endpoints
   /testresult/booking:
     post:
       tags:
         - Test Results
-      summary: Get test result by booking ID
+      summary: Get test results by booking
+      description: Retrieve test results for a specific booking
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - bookingId
               properties:
                 bookingId:
                   type: string
       responses:
         '200':
-          description: Test result for booking
+          description: Test results retrieved successfully
+        '404':
+          description: Booking not found
 
   /testresult/user:
     post:
       tags:
         - Test Results
-      summary: Get test results by user ID
+      summary: Get test results by user
+      description: Retrieve test results for a specific user
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - userId
               properties:
                 userId:
                   type: string
       responses:
         '200':
-          description: List of test results for user
+          description: Test results retrieved successfully
+        '404':
+          description: User not found
 
-  /testresult/staff:
+  /testresult&sample/manager:
     post:
       tags:
         - Test Results
-      summary: Get test results by staff ID
+      summary: Get test results and samples by manager
+      description: Retrieve test results and samples managed by a specific manager
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - managerId
               properties:
-                staffId:
+                managerId:
                   type: string
       responses:
         '200':
-          description: List of test results for staff
+          description: Test results and samples retrieved successfully
+        '404':
+          description: Manager not found
 
   /testresult:
     put:
       tags:
         - Test Results
       summary: Update test result
+      description: Update test result information
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - id
               properties:
                 id:
                   type: string
-                results:
-                  type: object
+                testMethod:
+                  type: string
+                positive:
+                  type: boolean
+                accuracy:
+                  type: number
+                  format: float
+                testType:
+                  type: string
+                testDate:
+                  type: string
+                  format: date
+                reportDate:
+                  type: string
+                  format: date
+                resultData:
+                  type: string
+                resultNotes:
+                  type: string
                 status:
                   type: string
+                  enum: [pending, completed, verified]
       responses:
         '200':
           description: Test result updated successfully
+        '404':
+          description: Test result not found
 
   # Payment endpoints
   /payments/add:
     post:
       tags:
         - Payments
-      summary: Add a new payment
+      summary: Create a new payment
+      description: Create a new payment for a booking
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                bookingId:
-                  type: string
-                amount:
-                  type: number
-                method:
-                  type: string
-                status:
-                  type: string
+              $ref: '#/components/schemas/AddPaymentRequest'
       responses:
-        '200':
+        '201':
           description: Payment created successfully
+        '400':
+          description: Bad request - missing required fields
+        '404':
+          description: Booking not found
+        '500':
+          description: Internal server error
 
   /payments:
     get:
       tags:
         - Payments
       summary: Get all payments
+      description: Retrieve all payments
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, completed, failed, refunded]
+        - in: query
+          name: paymentMethod
+          schema:
+            type: string
+            enum: [momo, zalopay, cash, bank_transfer]
       responses:
         '200':
-          description: List of all payments
+          description: Payments retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Payment'
 
   /payments/booking:
     post:
       tags:
         - Payments
-      summary: Get payments for booking
+      summary: Get payments by booking
+      description: Retrieve payments for a specific booking
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - bookingId
               properties:
                 bookingId:
                   type: string
       responses:
         '200':
-          description: List of payments for booking
+          description: Payments retrieved successfully
+        '404':
+          description: Booking not found
 
   /payments/refund:
     post:
       tags:
         - Payments
-      summary: Refund payment
+      summary: Refund a payment
+      description: Process a refund for a payment
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - id
+                - refundAmount
               properties:
-                paymentId:
+                id:
                   type: string
-                reason:
-                  type: string
-                amount:
+                refundAmount:
                   type: number
+                  format: float
+                refundReason:
+                  type: string
       responses:
         '200':
           description: Payment refunded successfully
+        '404':
+          description: Payment not found
+        '400':
+          description: Invalid refund amount
 
-components:
-  schemas:
-    Error:
-      type: object
-      properties:
-        message:
-          type: string
-        code:
-          type: integer
-    
-    User:
-      type: object
-      properties:
-        id:
-          type: string
-        email:
-          type: string
-        name:
-          type: string
-        role:
-          type: string
-        status:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-    
-    Service:
-      type: object
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        description:
-          type: string
-        price:
-          type: number
-        categoryId:
-          type: string
-        status:
-          type: string
-        featured:
-          type: boolean
-    
-    Booking:
-      type: object
-      properties:
-        id:
-          type: string
-        userId:
-          type: string
-        serviceId:
-          type: string
-        timeSlotId:
-          type: string
-        staffId:
-          type: string
-        status:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-    
-    Payment:
-      type: object
-      properties:
-        id:
-          type: string
-        bookingId:
-          type: string
-        amount:
-          type: number
-        method:
-          type: string
-        status:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
+  # Feedback endpoints
+  /feedbacks/add:
+    post:
+      tags:
+        - Feedbacks
+      summary: Create feedback
+      description: Create feedback for a booking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddFeedbackRequest'
+      responses:
+        '201':
+          description: Feedback created successfully
+        '400':
+          description: Bad request - missing required fields
+        '404':
+          description: Booking not found
+        '500':
+          description: Internal server error
 
-  responses:
-    NotFound:
-      description: Resource not found
-      content:
-        application/json:
+  /feedbacks:
+    get:
+      tags:
+        - Feedbacks
+      summary: Get all feedbacks
+      description: Retrieve all feedbacks
+      parameters:
+        - in: query
+          name: rating
           schema:
-            $ref: '#/components/schemas/Error'
-    
-    BadRequest:
-      description: Bad request
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    
-    InternalServerError:
-      description: Internal server error
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
+            type: integer
+            minimum: 1
+            maximum: 5
+      responses:
+        '200':
+          description: Feedbacks retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                  status:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Feedback'
+
+  /feedbacks/booking:
+    post:
+      tags:
+        - Feedbacks
+      summary: Get feedback by booking
+      description: Retrieve feedback for a specific booking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - bookingId
+              properties:
+                bookingId:
+                  type: string
+      responses:
+        '200':
+          description: Feedback retrieved successfully
+        '404':
+          description: Booking not found
+
+  /feedbacks/service:
+    post:
+      tags:
+        - Feedbacks
+      summary: Get feedback by service
+      description: Retrieve feedback for a specific service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - serviceId
+              properties:
+                serviceId:
+                  type: string
+      responses:
+        '200':
+          description: Feedback retrieved successfully
+        '404':
+          description: Service not found
+
+tags:
+  - name: Blogs
+    description: Blog management endpoints
+  - name: Services
+    description: DNA testing service management
+  - name: Users
+    description: User account management
+  - name: Staff
+    description: Staff management endpoints
+  - name: Roles
+    description: Role management endpoints
+  - name: Bookings
+    description: Booking management endpoints
+  - name: Booking History
+    description: Booking history tracking
+  - name: Time Slots
+    description: Time slot management
+  - name: Methods
+    description: Testing method management
+  - name: Method Services
+    description: Method-Service relationship management
+  - name: Samples
+    description: Sample management endpoints
+  - name: Test Results
+    description: Test result management
+  - name: Payments
+    description: Payment processing endpoints
+  - name: Feedbacks
+    description: Feedback and rating management

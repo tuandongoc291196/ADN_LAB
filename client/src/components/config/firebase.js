@@ -162,6 +162,15 @@ const signInWithGoogle = async () => {
     }
     await setUserOnlineStatus(user.uid, true);    
     const { data: userData } = await getUser(dataConnect, { userId: user.uid });
+    
+    // ⚠️ KIỂM TRA TRẠNG THÁI TÀI KHOẢN
+    if (userData?.user?.accountStatus === 'inactive') {
+      console.log('🚫 Account is inactive during Google sign in:', userData.user.email);
+      // Đăng xuất khỏi Firebase Auth
+      await signOut(auth);
+      throw new Error('Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.');
+    }
+    
     localStorage.setItem("user_id", user.uid);
     localStorage.setItem("userData", JSON.stringify(userData.user));
     return { uid: user.uid, displayName: user.displayName };
@@ -185,6 +194,15 @@ const logInWithEmailAndPassword = async (email, password) => {
 
     // Lấy thông tin người dùng từ Data Connect
     const { data: userData } = await getUser(dataConnect, { userId: user.uid });
+    
+    // ⚠️ KIỂM TRA TRẠNG THÁI TÀI KHOẢN
+    if (userData?.user?.accountStatus === 'inactive') {
+      console.log('🚫 Account is inactive during email login:', userData.user.email);
+      // Đăng xuất khỏi Firebase Auth
+      await signOut(auth);
+      throw new Error('Tài khoản của bạn đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.');
+    }
+    
     await setUserOnlineStatus(user.uid, true);  
     localStorage.setItem("user_id", user.uid);
     localStorage.setItem("userData", JSON.stringify(userData.user));

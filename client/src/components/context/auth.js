@@ -51,6 +51,14 @@ const AuthProvider = (props) => {
       // Lấy thông tin người dùng từ Data Connect
       fetchUserData(user.uid).then((userData) => {
         if (userData) {
+          // ⚠️ KIỂM TRA TRẠNG THÁI TÀI KHOẢN
+          if (userData.accountStatus === 'inactive') {
+            console.log('🚫 Account is inactive in context:', userData.email);
+            // Đăng xuất ngay lập tức
+            logout();
+            return;
+          }
+          
           // Kết hợp thông tin từ Firebase Auth và Data Connect
           const userWithRole = {
             user_id: user.uid,
@@ -90,6 +98,28 @@ const AuthProvider = (props) => {
       localStorage.removeItem("user_id");
       setAuthUser(null);
     }
+  }, [user]);
+
+  // Effect để kiểm tra trạng thái tài khoản định kỳ
+  useEffect(() => {
+    if (!user) return;
+    
+    const checkAccountStatus = async () => {
+      try {
+        const userData = await fetchUserData(user.uid);
+        if (userData && userData.accountStatus === 'inactive') {
+          console.log('🚫 Account became inactive during session, logging out...');
+          logout();
+        }
+      } catch (error) {
+        console.error('Error checking account status:', error);
+      }
+    };
+    
+    // Kiểm tra mỗi 30 giây
+    const interval = setInterval(checkAccountStatus, 30000);
+    
+    return () => clearInterval(interval);
   }, [user]);
 
   /**
