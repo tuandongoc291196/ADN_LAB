@@ -68,10 +68,6 @@ const Blog = () => {
           <Card.Body className="d-flex flex-column">
             <Card.Title as="h5" className="fw-bold text-primary">{blog.title}</Card.Title>
             <Card.Text className="text-muted flex-grow-1">
-              {/* Hiển thị nội dung rút gọn (150 ký tự đầu) */}
-              {blog.content && blog.content.length > 150 
-                ? blog.content.substring(0, 150) + '...' 
-                : blog.content}
             </Card.Text>
             <div className="text-muted small mb-3">
               <span>
@@ -84,7 +80,7 @@ const Blog = () => {
               </span>
             </div>
             <Button as={Link} to={`/blog/${blog.id}`} variant="primary" className="mt-auto">
-              Đọc thêm <i className="bi bi-arrow-right"></i>
+              Xem chi tiết <i className="bi bi-arrow-right"></i>
             </Button>
           </Card.Body>
         </Card>

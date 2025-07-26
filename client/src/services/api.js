@@ -291,6 +291,39 @@ export const updateUserById = async (userId, updateData) => {
     throw new Error('Failed to update user by id: ' + error.message);
   }
 };
+
+// Cập nhật trạng thái tài khoản user
+export const updateUserAccountStatus = async (userId, status) => {
+  try {
+    console.log(`🌐 API: updateUserAccountStatus called with userId: ${userId}, status: ${status}`);
+    
+    const requestBody = { userId, status };
+    console.log(`📤 Request body:`, requestBody);
+    
+    const response = await fetch(`${API_BASE_URL}/users/status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+    
+    console.log(`📥 Response status: ${response.status}`);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.log(`❌ API Error response:`, errorData);
+      throw new Error(errorData.message || 'Failed to update user account status');
+    }
+    
+    const data = await response.json();
+    console.log(`✅ API Success response:`, data);
+    return data.data || data;
+  } catch (error) {
+    console.error(`❌ API Error in updateUserAccountStatus:`, error);
+    throw new Error('Failed to update user account status: ' + error.message);
+  }
+};
 // Thêm mới service
 export const addService = async (serviceData) => {
   try {

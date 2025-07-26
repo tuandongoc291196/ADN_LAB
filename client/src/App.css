@@ -28,6 +28,84 @@
   color: #61dafb;
 }
 
+/* Blog Content Styling */
+.blog-content {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: #333;
+}
+
+.blog-content p {
+  margin-bottom: 1.2em;
+}
+
+.blog-content h1, .blog-content h2, .blog-content h3, .blog-content h4, .blog-content h5, .blog-content h6 {
+  margin-top: 1.5em;
+  margin-bottom: 0.7em;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.blog-content h1 { font-size: 2rem; }
+.blog-content h2 { font-size: 1.75rem; }
+.blog-content h3 { font-size: 1.5rem; }
+.blog-content h4 { font-size: 1.25rem; }
+.blog-content h5 { font-size: 1.1rem; }
+.blog-content h6 { font-size: 1rem; }
+
+.blog-content ul, .blog-content ol {
+  margin-left: 2em;
+  margin-bottom: 1.2em;
+}
+
+.blog-content li {
+  margin-bottom: 0.5em;
+}
+
+.blog-content blockquote {
+  border-left: 4px solid #007bff;
+  padding-left: 1rem;
+  margin: 1.5em 0;
+  font-style: italic;
+  color: #666;
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 0 5px 5px 0;
+}
+
+.blog-content strong {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.blog-content em {
+  font-style: italic;
+  color: #555;
+}
+
+.blog-content u {
+  text-decoration: underline;
+  text-decoration-color: #007bff;
+}
+
+.blog-content img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 1.5em auto;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.blog-content a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.blog-content a:hover {
+  text-decoration: underline;
+}
+
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);

@@ -254,11 +254,10 @@ const BlogEditor = () => {
                 {isEditMode ? 'Cập nhật thông tin bài viết' : 'Tạo bài viết blog mới'}
               </p>
             </div>
-            <div>
+            <div className="d-flex gap-2">
               <Button 
                 variant="outline-secondary" 
                 onClick={() => navigate('/admin/blog')}
-                className="me-2"
               >
                 <i className="bi bi-arrow-left me-2"></i>
                 Quay lại
@@ -270,6 +269,23 @@ const BlogEditor = () => {
               >
                 <i className="bi bi-eye me-2"></i>
                 Xem trước
+              </Button>
+              <Button 
+                variant="success" 
+                onClick={() => handleSave(true)}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Đang lưu...
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-check-circle me-2"></i>
+                    {isEditMode ? 'Cập nhật' : 'Tạo bài viết'}
+                  </>
+                )}
               </Button>
             </div>
           </div>
@@ -477,34 +493,7 @@ const BlogEditor = () => {
               )}
             </Card.Body>
           </Card>
-
-          {/* Save Actions */}
-          <Card className="shadow-sm">
-            <Card.Header>
-              <h5 className="mb-0">Thao tác</h5>
-            </Card.Header>
-            <Card.Body>
-              <div className="d-grid">
-                <Button 
-                  variant="success" 
-                  onClick={() => handleSave(true)}
-                  disabled={isSaving}
-                >
-                  {isSaving ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                      Đang lưu...
-                    </>
-                  ) : (
-                    <>
-                      <i className="bi bi-check-circle me-2"></i>
-                      {isEditMode ? 'Cập nhật' : 'Tạo bài viết'}
-                    </>
-                  )}
-                </Button>
-              </div>
-            </Card.Body>
-          </Card>
+          {/* Xóa card Thao tác ở đây */}
         </Col>
       </Row>
 
