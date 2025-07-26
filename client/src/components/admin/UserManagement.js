@@ -14,7 +14,7 @@ import {
   Alert, InputGroup, Dropdown, Pagination, Toast, ToastContainer,
   Tab, Tabs, ProgressBar
 } from 'react-bootstrap';
-import { getStaffListByRole, getAllRoles, getAllUsers, addUser, getUserById, updateUserById, updateUserAccountStatus } from '../../services/api';
+import { getStaffListByRole, getAllRoles, getAllUsers, addUser, getUserById, updateUserById, updateUserAccountStatus, getBookingByUserId } from '../../services/api';
 import { getProvinces, getDistricts, getWards } from 'vietnam-provinces';
 
 function findCodeByName(list, name) {
@@ -22,6 +22,31 @@ function findCodeByName(list, name) {
   const normalize = str => str.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
   return (list.find(item => normalize(item.name) === normalize(name)) || {}).code || '';
 }
+
+// Function để tạo email từ họ tên
+const generateEmailFromName = (fullname) => {
+  if (!fullname || fullname.trim() === '') return '';
+  
+  // Loại bỏ dấu tiếng Việt và chuyển thành chữ thường
+  const normalize = str => str.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+  const normalizedName = normalize(fullname.trim());
+  
+  // Tách thành các từ
+  const words = normalizedName.split(' ').filter(word => word.length > 0);
+  
+  if (words.length === 0) return '';
+  
+  if (words.length === 1) {
+    // Nếu chỉ có 1 từ, dùng luôn từ đó
+    return `${words[0]}@adnlab.com`;
+  }
+  
+  // Lấy từ cuối (tên) + chữ cái đầu của các từ trước đó (họ và tên lót)
+  const lastName = words[words.length - 1]; // Tên
+  const initials = words.slice(0, -1).map(word => word.charAt(0)).join(''); // Chữ cái đầu của họ và tên lót
+  
+  return `${lastName}${initials}@adnlab.com`;
+};
 
 const UserManagement = ({ 
   user, 
@@ -70,7 +95,7 @@ const UserManagement = ({
     district: '',
     city: '',
     gender: '',
-    role: 'customer',
+    role: 'staff', // Default to staff instead of customer
     accountStatus: 'active',
     authProvider: '',
     avatar: '',
@@ -114,6 +139,14 @@ const UserManagement = ({
       setFormData(prev => ({ ...prev, address }));
     }
   }, [formData.addressDetail, formData.ward, formData.district, formData.city]);
+
+  // Effect tự động tạo email từ họ tên khi tạo người dùng mới
+  useEffect(() => {
+    if (modalType === 'create' && formData.fullname) {
+      const generatedEmail = generateEmailFromName(formData.fullname);
+      setFormData(prev => ({ ...prev, email: generatedEmail }));
+    }
+  }, [formData.fullname, modalType]);
 
   // Khởi tạo data từ preloaded ngay từ đầu
   useEffect(() => {
@@ -336,6 +369,16 @@ const UserManagement = ({
         // Load chi tiết từ API cho cả view và edit mode
         const user = await getUserById(userItem.id);
         if (user) {
+          // Nếu là customer, fetch thêm booking data để hiển thị thống kê
+          if (user.role?.name === 'customer') {
+            try {
+              const bookings = await getBookingByUserId(user.id);
+              user.bookings_on_user = bookings || [];
+            } catch (bookingError) {
+              console.error('Error fetching user bookings:', bookingError);
+              user.bookings_on_user = [];
+            }
+          }
           setEditingUser(user);
           
           // Chỉ populate formData cho edit mode
@@ -440,13 +483,22 @@ const UserManagement = ({
           return;
         }
         
+        // Kiểm tra role chỉ được là staff hoặc manager
+        if (!['staff', 'manager'].includes(role)) {
+          setError('Chỉ có thể tạo tài khoản cho Nhân viên hoặc Quản lý');
+          return;
+        }
+        
         // Tạo dữ liệu mới theo API addUser
         const userData = {
           email,
           password,
           name: fullname, // Backend expects 'name', not 'fullname'
-          roleId: role === 'customer' ? '3' : role === 'staff' ? '2' : '1'
+          roleId: role === 'staff' ? '1' : role === 'manager' ? '2' : '1' // staff=1, manager=2
         };
+        
+        console.log('Creating user with data:', { ...userData, password: '[HIDDEN]' });
+        console.log('Role mapping:', { role, roleId: userData.roleId });
         
         // Gọi API create
         await addUser(userData);
@@ -1429,22 +1481,6 @@ const UserManagement = ({
                         <div className="card-body">
                           <div className="mb-3">
                             <div className="d-flex">
-                              <div style={{ width: '180px' }} className="text-muted">ID:</div>
-                              <div className="fw-medium d-flex align-items-center">
-                                <code className="me-2">{editingUser.id}</code>
-                                <Button 
-                                  variant="outline-primary" 
-                                  size="sm" 
-                                  onClick={() => handleCopyId(editingUser.id)}
-                                  className="py-0 px-2"
-                                >
-                                  <i className="bi bi-clipboard"></i>
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="mb-3">
-                            <div className="d-flex">
                               <div style={{ width: '180px' }} className="text-muted">Phương thức đăng nhập:</div>
                               <div className="fw-medium">
                                 {editingUser.authProvider === 'google' ? 
@@ -1526,9 +1562,12 @@ const UserManagement = ({
                 </Alert>
               )}
               
+
+              
               {/* Form fields */}
-              <Row className="mb-3">
-                <Col md={6}>
+              {modalType === 'create' ? (
+                // Form đơn giản cho create mode
+                <div>
                   <Form.Group className="mb-3">
                     <Form.Label className="fw-medium">
                       <i className="bi bi-person-fill text-primary me-2"></i>
@@ -1542,19 +1581,91 @@ const UserManagement = ({
                       className="border-0 shadow-sm"
                     />
                   </Form.Group>
-                </Col>
-                <Col md={6}>
-                                    <Form.Group className="mb-3">
+
+                  <Form.Group className="mb-3">
                     <Form.Label className="fw-medium">
                       <i className="bi bi-envelope-fill text-primary me-2"></i>
-                      Email {modalType === 'create' && <span className="text-danger">*</span>}
+                      Email <span className="text-danger">*</span>
                     </Form.Label>
+                    <Form.Control
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      required
+                      placeholder="Email sẽ được tự động tạo từ họ tên"
+                      className="border-0 shadow-sm"
+                    />
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label className="fw-medium">
+                      <i className="bi bi-key-fill text-primary me-2"></i>
+                      Mật khẩu <span className="text-danger">*</span>
+                    </Form.Label>
+                    <Form.Control
+                      type="password"
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      required
+                      className="border-0 shadow-sm"
+                    />
+                  </Form.Group>
+
+                  <Form.Group className="mb-3">
+                    <Form.Label className="fw-medium">
+                      <i className="bi bi-person-badge-fill text-primary me-2"></i>
+                      Vai trò <span className="text-danger">*</span>
+                    </Form.Label>
+                    <Form.Select
+                      value={formData.role}
+                      onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                      disabled={loadingRoles}
+                      className="border-0 shadow-sm"
+                    >
+                      <option value="">Chọn vai trò</option>
+                      {roleOptions
+                        .filter(role => ['staff', 'manager'].includes(role.name))
+                        .map((role) => (
+                          <option key={role.id} value={role.name}>
+                            {role.name === 'staff' ? 'Nhân viên' : 
+                             role.name === 'manager' ? 'Quản lý' : role.name}
+                          </option>
+                        ))}
+                    </Form.Select>
+                    {loadingRoles && <div className="text-center mt-2"><span className="spinner-border spinner-border-sm"></span> Đang tải...</div>}
+                  </Form.Group>
+                </div>
+              ) : (
+                // Form đầy đủ cho edit mode
+                <Row className="mb-3">
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label className="fw-medium">
+                        <i className="bi bi-person-fill text-primary me-2"></i>
+                        Họ và tên <span className="text-danger">*</span>
+                      </Form.Label>
+                      <Form.Control
+                        type="text"
+                        value={formData.fullname}
+                        onChange={(e) => setFormData({ ...formData, fullname: e.target.value })}
+                        required
+                        className="border-0 shadow-sm"
+                      />
+                    </Form.Group>
+                  </Col>
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label className="fw-medium">
+                        <i className="bi bi-envelope-fill text-primary me-2"></i>
+                        Email {modalType === 'create' && <span className="text-danger">*</span>}
+                      </Form.Label>
                       <Form.Control
                         type="email"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         required={modalType === 'create'}
                         readOnly={modalType === 'edit'}
+                        placeholder={modalType === 'create' ? 'Email sẽ được tự động tạo từ họ tên' : ''}
                         className={`border-0 shadow-sm ${modalType === 'edit' ? 'bg-light' : ''}`}
                       />
                       {modalType === 'edit' && (
@@ -1563,11 +1674,12 @@ const UserManagement = ({
                           Email không thể thay đổi sau khi tạo tài khoản
                         </Form.Text>
                       )}
-                  </Form.Group>
-                </Col>
-              </Row>
+                    </Form.Group>
+                  </Col>
+                </Row>
+                            )}
 
-                            {/* Chỉ hiển thị phone và gender trong edit mode */}
+              {/* Chỉ hiển thị phone và gender trong edit mode */}
               {modalType === 'edit' && (
                 <Row className="mb-3">
                   <Col md={6}>
@@ -1728,99 +1840,7 @@ const UserManagement = ({
                 </div>
               )}
 
-              <div className="card border-0 shadow-sm mb-4">
-                <div className="card-header bg-white py-3">
-                  <h5 className="card-title mb-0">
-                    <i className="bi bi-shield-lock-fill text-primary me-2"></i>
-                    Phân quyền và trạng thái
-                  </h5>
-                </div>
-                <div className="card-body">
-                  <Row>
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label className="fw-medium">
-                          <i className="bi bi-person-badge-fill text-primary me-2"></i>
-                          Vai trò
-                        </Form.Label>
-                        <Form.Select
-                          value={formData.role}
-                          onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                          disabled={loadingRoles || modalType === 'edit'}
-                          className={`border-0 shadow-sm ${modalType === 'edit' ? 'bg-light' : ''}`}
-                        >
-                          <option value="">Chọn vai trò</option>
-                          {roleOptions.map((role) => (
-                            <option key={role.id} value={role.name}>
-                              {role.name === 'customer' ? 'Khách hàng' : 
-                               role.name === 'staff' ? 'Nhân viên' : 
-                               role.name === 'manager' ? 'Quản lý' :role.name}
-                            </option>
-                          ))}
-                        </Form.Select>
-                        {loadingRoles && <div className="text-center mt-2"><span className="spinner-border spinner-border-sm"></span> Đang tải...</div>}
-                        <Form.Text className="text-muted mt-2">
-                          <i className="bi bi-info-circle me-1"></i>
-                          {modalType === 'edit' 
-                            ? 'Vai trò không thể thay đổi trực tiếp. Liên hệ admin để thay đổi vai trò.'
-                            : 'Chọn vai trò phù hợp để phân quyền cho người dùng'
-                          }
-                        </Form.Text>
-                      </Form.Group>
-                    </Col>
-                                        {/* Chỉ hiển thị trạng thái trong edit mode */}
-                    {modalType === 'edit' && (
-                      <Col md={6}>
-                        <Form.Group className="mb-3">
-                          <Form.Label className="fw-medium">
-                            <i className="bi bi-shield-fill-check text-primary me-2"></i>
-                            Trạng thái tài khoản
-                          </Form.Label>
-                        <Form.Select
-                          value={formData.accountStatus}
-                          onChange={(e) => setFormData({ ...formData, accountStatus: e.target.value })}
-                            className="border-0 shadow-sm"
-                          >
-                            <option value="active" className="text-success">✓ Hoạt động - Cho phép đăng nhập</option>
-                            <option value="inactive" className="text-danger">✗ Không hoạt động - Chặn đăng nhập</option>
-                        </Form.Select>
-                          <Form.Text className="text-muted mt-2">
-                            <i className="bi bi-info-circle me-1"></i>
-                            Chọn "Hoạt động" để cho phép đăng nhập hoặc "Không hoạt động" để chặn đăng nhập
-                          </Form.Text>
-                        </Form.Group>
-                      </Col>
-                    )}
-                  </Row>
-                </div>
-              </div>
 
-              {modalType === 'create' && (
-                <div className="card border-0 shadow-sm mb-4">
-                  <div className="card-header bg-white py-3">
-                    <h5 className="card-title mb-0">
-                      <i className="bi bi-key-fill text-primary me-2"></i>
-                      Thông tin đăng nhập
-                    </h5>
-                  </div>
-                  <div className="card-body">
-                    <Row>
-                      <Col md={12}>
-                        <Form.Group className="mb-0">
-                          <Form.Label className="fw-medium">Mật khẩu <span className="text-danger">*</span></Form.Label>
-                          <Form.Control
-                            type="password"
-                            value={formData.password}
-                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                            required
-                            className="border-0 shadow-sm"
-                          />
-                        </Form.Group>
-                      </Col>
-                    </Row>
-                  </div>
-                </div>
-              )}
 
               {error && (
                 <Alert variant="danger" className="mt-3 d-flex align-items-center">

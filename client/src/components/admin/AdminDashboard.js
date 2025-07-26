@@ -12,7 +12,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { Container, Row, Col, Nav, Card, Alert, Badge } from 'react-bootstrap';
 import { useAuth } from '../context/auth';
-import { getAllUsers, getAllRoles } from '../../services/api';
+import { getAllUsers, getAllRoles, getAllBlogs } from '../../services/api';
 
 // Import các component admin con để routing
 import AdminOverview from './AdminOverview';
@@ -34,6 +34,11 @@ const AdminDashboard = () => {
   const [allRoles, setAllRoles] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersError, setUsersError] = useState(null);
+  
+  // State để lưu blog count
+  const [blogCount, setBlogCount] = useState(0);
+  
+
 
   // Effect cập nhật activeTab khi URL thay đổi
   useEffect(() => {
@@ -104,6 +109,23 @@ const AdminDashboard = () => {
     
     checkAuth();
   }, [user]);
+
+  // Effect để fetch blog count
+  useEffect(() => {
+    const fetchBlogCount = async () => {
+      try {
+        const blogs = await getAllBlogs();
+        setBlogCount(blogs.length);
+      } catch (error) {
+        console.error('Error fetching blog count:', error);
+        // Keep default value if API fails
+      }
+    };
+
+    fetchBlogCount();
+  }, []);
+
+
 
   // Kiểm tra quyền admin từ context hoặc localStorage - MẠNH MẼ HƠN
   const checkAdminRole = () => {
@@ -180,8 +202,7 @@ const AdminDashboard = () => {
       const adminStats = localStorage.getItem('adminStats');
       let stats = {
         totalUsers: 0,
-        totalPosts: 0,
-        totalGuides: 0
+        totalPosts: 0
       };
       
       if (adminStats) {
@@ -198,8 +219,7 @@ const AdminDashboard = () => {
       console.error('Error parsing adminStats from localStorage:', error);
       return {
         totalUsers: allUsers.length || 0,
-        totalPosts: 0,
-        totalGuides: 0
+        totalPosts: 0
       };
     }
   };
@@ -314,20 +334,16 @@ const AdminDashboard = () => {
               ))}
             </Nav>
 
-            {/* FOOTER - Thống kê nhanh giống manager */}
+            {/* FOOTER - Thống kê nhanh */}
             <Card.Footer className="bg-light">
               <div className="row text-center">
-                <div className="col-4">
+                <div className="col-6 border-end border-secondary">
                   <div className="fw-bold text-primary">{stats.totalUsers || 0}</div>
                   <small className="text-muted">Người dùng</small>
                 </div>
-                <div className="col-4">
-                  <div className="fw-bold text-success">{stats.totalPosts || 0}</div>
+                <div className="col-6">
+                  <div className="fw-bold text-success">{blogCount}</div>
                   <small className="text-muted">Bài viết</small>
-                </div>
-                <div className="col-4">
-                  <div className="fw-bold text-warning">{stats.totalGuides || 0}</div>
-                  <small className="text-muted">Hướng dẫn</small>
                 </div>
               </div>
             </Card.Footer>
