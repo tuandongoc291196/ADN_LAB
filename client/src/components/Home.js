@@ -556,14 +556,14 @@ const Home = () => {
           </section>
 
           {/* Service Comparison Section */}
-          <section className="py-5 bg-light">
+          <section className="py-4 bg-light">
         <Container>
-          <div className="text-center mb-5">
+          <div className="text-center mb-4">
             <h2 className="display-6 fw-bold">So sánh loại hình xét nghiệm ADN</h2>
             <p className="lead text-muted">Chọn loại dịch vụ phù hợp với nhu cầu của bạn</p>
           </div>
 
-          <Row className="mb-5">
+          <Row className="mb-4">
             <Col lg={6} className="mb-4">
               <Card className="h-100 border-success shadow-sm">
                 <Card.Header className="bg-success text-white text-center py-4">
@@ -652,9 +652,9 @@ const Home = () => {
       </section>
 
       {/* Process Workflow Section */}
-      <section className="py-5" style={styles.workflowSection}>
+      <section className="py-4" style={styles.workflowSection}>
         <Container>
-          <div className="text-center mb-5">
+          <div className="text-center mb-4">
             <h2 className="display-6 fw-bold">Quy trình xét nghiệm</h2>
             <p className="lead text-muted">Hai quy trình khác nhau phù hợp với từng nhu cầu</p>
           </div>
@@ -726,9 +726,9 @@ const Home = () => {
       </section>
 
       {/* Featured Services Section */}
-      <section className="py-5">
+      <section className="py-4">
         <Container>
-          <div className="text-center mb-5">
+          <div className="text-center mb-4">
             <h2 className="display-6 fw-bold">Dịch vụ nổi bật</h2>
             <p className="lead text-muted">Các dịch vụ được khách hàng lựa chọn nhiều nhất</p>
           </div>
@@ -866,7 +866,7 @@ const Home = () => {
             </div>
           )}
 
-          <div className="text-center mt-5">
+          <div className="text-center mt-4">
             <Button size="lg" variant="primary" as={Link} to="/services">
               <i className="bi bi-grid-3x3-gap me-2"></i>
               Xem tất cả dịch vụ
@@ -876,9 +876,9 @@ const Home = () => {
       </section>
 
       {/* Why Choose Us Section */}
-      <section className="py-5 bg-light">
+      <section className="py-4 bg-light">
         <Container>
-          <div className="text-center mb-5">
+          <div className="text-center mb-4">
             <h2 className="display-6 fw-bold">Tại sao chọn chúng tôi?</h2>
             <p className="lead text-muted">Những ưu điểm vượt trội của trung tâm</p>
           </div>
@@ -902,9 +902,9 @@ const Home = () => {
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-5">
+      <section className="py-4">
         <Container>
-          <div className="text-center mb-5">
+          <div className="text-center mb-4">
             <h2 className="display-6 fw-bold">Khách hàng nói về chúng tôi</h2>
             <p className="lead text-muted">Phản hồi từ khách hàng đã sử dụng dịch vụ</p>
           </div>
@@ -944,7 +944,7 @@ const Home = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="text-white py-5" style={styles.ctaSection}>
+      <section className="text-white py-4" style={styles.ctaSection}>
         <Container>
           <Row className="align-items-center">
             <Col lg={8}>
