@@ -284,18 +284,18 @@ const Home = () => {
   // Process workflow data
   const workflows = {
     civilWorkflow: [
-      { step: 1, title: 'Chọn dịch vụ ADN dân sự', description: 'Tìm hiểu huyết thống cho mục đích cá nhân', icon: 'bi-person-hearts' },
-      { step: 2, title: 'Chọn phương thức lấy mẫu', description: 'Tự lấy mẫu tại nhà hoặc nhân viên hỗ trợ', icon: 'bi-house' },
-      { step: 3, title: 'Thu thập mẫu ADN', description: 'Lấy mẫu theo hướng dẫn chi tiết', icon: 'bi-droplet' },
-      { step: 4, title: 'Phân tích tại phòng lab', description: 'Sử dụng công nghệ hiện đại', icon: 'bi-eye' },
-      { step: 5, title: 'Nhận kết quả online', description: 'Xem kết quả sau 5-7 ngày', icon: 'bi-file-earmark-check' }
+      { step: 1, title: 'Chọn dịch vụ ADN dân sự', description: 'Tìm huyết thống cho mục đích cá nhân' },
+      { step: 2, title: 'Chọn phương thức lấy mẫu', description: 'Tự lấy mẫu tại nhà hoặc nhân viên hỗ trợ' },
+      { step: 3, title: 'Thu thập mẫu ADN', description: 'Lấy mẫu theo hướng dẫn chi tiết' },
+      { step: 4, title: 'Phân tích tại phòng lab', description: 'Sử dụng công nghệ hiện đại' },
+      { step: 5, title: 'Nhận kết quả online', description: 'Xem kết quả sau 5-7 ngày' }
     ],
     administrativeWorkflow: [
-      { step: 1, title: 'Chọn dịch vụ ADN hành chính', description: 'Phục vụ thủ tục pháp lý', icon: 'bi-award' },
-      { step: 2, title: 'Đặt lịch tại cơ sở', description: 'Bắt buộc thu mẫu có giám sát', icon: 'bi-calendar-check' },
-      { step: 3, title: 'Thu mẫu có giám sát', description: 'Đảm bảo tính chính xác và pháp lý', icon: 'bi-shield-check' },
-      { step: 4, title: 'Phân tích và công chứng', description: 'Theo tiêu chuẩn pháp lý', icon: 'bi-clipboard-check' },
-      { step: 5, title: 'Nhận báo cáo có giá trị pháp lý', description: 'Sử dụng cho thủ tục hành chính', icon: 'bi-file-earmark-ruled' }
+      { step: 1, title: 'Chọn dịch vụ ADN hành chính', description: 'Phục vụ thủ tục pháp lý' },
+      { step: 2, title: 'Đặt lịch tại cơ sở', description: 'Bắt buộc thu mẫu có giám sát' },
+      { step: 3, title: 'Thu mẫu có giám sát', description: 'Đảm bảo tính chính xác và pháp lý' },
+      { step: 4, title: 'Phân tích và công chứng', description: 'Theo tiêu chuẩn pháp lý' },
+      { step: 5, title: 'Nhận báo cáo có giá trị pháp lý', description: 'Sử dụng cho thủ tục hành chính' }
     ]
   };
 
@@ -571,28 +571,33 @@ const Home = () => {
                   <h3 className="mb-2">ADN Dân sự</h3>
                   <Badge bg="light" text="dark" className="fs-6">Mục đích cá nhân</Badge>
                 </Card.Header>
-                <Card.Body className="p-4">
-                  <div className="mb-4">
-                    <h5 className="text-success mb-3">Đặc điểm:</h5>
-                    <ul className="list-unstyled">
-                      <li className="mb-2"><i className="bi bi-check-circle text-success me-2"></i>Tự lấy mẫu tại nhà được</li>
-                      <li className="mb-2"><i className="bi bi-check-circle text-success me-2"></i>Bảo mật và riêng tư cao</li>
-                      <li className="mb-2"><i className="bi bi-check-circle text-success me-2"></i>Thuận tiện và nhanh chóng</li>
-                      <li className="mb-2"><i className="bi bi-check-circle text-success me-2"></i>Giá thành hợp lý</li>
-                    </ul>
-                  </div>
+                                  <Card.Body className="p-4">
+                    <Row>
+                      <Col md={6} className="border-end border-secondary">
+                        <div className="mb-4">
+                          <h5 className="text-success mb-3 text-center">Đặc điểm:</h5>
+                          <ul className="list-unstyled d-flex flex-column align-items-start gap-2">
+                            <li className="text-start"><i className="bi bi-check-circle text-success me-2"></i>Tự lấy mẫu tại nhà được</li>
+                            <li className="text-start"><i className="bi bi-check-circle text-success me-2"></i>Bảo mật và riêng tư cao</li>
+                            <li className="text-start"><i className="bi bi-check-circle text-success me-2"></i>Thuận tiện và nhanh chóng</li>
+                            <li className="text-start"><i className="bi bi-check-circle text-success me-2"></i>Giá thành hợp lý</li>
+                          </ul>
+                        </div>
+                      </Col>
+                      <Col md={6}>
+                        <div className="mb-4">
+                          <h5 className="text-success mb-3 text-center">Phù hợp:</h5>
+                          <ul className="text-muted d-flex flex-column align-items-start gap-2">
+                            <li className="text-start">Tìm quan hệ huyết thống cá nhân</li>
+                            <li className="text-start">Nghiên cứu nguồn gốc gia đình</li>
+                            <li className="text-start">Phân tích đặc điểm di truyền</li>
+                            <li className="text-start">Xét nghiệm riêng tư, kín đáo</li>
+                          </ul>
+                        </div>
+                      </Col>
+                    </Row>
 
-                  <div className="mb-4">
-                    <h6 className="text-success mb-3">Phù hợp cho:</h6>
-                    <ul className="small text-muted">
-                      <li>Tìm hiểu quan hệ huyết thống cá nhân</li>
-                      <li>Nghiên cứu nguồn gốc gia đình</li>
-                      <li>Phân tích đặc điểm di truyền</li>
-                      <li>Xét nghiệm riêng tư, kín đáo</li>
-                    </ul>
-                  </div>
-
-                  <div className="text-center">
+                  <div className="text-center mt-3">
                     <Button variant="success" as={Link} to="/services?type=civil" className="me-2">
                       Xem dịch vụ dân sự
                     </Button>
@@ -608,28 +613,33 @@ const Home = () => {
                   <h3 className="mb-2">ADN Hành chính</h3>
                   <Badge bg="dark" className="fs-6">Có giá trị pháp lý</Badge>
                 </Card.Header>
-                <Card.Body className="p-4">
-                  <div className="mb-4">
-                    <h5 className="text-warning mb-3">Đặc điểm:</h5>
-                    <ul className="list-unstyled">
-                      <li className="mb-2"><i className="bi bi-check-circle text-warning me-2"></i>Có giá trị pháp lý đầy đủ</li>
-                      <li className="mb-2"><i className="bi bi-check-circle text-warning me-2"></i>Được tòa án công nhận</li>
-                      <li className="mb-2"><i className="bi bi-check-circle text-warning me-2"></i>Thu mẫu có giám sát nghiêm ngặt</li>
-                      <li className="mb-2"><i className="bi bi-check-circle text-warning me-2"></i>Tuân thủ tiêu chuẩn quốc tế</li>
-                    </ul>
-                  </div>
+                                  <Card.Body className="p-4">
+                    <Row>
+                      <Col md={6} className="border-end border-secondary">
+                        <div className="mb-4">
+                          <h5 className="text-warning mb-3 text-center">Đặc điểm:</h5>
+                          <ul className="list-unstyled d-flex flex-column align-items-start gap-2">
+                            <li className="text-start"><i className="bi bi-check-circle text-warning me-2"></i>Có giá trị pháp lý đầy đủ</li>
+                            <li className="text-start"><i className="bi bi-check-circle text-warning me-2"></i>Được tòa án công nhận</li>
+                            <li className="text-start"><i className="bi bi-check-circle text-warning me-2"></i>Thu mẫu có giám sát nghiêm ngặt</li>
+                            <li className="text-start"><i className="bi bi-check-circle text-warning me-2"></i>Tuân thủ tiêu chuẩn quốc tế</li>
+                          </ul>
+                        </div>
+                      </Col>
+                      <Col md={6}>
+                        <div className="mb-4">
+                          <h5 className="text-warning mb-3 text-center">Phù hợp:</h5>
+                          <ul className="text-muted d-flex flex-column align-items-start gap-2">
+                            <li className="text-start">Làm giấy khai sinh</li>
+                            <li className="text-start">Thủ tục nhập tịch, visa</li>
+                            <li className="text-start">Giải quyết tranh chấp thừa kế</li>
+                            <li className="text-start">Xác định trách nhiệm cấp dưỡng</li>
+                          </ul>
+                        </div>
+                      </Col>
+                    </Row>
 
-                  <div className="mb-4">
-                    <h6 className="text-warning mb-3">Phù hợp cho:</h6>
-                    <ul className="small text-muted">
-                      <li>Làm giấy khai sinh</li>
-                      <li>Thủ tục nhập tịch, visa</li>
-                      <li>Giải quyết tranh chấp thừa kế</li>
-                      <li>Xác định trách nhiệm cấp dưỡng</li>
-                    </ul>
-                  </div>
-
-                  <div className="text-center">
+                  <div className="text-center mt-3">
                     <Button variant="warning" as={Link} to="/services?type=administrative" className="me-2">
                       Xem dịch vụ hành chính
                     </Button>
@@ -666,11 +676,8 @@ const Home = () => {
                       <div className="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3" style={styles.stepNumber}>
                         {step.step}
                       </div>
-                      <div>
-                        <h6 className="mb-1">
-                          <i className={`${step.icon} me-2 text-success`}></i>
-                          {step.title}
-                        </h6>
+                      <div className="text-start">
+                        <h6 className="mb-1">{step.title}</h6>
                         <p className="text-muted small mb-0">{step.description}</p>
                       </div>
                     </div>
@@ -700,11 +707,8 @@ const Home = () => {
                       <div className="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center me-3" style={styles.stepNumber}>
                         {step.step}
                       </div>
-                      <div>
-                        <h6 className="mb-1">
-                          <i className={`${step.icon} me-2 text-warning`}></i>
-                          {step.title}
-                        </h6>
+                      <div className="text-start">
+                        <h6 className="mb-1">{step.title}</h6>
                         <p className="text-muted small mb-0">{step.description}</p>
                       </div>
                     </div>
