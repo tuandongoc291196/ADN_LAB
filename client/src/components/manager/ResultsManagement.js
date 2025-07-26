@@ -414,14 +414,15 @@ const ResultsManagement = ({ user }) => {
                                                     <small className="text-muted">{result.phone}</small>
                                                 </td>
                                                 <td>
-                                                    <div>{result.serviceName}</div>
-                                                    <div className="mt-1">
-                                                        <Badge bg="secondary">{result.categoryName}</Badge>
-                                                        {result.hasLegalValue ? (
-                                                            <Badge bg="warning" text="dark" className="ms-2">Hành chính</Badge>
-                                                        ) : (
-                                                            <Badge bg="success" text='white' className="ms-2">Dân sự</Badge>
-                                                        )}
+                                                    <div>
+                                                        {result.serviceName}
+                                                        <div className="mt-1">
+                                                            {result.hasLegalValue ? (
+                                                                <Badge bg="warning" text="dark" className="ms-2">Hành chính</Badge>
+                                                            ) : (
+                                                                <Badge bg="success" text="white" className="ms-2">Dân sự</Badge>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </td>
                                                 <td>{result.technician}</td>
@@ -524,14 +525,15 @@ const ResultsManagement = ({ user }) => {
                                                     <small className="text-muted">{result.phone}</small>
                                                 </td>
                                                 <td>
-                                                    <div>{result.service}</div>
-                                                    <div className="mt-1">
-                                                        <Badge bg="secondary">{result.categoryName}</Badge>
-                                                        {result.hasLegalValue ? (
-                                                            <Badge bg="warning" text="dark" className="ms-2">Hành chính</Badge>
-                                                        ) : (
-                                                            <Badge bg="info" className="ms-2">Dân sự</Badge>
-                                                        )}
+                                                    <div>
+                                                        {result.serviceName}
+                                                        <div className="mt-1">
+                                                            {result.hasLegalValue ? (
+                                                                <Badge bg="warning" text="dark" className="ms-2">Hành chính</Badge>
+                                                            ) : (
+                                                                <Badge bg="success" text="white" className="ms-2">Dân sự</Badge>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </td>
                                                 <td>{getResultBadge(result.result.conclusion)}</td>
@@ -603,7 +605,18 @@ const ResultsManagement = ({ user }) => {
                                                     <small className="text-muted">{result.labCode}</small>
                                                 </td>
                                                 <td>{result.customerName}</td>
-                                                <td>{result.service}</td>
+                                                <td>
+                                                    <div>
+                                                        {result.serviceName}
+                                                        <div className="mt-1">
+                                                            {result.hasLegalValue ? (
+                                                                <Badge bg="warning" text="dark" className="ms-2">Hành chính</Badge>
+                                                            ) : (
+                                                                <Badge bg="success" text="white" className="ms-2">Dân sự</Badge>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </td>
                                                 <td>{getResultBadge(result.result.conclusion)}</td>
                                                 <td>{formatDateTime(result.deliveredDate)}</td>
                                                 <td>{result.deliveredBy}</td>
@@ -670,14 +683,15 @@ const ResultsManagement = ({ user }) => {
                                                     <small className="text-muted">{result.phone}</small>
                                                 </td>
                                                 <td>
-                                                    <div>{result.serviceName}</div>
-                                                    <div className="mt-1">
-                                                        <Badge bg="secondary">{result.categoryName}</Badge>
-                                                        {result.hasLegalValue ? (
-                                                            <Badge bg="warning" text="dark" className="ms-2">Hành chính</Badge>
-                                                        ) : (
-                                                            <Badge bg="success" text='white' className="ms-2">Dân sự</Badge>
-                                                        )}
+                                                    <div>
+                                                        {result.serviceName}
+                                                        <div className="mt-1">
+                                                            {result.hasLegalValue ? (
+                                                                <Badge bg="warning" text="dark" className="ms-2">Hành chính</Badge>
+                                                            ) : (
+                                                                <Badge bg="success" text="white" className="ms-2">Dân sự</Badge>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </td>
                                                 <td>{result.technician}</td>
