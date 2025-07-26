@@ -106,8 +106,23 @@ const BlogDetail = () => {
                             style={{ maxHeight: '400px', objectFit: 'cover', width: '100%' }}
                             />
                         )}
-                        {/* Hiển thị nội dung HTML từ rich text editor */}
-                        <div className="blog-content lh-lg text-break fs-5" dangerouslySetInnerHTML={{ __html: blog.content }} />
+                        {/* Hiển thị nội dung blog với định dạng HTML đẹp */}
+                        <div 
+                          className="blog-content" 
+                          style={{ 
+                            textAlign: 'left',
+                            fontSize: '1.1rem',
+                            lineHeight: '1.8',
+                            color: '#333',
+                            padding: '24px',
+                            background: '#fff',
+                            borderRadius: '10px',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                            marginBottom: '2rem',
+                            wordBreak: 'break-word'
+                          }}
+                          dangerouslySetInnerHTML={{ __html: blog.content }}
+                        />
 
                         <hr className="my-4" />
 

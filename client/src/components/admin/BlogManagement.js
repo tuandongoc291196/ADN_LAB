@@ -36,6 +36,10 @@ const BlogManagement = () => {
   const [bulkAction, setBulkAction] = useState('');
   const [processingBulk, setProcessingBulk] = useState(false);
 
+  // State quản lý modal xem chi tiết
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [viewingBlog, setViewingBlog] = useState(null);
+
   // Check user permissions
   useEffect(() => {
     if (!user?.role?.id || user.role.id !== '3') {
@@ -164,6 +168,12 @@ const BlogManagement = () => {
       console.error('Error deleting blog:', error);
       setMessage({ type: 'danger', content: 'Lỗi khi xóa bài viết: ' + error.message });
     }
+  };
+
+  // Handle view blog detail
+  const handleViewPost = (post) => {
+    setViewingBlog(post);
+    setShowDetailModal(true);
   };
 
   // Handle edit blog
@@ -507,30 +517,34 @@ const BlogManagement = () => {
                         <td>{post.user?.fullname || 'Admin'}</td>
                         <td>{getStatusBadge(post.isActive)}</td>
                         <td>{formatDate(post.createdAt)}</td>
-                        <td>
-                          <div className="btn-group" role="group">
-                            <Button
-                              size="sm"
-                              variant="outline-primary"
-                              onClick={() => handleEditPost(post)}
-                            >
-                              <i className="bi bi-pencil"></i>
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant={post.isActive ? "outline-warning" : "outline-success"}
-                              onClick={() => handleToggleStatus(post.id, post.isActive)}
-                            >
-                              <i className={`bi bi-${post.isActive ? 'eye-slash' : 'eye'}`}></i>
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline-danger"
-                              onClick={() => handleDeletePost(post)}
-                            >
-                              <i className="bi bi-trash"></i>
-                            </Button>
-                          </div>
+                        <td className="text-center">
+                          <Dropdown className="position-static" drop="down" align="end">
+                            <Dropdown.Toggle variant="outline-secondary" size="sm">
+                              <i className="bi bi-three-dots"></i>
+                            </Dropdown.Toggle>
+                            <Dropdown.Menu>
+                              <Dropdown.Item onClick={() => handleViewPost(post)}>
+                                <i className="bi bi-eye me-2"></i>Xem chi tiết
+                              </Dropdown.Item>
+                              <Dropdown.Item onClick={() => handleEditPost(post)}>
+                                <i className="bi bi-pencil me-2"></i>Chỉnh sửa
+                              </Dropdown.Item>
+                              <Dropdown.Divider />
+                              <Dropdown.Item
+                                onClick={() => handleToggleStatus(post.id, post.isActive)}
+                                className={post.isActive ? "text-warning" : "text-success"}
+                              >
+                                <i className={`bi ${post.isActive ? "bi-eye-slash" : "bi-eye"} me-2`}></i>
+                                {post.isActive ? 'Ẩn bài viết' : 'Hiển thị bài viết'}
+                              </Dropdown.Item>
+                              <Dropdown.Item
+                                className="text-danger"
+                                onClick={() => handleDeletePost(post)}
+                              >
+                                <i className="bi bi-trash me-2"></i>Xóa
+                              </Dropdown.Item>
+                            </Dropdown.Menu>
+                          </Dropdown>
                         </td>
                       </tr>
                     ))
@@ -604,6 +618,57 @@ const BlogManagement = () => {
                 {bulkAction === 'delete' && 'Xóa'}
               </>
             )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Thêm modal xem chi tiết blog */}
+      <Modal show={showDetailModal} onHide={() => setShowDetailModal(false)} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Chi tiết bài viết</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {viewingBlog && (
+            <div>
+              <h2>{viewingBlog.title}</h2>
+              {viewingBlog.imageUrl && (
+                <img
+                  src={viewingBlog.imageUrl}
+                  alt={viewingBlog.title}
+                  className="img-fluid rounded mb-3"
+                  style={{ maxHeight: '300px', objectFit: 'cover' }}
+                />
+              )}
+              <div className="blog-content" dangerouslySetInnerHTML={{ __html: viewingBlog.content }} />
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          {viewingBlog && (
+            <>
+              <Button 
+                variant="primary" 
+                onClick={() => {
+                  setShowDetailModal(false);
+                  handleEditPost(viewingBlog);
+                }}
+              >
+                <i className="bi bi-pencil me-2"></i>Chỉnh sửa
+              </Button>
+              <Button 
+                variant={viewingBlog.isActive ? 'warning' : 'success'}
+                onClick={() => {
+                  handleToggleStatus(viewingBlog.id, viewingBlog.isActive);
+                  setShowDetailModal(false);
+                }}
+              >
+                <i className={`bi bi-${viewingBlog.isActive ? 'eye-slash' : 'eye'} me-2`}></i>
+                {viewingBlog.isActive ? 'Ẩn bài viết' : 'Hiển thị bài viết'}
+              </Button>
+            </>
+          )}
+          <Button variant="secondary" onClick={() => setShowDetailModal(false)}>
+            Đóng
           </Button>
         </Modal.Footer>
       </Modal>
