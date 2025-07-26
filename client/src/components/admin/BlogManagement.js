@@ -170,6 +170,33 @@ const BlogManagement = () => {
     }
   };
 
+  // Sanitize HTML content to remove unwanted tags and styles
+  const sanitizeContent = (content) => {
+    if (!content) return '';
+    
+    // Create a temporary div to parse HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = content;
+    
+    // Remove potentially dangerous tags
+    const dangerousTags = ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button'];
+    dangerousTags.forEach(tag => {
+      const elements = tempDiv.getElementsByTagName(tag);
+      while (elements.length > 0) {
+        elements[0].parentNode.removeChild(elements[0]);
+      }
+    });
+    
+    // Remove all style attributes
+    const allElements = tempDiv.getElementsByTagName('*');
+    for (let i = 0; i < allElements.length; i++) {
+      allElements[i].removeAttribute('style');
+      allElements[i].removeAttribute('class');
+    }
+    
+    return tempDiv.innerHTML;
+  };
+
   // Handle view blog detail
   const handleViewPost = (post) => {
     setViewingBlog(post);
@@ -504,15 +531,7 @@ const BlogManagement = () => {
                           />
                         </td>
                         <td>
-                          <div>
-                            <strong>{post.title}</strong>
-                            <br />
-                            <small className="text-muted">
-                              {post.content && post.content.length > 100 
-                                ? post.content.substring(0, 100) + '...' 
-                                : post.content}
-                            </small>
-                          </div>
+                          <strong>{post.title}</strong>
                         </td>
                         <td>{post.user?.fullname || 'Admin'}</td>
                         <td>{getStatusBadge(post.isActive)}</td>
@@ -639,7 +658,7 @@ const BlogManagement = () => {
                   style={{ maxHeight: '300px', objectFit: 'cover' }}
                 />
               )}
-              <div className="blog-content" dangerouslySetInnerHTML={{ __html: viewingBlog.content }} />
+                             <div className="blog-content" dangerouslySetInnerHTML={{ __html: sanitizeContent(viewingBlog.content) }} />
             </div>
           )}
         </Modal.Body>

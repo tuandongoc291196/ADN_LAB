@@ -10,6 +10,33 @@ const BlogDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Sanitize HTML content to remove unwanted tags and styles
+  const sanitizeContent = (content) => {
+    if (!content) return '';
+    
+    // Create a temporary div to parse HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = content;
+    
+    // Remove potentially dangerous tags
+    const dangerousTags = ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button'];
+    dangerousTags.forEach(tag => {
+      const elements = tempDiv.getElementsByTagName(tag);
+      while (elements.length > 0) {
+        elements[0].parentNode.removeChild(elements[0]);
+      }
+    });
+    
+    // Remove all style attributes
+    const allElements = tempDiv.getElementsByTagName('*');
+    for (let i = 0; i < allElements.length; i++) {
+      allElements[i].removeAttribute('style');
+      allElements[i].removeAttribute('class');
+    }
+    
+    return tempDiv.innerHTML;
+  };
+
   useEffect(() => {
     const fetchBlogData = async () => {
       try {
@@ -121,7 +148,7 @@ const BlogDetail = () => {
                             marginBottom: '2rem',
                             wordBreak: 'break-word'
                           }}
-                          dangerouslySetInnerHTML={{ __html: blog.content }}
+                          dangerouslySetInnerHTML={{ __html: sanitizeContent(blog.content) }}
                         />
 
                         <hr className="my-4" />
