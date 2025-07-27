@@ -76,7 +76,7 @@ const KitPreparation = ({ user }) => {
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         el.classList.add('table-primary');
-        setTimeout(() => el.classList.remove('table-primary'), 2000);
+        setTimeout(() => el.classList.remove('table-primary'), 3000);
       }
     }
   }, [bookingId, orders]);
@@ -145,6 +145,16 @@ const KitPreparation = ({ user }) => {
             }
             : o
         );
+      } else if (modalAction === 'prepare-direct') {
+        status = 'SAMPLE_RECEIVED';
+        updatedOrders = orders.map(o =>
+          o.id === selectedOrder.id
+            ? {
+              ...o,
+              status: 'sample-received'
+            }
+            : o
+        );
       } else if (modalAction === 'send') {
         status = 'KIT_SENT';
         updatedOrders = orders.map(o =>
@@ -168,12 +178,12 @@ const KitPreparation = ({ user }) => {
             : o
         );
       } else if (modalAction === 'confirm-payment') {
-        status = 'PAID'; // hoặc status bạn dùng cho đã thanh toán
+        status = 'BOOKED';
         updatedOrders = orders.map(o =>
           o.id === selectedOrder.id
             ? {
               ...o,
-              status: 'paid'
+              status: 'waiting-kit-prep'
             }
             : o
         );
@@ -338,14 +348,30 @@ const KitPreparation = ({ user }) => {
               <td>
                 <div className="d-flex flex-column gap-1">
                   {order.status === 'waiting-kit-prep' && (
-                    <Button
-                      size="sm"
-                      variant="success"
-                      onClick={() => openActionModal('prepare', order)}
-                    >
-                      <i className="bi bi-box me-1"></i>
-                      Chuẩn bị
-                    </Button>
+                    <>
+                      {/* Nếu là tự lấy mẫu tại nhà thì vẫn chuẩn bị kit */}
+                      {order.methodName === 'Lấy mẫu tại nhà' && (
+                        <Button
+                          size="sm"
+                          variant="success"
+                          onClick={() => openActionModal('prepare', order)}
+                        >
+                          <i className="bi bi-box me-1"></i>
+                          Chuẩn bị kit
+                        </Button>
+                      )}
+                      {/* Nếu là lấy mẫu tại lab hoặc nhân viên tới nhà thì chuyển thẳng sang SAMPLE_RECEIVED */}
+                      {(order.methodName === 'Lấy mẫu tại lab' || order.methodName === 'Nhân viên tới nhà lấy mẫu') && (
+                        <Button
+                          size="sm"
+                          variant="info"
+                          onClick={() => openActionModal('prepare-direct', order)}
+                        >
+                          <i className="bi bi-check-circle me-1"></i>
+                          Chuẩn bị kit
+                        </Button>
+                      )}
+                    </>
                   )}
                   {order.status === 'kit-prepared' && (
                     <Button
@@ -415,22 +441,93 @@ const KitPreparation = ({ user }) => {
         </Modal.Header>
         <Modal.Body>
           <Alert variant="info">
-            Vui lòng nhập mô tả cho hành động với đơn hàng <strong>{selectedOrder?.id}</strong>
+            Vui lòng chọn mô tả cho hành động với đơn hàng <strong>{selectedOrder?.id}</strong>
           </Alert>
           <Form.Group className="mt-3">
-            <Form.Label>Mô tả (bắt buộc)</Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={3}
-              placeholder="Ví dụ: Đã chuẩn bị kit và kiểm tra mã vận đơn"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
+            <Form.Label>Chọn mô tả (bắt buộc)</Form.Label>
+            <div className="mt-2">
+              {modalAction === 'confirm-payment' ? (
+                <>
+                  <Form.Check
+                    type="radio"
+                    id="payment-cash"
+                    name="description"
+                    label="Khách hàng đã thanh toán tiền mặt"
+                    value="Khách hàng đã thanh toán tiền mặt"
+                    checked={description === "Khách hàng đã thanh toán tiền mặt"}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="mb-2"
+                  />
+                  <Form.Check
+                    type="radio"
+                    id="payment-transfer"
+                    name="description"
+                    label="Khách hàng đã thanh toán qua chuyển khoản"
+                    value="Khách hàng đã thanh toán qua chuyển khoản"
+                    checked={description === "Khách hàng đã thanh toán qua chuyển khoản"}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="mb-2"
+                  />
+                </>
+              ) : modalAction === 'prepare' ? (
+                <>
+                  <Form.Check
+                    type="radio"
+                    id="prepare-pack"
+                    name="description"
+                    label="Đã chuẩn bị kit và đóng gói cẩn thận"
+                    value="Đã chuẩn bị kit và đóng gói cẩn thận"
+                    checked={description === "Đã chuẩn bị kit và đóng gói cẩn thận"}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="mb-2"
+                  />
+                </>
+              ) : modalAction === 'send' ? (
+                <>
+                  <Form.Check
+                    type="radio"
+                    id="send-jt"
+                    name="description"
+                    label="Đã gửi kit cho khách hàng"
+                    value="Đã gửi kit cho khách hàng"
+                    checked={description === "Đã gửi kit cho khách hàng"}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="mb-2"
+                  />
+                </>
+              ) : modalAction === 'prepare-direct' ? (
+                <>
+                  <Form.Check
+                    type="radio"
+                    id="direct-check"
+                    name="description"
+                    label="Đã chuẩn bị kit và sẵn sàng thu mẫu"
+                    value="Đã chuẩn bị kit và sẵn sàng thu mẫu"
+                    checked={description === "Đã chuẩn bị kit và sẵn sàng thu mẫu"}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="mb-2"
+                  />
+                </>
+              ) : (
+                <>
+                  <Form.Check
+                    type="radio"
+                    id="receive-kit"
+                    name="description"
+                    label="Đã nhận kit từ khách hàng"
+                    value="Đã nhận kit từ khách hàng"
+                    checked={description === "Đã nhận kit từ khách hàng"}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="mb-2"
+                  />
+                </>
+              )}
+            </div>
           </Form.Group>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowModal(false)}>Hủy</Button>
-          <Button variant="success" disabled={!description.trim()} onClick={handleConfirmAction}>
+          <Button variant="success" disabled={!description} onClick={handleConfirmAction}>
             <i className="bi bi-check-circle me-2"></i>
             Xác nhận
           </Button>

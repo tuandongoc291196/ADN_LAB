@@ -25,7 +25,6 @@ const StaffOverview = ({ user }) => {
         const tasks = bookings.map((booking, index) => {
           const methodName = booking.method?.name || '';
           const isHomeVisit = methodName === 'Lấy mẫu tại nhà';
-          const taskType = isHomeVisit ? 'kit-preparation' : 'sample-collection';
 
           // Lấy history tương ứng
           const history = Array.isArray(booking.bookingHistories_on_booking) ? booking.bookingHistories_on_booking : [];
@@ -33,9 +32,6 @@ const StaffOverview = ({ user }) => {
           // Tìm status mới nhất theo createdAt
           const sorted = [...history].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
           const latestStatus = sorted[0]?.status || 'unknown';
-          const expectedDate = booking.timeSlotId?.split('_')[0]; // Lấy ngày từ slot ID
-          // const isOverdue = expectedDate && new Date(expectedDate) < new Date(); // 👈 Check quá hạn
-
           // Kiểm tra quá hạn
           let taskStatus = '';
           switch (latestStatus) {
@@ -52,25 +48,13 @@ const StaffOverview = ({ user }) => {
               taskStatus = isHomeVisit ? 'kit-returned' : 'sample-received';
               break;
             case 'SAMPLE_COLLECTED':
-              taskStatus = 'collected';
+              taskStatus = 'sample-collected';
               break;
-            case 'IN_ANALYSIS':
-              taskStatus = 'in-analysis';
+            case 'RESULT_PENDING':
+              taskStatus = 'result-pending';
               break;
-            case 'QUALITY_CHECK':
-              taskStatus = 'quality-check';
-              break;
-            case 'ANALYSIS_COMPLETE':
-              taskStatus = 'analysis-complete';
-              break;
-            case 'REVIEWED':
-              taskStatus = 'reviewed';
-              break;
-            case 'DELIVERED':
-              taskStatus = 'delivered';
-              break;
-            case 'CANCELLED':
-              taskStatus = 'cancelled';
+            case 'PENDING_PAYMENT':
+              taskStatus = 'pending-payment';
               break;
             case 'FAILED':
             case 'EXPIRED':
@@ -80,10 +64,14 @@ const StaffOverview = ({ user }) => {
               taskStatus = latestStatus.toLowerCase().replaceAll('_', '-');
               break;
           }
-          // Sau khi mapping xong mới kiểm tra quá hạn
-          // if (isOverdue && !['collected', 'kit-returned', 'analysis-complete', 'reviewed', 'delivered', 'cancelled'].includes(taskStatus)) {
-          //   taskStatus = 'overdue';
-          // }
+
+          // Xác định task type dựa trên status
+          let taskType = 'kit-preparation';
+          if (['sample-collected', 'result-pending'].includes(taskStatus)) {
+            taskType = 'lab-testing';
+          } else if (['collected', 'transferred'].includes(taskStatus)) {
+            taskType = 'sample-collection';
+          }
           let deadline = '';
           try {
             const [date, startTime] = booking.timeSlot?.id?.split('_') || [];
@@ -138,38 +126,44 @@ const StaffOverview = ({ user }) => {
 
   const getStatusBadge = (status) => {
     const variants = {
+      // KitPreparation statuses
       'waiting-kit-prep': 'secondary',
-      'waiting-sample': 'secondary',
       'kit-prepared': 'warning',
       'kit-sent': 'primary',
       'kit-returned': 'info',
+      'pending-payment': 'dark',
+      'expired': 'danger',
       'sample-received': 'info',
+
+      // SampleCollection statuses
       'collected': 'success',
-      'in-analysis': 'primary',
-      'quality-check': 'info',
-      'analysis-complete': 'success',
-      'reviewed': 'primary',
-      'delivered': 'success',
-      'cancelled': 'danger',
-      'overdue': 'danger'
+      'transferred': 'success',
+      'overdue': 'danger',
+
+      // LabTesting statuses
+      'sample-collected': 'success',
+      'result-pending': 'success'
     };
     const labels = {
+      // KitPreparation labels
       'waiting-kit-prep': 'Chờ chuẩn bị kit',
-      'waiting-sample': 'Chờ thu mẫu',
       'kit-prepared': 'Đã chuẩn bị kit',
       'kit-sent': 'Đã gửi kit',
       'kit-returned': 'Đã nhận kit',
+      'pending-payment': 'Chờ thanh toán',
+      'expired': 'Quá hạn',
       'sample-received': 'Đã nhận mẫu',
+
+      // SampleCollection labels
       'collected': 'Đã thu mẫu',
-      'in-analysis': 'Đang phân tích',
-      'quality-check': 'Kiểm tra chất lượng',
-      'analysis-complete': 'Hoàn thành xét nghiệm',
-      'reviewed': 'Đã duyệt',
-      'delivered': 'Đã trả kết quả',
-      'cancelled': 'Đã hủy',
-      'overdue': 'Quá hạn'
+      'transferred': 'Đã chuyển lab',
+      'overdue': 'Quá hạn',
+
+      // LabTesting labels
+      'sample-collected': 'Đã thu mẫu',
+      'result-pending': 'Chờ kết quả'
     };
-    return <Badge bg={variants[status]}>{labels[status]}</Badge>;
+    return <Badge bg={variants[status] || 'secondary'}>{labels[status] || status}</Badge>;
   };
 
   const getTaskIcon = (type) => {
@@ -184,7 +178,7 @@ const StaffOverview = ({ user }) => {
 
   const getTaskLink = (type, status, isHomeVisit) => {
     // Nếu là lấy mẫu tại nhà và đã nhận kit thì chuyển sang thu mẫu
-    if (isHomeVisit && (status === 'sample-received' || status === 'kit-returned')) {
+    if (isHomeVisit && (status === 'sample-received')) {
       return '/staff/sample-collection';
     }
     const links = {
@@ -293,7 +287,7 @@ const StaffOverview = ({ user }) => {
                       <div className="mb-2">
                         {getStatusBadge(task.status)}
                       </div>
-                      {!['overdue', 'cancelled', 'collected', 'analysis-complete', 'reviewed', 'delivered'].includes(task.status) && (
+                      {!['overdue', 'cancelled', 'collected', 'analysis-complete', 'reviewed', 'delivered', 'result-pending'].includes(task.status) && (
                         <Button
                           as={Link}
                           to={`${getTaskLink(task.type, task.status, task.isHomeVisit)}/${task.orderIds[0]}`}

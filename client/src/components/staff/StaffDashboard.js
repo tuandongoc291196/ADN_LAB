@@ -264,6 +264,7 @@ const StaffDashboard = () => {
             <Route path="/sample-collection" element={<SampleCollection user={displayUser} />} />
             <Route path="/sample-collection/:bookingId" element={<SampleCollection user={displayUser} />} />
             <Route path="/lab-testing" element={<LabTesting user={displayUser} />} />
+            <Route path="/lab-testing/:bookingId" element={<LabTesting user={displayUser} />} />
             <Route path="/results" element={<ResultsManagement user={displayUser} />} />
             <Route path="/profile" element={<StaffProfile user={displayUser} />} />
             <Route path="*" element={<StaffOverview user={displayUser} />} />

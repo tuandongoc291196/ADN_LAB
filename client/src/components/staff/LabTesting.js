@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Button, Badge, Alert, Modal, Form, Table, InputGroup, Tabs, Tab } from 'react-bootstrap';
 import { getBookingByStaffId, addBookingHistory } from '../../services/api';
+import { useParams } from 'react-router-dom';
 import Swal from 'sweetalert2';
 
 const LabTesting = ({ user }) => {
+  const { bookingId } = useParams();
   const [tests, setTests] = useState([]);
   const [filteredTests, setFilteredTests] = useState([]);
   const [showTestModal, setShowTestModal] = useState(false);
@@ -12,6 +14,32 @@ const LabTesting = ({ user }) => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [alert, setAlert] = useState({ show: false, message: '', type: '' });
   const [activeTab, setActiveTab] = useState('queue');
+
+  // Tự động chuyển tab dựa trên bookingId nếu có
+  useEffect(() => {
+    if (bookingId && tests.length > 0) {
+      const targetTest = tests.find(t => t.id === bookingId);
+      if (targetTest) {
+        // Nếu status là 'result-pending' thì chuyển đến tab completed
+        if (targetTest.status === 'result-pending') {
+          setActiveTab('completed');
+        } else {
+          setActiveTab('queue');
+        }
+
+        // Scroll đến row và highlight
+        setTimeout(() => {
+          const el = document.getElementById(`test-row-${bookingId}`);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('table-primary');
+            setTimeout(() => el.classList.remove('table-primary'), 3000);
+          }
+        }, 500);
+      }
+    }
+  }, [bookingId, tests]);
+
   const [testResults, setTestResults] = useState({
     conclusion: '',
     confidence: '',
@@ -289,7 +317,7 @@ const LabTesting = ({ user }) => {
                   </thead>
                   <tbody>
                     {filteredTests.filter(t => t.status === 'sample-collected').map((test) => (
-                      <tr key={test.id}>
+                      <tr key={test.id} id={`test-row-${test.id}`}>
                         <td>
                           <div>{test.id}</div>
                           <small className="text-muted">{test.participants?.length || 0} người</small>
@@ -379,7 +407,7 @@ const LabTesting = ({ user }) => {
                   </thead>
                   <tbody>
                     {filteredTests.filter(t => t.status === 'result-pending').map((test) => (
-                      <tr key={test.id}>
+                      <tr key={test.id} id={`test-row-${test.id}`}>
                         <td>
                           <div>{test.id}</div>
                           <small className="text-muted">{test.participants?.length || 0} người</small>

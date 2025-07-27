@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Button, Badge, Alert, Modal, Form, Table, InputGroup, Tabs, Tab } from 'react-bootstrap';
 import { getBookingByStaffId, addBookingHistory, getSamplesByBookingId, updateSample } from '../../services/api';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
 
 const SampleCollection = ({ user }) => {
@@ -22,7 +22,21 @@ const SampleCollection = ({ user }) => {
   });
   const { bookingId } = useParams(); // Assuming you might need this for routing or fetching specific order details
   const [activeTab, setActiveTab] = useState('pending');
-  const navigate = useNavigate();
+
+  // Tự động chuyển tab dựa trên bookingId nếu có
+  useEffect(() => {
+    if (bookingId && samples.length > 0) {
+      const targetSample = samples.find(s => s.id === bookingId);
+      if (targetSample) {
+        // Nếu status là 'collected' thì chuyển đến tab completed
+        if (targetSample.status === 'collected') {
+          setActiveTab('completed');
+        } else {
+          setActiveTab('pending');
+        }
+      }
+    }
+  }, [bookingId, samples]);
 
   // Lấy danh sách mẫu cần thu từ API
   useEffect(() => {
@@ -32,13 +46,9 @@ const SampleCollection = ({ user }) => {
 
         const mappedSamples = bookings
           .filter(b => {
-            // Nếu là phương thức lấy mẫu tại nhà thì chỉ hiện nếu bookingHistories_on_booking có sample_received
-            if (b.method?.name?.toLowerCase() === 'lấy mẫu tại nhà') {
-              return Array.isArray(b.bookingHistories_on_booking)
-                ? b.bookingHistories_on_booking.some(h => h.status?.toLowerCase() === 'sample_received')
-                : false;
-            }
-            return true;
+            // Chỉ hiện các booking có status SAMPLE_RECEIVED
+            const histories = Array.isArray(b.bookingHistories_on_booking) ? b.bookingHistories_on_booking : [];
+            return histories.some(h => h.status?.toLowerCase() === 'sample_received');
           })
           .map(b => {
             const histories = Array.isArray(b.bookingHistories_on_booking) ? b.bookingHistories_on_booking : [];
@@ -89,7 +99,7 @@ const SampleCollection = ({ user }) => {
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         el.classList.add('table-primary');
-        setTimeout(() => el.classList.remove('table-primary'), 2000);
+        setTimeout(() => el.classList.remove('table-primary'), 3000);
       }
     }
   }, [bookingId, samples]);
@@ -215,58 +225,7 @@ const SampleCollection = ({ user }) => {
     });
   };
 
-  const handleTransferToLab = (sampleId) => {
-    const updatedSamples = samples.map(sample =>
-      sample.id === sampleId
-        ? {
-          ...sample,
-          status: 'transferred',
-          transferredDate: new Date().toLocaleString('vi-VN'),
-          transferredBy: user.name
-        }
-        : sample
-    );
-    setSamples(updatedSamples);
 
-    setAlert({
-      show: true,
-      message: `Mẫu ${sampleId} đã được chuyển về phòng lab thành công!`,
-      type: 'success'
-    });
-    setTimeout(() => setAlert({ show: false, message: '', type: '' }), 1000);
-    navigate(`/staff/lab-testing/${sampleId}`);
-  };
-
-  const handleMarkSampleReceived = async (bookingId) => {
-    try {
-      await addBookingHistory({
-        bookingId,
-        status: 'SAMPLE_RECEIVED',
-        description: 'Kit đã được nhận bởi nhân viên hoặc khách'
-      });
-
-      // Cập nhật lại danh sách samples
-      const updated = samples.map(sample =>
-        sample.id === bookingId
-          ? { ...sample, status: 'kit-returned' }
-          : sample
-      );
-
-      setSamples(updated);
-      setAlert({
-        show: true,
-        message: `Đã xác nhận Kit đã nhận cho đơn hàng ${bookingId}`,
-        type: 'success'
-      });
-      setTimeout(() => setAlert({ show: false, message: '', type: '' }), 3000);
-    } catch (error) {
-      setAlert({
-        show: true,
-        message: `Lỗi khi cập nhật trạng thái SAMPLE_RECEIVED`,
-        type: 'danger'
-      });
-    }
-  };
 
   const formatDateTime = (dateTimeString) => {
     return new Date(dateTimeString).toLocaleString('vi-VN');
@@ -421,21 +380,12 @@ const SampleCollection = ({ user }) => {
                                 Thu mẫu
                               </Button>
                             )}
-                            {sample.status === 'scheduled' && sample.methodName !== 'Lấy mẫu tại nhà' && sample.status !== 'overdue' && (
-                              <Button
-                                size="sm"
-                                variant="warning"
-                                onClick={() => handleMarkSampleReceived(sample.id)}
-                              >
-                                <i className="bi bi-box-arrow-in-down me-1"></i>
-                                Xác nhận
-                              </Button>
-                            )}
                             {sample.status === 'collected' && (
                               <Button
-                                size="sm"
+                                as={Link}
+                                to={`/staff/lab-testing/${sample.id}`}
                                 variant="primary"
-                                onClick={() => handleTransferToLab(sample.id)}
+                                size="sm"
                               >
                                 <i className="bi bi-arrow-right me-1"></i>
                                 Chuyển lab
@@ -531,9 +481,10 @@ const SampleCollection = ({ user }) => {
                           <div className="d-flex flex-column gap-1">
                             {sample.status === 'collected' && (
                               <Button
-                                size="sm"
+                                as={Link}
+                                to={`/staff/lab-testing/${sample.id}`}
                                 variant="primary"
-                                onClick={() => handleTransferToLab(sample.id)}
+                                size="sm"
                               >
                                 <i className="bi bi-arrow-right me-1"></i>
                                 Chuyển lab
@@ -603,7 +554,8 @@ const SampleCollection = ({ user }) => {
                         <Form.Label>Người thu mẫu</Form.Label>
                         <Form.Control
                           value={collectionData.collectorName}
-                          onChange={(e) => setCollectionData({ ...collectionData, collectorName: e.target.value })}
+                          readOnly
+                          className="bg-light"
                         />
                       </Col>
                     </Row>
@@ -650,10 +602,21 @@ const SampleCollection = ({ user }) => {
                           <td>
                             <Form.Control
                               type="number"
-                              min="0"
+                              min="0.01"
+                              max="100"
                               step="0.01"
                               value={sample.sampleConcentration}
                               onChange={e => {
+                                const value = parseFloat(e.target.value);
+                                if (value > 100 || value < 0.01) {
+                                  Swal.fire({
+                                    icon: 'warning',
+                                    title: 'Cảnh báo!',
+                                    text: 'Nồng độ mẫu không được nhỏ hơn 0.01 và vượt quá 100',
+                                    confirmButtonColor: '#ffc107'
+                                  });
+                                  return;
+                                }
                                 const newSamples = [...collectionData.samples];
                                 newSamples[idx].sampleConcentration = e.target.value;
                                 setCollectionData({ ...collectionData, samples: newSamples });
@@ -724,7 +687,7 @@ const SampleCollection = ({ user }) => {
           <Button
             variant="success"
             onClick={handleCompleteCollection}
-            disabled={!(collectionData.samples && collectionData.samples.length > 0 && collectionData.samples.every(s => s.sampleQuality && s.sampleConcentration !== undefined))}
+            disabled={!(collectionData.samples && collectionData.samples.length > 0 && collectionData.samples.every(s => s.sampleQuality && s.sampleConcentration !== undefined && s.notes && s.notes.trim()))}
           >
             <i className="bi bi-check-circle me-2"></i>
             Hoàn tất thu mẫu
