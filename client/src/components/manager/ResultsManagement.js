@@ -43,42 +43,110 @@ const ResultsManagement = ({ user }) => {
 
     // Lấy danh sách booking từ API
     useEffect(() => {
-        getAllBookings()
-            .then(bookings => {
+        const fetchBookings = async () => {
+            try {
+                const bookings = await getAllBookings();
                 // Đảm bảo bookings là array
                 let bookingList = Array.isArray(bookings)
                     ? bookings
                     : (Array.isArray(bookings?.bookings) ? bookings.bookings : []);
-                // Lọc các booking có status RESULT_PENDING
+                // Lọc các booking có status RESULT_PENDING và COMPLETE
                 const resultPending = bookingList.filter(b => {
                     const histories = Array.isArray(b.bookingHistories_on_booking) ? b.bookingHistories_on_booking : [];
                     const sorted = [...histories].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
                     const latestStatus = sorted[0]?.status?.toLowerCase() || b.status?.toLowerCase() || '';
-                    return latestStatus === 'result_pending';
-                }).map(b => ({
-                    id: b.id,
-                    customerName: b.informations_on_booking?.[0]?.name || 'Không rõ',
-                    phone: b.informations_on_booking?.[0]?.phone || '',
-                    email: b.informations_on_booking?.[0]?.email || '',
-                    service: b.service?.title || 'Không rõ dịch vụ',
-                    serviceType: b.service?.category?.hasLegalValue ? 'civil' : 'administrative',
-                    labCode: b.labCode || '',
-                    completedDate: b.completedDate || b.updatedAt || (Array.isArray(b.bookingHistories_on_booking) && b.bookingHistories_on_booking[0]?.createdAt) || '',
-                    technician: b.staff?.user?.fullname || '',
-                    status: 'result-pending' || 'complete',
-                    priority: b.priority || 'medium',
-                    hasLegalValue: b.service?.category?.hasLegalValue || false,
-                    result: b.result || {},
-                    participants: b.participants_on_booking || [],
-                    orderDate: b.createdAt || '',
-                    categoryName: b.service?.category?.name || '',
-                }));
-                setResults(resultPending);
-                setFilteredResults(resultPending);
-            })
-            .catch(err => {
+                    return latestStatus === 'result_pending' || latestStatus === 'complete';
+                });
+
+                // Lấy thông tin chi tiết từ getTestResultByBookingId cho từng booking
+                const detailedResults = await Promise.all(
+                    resultPending.map(async (b) => {
+                        try {
+                            const testResult = await getTestResultByBookingId(b.id);
+                            const testResultData = Array.isArray(testResult) ? testResult[0] : testResult;
+
+                            return {
+                                id: b.id,
+                                customerName: b.informations_on_booking?.[0]?.name || 'Không rõ',
+                                phone: b.informations_on_booking?.[0]?.phone || '',
+                                email: b.informations_on_booking?.[0]?.email || '',
+                                serviceName: b.service?.title || 'Không rõ dịch vụ',
+                                serviceType: b.service?.category?.hasLegalValue ? 'civil' : 'administrative',
+                                labCode: b.labCode || '',
+                                completedDate: b.completedDate || b.updatedAt || (Array.isArray(b.bookingHistories_on_booking) && b.bookingHistories_on_booking[0]?.createdAt) || '',
+                                technician: b.staff?.user?.fullname || '',
+                                status: (() => {
+                                    const histories = Array.isArray(b.bookingHistories_on_booking) ? b.bookingHistories_on_booking : [];
+                                    const sorted = [...histories].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                                    const latestStatus = sorted[0]?.status?.toLowerCase() || b.status?.toLowerCase() || '';
+                                    return latestStatus === 'complete' ? 'ready-to-release' : 'result-pending';
+                                })(),
+                                priority: b.priority || 'medium',
+                                hasLegalValue: b.service?.category?.hasLegalValue || false,
+                                result: {
+                                    conclusion: testResultData?.positive === true ? 'POSITIVE' : testResultData?.positive === false ? 'NEGATIVE' : 'INCONCLUSIVE',
+                                    confidence: testResultData?.accuracy || 0,
+                                    method: testResultData?.testMethod || 'N/A',
+                                    notes: testResultData?.resultNotes || '',
+                                    positive: testResultData?.positive || false,
+                                    testType: testResultData?.testType || 'civil',
+                                    reportDate: testResultData?.reportDate || '',
+                                    testDate: testResultData?.testDate || '',
+                                    manager: testResultData?.manager || null,
+                                    staff: testResultData?.staff || null
+                                },
+                                participants: b.participants_on_booking || [],
+                                orderDate: b.createdAt || '',
+                                categoryName: b.service?.category?.name || '',
+                            };
+                        } catch (error) {
+                            console.error(`Error fetching test result for booking ${b.id}:`, error);
+                            // Fallback nếu không lấy được test result
+                            return {
+                                id: b.id,
+                                customerName: b.informations_on_booking?.[0]?.name || 'Không rõ',
+                                phone: b.informations_on_booking?.[0]?.phone || '',
+                                email: b.informations_on_booking?.[0]?.email || '',
+                                serviceName: b.service?.title || 'Không rõ dịch vụ',
+                                serviceType: b.service?.category?.hasLegalValue ? 'civil' : 'administrative',
+                                labCode: b.labCode || '',
+                                completedDate: b.completedDate || b.updatedAt || (Array.isArray(b.bookingHistories_on_booking) && b.bookingHistories_on_booking[0]?.createdAt) || '',
+                                technician: b.staff?.user?.fullname || '',
+                                status: (() => {
+                                    const histories = Array.isArray(b.bookingHistories_on_booking) ? b.bookingHistories_on_booking : [];
+                                    const sorted = [...histories].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                                    const latestStatus = sorted[0]?.status?.toLowerCase() || b.status?.toLowerCase() || '';
+                                    return latestStatus === 'complete' ? 'ready-to-release' : 'result-pending';
+                                })(),
+                                priority: b.priority || 'medium',
+                                hasLegalValue: b.service?.category?.hasLegalValue || false,
+                                result: {
+                                    conclusion: 'INCONCLUSIVE',
+                                    confidence: 0,
+                                    method: 'N/A',
+                                    notes: '',
+                                    positive: false,
+                                    testType: 'civil',
+                                    reportDate: '',
+                                    testDate: '',
+                                    manager: null,
+                                    staff: null
+                                },
+                                participants: b.participants_on_booking || [],
+                                orderDate: b.createdAt || '',
+                                categoryName: b.service?.category?.name || '',
+                            };
+                        }
+                    })
+                );
+                setResults(detailedResults);
+                setFilteredResults(detailedResults);
+            } catch (err) {
                 setAlert({ show: true, message: 'Không thể tải danh sách booking: ' + err.message, type: 'danger' });
-            });
+            }
+        };
+
+        fetchBookings();
     }, []);
 
     // Filter results based on search and status
@@ -101,29 +169,6 @@ const ResultsManagement = ({ user }) => {
         setFilteredResults(filtered);
     }, [searchTerm, filterStatus, results]);
 
-    const getStatusBadge = (status) => {
-        const statusConfig = {
-            'ready-to-release': { bg: 'warning', text: 'Sẵn sàng trả' },
-            'quality-review': { bg: 'info', text: 'Đang kiểm duyệt' },
-            'reviewed': { bg: 'primary', text: 'Đã duyệt' },
-            'delivered': { bg: 'success', text: 'Đã giao' },
-            'need-revision': { bg: 'danger', text: 'Cần sửa đổi' }
-        };
-        const config = statusConfig[status] || { bg: 'secondary', text: 'Không xác định' };
-        return <Badge bg={config.bg}>{config.text}</Badge>;
-    };
-
-    const getPriorityBadge = (priority) => {
-        const priorityConfig = {
-            'urgent': { bg: 'danger', text: 'Khẩn cấp' },
-            'high': { bg: 'warning', text: 'Cao' },
-            'medium': { bg: 'primary', text: 'Trung bình' },
-            'low': { bg: 'secondary', text: 'Thấp' }
-        };
-        const config = priorityConfig[priority] || { bg: 'secondary', text: 'Không xác định' };
-        return <Badge bg={config.bg}>{config.text}</Badge>;
-    };
-
     const getResultBadge = (conclusion) => {
         const resultConfig = {
             'POSITIVE': { bg: 'success', text: 'DƯƠNG TÍNH', icon: 'bi-check-circle' },
@@ -139,9 +184,50 @@ const ResultsManagement = ({ user }) => {
         );
     };
 
-    const handleViewResult = (result) => {
-        setSelectedResult(result);
-        setShowResultModal(true);
+    const handleViewResult = async (result) => {
+        try {
+            // Lấy thông tin chi tiết từ API
+            const [booking, testResult, samples] = await Promise.all([
+                getBookingById(result.id),
+                getTestResultByBookingId(result.id),
+                getSamplesByBookingId(result.id)
+            ]);
+
+            // Cập nhật selectedResult với thông tin chi tiết
+            const testResultData = Array.isArray(testResult) ? testResult[0] : testResult;
+
+            const detailedResult = {
+                ...result,
+                booking: booking,
+                testResult: testResult,
+                samples: samples,
+                // Cập nhật thông tin từ testResult
+                serviceName: booking?.service?.title || result.serviceName,
+                result: {
+                    ...result.result,
+                    conclusion: testResultData?.positive === true ? 'POSITIVE' : testResultData?.positive === false ? 'NEGATIVE' : result.result?.conclusion,
+                    confidence: testResultData?.accuracy || result.result?.confidence,
+                    method: testResultData?.testMethod || result.result?.method,
+                    notes: testResultData?.resultNotes || result.result?.notes,
+                    positive: testResultData?.positive || result.result?.positive,
+                    testType: testResultData?.testType || result.result?.testType,
+                    reportDate: testResultData?.reportDate || result.result?.reportDate,
+                    testDate: testResultData?.testDate || result.result?.testDate,
+                    manager: testResultData?.manager || result.result?.manager,
+                    staff: testResultData?.staff || result.result?.staff
+                }
+            };
+
+            console.log('API Response:', { booking, testResult, samples });
+            console.log('Detailed Result:', detailedResult);
+            setSelectedResult(detailedResult);
+            setShowResultModal(true);
+        } catch (error) {
+            console.error('Error fetching result details:', error);
+            // Fallback to original result if API fails
+            setSelectedResult(result);
+            setShowResultModal(true);
+        }
     };
 
     const handlePrepareDelivery = (result) => {
@@ -214,7 +300,7 @@ const ResultsManagement = ({ user }) => {
                 resultNotes: testResults.notes,
                 status: 'analysis-complete',
             });
-            await addBookingHistory({ bookingId: selectedTest.id, status: 'COMPLETE', description: 'hẹ hẹ' });
+            await addBookingHistory({ bookingId: selectedTest.id, status: 'COMPLETE', description: testResults.notes });
             const updatedResults = results.map(result =>
                 result.id === selectedTest.id
                     ? {
@@ -526,22 +612,36 @@ const ResultsManagement = ({ user }) => {
                                                 </td>
                                                 <td>
                                                     <div>
-                                                        {result.serviceName}
+                                                        {result.serviceName || 'N/A'}
                                                         <div className="mt-1">
-                                                            {result.hasLegalValue ? (
+                                                            {result.result?.testType === 'administrative' ? (
+                                                                <Badge bg="success" text="white" className="ms-2">Dân sự</Badge>
+                                                            ) : result.result?.testType === 'civil' ? (
                                                                 <Badge bg="warning" text="dark" className="ms-2">Hành chính</Badge>
                                                             ) : (
-                                                                <Badge bg="success" text="white" className="ms-2">Dân sự</Badge>
+                                                                <Badge bg="secondary" className="ms-2">Không xác định</Badge>
                                                             )}
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td>{getResultBadge(result.result.conclusion)}</td>
-                                                <td>{formatDateTime(result.completedDate)}</td>
                                                 <td>
-                                                    <Badge bg="info">{calculateDaysSinceCompletion(result.completedDate)} ngày</Badge>
+                                                    <div className="d-flex flex-column">
+                                                        <div className="fw-bold">
+                                                            {result.result?.conclusion === 'POSITIVE' ? (
+                                                                <span className="badge bg-success text-white px-2 py-1">DƯƠNG TÍNH</span>
+                                                            ) : result.result?.conclusion === 'NEGATIVE' ? (
+                                                                <span className="badge bg-danger text-white px-2 py-1">ÂM TÍNH</span>
+                                                            ) : result.result?.conclusion === 'INCONCLUSIVE' ? (
+                                                                <span className="badge bg-warning text-dark px-2 py-1">KHÔNG KẾT LUẬN</span>
+                                                            ) : (
+                                                                <span className="badge bg-secondary text-white px-2 py-1">CHƯA XÁC ĐỊNH</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
                                                 </td>
-                                                <td>{getPriorityBadge(result.priority)}</td>
+                                                <td>
+                                                    {formatDateTime(result.completedDate)}
+                                                </td>
                                                 <td>
                                                     <div className="d-flex flex-column gap-1">
                                                         <Button
@@ -559,152 +659,6 @@ const ResultsManagement = ({ user }) => {
                                                         >
                                                             <i className="bi bi-send me-1"></i>
                                                             Giao KQ
-                                                        </Button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </Table>
-                            </div>
-                        </Card.Body>
-                    </Card>
-                </Tab>
-
-                <Tab eventKey="delivered" title={
-                    <span>
-                        <i className="bi bi-check-circle me-2"></i>
-                        Đã giao ({results.filter(r => r.status === 'delivered').length})
-                    </span>
-                }>
-                    {/* Delivered Results Table */}
-                    <Card className="shadow-sm">
-                        <Card.Header className="bg-light">
-                            <h5 className="mb-0">Kết quả đã giao</h5>
-                        </Card.Header>
-                        <Card.Body className="p-0">
-                            <div className="table-responsive">
-                                <Table hover className="mb-0">
-                                    <thead className="table-light">
-                                        <tr>
-                                            <th>Mã đơn</th>
-                                            <th>Khách hàng</th>
-                                            <th>Dịch vụ</th>
-                                            <th>Kết quả</th>
-                                            <th>Ngày giao</th>
-                                            <th>Người giao</th>
-                                            <th>Phương thức</th>
-                                            <th>Thao tác</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {filteredResults.filter(r => r.status === 'delivered').map((result) => (
-                                            <tr key={result.id}>
-                                                <td>
-                                                    <div className="fw-bold">{result.id}</div>
-                                                    <small className="text-muted">{result.labCode}</small>
-                                                </td>
-                                                <td>{result.customerName}</td>
-                                                <td>
-                                                    <div>
-                                                        {result.serviceName}
-                                                        <div className="mt-1">
-                                                            {result.hasLegalValue ? (
-                                                                <Badge bg="warning" text="dark" className="ms-2">Hành chính</Badge>
-                                                            ) : (
-                                                                <Badge bg="success" text="white" className="ms-2">Dân sự</Badge>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td>{getResultBadge(result.result.conclusion)}</td>
-                                                <td>{formatDateTime(result.deliveredDate)}</td>
-                                                <td>{result.deliveredBy}</td>
-                                                <td>
-                                                    <Badge bg="success">
-                                                        {result.deliveryMethod === 'email' ? 'Email' :
-                                                            result.deliveryMethod === 'phone' ? 'Điện thoại' :
-                                                                result.deliveryMethod === 'post' ? 'Bưu điện' :
-                                                                    'Email + Bưu điện'}
-                                                    </Badge>
-                                                </td>
-                                                <td>
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline-primary"
-                                                        onClick={() => handleViewResult(result)}
-                                                    >
-                                                        <i className="bi bi-eye me-1"></i>
-                                                        Xem
-                                                    </Button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </Table>
-                            </div>
-                        </Card.Body>
-                    </Card>
-                </Tab>
-
-                <Tab eventKey="complete" title={
-                    <span>
-                        <i className="bi bi-clipboard-check me-2"></i>
-                        Đã hoàn tất
-                    </span>
-                }>
-                    {/* Complete Results Table */}
-                    <Card className="shadow-sm">
-                        <Card.Header className="bg-light">
-                            <h5 className="mb-0">Kết quả đã hoàn tất</h5>
-                        </Card.Header>
-                        <Card.Body className="p-0">
-                            <div className="table-responsive">
-                                <Table hover className="mb-0">
-                                    <thead className="table-light">
-                                        <tr>
-                                            <th>Mã đơn</th>
-                                            <th>Khách hàng</th>
-                                            <th>Dịch vụ</th>
-                                            <th>Kỹ thuật viên</th>
-                                            <th>Ngày hoàn thành</th>
-                                            <th>Thao tác</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {filteredResults.filter(r => r.status === 'complete').map((result) => (
-                                            <tr key={result.id}>
-                                                <td>
-                                                    <div className="fw-bold">{result.id}</div>
-                                                    <small className="text-muted">{result.labCode}</small>
-                                                </td>
-                                                <td>
-                                                    <div className="fw-bold">{result.customerName}</div>
-                                                    <small className="text-muted">{result.phone}</small>
-                                                </td>
-                                                <td>
-                                                    <div>
-                                                        {result.serviceName}
-                                                        <div className="mt-1">
-                                                            {result.hasLegalValue ? (
-                                                                <Badge bg="warning" text="dark" className="ms-2">Hành chính</Badge>
-                                                            ) : (
-                                                                <Badge bg="success" text="white" className="ms-2">Dân sự</Badge>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td>{result.technician}</td>
-                                                <td>{formatDateTime(result.completedDate)}</td>
-                                                <td>
-                                                    <div className="d-flex flex-column gap-1">
-                                                        <Button
-                                                            size="sm"
-                                                            variant="outline-primary"
-                                                            onClick={() => handleViewResult(result)}
-                                                        >
-                                                            <i className="bi bi-eye me-1"></i>
-                                                            Xem chi tiết
                                                         </Button>
                                                     </div>
                                                 </td>
@@ -740,10 +694,6 @@ const ResultsManagement = ({ user }) => {
                                                 <td>{selectedResult.id}</td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Mã lab:</strong></td>
-                                                <td>{selectedResult.labCode}</td>
-                                            </tr>
-                                            <tr>
                                                 <td><strong>Khách hàng:</strong></td>
                                                 <td>{selectedResult.customerName}</td>
                                             </tr>
@@ -769,10 +719,12 @@ const ResultsManagement = ({ user }) => {
                                             <tr>
                                                 <td><strong>Loại xét nghiệm:</strong></td>
                                                 <td>
-                                                    {selectedResult.hasLegalValue ? (
-                                                        <Badge bg="warning" text="dark">Có giá trị pháp lý</Badge>
+                                                    {selectedResult.result.testType === 'administrative' ? (
+                                                        <Badge bg="success">Dân sự</Badge>
+                                                    ) : selectedResult.result.testType === 'civil' ? (
+                                                        <Badge bg="warning" text="dark">Hành chính</Badge>
                                                     ) : (
-                                                        <Badge bg="info">Dân sự</Badge>
+                                                        <Badge bg="secondary">Không xác định</Badge>
                                                     )}
                                                 </td>
                                             </tr>
@@ -782,11 +734,15 @@ const ResultsManagement = ({ user }) => {
                                             </tr>
                                             <tr>
                                                 <td><strong>Kỹ thuật viên:</strong></td>
-                                                <td>{selectedResult.technician}</td>
+                                                <td>{selectedResult.result.staff?.user?.fullname || selectedResult.technician}</td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Ngày hoàn thành:</strong></td>
-                                                <td>{formatDateTime(selectedResult.completedDate)}</td>
+                                                <td><strong>Ngày xét nghiệm:</strong></td>
+                                                <td>{selectedResult.result.testDate || formatDateTime(selectedResult.completedDate)}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Ngày báo cáo:</strong></td>
+                                                <td>{selectedResult.result.reportDate || formatDateTime(selectedResult.completedDate)}</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -795,22 +751,36 @@ const ResultsManagement = ({ user }) => {
 
                             {/* Participants */}
                             <div className="mb-4">
-                                <h6 className="text-primary mb-3">Người tham gia xét nghiệm</h6>
+                                <h6 className="text-primary mb-3">Danh sách mẫu phân tích</h6>
                                 <div className="table-responsive">
                                     <Table bordered size="sm">
                                         <thead className="table-light">
                                             <tr>
                                                 <th>Họ tên</th>
-                                                <th>Vai trò</th>
                                                 <th>Mối quan hệ</th>
+                                                <th>Chất lượng ADN</th>
+                                                <th>Nồng độ (ng/μL)</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {selectedResult.participants.map((participant, index) => (
-                                                <tr key={index}>
-                                                    <td><strong>{participant.name}</strong></td>
-                                                    <td>{participant.relationship}</td>
-                                                    <td>{index === 0 ? 'Người yêu cầu' : 'Đối tượng xét nghiệm'}</td>
+                                            {(selectedResult.samples || []).map((sample, index) => (
+                                                <tr key={sample.id || sample.sampleId || index}>
+                                                    <td>{sample.name || sample.participant?.name || ''}</td>
+                                                    <td>{sample.relationship || sample.participant?.relationship || 'Chưa xác định'}</td>
+                                                    <td>
+                                                        {sample.sampleQuality === 'excellent' ? (
+                                                            <Badge bg="success">Xuất sắc</Badge>
+                                                        ) : sample.sampleQuality === 'good' ? (
+                                                            <Badge bg="info">Tốt</Badge>
+                                                        ) : sample.sampleQuality === 'fair' ? (
+                                                            <Badge bg="warning" text="dark">Khá</Badge>
+                                                        ) : sample.sampleQuality === 'poor' ? (
+                                                            <Badge bg="danger">Kém</Badge>
+                                                        ) : (
+                                                            <Badge bg="secondary">Không xác định</Badge>
+                                                        )}
+                                                    </td>
+                                                    <td>{sample.sampleConcentration || ''}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -828,7 +798,7 @@ const ResultsManagement = ({ user }) => {
                                 <div className="text-center mb-4">
                                     {getResultBadge(selectedResult.result.conclusion)}
                                     <div className="h4 text-primary mt-2">
-                                        Độ chính xác: {selectedResult.result.confidence}
+                                        Độ tin cậy: {selectedResult.result.confidence || 'N/A'}%
                                     </div>
                                 </div>
 
@@ -840,13 +810,19 @@ const ResultsManagement = ({ user }) => {
                                     className="text-center"
                                 >
                                     <Alert.Heading>Kết luận:</Alert.Heading>
-                                    <p className="mb-0 h6">{selectedResult.result.summary}</p>
+                                    <p className="mb-0 h6">
+                                        {selectedResult.result.conclusion === 'POSITIVE' ? 'Xác nhận quan hệ huyết thống' :
+                                            selectedResult.result.conclusion === 'NEGATIVE' ? 'Loại trừ quan hệ huyết thống' :
+                                                selectedResult.result.conclusion === 'INCONCLUSIVE' ? 'Không kết luận được' : 'Chưa xác định'}
+                                    </p>
                                 </Alert>
 
-                                <div className="mt-3">
-                                    <h6>Chi tiết kết quả:</h6>
-                                    <p className="mb-0">{selectedResult.result.details}</p>
-                                </div>
+                                {selectedResult.result.notes && (
+                                    <div className="mt-3">
+                                        <h6>Ghi chú kỹ thuật:</h6>
+                                        <p className="mb-0">{selectedResult.result.notes}</p>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Legal Notice */}
@@ -1055,11 +1031,11 @@ const ResultsManagement = ({ user }) => {
                                             </tr>
                                             <tr>
                                                 <td><strong>Dịch vụ:</strong></td>
-                                                <td>{selectedTest.serviceName}</td>
+                                                <td>{testResults.serviceName}</td>
                                             </tr>
                                             <tr>
                                                 <td><strong>Loại:</strong></td>
-                                                <td>{selectedTest.serviceType === 'civil' ? 'Dân sự' : 'Hành chính'}</td>
+                                                <td>{testResults.serviceType === 'administrative' ? 'Dân sự' : 'Hành chính'}</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -1072,7 +1048,8 @@ const ResultsManagement = ({ user }) => {
                                                 <Form.Label>Kỹ thuật viên</Form.Label>
                                                 <Form.Control
                                                     value={testResults.technician}
-                                                    onChange={(e) => setTestResults({ ...testResults, technician: e.target.value })}
+                                                    readOnly
+                                                    className="bg-light"
                                                 />
                                             </Col>
                                             <Col md={12} className="mb-3">
@@ -1101,7 +1078,7 @@ const ResultsManagement = ({ user }) => {
                                             <tr>
                                                 <th>Mã mẫu</th>
                                                 <th>Họ tên</th>
-                                                <th>Vai trò</th>
+                                                <th>Mối quan hệ</th>
                                                 <th>Chất lượng ADN</th>
                                                 <th>Nồng độ (ng/μL)</th>
                                             </tr>
@@ -1111,9 +1088,19 @@ const ResultsManagement = ({ user }) => {
                                                 <tr key={sample.id || sample.sampleId || idx}>
                                                     <td><strong>{sample.id || sample.sampleId}</strong></td>
                                                     <td>{sample.name || sample.participant?.name || ''}</td>
-                                                    <td>{sample.role || ''}</td>
+                                                    <td>{sample.relationship || sample.participant?.relationship || 'Chưa xác định'}</td>
                                                     <td>
-                                                        <Badge bg="success">{sample.sampleQuality || 'Tốt'}</Badge>
+                                                        {sample.sampleQuality === 'excellent' ? (
+                                                            <Badge bg="success">Xuất sắc</Badge>
+                                                        ) : sample.sampleQuality === 'good' ? (
+                                                            <Badge bg="info">Tốt</Badge>
+                                                        ) : sample.sampleQuality === 'fair' ? (
+                                                            <Badge bg="warning" text="dark">Khá</Badge>
+                                                        ) : sample.sampleQuality === 'poor' ? (
+                                                            <Badge bg="danger">Kém</Badge>
+                                                        ) : (
+                                                            <Badge bg="secondary">Không xác định</Badge>
+                                                        )}
                                                     </td>
                                                     <td>{sample.sampleConcentration || ''}</td>
                                                 </tr>
@@ -1128,7 +1115,7 @@ const ResultsManagement = ({ user }) => {
                                 <h6 className="text-primary mb-3">Kết quả xét nghiệm</h6>
                                 <Row>
                                     <Col md={6}>
-                                        <Form.Label>Kết quả dương tính/âm tính (positive)</Form.Label>
+                                        <Form.Label>Kết quả dương tính/âm tính</Form.Label>
                                         <div>
                                             <Form.Check
                                                 inline
@@ -1137,7 +1124,13 @@ const ResultsManagement = ({ user }) => {
                                                 type="radio"
                                                 id="positive-true"
                                                 checked={testResults.positive === true}
-                                                onChange={() => setTestResults({ ...testResults, positive: true })}
+                                                onChange={() => {
+                                                    setTestResults({
+                                                        ...testResults,
+                                                        positive: true,
+                                                        conclusion: 'POSITIVE' // Tự động chọn POSITIVE
+                                                    });
+                                                }}
                                             />
                                             <Form.Check
                                                 inline
@@ -1146,7 +1139,13 @@ const ResultsManagement = ({ user }) => {
                                                 type="radio"
                                                 id="positive-false"
                                                 checked={testResults.positive === false}
-                                                onChange={() => setTestResults({ ...testResults, positive: false })}
+                                                onChange={() => {
+                                                    setTestResults({
+                                                        ...testResults,
+                                                        positive: false,
+                                                        conclusion: '' // Reset kết luận để user chọn lại
+                                                    });
+                                                }}
                                             />
                                         </div>
                                     </Col>
@@ -1154,11 +1153,32 @@ const ResultsManagement = ({ user }) => {
                                         <Form.Label>Độ tin cậy (%)</Form.Label>
                                         <Form.Control
                                             type="number"
-                                            min={0}
-                                            max={100}
+                                            min="0.01"
+                                            max="100"
                                             step={0.01}
                                             value={testResults.confidence}
-                                            onChange={(e) => setTestResults({ ...testResults, confidence: e.target.value })}
+                                            onChange={(e) => {
+                                                const value = parseFloat(e.target.value);
+                                                if (value > 100) {
+                                                    Swal.fire({
+                                                        icon: 'warning',
+                                                        title: 'Cảnh báo!',
+                                                        text: 'Độ tin cậy không được vượt quá 100%',
+                                                        confirmButtonColor: '#ffc107'
+                                                    });
+                                                    return;
+                                                }
+                                                if (value <= 0) {
+                                                    Swal.fire({
+                                                        icon: 'warning',
+                                                        title: 'Cảnh báo!',
+                                                        text: 'Độ tin cậy phải lớn hơn 0%',
+                                                        confirmButtonColor: '#ffc107'
+                                                    });
+                                                    return;
+                                                }
+                                                setTestResults({ ...testResults, confidence: e.target.value });
+                                            }}
                                             placeholder="99.999"
                                         />
                                     </Col>
@@ -1167,25 +1187,34 @@ const ResultsManagement = ({ user }) => {
                                         <Form.Select
                                             value={testResults.conclusion}
                                             onChange={(e) => setTestResults({ ...testResults, conclusion: e.target.value })}
+                                            disabled={testResults.positive === true} // Disable khi chọn dương tính
                                         >
                                             <option value="">-- Chọn kết luận --</option>
-                                            <option value="POSITIVE">POSITIVE - Xác nhận quan hệ huyết thống</option>
-                                            <option value="NEGATIVE">NEGATIVE - Loại trừ quan hệ huyết thống</option>
-                                            <option value="INCONCLUSIVE">INCONCLUSIVE - Không kết luận được</option>
+                                            {testResults.positive === true ? (
+                                                <option value="POSITIVE">POSITIVE - Xác nhận quan hệ huyết thống</option>
+                                            ) : (
+                                                <>
+                                                    <option value="NEGATIVE">NEGATIVE - Loại trừ quan hệ huyết thống</option>
+                                                    <option value="INCONCLUSIVE">INCONCLUSIVE - Không kết luận được</option>
+                                                </>
+                                            )}
                                         </Form.Select>
                                     </Col>
 
                                     <Col md={6}>
                                         <Form.Label>Trạng thái</Form.Label>
-                                        <Form.Select
-                                            value={testResults.status || ''}
-                                            onChange={e => setTestResults({ ...testResults, status: e.target.value })}
-                                        >
-                                            <option value="">-- Chọn trạng thái --</option>
-                                            <option value="analysis-complete">Hoàn thành phân tích</option>
-                                            <option value="result-pending">Chờ trả kết quả</option>
-                                            <option value="delivered">Đã trả kết quả</option>
-                                        </Form.Select>
+                                        <div>
+                                            <Form.Check
+                                                inline
+                                                label="Đã xem xét kỹ"
+                                                name="status"
+                                                type="radio"
+                                                id="status-reviewed"
+                                                value="reviewed"
+                                                checked={testResults.status === 'reviewed'}
+                                                onChange={(e) => setTestResults({ ...testResults, status: e.target.value })}
+                                            />
+                                        </div>
                                     </Col>
                                 </Row>
                             </div>
