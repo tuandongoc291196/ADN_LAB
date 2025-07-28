@@ -949,3 +949,46 @@ export const updateTestResult = async (payload) => {
     throw new Error('Failed to update test result: ' + error.message);
   }
 };
+
+export const getDashboardReports = async (filters = {}) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/reports/dashboard`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(filters),
+    });
+
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+
+    const data = await response.json();
+    return data.data || data;
+  } catch (error) {
+    console.error('getDashboardReports error:', error);
+    throw new Error('Failed to fetch dashboard reports: ' + error.message);
+  }
+};
+
+export const getOverviewReports = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/reports/overview`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+
+    const data = await response.json();
+    return data.data || data;
+  } catch (error) {
+    console.error('getOverviewReports error:', error);
+    throw new Error('Failed to fetch overview reports: ' + error.message);
+  }
+};

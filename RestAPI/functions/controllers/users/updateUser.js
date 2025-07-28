@@ -138,7 +138,7 @@ const updateUserRoleToStaff = async (req, res) => {
 
 const updateUserRoleToAdmin = async (req, res) => {
   try {
-    const { userId, roleId } = req.body;
+    const { userId} = req.body;
 
     if (!userId) {
       return res.status(400).json({
@@ -148,13 +148,6 @@ const updateUserRoleToAdmin = async (req, res) => {
       });
     }
 
-    if (!roleId) {
-      return res.status(400).json({
-        statusCode: 400,
-        status: "error",
-        message: "roleId is required",
-      });
-    } 
     if (!(await checkUserExists(userId))) {
       return res.status(404).json({
         statusCode: 404,
@@ -164,24 +157,14 @@ const updateUserRoleToAdmin = async (req, res) => {
       });
     } 
 
-    if (!(await checkRoleExists(roleId))) {
-      return res.status(404).json({
-        statusCode: 404,
-        status: "error",
-        message: "Role not found",
-        error: "Role with the provided ID does not exist",
-      });
-    }
-
     const UPDATE_USER_ROLE_MUTATION = `
-        mutation UpdateUserRole($userId: String!, $roleId: String!) @auth(level: USER) {
+        mutation UpdateUserRole($userId: String!, $roleId: "3") @auth(level: USER) {
             user_update(key: {id: $userId}, data: {roleId: $roleId})
         }
     `;
 
     const variables = {
-      userId: userId,
-      roleId: roleId,
+      userId: userId
     };
 
     console.log("Executing GraphQL mutation to update user role:", UPDATE_USER_ROLE_MUTATION);

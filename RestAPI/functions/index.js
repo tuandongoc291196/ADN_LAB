@@ -58,6 +58,9 @@ const {updateBlog} = require('./controllers/blogs/updateBlog');
 const {addFeedback} = require('./controllers/feedback/addFeedback');
 const {getAllFeedback, getBookingFeedback, getServiceFeedback} = require('./controllers/feedback/getFeedbacks');
 
+const {getDashboardReports} = require('./controllers/reports/getReports');
+const {getOverviewReports} = require('./controllers/reports/getOverview');
+
 const app = express();
 
 app.use(cors({
@@ -154,6 +157,9 @@ app.post('/feedbacks/add', addFeedback);
 app.get('/feedbacks', getAllFeedback);
 app.post('/feedbacks/booking', getBookingFeedback);
 app.post('/feedbacks/service', getServiceFeedback);
+
+app.post('/reports/dashboard', getDashboardReports);
+app.get('/reports/overview', getOverviewReports);
 
 exports.app = functions.https.onRequest(app);
 exports.cleanupExpiredBookings = onSchedule('every 30 minutes', async (event) => {
