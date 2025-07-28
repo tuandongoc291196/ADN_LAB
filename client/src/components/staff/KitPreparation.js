@@ -23,7 +23,7 @@ const KitPreparation = ({ user }) => {
         const bookings = await getBookingByStaffId(user.id);
 
         const filtered = bookings
-          .filter(b => b.method?.name === 'Lấy mẫu tại nhà')
+
           .map(b => {
             // Tìm status mới nhất từ history (nếu có)
             const history = Array.isArray(b.bookingHistories_on_booking) ? b.bookingHistories_on_booking : [];
@@ -34,13 +34,15 @@ const KitPreparation = ({ user }) => {
               mappedStatus = 'expired';
             } else if (latestStatus === 'BOOKED') {
               mappedStatus = 'waiting-kit-prep';
+            } else if (latestStatus === 'PENDING_PAYMENT') {
+              mappedStatus = 'pending-payment';
             } else if (latestStatus) {
               mappedStatus = latestStatus.toLowerCase().replaceAll('_', '-');
             } else {
               mappedStatus = 'sample-received'; // Mặc định nếu không xác định
             }
             // Nếu mappedStatus rỗng hoặc không nằm trong statusConfig thì cũng gán 'sample-received'
-            const validStatuses = ['waiting-kit-prep', 'kit-prepared', 'kit-sent', 'waiting-sample', 'sample-received', 'expired', 'kit-returned'];
+            const validStatuses = ['waiting-kit-prep', 'kit-prepared', 'kit-sent', 'waiting-sample', 'sample-received', 'expired', 'kit-returned', 'pending-payment'];
             if (!validStatuses.includes(mappedStatus)) mappedStatus = 'sample-received';
             return {
               id: b.id,
@@ -48,6 +50,7 @@ const KitPreparation = ({ user }) => {
               phone: b.informations_on_booking?.[0]?.phone || '',
               service: b.service?.title || 'Không rõ dịch vụ',
               serviceType: b.service?.category?.hasLegalValue ? 'civil' : 'administrative',
+              methodName: b.method?.name || 'Không rõ',
               status: mappedStatus,
               orderDate: b.createdAt,
               expectedDate: b.timeSlotId?.split('_')[0],
@@ -73,7 +76,7 @@ const KitPreparation = ({ user }) => {
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         el.classList.add('table-primary');
-        setTimeout(() => el.classList.remove('table-primary'), 2000);
+        setTimeout(() => el.classList.remove('table-primary'), 3000);
       }
     }
   }, [bookingId, orders]);
@@ -109,6 +112,7 @@ const KitPreparation = ({ user }) => {
       'sample-received': { bg: 'success', text: 'Đã nhận mẫu' },
       expired: { bg: 'danger', text: 'Đã quá hạn' },
       'kit-returned': { bg: 'info', text: 'Đã nhận lại kit' },
+      'pending-payment': { bg: 'dark', text: 'Chờ thanh toán' },
     };
 
     const config = statusConfig[status] || { bg: 'secondary', text: status };
@@ -141,6 +145,16 @@ const KitPreparation = ({ user }) => {
             }
             : o
         );
+      } else if (modalAction === 'prepare-direct') {
+        status = 'SAMPLE_RECEIVED';
+        updatedOrders = orders.map(o =>
+          o.id === selectedOrder.id
+            ? {
+              ...o,
+              status: 'sample-received'
+            }
+            : o
+        );
       } else if (modalAction === 'send') {
         status = 'KIT_SENT';
         updatedOrders = orders.map(o =>
@@ -160,6 +174,16 @@ const KitPreparation = ({ user }) => {
             ? {
               ...o,
               status: 'sample-received'
+            }
+            : o
+        );
+      } else if (modalAction === 'confirm-payment') {
+        status = 'BOOKED';
+        updatedOrders = orders.map(o =>
+          o.id === selectedOrder.id
+            ? {
+              ...o,
+              status: 'waiting-kit-prep'
             }
             : o
         );
@@ -203,159 +227,6 @@ const KitPreparation = ({ user }) => {
 
     }
   };
-
-  // const handlePrepareKit = async (order) => {
-  //   const { value: description } = await Swal.fire({
-  //     title: 'Chuẩn bị kit?',
-  //     html: `
-  //     <p>Bạn có chắc chắn muốn chuẩn bị kit cho đơn hàng <strong>${order.id}</strong>?
-  //     Vui lòng điền nội dung để chứng minh bạn đã thực hiện
-  //     </p>
-  //     <input id="swal-desc" class="swal2-input" placeholder="Nhập mô tả..." />
-  //   `,
-  //     focusConfirm: false,
-  //     showCancelButton: true,
-  //     confirmButtonText: 'Xác nhận',
-  //     cancelButtonText: 'Hủy',
-  //     confirmButtonColor: '#198754',
-  //     preConfirm: () => {
-  //       const val = document.getElementById('swal-desc').value.trim();
-  //       if (!val) {
-  //         Swal.showValidationMessage('Vui lòng nhập mô tả!');
-  //       }
-  //       return val;
-  //     }
-  //   });
-
-  //   if (!description) return;
-
-  //   try {
-  //     const updatedOrders = orders.map(o =>
-  //       o.id === order.id
-  //         ? {
-  //           ...o,
-  //           status: 'kit-prepared',
-  //           preparedBy: user.name,
-  //           preparedDate: new Date().toLocaleString('vi-VN'),
-  //           trackingNumber: 'VTP' + Date.now().toString().slice(-9)
-  //         }
-  //         : o
-  //     );
-  //     setOrders(updatedOrders);
-
-  //     await handleSubmit(order.id, 'KIT_PREPARED', description);
-
-  //     Swal.fire({
-  //       icon: 'success',
-  //       title: 'Thành công',
-  //       text: `Đã chuẩn bị kit cho đơn ${order.id}`,
-  //       confirmButtonColor: '#198754'
-  //     });
-  //   } catch (err) {
-  //     Swal.fire({
-  //       icon: 'error',
-  //       title: 'Lỗi',
-  //       text: `Có lỗi khi chuẩn bị kit cho đơn ${order.id}`,
-  //       confirmButtonColor: '#d33'
-  //     });
-  //   }
-  // };
-
-  // const handleSendKit = async (orderId) => {
-  //   const { value: description } = await Swal.fire({
-  //     title: 'Gửi kit?',
-  //     html: `
-  //     <p>Bạn có chắc chắn đã gửi kit cho đơn hàng <strong>${orderId}</strong>?
-  //     Vui lòng điền nội dung để chứng minh bạn đã thực hiện
-  //     </p>
-  //     <input id="swal-desc" class="swal2-input" placeholder="Nhập mô tả..." />
-  //   `,
-  //     focusConfirm: false,
-  //     showCancelButton: true,
-  //     confirmButtonText: 'Xác nhận',
-  //     cancelButtonText: 'Hủy',
-  //     confirmButtonColor: '#0d6efd',
-  //     preConfirm: () => {
-  //       const val = document.getElementById('swal-desc').value.trim();
-  //       if (!val) {
-  //         Swal.showValidationMessage('Vui lòng nhập mô tả!');
-  //       }
-  //       return val;
-  //     }
-  //   });
-
-  //   if (!description) return;
-
-  //   const updatedOrders = orders.map(order =>
-  //     order.id === orderId
-  //       ? {
-  //         ...order,
-  //         status: 'kit-sent',
-  //         sentDate: new Date().toLocaleString('vi-VN'),
-  //         estimatedDelivery: new Date(Date.now() + 24 * 60 * 60 * 1000).toLocaleDateString('vi-VN')
-  //       }
-  //       : order
-  //   );
-  //   setOrders(updatedOrders);
-  //   await handleSubmit(orderId, 'KIT_SENT', description);
-
-  //   Swal.fire({
-  //     icon: 'success',
-  //     title: 'Đã gửi kit',
-  //     text: `Kit cho đơn hàng ${orderId} đã được gửi thành công!`,
-  //     confirmButtonColor: '#198754'
-  //   });
-  // };
-
-  // // Xử lý xác nhận đã nhận lại kit
-  // const handleConfirmKitReceived = async (order) => {
-  //   const { value: description } = await Swal.fire({
-  //     title: 'Xác nhận đã nhận mẫu?',
-  //     html: `
-  //     <p>Bạn có chắc chắn đã nhận mẫu xét nghiệm từ đơn hàng <strong>${order.id}</strong>?
-  //     Vui lòng điền nội dung để chứng minh bạn đã thực hiện
-  //     </p>
-  //     <input id="swal-desc" class="swal2-input" placeholder="Nhập mô tả..." />
-  //   `,
-  //     focusConfirm: false,
-  //     showCancelButton: true,
-  //     confirmButtonText: 'Xác nhận',
-  //     cancelButtonText: 'Hủy',
-  //     confirmButtonColor: '#198754',
-  //     preConfirm: () => {
-  //       const val = document.getElementById('swal-desc').value.trim();
-  //       if (!val) {
-  //         Swal.showValidationMessage('Vui lòng nhập mô tả!');
-  //       }
-  //       return val;
-  //     }
-  //   });
-
-  //   if (!description) return;
-
-  //   try {
-  //     await handleSubmit(order.id, 'SAMPLE_RECEIVED', description);
-
-  //     const updated = orders.map(o =>
-  //       o.id === order.id ? { ...o, status: 'sample-received' } : o
-  //     );
-  //     setOrders(updated);
-
-  //     await Swal.fire({
-  //       icon: 'success',
-  //       title: 'Đã xác nhận!',
-  //       text: `Mẫu từ đơn ${order.id} đã được ghi nhận.`,
-  //       confirmButtonColor: '#198754'
-  //     });
-  //   } catch (err) {
-  //     Swal.fire({
-  //       icon: 'error',
-  //       title: 'Lỗi!',
-  //       text: 'Không thể xác nhận. Vui lòng thử lại.',
-  //       confirmButtonColor: '#d33'
-  //     });
-  //   }
-  // };
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('vi-VN');
@@ -421,6 +292,7 @@ const KitPreparation = ({ user }) => {
             <th>Mã đơn</th>
             <th>Khách hàng</th>
             <th>Dịch vụ</th>
+            <th>Phương thức</th>
             <th>Trạng thái</th>
             <th>Ngày đặt</th>
             <th>Thao tác</th>
@@ -448,6 +320,25 @@ const KitPreparation = ({ user }) => {
                 </div>
               </td>
               <td>
+                {order.methodName === 'Lấy mẫu tại lab' ? (
+                  <span className="badge rounded-pill bg-primary" style={{ fontSize: '13px', fontWeight: 500 }}>
+                    <i className="bi bi-buildings me-1"></i>Lấy mẫu tại lab
+                  </span>
+                ) : order.methodName === 'Lấy mẫu tại nhà' ? (
+                  <span className="badge rounded-pill bg-success" style={{ fontSize: '13px', fontWeight: 500 }}>
+                    <i className="bi bi-house-door me-1"></i>Lấy mẫu tại nhà
+                  </span>
+                ) : order.methodName === 'Nhân viên tới nhà lấy mẫu' ? (
+                  <span className="badge rounded-pill bg-warning text-dark" style={{ fontSize: '13px', fontWeight: 500 }}>
+                    <i className="bi bi-truck me-1"></i>Nhân viên tới nhà lấy mẫu
+                  </span>
+                ) : (
+                  <span className="badge rounded-pill bg-secondary" style={{ fontSize: '13px', fontWeight: 500 }}>
+                    {order.methodName || 'Không rõ'}
+                  </span>
+                )}
+              </td>
+              <td>
                 <div>{getStatusBadge(order.status)}</div>
               </td>
               <td>
@@ -457,14 +348,30 @@ const KitPreparation = ({ user }) => {
               <td>
                 <div className="d-flex flex-column gap-1">
                   {order.status === 'waiting-kit-prep' && (
-                    <Button
-                      size="sm"
-                      variant="success"
-                      onClick={() => openActionModal('prepare', order)}
-                    >
-                      <i className="bi bi-box me-1"></i>
-                      Chuẩn bị
-                    </Button>
+                    <>
+                      {/* Nếu là tự lấy mẫu tại nhà thì vẫn chuẩn bị kit */}
+                      {order.methodName === 'Lấy mẫu tại nhà' && (
+                        <Button
+                          size="sm"
+                          variant="success"
+                          onClick={() => openActionModal('prepare', order)}
+                        >
+                          <i className="bi bi-box me-1"></i>
+                          Chuẩn bị kit
+                        </Button>
+                      )}
+                      {/* Nếu là lấy mẫu tại lab hoặc nhân viên tới nhà thì chuyển thẳng sang SAMPLE_RECEIVED */}
+                      {(order.methodName === 'Lấy mẫu tại lab' || order.methodName === 'Nhân viên tới nhà lấy mẫu') && (
+                        <Button
+                          size="sm"
+                          variant="info"
+                          onClick={() => openActionModal('prepare-direct', order)}
+                        >
+                          <i className="bi bi-check-circle me-1"></i>
+                          Chuẩn bị kit
+                        </Button>
+                      )}
+                    </>
                   )}
                   {order.status === 'kit-prepared' && (
                     <Button
@@ -484,6 +391,16 @@ const KitPreparation = ({ user }) => {
                     >
                       <i className="bi bi-check-circle me-1"></i>
                       Đã nhận kit
+                    </Button>
+                  )}
+                  {order.status === 'pending-payment' && (
+                    <Button
+                      size="sm"
+                      variant="success"
+                      onClick={() => openActionModal('confirm-payment', order)}
+                    >
+                      <i className="bi bi-cash-coin me-1"></i>
+                      Xác nhận đã thanh toán
                     </Button>
                   )}
 
@@ -524,22 +441,93 @@ const KitPreparation = ({ user }) => {
         </Modal.Header>
         <Modal.Body>
           <Alert variant="info">
-            Vui lòng nhập mô tả cho hành động với đơn hàng <strong>{selectedOrder?.id}</strong>
+            Vui lòng chọn mô tả cho hành động với đơn hàng <strong>{selectedOrder?.id}</strong>
           </Alert>
           <Form.Group className="mt-3">
-            <Form.Label>Mô tả (bắt buộc)</Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={3}
-              placeholder="Ví dụ: Đã chuẩn bị kit và kiểm tra mã vận đơn"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
+            <Form.Label>Chọn mô tả (bắt buộc)</Form.Label>
+            <div className="mt-2">
+              {modalAction === 'confirm-payment' ? (
+                <>
+                  <Form.Check
+                    type="radio"
+                    id="payment-cash"
+                    name="description"
+                    label="Khách hàng đã thanh toán tiền mặt"
+                    value="Khách hàng đã thanh toán tiền mặt"
+                    checked={description === "Khách hàng đã thanh toán tiền mặt"}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="mb-2"
+                  />
+                  <Form.Check
+                    type="radio"
+                    id="payment-transfer"
+                    name="description"
+                    label="Khách hàng đã thanh toán qua chuyển khoản"
+                    value="Khách hàng đã thanh toán qua chuyển khoản"
+                    checked={description === "Khách hàng đã thanh toán qua chuyển khoản"}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="mb-2"
+                  />
+                </>
+              ) : modalAction === 'prepare' ? (
+                <>
+                  <Form.Check
+                    type="radio"
+                    id="prepare-pack"
+                    name="description"
+                    label="Đã chuẩn bị kit và đóng gói cẩn thận"
+                    value="Đã chuẩn bị kit và đóng gói cẩn thận"
+                    checked={description === "Đã chuẩn bị kit và đóng gói cẩn thận"}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="mb-2"
+                  />
+                </>
+              ) : modalAction === 'send' ? (
+                <>
+                  <Form.Check
+                    type="radio"
+                    id="send-jt"
+                    name="description"
+                    label="Đã gửi kit cho khách hàng"
+                    value="Đã gửi kit cho khách hàng"
+                    checked={description === "Đã gửi kit cho khách hàng"}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="mb-2"
+                  />
+                </>
+              ) : modalAction === 'prepare-direct' ? (
+                <>
+                  <Form.Check
+                    type="radio"
+                    id="direct-check"
+                    name="description"
+                    label="Đã chuẩn bị kit và sẵn sàng thu mẫu"
+                    value="Đã chuẩn bị kit và sẵn sàng thu mẫu"
+                    checked={description === "Đã chuẩn bị kit và sẵn sàng thu mẫu"}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="mb-2"
+                  />
+                </>
+              ) : (
+                <>
+                  <Form.Check
+                    type="radio"
+                    id="receive-kit"
+                    name="description"
+                    label="Đã nhận kit từ khách hàng"
+                    value="Đã nhận kit từ khách hàng"
+                    checked={description === "Đã nhận kit từ khách hàng"}
+                    onChange={(e) => setDescription(e.target.value)}
+                    className="mb-2"
+                  />
+                </>
+              )}
+            </div>
           </Form.Group>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowModal(false)}>Hủy</Button>
-          <Button variant="success" disabled={!description.trim()} onClick={handleConfirmAction}>
+          <Button variant="success" disabled={!description} onClick={handleConfirmAction}>
             <i className="bi bi-check-circle me-2"></i>
             Xác nhận
           </Button>

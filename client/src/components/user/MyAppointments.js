@@ -688,7 +688,7 @@ const MyAppointments = ({ user }) => {
                       {/* Actions */}
                       <Col lg={4} className="mt-3 mt-lg-0">
                         <div className="d-grid gap-2">
-                          {/* <Button
+                          <Button
                             variant="outline-primary"
                             as={Link}
                             to={`/tracking/${appointment.id}`}
@@ -727,7 +727,7 @@ const MyAppointments = ({ user }) => {
                           <Button variant="outline-secondary">
                             <i className="bi bi-chat-dots me-2"></i>
                             Hỗ trợ
-                          </Button> */}
+                          </Button>
                           {appointment.latestHistoryStatus === 'KIT_SENT' && (
                             <>
                               <Alert variant="info" className="py-2">
