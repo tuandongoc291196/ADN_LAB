@@ -992,3 +992,21 @@ export const getOverviewReports = async () => {
     throw new Error('Failed to fetch overview reports: ' + error.message);
   }
 };
+
+// Lấy tất cả kết quả xét nghiệm của user theo userId
+export const getTestResultByUserId = async (userId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/testresult/user`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId }),
+    });
+    if (!response.ok) throw new Error('Network response was not ok');
+    const data = await response.json();
+    return data.data || data;
+  } catch (error) {
+    throw new Error('Failed to fetch test results by userId: ' + error.message);
+  }
+};
