@@ -3,7 +3,7 @@ const { checkSampleExists } = require("../sample/sampleUtils.js");
 
 const updateSample = async (req, res) => {
     try {
-        const { sampleId, sampleQuality, sampleConcentration, notes } = req.body;
+        const { sampleId, sampleQuality, sampleConcentration, sampleType, notes } = req.body;
         if (!sampleId) {
             return res.status(400).json({
                 statusCode: 400,
@@ -28,6 +28,14 @@ const updateSample = async (req, res) => {
             });
         }
 
+        if (!sampleType) {
+            return res.status(400).json({
+                statusCode: 400,
+                status: "error",
+                message: "sampleType is required"
+            });
+        }
+
         if (!notes) {
             return res.status(400).json({
                 statusCode: 400,
@@ -45,8 +53,8 @@ const updateSample = async (req, res) => {
         }
 
         const UPDATE_SAMPLE = `
-            mutation UpdateSample($sampleId: String!, $sampleQuality: String, $sampleConcentration: Float, $notes: String) @auth(level: USER) {
-                sample_update(key: {id: $sampleId}, data: {sampleQuality: $sampleQuality, sampleConcentration: $sampleConcentration, notes: $notes, updatedAt_expr: "request.time"})
+            mutation UpdateSample($sampleId: String!, $sampleQuality: String, $sampleConcentration: Float, $sampleType: String, $notes: String) @auth(level: USER) {
+                sample_update(key: {id: $sampleId}, data: {sampleQuality: $sampleQuality, sampleConcentration: $sampleConcentration, sampleType: $sampleType, notes: $notes, updatedAt_expr: "request.time"})
             }
         `;
 
@@ -54,6 +62,7 @@ const updateSample = async (req, res) => {
             sampleId: sampleId,
             sampleQuality: sampleQuality,
             sampleConcentration: sampleConcentration,
+            sampleType: sampleType,
             notes: notes
         };
 

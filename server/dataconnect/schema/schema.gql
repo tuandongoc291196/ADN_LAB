@@ -169,6 +169,7 @@ type Sample @table {
   sampleQuality: String!
   sampleConcentration: Float
   notes: String
+  sampleType: String
   createdAt: Timestamp! @default(expr: "request.time")
   updatedAt: Timestamp
 }

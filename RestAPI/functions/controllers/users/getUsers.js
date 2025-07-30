@@ -158,6 +158,9 @@ const getUsersByRole = async (req, res) => {
           role {
             name
           }
+          staff_on_user {
+            slot
+          }
           createdAt
         }
       }

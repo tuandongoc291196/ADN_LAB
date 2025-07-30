@@ -1,18 +1,215 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Row, Col, Card, Button, Badge, Alert, Modal, Form } from 'react-bootstrap';
+import { getTestResultByUserId, getSamplesByBookingId } from '../../services/api';
 
-const TestResults = ({ user, results = [] }) => {
+// Hàm mapping dữ liệu từ API getTestResultByUserId sang format frontend
+export function mapTestResultToUserResult(testResult, participants = []) {
+  // Lấy bookingId từ nhiều nguồn khác nhau
+  let bookingId = testResult.bookingId;
+  if (!bookingId && testResult.booking?.id) {
+    bookingId = testResult.booking.id;
+  }
+  if (!bookingId && testResult.id) {
+    bookingId = testResult.id.replace('_RESULT', '');
+  }
+  // Nếu vẫn không có, thử lấy từ participants
+  if (!bookingId && participants.length > 0 && participants[0].bookingId) {
+    bookingId = participants[0].bookingId;
+  }
+  
+  console.log('mapTestResultToUserResult - bookingId:', bookingId, 'from testResult:', testResult.id);
+  
+  // Xác định serviceType dựa trên category
+  let serviceType = 'civil'; // default
+  
+  console.log('=== DEBUG SERVICE TYPE ===');
+  console.log('testResult.booking?.service:', testResult.booking?.service);
+  console.log('testResult.booking?.service?.category:', testResult.booking?.service?.category);
+  console.log('testResult.booking?.service?.category?.hasLegalValue:', testResult.booking?.service?.category?.hasLegalValue);
+  console.log('testResult.booking?.service?.category?.name:', testResult.booking?.service?.category?.name);
+  
+  if (testResult.booking?.service?.category) {
+    const hasLegalValue = testResult.booking.service.category.hasLegalValue;
+    const catName = testResult.booking.service.category.name || '';
+    
+    console.log('hasLegalValue:', hasLegalValue, 'type:', typeof hasLegalValue);
+    console.log('catName:', catName);
+    
+    // Kiểm tra hasLegalValue trước
+    if (hasLegalValue === true || hasLegalValue === 'true' || hasLegalValue === 1 || hasLegalValue === '1') {
+      serviceType = 'administrative';
+      console.log('Set to administrative based on hasLegalValue');
+    } else if (hasLegalValue === false || hasLegalValue === 'false' || hasLegalValue === 0 || hasLegalValue === '0') {
+      serviceType = 'civil';
+      console.log('Set to civil based on hasLegalValue');
+    } else {
+      // Fallback: check category name
+      if (catName.toLowerCase().includes('hành chính') || catName.toLowerCase().includes('administrative')) {
+        serviceType = 'administrative';
+        console.log('Set to administrative based on category name');
+      } else if (catName.toLowerCase().includes('dân sự') || catName.toLowerCase().includes('civil')) {
+        serviceType = 'civil';
+        console.log('Set to civil based on category name');
+      } else {
+        // Fallback: check service name
+        const serviceName = testResult.booking?.service?.title || '';
+        if (serviceName.toLowerCase().includes('hành chính') || serviceName.toLowerCase().includes('giấy khai sinh')) {
+          serviceType = 'administrative';
+          console.log('Set to administrative based on service name');
+        } else {
+          serviceType = 'civil';
+          console.log('Set to civil as default');
+        }
+      }
+    }
+  } else {
+    // Fallback: check service name (for backward compatibility)
+    const serviceName = testResult.booking?.service?.title || '';
+    if (serviceName.toLowerCase().includes('hành chính') || serviceName.toLowerCase().includes('giấy khai sinh')) {
+      serviceType = 'administrative';
+      console.log('Set to administrative based on service name (no category)');
+    } else {
+      serviceType = 'civil';
+      console.log('Set to civil as default (no category)');
+    }
+  }
+  
+  console.log('Final serviceType:', serviceType);
+  console.log('=== END DEBUG ===');
+
+  return {
+    id: testResult.id,
+    bookingId: bookingId || 'N/A', // Mã booking để hiển thị trong danh sách
+    service: testResult.booking?.service?.title || '',
+    serviceType: serviceType,
+    categoryName: testResult.booking?.service?.category?.name || '', // Thêm tên category
+    appointmentDate: testResult.testDate,
+    completionDate: testResult.reportDate,
+    participants: participants,
+    result: {
+      conclusion: testResult.positive === true
+        ? 'POSITIVE'
+        : testResult.positive === false
+          ? 'NEGATIVE'
+          : 'INCONCLUSIVE',
+      confidence: testResult.accuracy,
+      method: testResult.testMethod,
+      summary: testResult.resultNotes || (
+        testResult.positive === true
+          ? 'Xác nhận quan hệ huyết thống'
+          : testResult.positive === false
+            ? 'Loại trừ quan hệ huyết thống'
+            : 'Không kết luận được'
+      ),
+      details: testResult.resultNotes || '',
+      technician: testResult.staff?.user?.fullname || '', // Kỹ thuật viên
+      doctor: testResult.manager?.user?.fullname || '',   // Bác sĩ (manager)
+      hasLegalValue: testResult.booking?.service?.category?.hasLegalValue || false
+    }
+  }
+}
+
+const TestResults = ({ user }) => {
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showResultModal, setShowResultModal] = useState(false);
   const [selectedResult, setSelectedResult] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Đưa fetchResults ra ngoài useEffect
+  const fetchResults = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const apiResults = await getTestResultByUserId(user.id);
+      console.log('API getTestResultByUserId:', apiResults);
+      const resultsWithParticipants = await Promise.all(
+        apiResults.map(async (testResult) => {
+          console.log('Full testResult data:', testResult);
+          
+          // Thử nhiều cách để lấy bookingId
+          const bookingId = testResult.bookingId || 
+                           testResult.booking?.id || 
+                           testResult.bookingId || 
+                           testResult.id?.replace('_RESULT', '') || // Thử từ ID
+                           testResult.bookingId;
+          
+          console.log('TestResult:', testResult.id, 'BookingId:', bookingId);
+          
+          let participants = [];
+          if (bookingId) {
+            try {
+              console.log('Calling getSamplesByBookingId for bookingId:', bookingId);
+              const sampleData = await getSamplesByBookingId(bookingId);
+              console.log('API getSamplesByBookingId:', bookingId, sampleData);
+              
+              // Xử lý dữ liệu samples từ API
+              let samples = [];
+              if (Array.isArray(sampleData)) {
+                samples = sampleData;
+              } else if (sampleData && Array.isArray(sampleData.samples)) {
+                samples = sampleData.samples;
+              } else if (sampleData && sampleData.data && Array.isArray(sampleData.data)) {
+                samples = sampleData.data;
+              }
+              
+              console.log('Processed samples array:', samples);
+              
+                             // Map samples thành participants với format đúng
+               participants = samples.map(sample => ({
+                 name: sample.participant?.name || sample.name || sample.fullname || 'Không rõ tên',
+                 role: sample.role || sample.participant?.role || sample.relationship || 'Không rõ vai trò',
+                 relationship: sample.participant?.relationship || sample.relationship || sample.role || 'Không rõ mối quan hệ',
+                 sampleType: sample.sampleType || sample.collectionType || 'Máu', // Thử lấy từ sampleType hoặc collectionType
+                 sampleQuality: sample.sampleQuality || 'good',
+                 sampleConcentration: sample.sampleConcentration || '',
+                 bookingId: sample.bookingId || sample.booking?.id || '' // Thêm bookingId từ sample
+               }));
+              
+              console.log('Mapped participants:', participants);
+            } catch (e) {
+              console.error('Error fetching samples for bookingId:', bookingId, e);
+              console.error('Error details:', e.message, e.stack);
+              participants = [];
+            }
+          } else {
+            console.log('No bookingId found for testResult:', testResult.id);
+            // Thử lấy participants từ testResult nếu có
+            if (testResult.participants_on_booking) {
+              participants = testResult.participants_on_booking.map(p => ({
+                name: p.name || 'Không rõ tên',
+                relationship: p.relationship || 'Không rõ mối quan hệ',
+                sampleType: 'Máu',
+                sampleQuality: 'good',
+                sampleConcentration: ''
+              }));
+              console.log('Using participants from testResult:', participants);
+            }
+          }
+          return mapTestResultToUserResult(testResult, participants);
+        })
+      );
+      setResults(resultsWithParticipants);
+    } catch (err) {
+      console.error('Error fetching results:', err);
+      setError('Không thể tải kết quả xét nghiệm.');
+      setResults([]);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    if (user?.id) fetchResults();
+  }, [user]);
+
   const getResultBadge = (conclusion) => {
     switch (conclusion) {
       case 'POSITIVE':
-        return <Badge bg="success" className="fs-6">XÁC NHẬN QUAN HỆ</Badge>;
+         return <Badge bg="success" className="fs-6">DƯƠNG TÍNH</Badge>;
       case 'NEGATIVE':
-        return <Badge bg="danger" className="fs-6">LOẠI TRỪ QUAN HỆ</Badge>;
+         return <Badge bg="danger" className="fs-6">ÂM TÍNH</Badge>;
       case 'INCONCLUSIVE':
         return <Badge bg="warning" className="fs-6">KHÔNG KẾT LUẬN</Badge>;
       default:
@@ -20,10 +217,18 @@ const TestResults = ({ user, results = [] }) => {
     }
   };
 
-  const getServiceTypeBadge = (serviceType) => {
+  const getServiceTypeBadge = (serviceType, categoryName) => {
+    // Sử dụng tên category thực tế nếu có
+    if (categoryName) {
+      return serviceType === 'administrative'
+        ? <Badge bg="warning" text="dark" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: 500 }}>{categoryName}</Badge>
+        : <Badge bg="success" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: 500 }}>{categoryName}</Badge>;
+    }
+    
+    // Fallback nếu không có category name
     return serviceType === 'administrative'
-      ? <Badge bg="warning" text="dark">Có giá trị pháp lý</Badge>
-      : <Badge bg="info">Dân sự</Badge>;
+      ? <Badge bg="warning" text="dark" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: 500 }}>ADN Hành Chính</Badge>
+      : <Badge bg="success" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: 500 }}>ADN Dân Sự</Badge>;
   };
 
   const handleViewResult = (appointment) => {
@@ -93,87 +298,86 @@ const TestResults = ({ user, results = [] }) => {
           </h5>
         </Card.Header>
         <Card.Body className="p-0">
-          {filteredResults.length > 0 ? (
+          {loading ? (
+            <div className="text-center py-5">
+              <div className="spinner-border text-primary" role="status">
+                <span className="visually-hidden">Loading...</span>
+              </div>
+              <p className="text-muted mt-3">Đang tải kết quả xét nghiệm...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-5 text-danger">
+              <i className="bi bi-exclamation-triangle-fill me-2"></i>
+              <p>{error}</p>
+              <Button variant="outline-danger" onClick={() => fetchResults()}>
+                Thử lại
+              </Button>
+            </div>
+          ) : filteredResults.length > 0 ? (
             <div className="list-group list-group-flush">
-              {filteredResults.map((appointment) => (
+               {filteredResults.map((appointment) => {
+                 console.log('Rendering appointment:', appointment.id, 'bookingId:', appointment.bookingId);
+                 return (
                 <div key={appointment.id} className="list-group-item p-4">
                   <Row>
                     <Col lg={8}>
                       {/* Result Header */}
                       <div className="d-flex justify-content-between align-items-start mb-3">
                         <div>
-                          <h5 className="mb-2">
-                            {appointment.service}
-                            <div className="mt-1">
-                              {getServiceTypeBadge(appointment.serviceType)}
-                            </div>
-                          </h5>
+                                                             <h5 className="mb-2 d-flex align-items-center" style={{ gap: 8 }}>
+                                 {getServiceTypeBadge(appointment.serviceType, appointment.categoryName)}
+                                 <span style={{ fontWeight: 500, fontSize: 18 }}>{appointment.service}</span>
+                               </h5>
                           <div className="d-flex align-items-center gap-3 text-muted mb-2">
-                            <span>
+                             <span className="text-muted small">
                               <i className="bi bi-hash me-1"></i>
-                              Mã: {appointment.id}
+                               {appointment.bookingId || 'N/A'}
                             </span>
-                            <span>
+                             <span className="text-muted small">
                               <i className="bi bi-calendar me-1"></i>
                               Xét nghiệm: {formatDate(appointment.appointmentDate)}
                             </span>
-                            <span>
+                             <span className="text-muted small">
                               <i className="bi bi-check-circle me-1"></i>
                               Có kết quả: {formatDate(appointment.completionDate)}
                             </span>
                           </div>
                         </div>
                         <div className="text-end">
-                          {getResultBadge(appointment.result.conclusion)}
-                          <div className="text-muted small mt-1">
-                            Độ chính xác: {appointment.result.confidence}
-                          </div>
+                             <Badge bg="success" className="fs-6">HOÀN THÀNH</Badge>
                         </div>
                       </div>
 
-                      {/* Participants */}
+                                                                     {/* Personnel Info */}
                       <div className="mb-3">
-                        <strong className="text-muted small">Người tham gia xét nghiệm:</strong>
-                        <Row className="mt-2">
-                          {appointment.participants.map((participant, idx) => (
-                            <Col key={idx} sm={6} className="mb-2">
-                              <div className="d-flex align-items-center p-2 bg-light rounded">
-                                <i className="bi bi-person me-2 text-primary"></i>
-                                <div>
-                                  <div className="fw-bold small">{participant.name}</div>
-                                  <div className="text-muted small">{participant.role}</div>
+                           <strong className="text-muted small" style={{ textAlign: 'left', display: 'block' }}>Thực hiện xét nghiệm:</strong>
+                           <div className="mt-1">
+                             <table className="table table-bordered table-sm mt-2" style={{ maxWidth: 600 }}>
+                               <thead>
+                                 <tr className="text-muted small">
+                                   <th>Vai trò</th>
+                                   <th>Họ và tên</th>
+                                 </tr>
+                               </thead>
+                               <tbody>
+                                 <tr className="text-muted small">
+                                   <td style={{ fontWeight: 500 }}>Kỹ thuật viên</td>
+                                   <td>{appointment.result.technician}</td>
+                                 </tr>
+                                 <tr className="text-muted small">
+                                   <td style={{ fontWeight: 500 }}>Bác sĩ</td>
+                                   <td>{appointment.result.doctor}</td>
+                                 </tr>
+                               </tbody>
+                             </table>
                                 </div>
-                              </div>
-                            </Col>
-                          ))}
-                        </Row>
                       </div>
 
                       {/* Result Summary */}
-                      <Alert
-                        variant={
-                          appointment.result.conclusion === 'POSITIVE' ? 'success' :
-                            appointment.result.conclusion === 'NEGATIVE' ? 'danger' : 'warning'
-                        }
-                        className="mb-3 py-2"
-                      >
-                        <i className="bi bi-clipboard-check me-2"></i>
-                        <strong>Kết luận:</strong> {appointment.result.summary}
+                        <Alert variant="info" className="mb-3 py-2">
+                          <i className="bi bi-info-circle me-2"></i>
+                          <strong>Thông báo:</strong> Kết quả xét nghiệm đã sẵn sàng. Vui lòng xem chi tiết để biết thêm thông tin.
                       </Alert>
-
-                      {/* Technical Info */}
-                      <div className="text-muted small">
-                        <Row>
-                          <Col sm={6}>
-                            <i className="bi bi-flask me-1"></i>
-                            Mã lab: {appointment.result.labCode}
-                          </Col>
-                          <Col sm={6}>
-                            <i className="bi bi-person-badge me-1"></i>
-                            KTV: {appointment.result.technician}
-                          </Col>
-                        </Row>
-                      </div>
                     </Col>
 
                     {/* Actions */}
@@ -184,7 +388,7 @@ const TestResults = ({ user, results = [] }) => {
                           onClick={() => handleViewResult(appointment)}
                         >
                           <i className="bi bi-eye me-2"></i>
-                          Xem kết quả chi tiết
+                            Xem kết quả
                         </Button>
 
                         <Button
@@ -206,7 +410,8 @@ const TestResults = ({ user, results = [] }) => {
                     </Col>
                   </Row>
                 </div>
-              ))}
+               );
+               })}
             </div>
           ) : (
             <div className="text-center py-5">
@@ -236,7 +441,7 @@ const TestResults = ({ user, results = [] }) => {
         <Modal.Header closeButton>
           <Modal.Title>
             <i className="bi bi-file-earmark-medical me-2"></i>
-            Kết quả xét nghiệm chi tiết
+             Kết quả xét nghiệm chi tiết - {selectedResult?.bookingId}
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
@@ -248,6 +453,7 @@ const TestResults = ({ user, results = [] }) => {
                 <p className="text-muted mb-1">123 Đường ABC, Quận XYZ, Hà Nội</p>
                 <p className="text-muted mb-1">Hotline: 1900 1234 | Email: info@adnlab.vn</p>
                 <h4 className="text-primary mt-3 mb-0">KẾT QUẢ XÉT NGHIỆM ADN</h4>
+                                  <p className="mb-0">Mã đặt lịch: <strong>{selectedResult.bookingId}</strong></p>
                 <p className="mb-0">Mã xét nghiệm: <strong>{selectedResult.id}</strong></p>
               </div>
 
@@ -261,10 +467,10 @@ const TestResults = ({ user, results = [] }) => {
                         <td><strong>Dịch vụ:</strong></td>
                         <td>{selectedResult.service}</td>
                       </tr>
-                      <tr>
-                        <td><strong>Loại xét nghiệm:</strong></td>
-                        <td>{getServiceTypeBadge(selectedResult.serviceType)}</td>
-                      </tr>
+                                             <tr>
+                         <td><strong>Loại dịch vụ:</strong></td>
+                         <td>{selectedResult.categoryName || (selectedResult.serviceType === 'administrative' ? 'ADN Hành Chính' : 'ADN Dân Sự')}</td>
+                       </tr>
                       <tr>
                         <td><strong>Ngày lấy mẫu:</strong></td>
                         <td>{formatDate(selectedResult.appointmentDate)}</td>
@@ -285,16 +491,12 @@ const TestResults = ({ user, results = [] }) => {
                         <td>{selectedResult.result.method}</td>
                       </tr>
                       <tr>
-                        <td><strong>Loại mẫu:</strong></td>
-                        <td>{selectedResult.result.sampleType}</td>
+                         <td><strong>Kỹ thuật viên:</strong></td>
+                         <td>{selectedResult.result.technician}</td>
                       </tr>
                       <tr>
-                        <td><strong>Mã phòng lab:</strong></td>
-                        <td>{selectedResult.result.labCode}</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Kỹ thuật viên:</strong></td>
-                        <td>{selectedResult.result.technician}</td>
+                        <td><strong>Bác sĩ:</strong></td>
+                        <td>{selectedResult.result.doctor}</td>
                       </tr>
                       {selectedResult.result.gestationalAge && (
                         <tr>
@@ -308,6 +510,7 @@ const TestResults = ({ user, results = [] }) => {
               </Row>
 
               {/* Participants */}
+               {selectedResult.participants.length > 0 && (
               <div className="mb-4">
                 <h6 className="text-primary mb-3">Thông tin người tham gia</h6>
                 <div className="table-responsive">
@@ -315,55 +518,67 @@ const TestResults = ({ user, results = [] }) => {
                     <thead className="table-light">
                       <tr>
                         <th>Họ và tên</th>
-                        <th>Vai trò</th>
                         <th>Mối quan hệ</th>
                         <th>Loại mẫu</th>
+                            <th>Nồng độ</th>
+                            <th>Chất lượng ADN</th>
                       </tr>
                     </thead>
                     <tbody>
                       {selectedResult.participants.map((participant, index) => (
                         <tr key={index}>
                           <td><strong>{participant.name}</strong></td>
-                          <td>{participant.role}</td>
                           <td>{participant.relationship}</td>
-                          <td>{selectedResult.result.sampleType}</td>
+                              <td>{participant.sampleType}</td>
+                              <td>{participant.sampleConcentration || 'N/A'}</td>
+                                                             <td>
+                                 {participant.sampleQuality === 'excellent' ? (
+                                   'Xuất sắc'
+                                 ) : participant.sampleQuality === 'good' ? (
+                                   'Tốt'
+                                 ) : participant.sampleQuality === 'fair' ? (
+                                   'Khá'
+                                 ) : participant.sampleQuality === 'poor' ? (
+                                   'Kém'
+                                 ) : (
+                                   'Không xác định'
+                                 )}
+                               </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
               </div>
+               )}
 
-              {/* Main Result */}
-              <div className="mb-4 p-4 border rounded">
-                <h5 className="text-center mb-3">
-                  <i className="bi bi-clipboard-check me-2"></i>
-                  KẾT QUẢ XÉT NGHIỆM
-                </h5>
+                             {/* Main Result */}
+               <div className="mb-4 p-4 border rounded bg-light">
+                 <h5 className="text-center mb-3 text-primary fw-bold">
+                   <i className="bi bi-clipboard-check me-2"></i>
+                   KẾT QUẢ XÉT NGHIỆM
+                 </h5>
 
-                <div className="text-center mb-4">
-                  {getResultBadge(selectedResult.result.conclusion)}
-                  <div className="h4 text-primary mt-2">
-                    Độ chính xác: {selectedResult.result.confidence}
-                  </div>
-                </div>
+                 <div className="text-center mb-4">
+                   {getResultBadge(selectedResult.result.conclusion)}
+                   <div className="h4 text-primary mt-2 fw-bold">
+                     Độ chính xác: {selectedResult.result.confidence}%
+                   </div>
+                 </div>
 
-                <Alert
-                  variant={
-                    selectedResult.result.conclusion === 'POSITIVE' ? 'success' :
-                      selectedResult.result.conclusion === 'NEGATIVE' ? 'danger' : 'warning'
-                  }
-                  className="text-center"
-                >
-                  <Alert.Heading>Kết luận:</Alert.Heading>
-                  <p className="mb-0 h6">{selectedResult.result.summary}</p>
-                </Alert>
+                 <Alert
+                   variant={
+                     selectedResult.result.conclusion === 'POSITIVE' ? 'success' :
+                       selectedResult.result.conclusion === 'NEGATIVE' ? 'danger' : 'warning'
+                   }
+                   className="text-center fw-bold"
+                 >
+                   <Alert.Heading className="fw-bold">Kết luận:</Alert.Heading>
+                   <p className="mb-0 h6 fw-bold">{selectedResult.result.summary}</p>
+                 </Alert>
 
-                <div className="mt-3">
-                  <h6>Chi tiết kết quả:</h6>
-                  <p className="mb-0">{selectedResult.result.details}</p>
-                </div>
-              </div>
+                 
+               </div>
 
               {/* Legal Notice */}
               {selectedResult.result.hasLegalValue && (
@@ -401,7 +616,7 @@ const TestResults = ({ user, results = [] }) => {
       </Modal>
 
       {/* Print Styles */}
-      <style jsx>{`
+      <style>{`
         @media print {
           .d-print-none {
             display: none !important;
@@ -443,5 +658,10 @@ const TestResults = ({ user, results = [] }) => {
     </>
   );
 };
+
+// Ví dụ sử dụng:
+// const apiResults = await getTestResultByUserId(userId);
+// const mappedResults = apiResults.map(mapTestResultToUserResult);
+// <TestResults user={user} results={mappedResults} />
 
 export default TestResults;
