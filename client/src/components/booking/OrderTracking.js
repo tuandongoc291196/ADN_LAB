@@ -19,103 +19,87 @@ const OrderTracking = () => {
     const [modalAction, setModalAction] = useState({ type: '', description: '' });
 
     const statusDetails = {
-        // Common
+        // Common statuses
         CREATED: { title: 'Đặt hẹn thành công', description: 'Lịch hẹn đã được tạo', icon: 'bi-check-circle' },
-        PENDING: { title: 'Chờ xử lý', description: 'Đơn hàng đang chờ được xử lý', icon: 'bi-clock' },
         PENDING_PAYMENT: { title: 'Chờ thanh toán', description: 'Vui lòng hoàn tất thanh toán', icon: 'bi-credit-card' },
         PAYMENT_CONFIRMED: { title: 'Đã thanh toán', description: 'Thanh toán đã được xác nhận', icon: 'bi-check-circle-fill' },
         BOOKED: { title: 'Đã xác nhận lịch hẹn', description: 'Lịch hẹn đã được xác nhận', icon: 'bi-calendar-check' },
-        SAMPLE_COLLECTED: { title: 'Thu mẫu thành công', description: 'Mẫu đã được thu thập thành công', icon: 'bi-droplet-fill' },
+        SAMPLE_RECEIVED: { title: 'Đã nhận mẫu', description: 'Mẫu đã được nhận tại phòng lab', icon: 'bi-box-arrow-in-down' },
+        SAMPLE_COLLECTED: { title: 'Đã thu mẫu', description: 'Mẫu đã được thu thập thành công', icon: 'bi-droplet-fill' },
         SAMPLE_PROCESSING: { title: 'Đang phân tích mẫu', description: 'Đang tiến hành phân tích ADN tại phòng lab', icon: 'bi-eye' },
-        RESULT_AVAILABLE: { title: 'Có kết quả', description: 'Kết quả đã sẵn sàng', icon: 'bi-file-earmark-check' },
+        RESULT_PENDING: { title: 'Chờ kết quả', description: 'Đang chờ kết quả xét nghiệm', icon: 'bi-clock-history' },
+        COMPLETE: { title: 'Hoàn thành', description: 'Kết quả đã sẵn sàng', icon: 'bi-file-earmark-check' },
         CANCELLED: { title: 'Đã hủy', description: 'Đơn hàng đã bị hủy', icon: 'bi-x-circle' },
         EXPIRED: { title: 'Đã hết hạn', description: 'Đơn hàng đã hết hạn', icon: 'bi-clock-history' },
         
-        // Self-sample
-        KIT_PREPARING: { title: 'Chuẩn bị kit xét nghiệm', description: 'Đang chuẩn bị kit gửi đến bạn', icon: 'bi-box' },
-        KIT_PREPARED: { title: 'Đã chuẩn bị kit xét nghiệm', description: 'Kit đã được chuẩn bị xong', icon: 'bi-box-seam' },
-        KIT_SENT: { title: 'Đã gửi kit xét nghiệm', description: 'Kit đã được gửi đến địa chỉ của bạn', icon: 'bi-truck' },
+        // Self-sample specific statuses
+        KIT_PREPARED: { title: 'Đã chuẩn bị kit', description: 'Kit xét nghiệm đã được chuẩn bị', icon: 'bi-box-seam' },
+        KIT_SENT: { title: 'Đã gửi kit', description: 'Kit đã được gửi đến địa chỉ của bạn', icon: 'bi-truck' },
         KIT_RECEIVED: { title: 'Đã nhận kit', description: 'Khách hàng đã nhận được kit xét nghiệm', icon: 'bi-box-arrow-in-down' },
-        SAMPLE_RECEIVED: { title: 'Đã nhận mẫu', description: 'Mẫu đã được nhận', icon: 'bi-box-arrow-in-down' },
         SELF_COLLECTED: { title: 'Đã tự thu mẫu', description: 'Khách hàng đã tự thu mẫu', icon: 'bi-droplet' },
         KIT_RETURNED: { title: 'Đã gửi mẫu về', description: 'Khách hàng đã gửi mẫu về phòng lab', icon: 'bi-send' },
-        SAMPLE_SENT: { title: 'Đã gửi mẫu', description: 'Mẫu đã được gửi về phòng lab', icon: 'bi-send' },
-
-        // Home-visit
+        
+        // Home-visit specific statuses
         STAFF_ASSIGNED: { title: 'Đã chỉ định nhân viên', description: 'Nhân viên sẽ đến thu mẫu theo lịch hẹn', icon: 'bi-person-check' },
         STAFF_CONFIRMED: { title: 'Nhân viên xác nhận', description: 'Nhân viên xác nhận sẽ đến đúng hẹn', icon: 'bi-person-video2' },
     };
 
     const getTimelineForMethod = (method) => {
-        if (!method || !method.id) return ['CREATED', 'PAYMENT_CONFIRMED', 'BOOKED', 'SAMPLE_PROCESSING', 'RESULT_AVAILABLE'];
+        if (!method || !method.id) return ['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'SAMPLE_COLLECTED', 'RESULT_PENDING', 'COMPLETE'];
         
         const methodId = method.id;
         const methodName = method.name?.toLowerCase() || '';
         
-        // Self-sample method (tự lấy mẫu tại nhà)
+        // Self-sample method (tự thu mẫu tại nhà)
         if (methodId === '0' || methodName.includes('tự') || methodName.includes('self') || methodName.includes('kit')) {
             return [
-                'CREATED', 
-                'PENDING_PAYMENT',
-                'PAYMENT_CONFIRMED', 
+                'CREATED',
+                'PENDING_PAYMENT', 
                 'BOOKED',
-
-                'PENDING',
-                'KIT_PREPARED', 
+                'KIT_PREPARED',
                 'KIT_SENT',
-                'KIT_RECEIVED', 
+                'KIT_RECEIVED',
                 'SELF_COLLECTED',
-                'KIT_RETURNED', 
-
-                'RESULT_PENDING', 
-                'COMPLETED'
+                'KIT_RETURNED',
+                'SAMPLE_RECEIVED',
+                'SAMPLE_COLLECTED',
+                'RESULT_PENDING',
+                'COMPLETE'
             ];
         }
         
-        // Home-visit method (nhân viên đến nhà)
+        // Home-visit method (nhân viên tới nhà)
         if (methodId === '1' || methodName.includes('tại nhà') || methodName.includes('home') || methodName.includes('visit')) {
             return [
-                'CREATED', 
+                'CREATED',
                 'PENDING_PAYMENT',
-                'PAYMENT_CONFIRMED', 
                 'BOOKED',
-                'KIT_PREPARED',
-                'KIT_SENT',
-                'KIT_RECEIVED',
-                'SELF_COLLECTED',
-                'KIT_RETURNED',
-
-                'PENDING',  
-                'STAFF_ASSIGNED', 
-                'SAMPLE_COLLECTED', 
-                'SAMPLE_PROCESSING', 
-                'RESULT_AVAILABLE'
+                'STAFF_ASSIGNED',
+                'SAMPLE_RECEIVED',
+                'SAMPLE_COLLECTED',
+                'RESULT_PENDING',
+                'COMPLETE'
             ];
         }
         
-        // Lab-visit method (đến lab/cơ sở)
+        // Lab-visit method (lấy mẫu tại lab/cơ sở)
         if (methodId === '2' || methodName.includes('tại lab') || methodName.includes('cơ sở') || methodName.includes('lab') || methodName.includes('facility')) {
             return [
-                'CREATED', 
+                'CREATED',
                 'PENDING_PAYMENT',
-                'PAYMENT_CONFIRMED', 
                 'BOOKED',
-                'KIT_PREPARED',
-                'KIT_SENT',
-                'KIT_RECEIVED',
-                'SELF_COLLECTED',
-                'KIT_RETURNED',
-
-                'PENDING',
-                'SAMPLE_COLLECTED', 
-                'SAMPLE_PROCESSING', 
-                'RESULT_AVAILABLE'
+                'SAMPLE_RECEIVED',
+                'SAMPLE_COLLECTED',
+                'RESULT_PENDING',
+                'COMPLETE'
             ];
         }
         
         // Default timeline if no match
         console.warn('Method ID not recognized, using default timeline:', method.id);
-        return ['CREATED', 'PAYMENT_CONFIRMED', 'BOOKED', 'SAMPLE_PROCESSING', 'RESULT_AVAILABLE'];
+        
+        
+        return ['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'SAMPLE_COLLECTED', 'RESULT_PENDING', 'COMPLETE'];
     };
     
     const fetchBookingData = async (id) => {
@@ -216,10 +200,10 @@ const OrderTracking = () => {
         if (isStaff()) {
             // Self-sample method staff actions
             if (methodId === '0' || methodName.includes('tự') || methodName.includes('self')) {
-                if (statusKey === 'PAYMENT_CONFIRMED' && ['CREATED', 'PENDING', 'PENDING_PAYMENT', 'PAYMENT_CONFIRMED', 'BOOKED'].includes(currentStatus)) {
+                if (statusKey === 'BOOKED' && ['CREATED', 'PENDING_PAYMENT', 'BOOKED'].includes(currentStatus)) {
                     return (
                         <div className="d-grid gap-2 mt-2">
-                            <Button variant="outline-primary" size="sm" onClick={() => handleActionClick('KIT_PREPARED')}>Xác nhận đã chuẩn bị kit</Button>
+                            <Button variant="outline-primary" size="sm" onClick={() => handleActionClick('KIT_PREPARED')}>Chuẩn bị kit xét nghiệm</Button>
                         </div>
                     );
                 }
@@ -227,29 +211,45 @@ const OrderTracking = () => {
                 if (statusKey === 'KIT_PREPARED' && currentStatus === 'KIT_PREPARED') {
                     return (
                         <div className="d-grid gap-2 mt-2">
-                            <Button variant="outline-primary" size="sm" onClick={() => handleActionClick('KIT_SENT')}>Xác nhận đã gửi kit</Button>
+                            <Button variant="outline-primary" size="sm" onClick={() => handleActionClick('KIT_SENT')}>Gửi kit xét nghiệm</Button>
                         </div>
                     );
                 }
                 
-                if (statusKey === 'KIT_RETURNED' && ['KIT_RETURNED', 'SAMPLE_RECEIVED'].includes(currentStatus)) {
+                if (statusKey === 'KIT_RETURNED' && currentStatus === 'KIT_RETURNED') {
                     return (
                         <div className="d-grid gap-2 mt-2">
-                            <Button variant="outline-primary" size="sm" onClick={() => handleActionClick('SAMPLE_PROCESSING')}>Bắt đầu xử lý mẫu</Button>
+                            <Button variant="outline-primary" size="sm" onClick={() => handleActionClick('SAMPLE_RECEIVED')}>Xác nhận đã nhận mẫu</Button>
                         </div>
                     );
                 }
                 
-                if (statusKey === 'SAMPLE_PROCESSING' && currentStatus === 'SAMPLE_PROCESSING') {
+                if (statusKey === 'SAMPLE_RECEIVED' && currentStatus === 'SAMPLE_RECEIVED') {
                     return (
                         <div className="d-grid gap-2 mt-2">
-                            <Button variant="outline-success" size="sm" onClick={() => handleActionClick('RESULT_AVAILABLE')}>Công bố kết quả</Button>
+                            <Button variant="outline-primary" size="sm" onClick={() => handleActionClick('SAMPLE_COLLECTED')}>Xác nhận đã thu mẫu</Button>
+                        </div>
+                    );
+                }
+                
+                if (statusKey === 'SAMPLE_COLLECTED' && currentStatus === 'SAMPLE_COLLECTED') {
+                    return (
+                        <div className="d-grid gap-2 mt-2">
+                            <Button variant="outline-primary" size="sm" onClick={() => handleActionClick('RESULT_PENDING')}>Bắt đầu xử lý mẫu</Button>
+                        </div>
+                    );
+                }
+                
+                if (statusKey === 'RESULT_PENDING' && currentStatus === 'RESULT_PENDING') {
+                    return (
+                        <div className="d-grid gap-2 mt-2">
+                            <Button variant="outline-success" size="sm" onClick={() => handleActionClick('COMPLETE')}>Công bố kết quả</Button>
                         </div>
                     );
                 }
             } else if (methodId === '1' || methodName.includes('tại nhà')) {
                 // Home visit method staff actions
-                if (statusKey === 'PAYMENT_CONFIRMED' && ['CREATED', 'PENDING', 'PENDING_PAYMENT', 'PAYMENT_CONFIRMED', 'BOOKED'].includes(currentStatus)) {
+                if (statusKey === 'BOOKED' && ['CREATED', 'PENDING_PAYMENT', 'BOOKED'].includes(currentStatus)) {
                     return (
                         <div className="d-grid gap-2 mt-2">
                             <Button variant="outline-primary" size="sm" onClick={() => handleActionClick('STAFF_ASSIGNED')}>Chỉ định nhân viên</Button>
@@ -268,21 +268,37 @@ const OrderTracking = () => {
                 if (statusKey === 'SAMPLE_COLLECTED' && currentStatus === 'SAMPLE_COLLECTED') {
                     return (
                         <div className="d-grid gap-2 mt-2">
-                            <Button variant="outline-primary" size="sm" onClick={() => handleActionClick('SAMPLE_PROCESSING')}>Bắt đầu xử lý mẫu</Button>
+                            <Button variant="outline-primary" size="sm" onClick={() => handleActionClick('SAMPLE_RECEIVED')}>Xác nhận đã nhận mẫu</Button>
                         </div>
                     );
                 }
                 
-                if (statusKey === 'SAMPLE_PROCESSING' && currentStatus === 'SAMPLE_PROCESSING') {
+                if (statusKey === 'SAMPLE_RECEIVED' && currentStatus === 'SAMPLE_RECEIVED') {
                     return (
                         <div className="d-grid gap-2 mt-2">
-                            <Button variant="outline-success" size="sm" onClick={() => handleActionClick('RESULT_AVAILABLE')}>Công bố kết quả</Button>
+                            <Button variant="outline-primary" size="sm" onClick={() => handleActionClick('RESULT_PENDING')}>Bắt đầu xử lý mẫu</Button>
+                        </div>
+                    );
+                }
+                
+                if (statusKey === 'RESULT_PENDING' && currentStatus === 'RESULT_PENDING') {
+                    return (
+                        <div className="d-grid gap-2 mt-2">
+                            <Button variant="outline-success" size="sm" onClick={() => handleActionClick('COMPLETE')}>Công bố kết quả</Button>
                         </div>
                     );
                 }
             } else {
                 // Lab visit method staff actions
-                if (statusKey === 'PAYMENT_CONFIRMED' && ['CREATED', 'PENDING', 'PENDING_PAYMENT', 'PAYMENT_CONFIRMED', 'BOOKED'].includes(currentStatus)) {
+                if (statusKey === 'BOOKED' && ['CREATED', 'PENDING_PAYMENT', 'BOOKED'].includes(currentStatus)) {
+                    return (
+                        <div className="d-grid gap-2 mt-2">
+                            <Button variant="outline-primary" size="sm" onClick={() => handleActionClick('SAMPLE_RECEIVED')}>Xác nhận khách đến</Button>
+                        </div>
+                    );
+                }
+                
+                if (statusKey === 'SAMPLE_RECEIVED' && currentStatus === 'SAMPLE_RECEIVED') {
                     return (
                         <div className="d-grid gap-2 mt-2">
                             <Button variant="outline-primary" size="sm" onClick={() => handleActionClick('SAMPLE_COLLECTED')}>Xác nhận đã thu mẫu</Button>
@@ -293,15 +309,15 @@ const OrderTracking = () => {
                 if (statusKey === 'SAMPLE_COLLECTED' && currentStatus === 'SAMPLE_COLLECTED') {
                     return (
                         <div className="d-grid gap-2 mt-2">
-                            <Button variant="outline-primary" size="sm" onClick={() => handleActionClick('SAMPLE_PROCESSING')}>Bắt đầu xử lý mẫu</Button>
+                            <Button variant="outline-primary" size="sm" onClick={() => handleActionClick('RESULT_PENDING')}>Bắt đầu xử lý mẫu</Button>
                         </div>
                     );
                 }
                 
-                if (statusKey === 'SAMPLE_PROCESSING' && currentStatus === 'SAMPLE_PROCESSING') {
+                if (statusKey === 'RESULT_PENDING' && currentStatus === 'RESULT_PENDING') {
                     return (
                         <div className="d-grid gap-2 mt-2">
-                            <Button variant="outline-success" size="sm" onClick={() => handleActionClick('RESULT_AVAILABLE')}>Công bố kết quả</Button>
+                            <Button variant="outline-success" size="sm" onClick={() => handleActionClick('COMPLETE')}>Công bố kết quả</Button>
                         </div>
                     );
                 }
@@ -317,31 +333,26 @@ const OrderTracking = () => {
         // Get the full timeline based on method
         const fullTimelineSteps = getTimelineForMethod(booking.method);
         
-        // Filter out pending/waiting/intermediate statuses to make timeline shorter
-        const skippableStatuses = ['PENDING', 'PENDING_PAYMENT', 'STAFF_CONFIRMED'];
-        const timelineSteps = fullTimelineSteps.filter(status => !skippableStatuses.includes(status));
-        
         const history = booking.bookingHistories_on_booking?.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)) || [];
         const completedStatuses = history.map(h => h.status);
         const currentStatus = history.length > 0 ? history.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0].status : null;
         
-        // Calculate progress based on the current status in the filtered timeline
+        // Calculate progress based on the current status
         let progress = 0;
-        const currentStepIndex = timelineSteps.indexOf(currentStatus);
+        const currentStepIndex = fullTimelineSteps.indexOf(currentStatus);
         
-        // If current status is not in our filtered timeline, find the nearest previous status
         if (currentStepIndex !== -1) {
-            progress = ((currentStepIndex + 1) / timelineSteps.length) * 100;
+            progress = ((currentStepIndex + 1) / fullTimelineSteps.length) * 100;
         } else if (currentStatus) {
             // Find the nearest status in our timeline that comes after the current status
             const allStatuses = Object.keys(statusDetails);
             const currentStatusIndex = allStatuses.indexOf(currentStatus);
             
             // Find the next displayed status after the current one
-            for (let i = 0; i < timelineSteps.length; i++) {
-                const timelineStatusIndex = allStatuses.indexOf(timelineSteps[i]);
+            for (let i = 0; i < fullTimelineSteps.length; i++) {
+                const timelineStatusIndex = allStatuses.indexOf(fullTimelineSteps[i]);
                 if (timelineStatusIndex > currentStatusIndex) {
-                    progress = (i / timelineSteps.length) * 100;
+                    progress = (i / fullTimelineSteps.length) * 100;
                     break;
                 }
             }
@@ -358,12 +369,12 @@ const OrderTracking = () => {
                 <hr />
 
                 <div className="timeline">
-                    {timelineSteps.map((statusKey, index) => {
+                    {fullTimelineSteps.map((statusKey, index) => {
                         const statusInfo = statusDetails[statusKey] || { title: statusKey, description: '', icon: 'bi-question-circle' };
                         const isCompleted = completedStatuses.includes(statusKey);
                         const isCurrent = statusKey === currentStatus;
                         
-                        // Consider a status "completed" if any later status in the full timeline is completed
+                        // Consider a status "completed" if any later status in the timeline is completed
                         const isEffectivelyCompleted = isCompleted || fullTimelineSteps.some((step, stepIndex) => {
                             const stepPosition = fullTimelineSteps.indexOf(step);
                             const statusPosition = fullTimelineSteps.indexOf(statusKey);
@@ -391,7 +402,7 @@ const OrderTracking = () => {
                                     <div className={`rounded-circle d-flex align-items-center justify-content-center mb-2 bg-${getStatusColor()} text-white`} style={{ width: '50px', height: '50px' }}>
                                         <i className={`${getStatusIcon()} fs-5`}></i>
                                     </div>
-                                    {index < timelineSteps.length - 1 && (
+                                    {index < fullTimelineSteps.length - 1 && (
                                         <div className={`mx-auto ${isEffectivelyCompleted ? 'bg-success' : 'bg-light'}`} style={{ width: '2px', height: '40px' }}></div>
                                     )}
                                 </div>
