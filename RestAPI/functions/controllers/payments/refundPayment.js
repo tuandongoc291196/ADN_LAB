@@ -119,6 +119,7 @@ const refundPaymentByBookingId = async (bookingId, refundAmount) => {
             throw new Error("refundAmount is required");
         }
 
+        const paymentDetails = await getPaymentByBookingId(bookingId);
         const payment = paymentDetails[0]; 
         console.log("Payment details for refund:", payment);
         console.log(payment.status);

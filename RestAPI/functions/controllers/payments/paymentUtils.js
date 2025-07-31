@@ -1,7 +1,7 @@
 const { getPaymentDataMOMO } = require('./momoPayment');
 const { getPaymentDataZALOPAY } = require('./zaloPayPayment');
 const {addBookingHistory} = require('../bookingHistory/addBookingHistory');
-const {updatePaymentStatus} = require('./updatePayments');
+const {updatePaymentStatusByBookingId} = require('./updatePayments');
 
 const checkPaymentStatus = async (paymentMethod, paymentResult) => {
   const maxDuration = 5 * 60 * 1000; 
@@ -125,7 +125,7 @@ const handleRefundConfirmation = async (bookingId, paymentMethod, refundResult) 
     throw new Error("refundResult is required for refund confirmation");
   }
 
-  const updatePaymentStatusDATA = await updatePaymentStatus(bookingId, "REFUNDED", refundResult);
+  const updatePaymentStatusDATA = await updatePaymentStatusByBookingId(bookingId, "REFUNDED", refundResult);
   const addBookingHistoryDATA = await addBookingHistory(bookingId, "REFUNDED", `Payment refunded successfully via ${paymentMethod}`);
 
   return {
