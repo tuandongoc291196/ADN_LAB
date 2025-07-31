@@ -125,6 +125,10 @@ const TestResults = ({ user }) => {
     try {
       const apiResults = await getTestResultByUserId(user.id);
       console.log('API getTestResultByUserId:', apiResults);
+      
+      // Hiển thị tất cả kết quả vì API không trả về thông tin booking đầy đủ
+      console.log('All test results:', apiResults);
+      
       const resultsWithParticipants = await Promise.all(
         apiResults.map(async (testResult) => {
           console.log('Full testResult data:', testResult);
@@ -327,7 +331,7 @@ const TestResults = ({ user }) => {
                                                              <h5 className="mb-2 d-flex align-items-center" style={{ gap: 8 }}>
                                  {getServiceTypeBadge(appointment.serviceType, appointment.categoryName)}
                                  <span style={{ fontWeight: 500, fontSize: 18 }}>{appointment.service}</span>
-                               </h5>
+                          </h5>
                           <div className="d-flex align-items-center gap-3 text-muted mb-2">
                              <span className="text-muted small">
                               <i className="bi bi-hash me-1"></i>
@@ -467,10 +471,10 @@ const TestResults = ({ user }) => {
                         <td><strong>Dịch vụ:</strong></td>
                         <td>{selectedResult.service}</td>
                       </tr>
-                                             <tr>
+                      <tr>
                          <td><strong>Loại dịch vụ:</strong></td>
                          <td>{selectedResult.categoryName || (selectedResult.serviceType === 'administrative' ? 'ADN Hành Chính' : 'ADN Dân Sự')}</td>
-                       </tr>
+                      </tr>
                       <tr>
                         <td><strong>Ngày lấy mẫu:</strong></td>
                         <td>{formatDate(selectedResult.appointmentDate)}</td>
@@ -552,33 +556,33 @@ const TestResults = ({ user }) => {
               </div>
                )}
 
-                             {/* Main Result */}
+              {/* Main Result */}
                <div className="mb-4 p-4 border rounded bg-light">
                  <h5 className="text-center mb-3 text-primary fw-bold">
-                   <i className="bi bi-clipboard-check me-2"></i>
-                   KẾT QUẢ XÉT NGHIỆM
-                 </h5>
+                  <i className="bi bi-clipboard-check me-2"></i>
+                  KẾT QUẢ XÉT NGHIỆM
+                </h5>
 
-                 <div className="text-center mb-4">
-                   {getResultBadge(selectedResult.result.conclusion)}
+                <div className="text-center mb-4">
+                  {getResultBadge(selectedResult.result.conclusion)}
                    <div className="h4 text-primary mt-2 fw-bold">
                      Độ chính xác: {selectedResult.result.confidence}%
-                   </div>
-                 </div>
+                  </div>
+                </div>
 
-                 <Alert
-                   variant={
-                     selectedResult.result.conclusion === 'POSITIVE' ? 'success' :
-                       selectedResult.result.conclusion === 'NEGATIVE' ? 'danger' : 'warning'
-                   }
+                <Alert
+                  variant={
+                    selectedResult.result.conclusion === 'POSITIVE' ? 'success' :
+                      selectedResult.result.conclusion === 'NEGATIVE' ? 'danger' : 'warning'
+                  }
                    className="text-center fw-bold"
-                 >
+                >
                    <Alert.Heading className="fw-bold">Kết luận:</Alert.Heading>
                    <p className="mb-0 h6 fw-bold">{selectedResult.result.summary}</p>
-                 </Alert>
+                </Alert>
 
                  
-               </div>
+              </div>
 
               {/* Legal Notice */}
               {selectedResult.result.hasLegalValue && (

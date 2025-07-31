@@ -49,7 +49,7 @@ const MyAppointments = ({ user }) => {
 
   // Helper functions
   const getNextAction = (status, latestHistoryStatus) => {
-    if (latestHistoryStatus === 'COMPLETED') {
+    if (latestHistoryStatus === 'COMPLETED' || latestHistoryStatus === 'COMPLETE') {
       return 'Kết quả đã sẵn sàng';
     }
     
@@ -74,7 +74,7 @@ const MyAppointments = ({ user }) => {
   };
 
   const getNotes = (status, latestHistoryStatus) => {
-    if (latestHistoryStatus === 'COMPLETED') {
+    if (latestHistoryStatus === 'COMPLETED' || latestHistoryStatus === 'COMPLETE') {
       return 'Xét nghiệm hoàn tất. Kết quả có thể tải về hoặc nhận tại cơ sở.';
     }
     
@@ -120,9 +120,9 @@ const MyAppointments = ({ user }) => {
     }
   };
 
-  // Get timeline for method (same as OrderTracking.js)
+  // Get timeline for specific method
   const getTimelineForMethod = (method) => {
-    if (!method || !method.id) return ['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'SAMPLE_COLLECTED', 'RESULT_PENDING', 'COMPLETED'];
+    if (!method || !method.id) return ['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'SAMPLE_COLLECTED', 'RESULT_PENDING', 'COMPLETE'];
     
     const methodId = method.id;
     const methodName = method.name?.toLowerCase() || '';
@@ -137,10 +137,11 @@ const MyAppointments = ({ user }) => {
         'KIT_SENT',
         'KIT_RECEIVED',
         'SELF_COLLECTED',
+        'KIT_RETURNED',
         'SAMPLE_RECEIVED',
         'SAMPLE_COLLECTED',
         'RESULT_PENDING',
-        'COMPLETED'
+        'COMPLETE'
       ];
     }
     
@@ -154,7 +155,7 @@ const MyAppointments = ({ user }) => {
         'SAMPLE_RECEIVED',
         'SAMPLE_COLLECTED',
         'RESULT_PENDING',
-        'COMPLETED'
+        'COMPLETE'
       ];
     }
     
@@ -167,12 +168,87 @@ const MyAppointments = ({ user }) => {
         'SAMPLE_RECEIVED',
         'SAMPLE_COLLECTED',
         'RESULT_PENDING',
-        'COMPLETED'
+        'COMPLETE'
       ];
     }
     
     // Default timeline if no match
-    return ['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'SAMPLE_COLLECTED', 'RESULT_PENDING', 'COMPLETED'];
+    return ['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'SAMPLE_COLLECTED', 'RESULT_PENDING', 'COMPLETE'];
+  };
+
+  // Map timeline status to UI status based on method
+  const mapTimelineStatusToUIStatus = (currentStatus, method) => {
+    if (!currentStatus) return 'confirmed';
+    
+    // Handle special statuses
+    if (currentStatus === 'COMPLETED' || currentStatus === 'COMPLETE') return 'completed';
+    if (currentStatus === 'CANCELLED' || currentStatus === 'EXPIRED') return 'cancelled';
+    
+    const timeline = getTimelineForMethod(method);
+    const currentIndex = timeline.indexOf(currentStatus);
+    
+    if (currentIndex === -1) {
+      // Status not in timeline, use fallback logic
+      if (['SAMPLE_COLLECTED', 'SAMPLE_PROCESSING', 'RESULT_PENDING', 'KIT_RETURNED', 'SAMPLE_RECEIVED'].includes(currentStatus)) {
+        return 'in-progress';
+      } else if (['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'KIT_PREPARED', 'KIT_SENT', 'KIT_RECEIVED', 'SELF_COLLECTED', 'STAFF_ASSIGNED'].includes(currentStatus)) {
+        return 'confirmed';
+      } else {
+        return 'confirmed'; // fallback
+      }
+    }
+    
+    // Map based on timeline position for each method type
+    const methodId = method?.id;
+    const methodName = method?.name?.toLowerCase() || '';
+    
+    // Self-sample method (Method ID: 0)
+    if (methodId === '0' || methodName.includes('tự') || methodName.includes('self') || methodName.includes('kit')) {
+      // Timeline: CREATED → PENDING_PAYMENT → BOOKED → KIT_PREPARED → KIT_SENT → KIT_RECEIVED → SELF_COLLECTED → KIT_RETURNED → SAMPLE_RECEIVED → SAMPLE_COLLECTED → RESULT_PENDING → COMPLETE
+      if (['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'KIT_PREPARED', 'KIT_SENT', 'KIT_RECEIVED'].includes(currentStatus)) {
+        return 'confirmed';
+      } else if (['SELF_COLLECTED', 'KIT_RETURNED', 'SAMPLE_RECEIVED', 'SAMPLE_COLLECTED', 'RESULT_PENDING'].includes(currentStatus)) {
+        return 'in-progress';
+      } else {
+        return 'completed';
+      }
+    }
+    
+    // Home-visit method (Method ID: 1)
+    if (methodId === '1' || methodName.includes('tại nhà') || methodName.includes('home') || methodName.includes('visit')) {
+      // Timeline: CREATED → PENDING_PAYMENT → BOOKED → STAFF_ASSIGNED → SAMPLE_RECEIVED → SAMPLE_COLLECTED → RESULT_PENDING → COMPLETE
+      if (['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'STAFF_ASSIGNED'].includes(currentStatus)) {
+        return 'confirmed';
+      } else if (['SAMPLE_RECEIVED', 'SAMPLE_COLLECTED', 'RESULT_PENDING'].includes(currentStatus)) {
+        return 'in-progress';
+      } else {
+        return 'completed';
+      }
+    }
+    
+    // Lab-visit method (Method ID: 2)
+    if (methodId === '2' || methodName.includes('tại lab') || methodName.includes('cơ sở') || methodName.includes('lab') || methodName.includes('facility')) {
+      // Timeline: CREATED → PENDING_PAYMENT → BOOKED → SAMPLE_RECEIVED → SAMPLE_COLLECTED → RESULT_PENDING → COMPLETED
+      if (['CREATED', 'PENDING_PAYMENT', 'BOOKED'].includes(currentStatus)) {
+        return 'confirmed';
+      } else if (['SAMPLE_RECEIVED', 'SAMPLE_COLLECTED', 'RESULT_PENDING'].includes(currentStatus)) {
+        return 'in-progress';
+      } else {
+        return 'completed';
+      }
+    }
+    
+    // Default mapping
+    const totalSteps = timeline.length;
+    const progressPercentage = ((currentIndex + 1) / totalSteps) * 100;
+    
+    if (progressPercentage <= 30) {
+      return 'confirmed';
+    } else if (progressPercentage <= 80) {
+      return 'in-progress';
+    } else {
+      return 'completed';
+    }
   };
 
   // Calculate progress based on booking history and timeline
@@ -192,7 +268,7 @@ const MyAppointments = ({ user }) => {
       progress = ((currentStepIndex + 1) / fullTimelineSteps.length) * 100;
     } else if (currentStatus) {
       // Find the nearest status in our timeline that comes after the current status
-      const allStatuses = ['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'KIT_PREPARED', 'KIT_SENT', 'KIT_RECEIVED', 'SELF_COLLECTED', 'STAFF_ASSIGNED', 'SAMPLE_RECEIVED', 'SAMPLE_COLLECTED', 'RESULT_PENDING', 'COMPLETED'];
+      const allStatuses = ['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'KIT_PREPARED', 'KIT_SENT', 'KIT_RECEIVED', 'SELF_COLLECTED', 'KIT_RETURNED', 'STAFF_ASSIGNED', 'SAMPLE_RECEIVED', 'SAMPLE_COLLECTED', 'RESULT_PENDING', 'COMPLETE'];
       const currentStatusIndex = allStatuses.indexOf(currentStatus);
       
       // Find the next displayed status after the current one
@@ -256,17 +332,9 @@ const MyAppointments = ({ user }) => {
       }
     }
 
-    // Determine status based on current history status
+    // Improved status mapping based on timeline and method
     if (currentHistoryStatus) {
-      if (currentHistoryStatus === 'COMPLETED') {
-        status = 'completed';
-      } else if (['SAMPLE_COLLECTED', 'SAMPLE_PROCESSING', 'RESULT_PENDING', 'KIT_RETURNED', 'SAMPLE_RECEIVED'].includes(currentHistoryStatus)) {
-        status = 'in-progress';
-      } else if (['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'KIT_PREPARED', 'KIT_SENT', 'KIT_RECEIVED', 'SELF_COLLECTED', 'STAFF_ASSIGNED'].includes(currentHistoryStatus)) {
-        status = 'confirmed';
-      } else if (currentHistoryStatus === 'CANCELLED') {
-        status = 'cancelled';
-      }
+      status = mapTimelineStatusToUIStatus(currentHistoryStatus, booking.method);
     } else {
       // Fallback to time-based status if no history
       const createdAt = new Date(booking.createdAt);
