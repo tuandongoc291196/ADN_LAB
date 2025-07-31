@@ -296,10 +296,10 @@ export const updateUserById = async (userId, updateData) => {
 export const updateUserAccountStatus = async (userId, status) => {
   try {
     console.log(`🌐 API: updateUserAccountStatus called with userId: ${userId}, status: ${status}`);
-    
+
     const requestBody = { userId, status };
     console.log(`📤 Request body:`, requestBody);
-    
+
     const response = await fetch(`${API_BASE_URL}/users/status`, {
       method: 'PUT',
       headers: {
@@ -307,15 +307,15 @@ export const updateUserAccountStatus = async (userId, status) => {
       },
       body: JSON.stringify(requestBody),
     });
-    
+
     console.log(`📥 Response status: ${response.status}`);
-    
+
     if (!response.ok) {
       const errorData = await response.json();
       console.log(`❌ API Error response:`, errorData);
       throw new Error(errorData.message || 'Failed to update user account status');
     }
-    
+
     const data = await response.json();
     console.log(`✅ API Success response:`, data);
     return data.data || data;
@@ -822,14 +822,14 @@ export const getSamplesByBookingId = async (bookingId) => {
 };
 
 // Cập nhật chất lượng mẫu
-export const updateSample = async ({ sampleId, sampleQuality, sampleConcentration, notes }) => {
+export const updateSample = async ({ sampleId, sampleQuality, sampleConcentration, sampleType, notes }) => {
   try {
     const response = await fetch(`${API_BASE_URL}/samples`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ sampleId, sampleQuality, sampleConcentration, notes }),
+      body: JSON.stringify({ sampleId, sampleQuality, sampleConcentration, sampleType, notes }),
     });
     if (!response.ok) {
       const errorData = await response.json();
