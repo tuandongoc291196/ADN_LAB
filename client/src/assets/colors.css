@@ -1,0 +1,95 @@
+/* Kit Preparation */
+.bg-waiting-kit-prep {
+    background-color: #ffc107 !important;
+    /* warning - Chờ chuẩn bị */
+    color: black;
+}
+
+.bg-kit-prepared {
+    background-color: #fd7e14 !important;
+    /* orange - Đã chuẩn bị */
+    color: white;
+}
+
+.bg-kit-sent {
+    background-color: #0d6efd !important;
+    /* primary - Đã gửi */
+    color: white;
+}
+
+.bg-kit-returned {
+    background-color: #adb5bd !important;
+    /* custom gray - Đã nhận lại */
+    color: white;
+}
+
+.bg-pending-payment {
+    background-color: #6c757d !important;
+    /* secondary - Chờ thanh toán */
+    color: white;
+}
+
+.bg-expired {
+    background-color: #dc3545 !important;
+    /* danger - Quá hạn */
+    color: white;
+}
+
+.bg-sample-received {
+    background-color: #20c997 !important;
+    /* teal - Đã nhận mẫu */
+    color: white;
+}
+
+.bg-complete {
+    background-color: #198754 !important;
+    /* success - Hoàn tất */
+    color: white;
+}
+
+.bg-refunded {
+    background-color: #343a40 !important;
+    /* dark - Hoàn tiền */
+    color: white;
+}
+
+/* Sample Collection */
+.bg-collected {
+    background-color: #198754 !important;
+    /* success */
+    color: white;
+}
+
+.bg-transferred {
+    background-color: #0dcaf0 !important;
+    /* info - Đã chuyển */
+    color: black;
+}
+
+.bg-overdue {
+    background-color: #dc3545 !important;
+    /* danger */
+    color: white;
+}
+
+/* Lab Testing */
+.bg-sample-collected {
+    background-color: #0dcaf0 !important;
+    /* info */
+    color: black;
+}
+
+.bg-result-pending {
+    background-color: #6f42c1 !important;
+    /* purple - Chờ kết quả */
+    color: white;
+}
+
+/* Nếu muốn badge tròn đẹp hơn */
+.badge {
+    border-radius: 999px;
+    padding: 0.5em 0.75em;
+    font-weight: 500;
+    font-size: 0.875rem;
+    display: inline-block;
+}

@@ -28,22 +28,30 @@ const KitPreparation = ({ user }) => {
             // Tìm status mới nhất từ history (nếu có)
             const history = Array.isArray(b.bookingHistories_on_booking) ? b.bookingHistories_on_booking : [];
             const sorted = [...history].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            const latestStatus = sorted[0]?.status?.toUpperCase() || '';
+            // Kiểm tra nếu có status SAMPLE_RECEIVED và sau đó còn status khác thì mappedStatus thành 'collected'
             let mappedStatus = '';
-            if (latestStatus === 'EXPIRED') {
-              mappedStatus = 'expired';
-            } else if (latestStatus === 'BOOKED') {
-              mappedStatus = 'waiting-kit-prep';
-            } else if (latestStatus === 'PENDING_PAYMENT') {
-              mappedStatus = 'pending-payment';
-            } else if (latestStatus) {
-              mappedStatus = latestStatus.toLowerCase().replaceAll('_', '-');
+            const idxSampleReceived = sorted.findIndex(h => h.status === 'SAMPLE_RECEIVED');
+            if (idxSampleReceived !== -1 && idxSampleReceived > 0) {
+              // Có status SAMPLE_RECEIVED và sau đó còn status khác
+              mappedStatus = 'collected';
             } else {
-              mappedStatus = 'sample-received'; // Mặc định nếu không xác định
+              const latestStatus = sorted[0]?.status?.toUpperCase() || '';
+              if (latestStatus === 'EXPIRED') {
+                mappedStatus = 'expired';
+              } else if (latestStatus === 'BOOKED') {
+                mappedStatus = 'waiting-kit-prep';
+              } else if (latestStatus === 'PENDING_PAYMENT') {
+                mappedStatus = 'pending-payment';
+              } else if (latestStatus === 'CANCELLED') {
+                mappedStatus = 'cancelled';
+              } else if (latestStatus) {
+                mappedStatus = latestStatus.toLowerCase().replaceAll('_', '-');
+              } else {
+                mappedStatus = 'sample-received'; // Mặc định nếu không xác định
+              }
+              const validStatuses = ['waiting-kit-prep', 'kit-prepared', 'kit-sent', 'waiting-sample', 'sample-received', 'expired', 'kit-returned', 'pending-payment', 'cancelled'];
+              if (!validStatuses.includes(mappedStatus)) mappedStatus = 'sample-received';
             }
-            // Nếu mappedStatus rỗng hoặc không nằm trong statusConfig thì cũng gán 'sample-received'
-            const validStatuses = ['waiting-kit-prep', 'kit-prepared', 'kit-sent', 'waiting-sample', 'sample-received', 'expired', 'kit-returned', 'pending-payment'];
-            if (!validStatuses.includes(mappedStatus)) mappedStatus = 'sample-received';
             return {
               id: b.id,
               customerName: b.informations_on_booking?.[0]?.name || 'Không rõ',
@@ -86,7 +94,7 @@ const KitPreparation = ({ user }) => {
     let filtered = orders;
 
     // Ẩn đơn quá hạn
-    filtered = filtered.filter(order => order.status !== 'expired');
+    filtered = filtered.filter(order => order.status !== 'expired' && order.status !== 'cancelled');
 
     if (searchTerm) {
       filtered = filtered.filter(order =>
@@ -104,17 +112,20 @@ const KitPreparation = ({ user }) => {
   }, [searchTerm, filterStatus, orders]);
 
   const getStatusBadge = (status) => {
+    if (status === 'collected') {
+      return <Badge bg="success">Đã thu mẫu</Badge>;
+    }
     const statusConfig = {
       'waiting-kit-prep': { bg: 'warning', text: 'Chờ chuẩn bị kit' },
       'kit-prepared': { bg: 'danger', text: 'Đã chuẩn bị kit' },
       'kit-sent': { bg: 'primary', text: 'Đã gửi kit' },
       'waiting-sample': { bg: 'secondary', text: 'Chờ nhận mẫu' },
-      'sample-received': { bg: 'success', text: 'Đã nhận mẫu' },
+      'sample-received': { bg: 'warning', text: 'Sẵn sàng thu mẫu' },
       expired: { bg: 'danger', text: 'Đã quá hạn' },
       'kit-returned': { bg: 'info', text: 'Đã nhận lại kit' },
       'pending-payment': { bg: 'dark', text: 'Chờ thanh toán' },
+      'cancelled': { bg: 'secondary', text: 'Đã hủy' },
     };
-
     const config = statusConfig[status] || { bg: 'secondary', text: status };
     return <Badge bg={config.bg}>{config.text}</Badge>;
   };
@@ -277,8 +288,9 @@ const KitPreparation = ({ user }) => {
                 <option value="waiting-kit-prep">Chờ chuẩn bị kit</option>
                 <option value="kit-prepared">Đã chuẩn bị kit</option>
                 <option value="kit-sent">Đã gửi kit</option>
-                <option value="waiting-kit">Chờ nhận lại kit</option>
-                <option value="kit-received">Đã nhận mẫu</option>
+                <option value="kit-return">Đã nhận lại kit</option>
+                <option value="sample-received">Sẵn sàng thu mẫu</option>
+                <option value="pending-payment">Chờ thanh toán</option>
               </Form.Select>
             </Col>
           </Row>
@@ -353,7 +365,7 @@ const KitPreparation = ({ user }) => {
                       {order.methodName === 'Lấy mẫu tại nhà' && (
                         <Button
                           size="sm"
-                          variant="success"
+                          variant="info"
                           onClick={() => openActionModal('prepare', order)}
                         >
                           <i className="bi bi-box me-1"></i>
@@ -367,7 +379,7 @@ const KitPreparation = ({ user }) => {
                           variant="info"
                           onClick={() => openActionModal('prepare-direct', order)}
                         >
-                          <i className="bi bi-check-circle me-1"></i>
+                          <i className="bi bi-box me-1"></i>
                           Chuẩn bị kit
                         </Button>
                       )}
@@ -386,7 +398,7 @@ const KitPreparation = ({ user }) => {
                   {order.status === 'kit-returned' && (
                     <Button
                       size="sm"
-                      variant="success"
+                      variant="primary"
                       onClick={() => openActionModal('confirm', order)}
                     >
                       <i className="bi bi-check-circle me-1"></i>
@@ -396,7 +408,7 @@ const KitPreparation = ({ user }) => {
                   {order.status === 'pending-payment' && (
                     <Button
                       size="sm"
-                      variant="success"
+                      variant="warning"
                       onClick={() => openActionModal('confirm-payment', order)}
                     >
                       <i className="bi bi-cash-coin me-1"></i>
@@ -408,13 +420,26 @@ const KitPreparation = ({ user }) => {
                     <Button
                       as={Link}
                       to={`/staff/sample-collection/${order.id}`}
-                      variant="info"
+                      variant="warning"
                       size="sm"
                     >
                       <i className="bi bi-arrow-right me-1"></i>
                       Đến thu mẫu
                     </Button>
                   )}
+
+                  {order.status === 'collected' && (
+                    <Button
+                      as={Link}
+                      to={`/staff/sample-collection/${order.id}`}
+                      variant="success"
+                      size="sm"
+                    >
+                      <i className="bi bi-arrow-right me-1"></i>
+                      Bước tiếp theo
+                    </Button>
+                  )}
+
                   {order.status === 'kit-sent' && order.trackingNumber && (
                     <Badge bg="success" className="p-2">
                       <i className="bi bi-check-circle me-1"></i>

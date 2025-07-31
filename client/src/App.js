@@ -135,7 +135,7 @@ function App() {
   useEffect(() => {
     const currentPath = window.location.pathname;
     console.log('App loaded at path:', currentPath);
-    
+
     // Nếu user đã đăng nhập và không phải trang login/register thì lưu current path
     const savedUser = localStorage.getItem('user');
     if (savedUser && !['/login', '/register', '/reset'].includes(currentPath)) {
