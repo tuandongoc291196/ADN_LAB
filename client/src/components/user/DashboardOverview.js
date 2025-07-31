@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Row, Col, Card, Button, Badge, ProgressBar, Spinner } from 'react-bootstrap';
 import ResultsSummary from './ResultsSummary';
-import { getBookingByUserId } from '../../services/api';
+import { getBookingByUserId, getTestResultByUserId, getBookingById } from '../../services/api';
 
 const DashboardOverview = ({ user }) => {
   const [appointments, setAppointments] = useState([]);
+  const [testResults, setTestResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [counts, setCounts] = useState({ total: 0, completed: 0, inProgress: 0, totalAmount: 0 });
@@ -13,7 +14,7 @@ const DashboardOverview = ({ user }) => {
 
 
   useEffect(() => {
-    const fetchAppointments = async () => {
+    const fetchData = async () => {
       if (!user?.id) {
         setLoading(false);
         return;
@@ -21,110 +22,225 @@ const DashboardOverview = ({ user }) => {
       try {
         setLoading(true);
         setError(null);
-        const data = await getBookingByUserId(user.id);
-        setAppointments(data || []);
-        // Count status and calculate total amount
-        let completed = 0, inProgress = 0, totalAmount = 0;
-        (data || []).forEach(b => {
-          // Logic phân loại status giống MyAppointments
-          const createdAt = new Date(b.createdAt);
-          const now = new Date();
-          let isUpcoming = false;
+        
+        // Fetch appointments and test results in parallel
+        const [appointmentsData, testResultsData] = await Promise.all([
+          getBookingByUserId(user.id),
+          getTestResultByUserId(user.id)
+        ]);
+        
+        console.log('DashboardOverview - appointmentsData:', appointmentsData);
+        console.log('DashboardOverview - testResultsData:', testResultsData);
+        console.log('DashboardOverview - testResultsData length:', testResultsData?.length);
+        
+        // Fetch booking details for each test result to get accurate category information
+        const testResultsWithBookingDetails = [];
+        console.log('DashboardOverview - testResultsData before processing:', testResultsData);
+        if (testResultsData && testResultsData.length > 0) {
+                      for (const testResult of testResultsData) {
+              console.log('DashboardOverview - processing testResult:', testResult.id);
+              try {
+                const bookingId = testResult.bookingId || testResult.booking?.id || testResult.id?.replace('_RESULT', '');
+                console.log('DashboardOverview - extracted bookingId:', bookingId);
+                if (bookingId) {
+                  const bookingDetails = await getBookingById(bookingId);
+                  console.log('DashboardOverview - fetched bookingDetails for', testResult.id, ':', bookingDetails);
+                  testResultsWithBookingDetails.push({
+                    ...testResult,
+                    bookingDetails
+                  });
+                } else {
+                  console.log('DashboardOverview - no bookingId found for testResult:', testResult.id);
+                  testResultsWithBookingDetails.push(testResult);
+                }
+              } catch (error) {
+                console.error('Error fetching booking details for test result:', testResult.id, error);
+                testResultsWithBookingDetails.push(testResult);
+              }
+            }
+        }
+        
+        // Transform appointments data using same logic as MyAppointments
+        const transformedAppointments = (appointmentsData || []).map(b => {
+          // Parse timeSlotId
+          let date = '', time = '';
           if (b.timeSlotId) {
             const parts = b.timeSlotId.split('_');
-            if (parts.length >= 1) {
-              const appointmentDate = new Date(parts[0]);
-              isUpcoming = !isNaN(appointmentDate.getTime()) && appointmentDate > now;
+            if (parts.length >= 2) {
+              date = parts[0];
+              time = parts[1];
             }
           }
-          let status = 'confirmed';
-          if (isUpcoming) {
-            status = 'confirmed';
-          } else if (createdAt.getTime() + (7 * 24 * 60 * 60 * 1000) < now.getTime()) {
-            status = 'completed';
+          
+          // Determine status based on booking history (same logic as MyAppointments)
+          const history = b.bookingHistories_on_booking?.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) || [];
+          const currentHistoryStatus = history.length > 0 ? history[0].status : null;
+          
+          let status = 'confirmed'; // default status
+          let isUpcoming = false;
+          
+          if (b.timeSlotId) {
+            try {
+              const parts = b.timeSlotId.split('_');
+              if (parts.length >= 1) {
+                const appointmentDate = new Date(parts[0]);
+                isUpcoming = !isNaN(appointmentDate.getTime()) && appointmentDate > new Date();
+              }
+            } catch (e) {
+              console.error('Error checking if appointment is upcoming:', e);
+              isUpcoming = false;
+            }
+          }
+
+          // Improved status mapping based on timeline and method (same as MyAppointments)
+          if (currentHistoryStatus) {
+            if (currentHistoryStatus === 'COMPLETED' || currentHistoryStatus === 'COMPLETE') {
+              status = 'completed';
+            } else if (currentHistoryStatus === 'CANCELLED' || currentHistoryStatus === 'EXPIRED') {
+              status = 'cancelled';
+            } else {
+              // Use same mapping logic as MyAppointments
+              const methodId = b.method?.id;
+              const methodName = b.method?.name?.toLowerCase() || '';
+              
+              // Self-sample method (Method ID: 0)
+              if (methodId === '0' || methodName.includes('tự') || methodName.includes('self') || methodName.includes('kit')) {
+                if (['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'KIT_PREPARED', 'KIT_SENT', 'KIT_RECEIVED'].includes(currentHistoryStatus)) {
+                  status = 'confirmed';
+                } else if (['SELF_COLLECTED', 'KIT_RETURNED', 'SAMPLE_RECEIVED', 'SAMPLE_COLLECTED', 'RESULT_PENDING'].includes(currentHistoryStatus)) {
+                  status = 'in-progress';
+                } else {
+                  status = 'completed';
+                }
+              }
+              // Home-visit method (Method ID: 1)
+              else if (methodId === '1' || methodName.includes('tại nhà') || methodName.includes('home') || methodName.includes('visit')) {
+                if (['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'STAFF_ASSIGNED'].includes(currentHistoryStatus)) {
+                  status = 'confirmed';
+                } else if (['SAMPLE_RECEIVED', 'SAMPLE_COLLECTED', 'RESULT_PENDING'].includes(currentHistoryStatus)) {
+                  status = 'in-progress';
+                } else {
+                  status = 'completed';
+                }
+              }
+              // Lab-visit method (Method ID: 2)
+              else if (methodId === '2' || methodName.includes('tại lab') || methodName.includes('cơ sở') || methodName.includes('lab') || methodName.includes('facility')) {
+                if (['CREATED', 'PENDING_PAYMENT', 'BOOKED'].includes(currentHistoryStatus)) {
+                  status = 'confirmed';
+                } else if (['SAMPLE_RECEIVED', 'SAMPLE_COLLECTED', 'RESULT_PENDING'].includes(currentHistoryStatus)) {
+                  status = 'in-progress';
+                } else {
+                  status = 'completed';
+                }
+              }
+              // Default mapping
+              else {
+                if (['SAMPLE_COLLECTED', 'SAMPLE_PROCESSING', 'RESULT_PENDING', 'KIT_RETURNED', 'SAMPLE_RECEIVED'].includes(currentHistoryStatus)) {
+                  status = 'in-progress';
+                } else if (['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'KIT_PREPARED', 'KIT_SENT', 'KIT_RECEIVED', 'SELF_COLLECTED', 'STAFF_ASSIGNED'].includes(currentHistoryStatus)) {
+                  status = 'confirmed';
+                } else {
+                  status = 'confirmed'; // fallback
+                }
+              }
+            }
           } else {
-            status = 'in-progress';
-          }
-          if (status === 'completed') {
-            completed++;
-            // Calculate total amount only for completed bookings
-            if (b.totalAmount && !isNaN(parseFloat(b.totalAmount))) {
-              totalAmount += parseFloat(b.totalAmount);
+            // Fallback to time-based status if no history
+            const createdAt = new Date(b.createdAt);
+            const now = new Date();
+            
+            if (isUpcoming) {
+              status = 'confirmed';
+            } else if (createdAt.getTime() + (7 * 24 * 60 * 60 * 1000) < now.getTime()) {
+              status = 'completed';
+            } else {
+              status = 'in-progress';
             }
           }
-          if (status === 'in-progress') inProgress++;
+          
+          // Progress calculation based on status
+          let progress = 0;
+          switch (status) {
+            case 'confirmed': progress = 25; break;
+            case 'in-progress': progress = 75; break;
+            case 'completed': progress = 100; break;
+            default: progress = 0;
+          }
+          
+          // Next action based on status
+          let nextAction = 'Đang chờ xử lý';
+          if (status === 'confirmed') nextAction = 'Chuẩn bị cho lịch hẹn';
+          if (status === 'in-progress') nextAction = 'Đang xử lý mẫu tại phòng lab';
+          if (status === 'completed') nextAction = 'Kết quả đã sẵn sàng';
+          
+          // Sử dụng dữ liệu từ nested query
+          const serviceName = b.service?.title || 'Dịch vụ xét nghiệm ADN';
+          const methodName = b.method?.name || 'Phương thức lấy mẫu';
+          
+          return {
+            ...b,
+            id: b.id,
+            service: serviceName,
+            date,
+            time,
+            status,
+            method: methodName,
+            progress,
+            nextAction
+          };
         });
-        setCounts({ total: (data || []).length, completed, inProgress, totalAmount });
-              } catch (err) {
-          setError('Không thể tải danh sách lịch hẹn. Vui lòng thử lại sau.');
-          setCounts({ total: 0, completed: 0, inProgress: 0, totalAmount: 0 });
-        } finally {
-          setLoading(false);
-        }
+        
+        setAppointments(transformedAppointments);
+        setTestResults(testResultsWithBookingDetails || []);
+        
+        console.log('DashboardOverview - testResultsWithBookingDetails:', testResultsWithBookingDetails);
+        console.log('DashboardOverview - testResultsWithBookingDetails length:', testResultsWithBookingDetails?.length);
+        
+        // Count status and calculate total amount using transformed data
+        let completed = 0, inProgress = 0, totalAmount = 0;
+        transformedAppointments.forEach(appointment => {
+          // Count based on status
+          if (appointment.status === 'completed') {
+            completed++;
+          } else if (appointment.status === 'in-progress') {
+            inProgress++;
+          }
+          
+          // Calculate total amount only for paid bookings (check payment status)
+          const history = appointment.bookingHistories_on_booking?.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) || [];
+          const currentHistoryStatus = history.length > 0 ? history[0].status : null;
+          
+          // Count amount for all bookings except cancelled ones
+          if (currentHistoryStatus && 
+              !['CANCELLED', 'EXPIRED'].includes(currentHistoryStatus)) {
+            if (appointment.totalAmount && !isNaN(parseFloat(appointment.totalAmount))) {
+              console.log('DashboardOverview - adding amount for booking:', appointment.id, 'amount:', appointment.totalAmount, 'status:', currentHistoryStatus);
+              totalAmount += parseFloat(appointment.totalAmount);
+            }
+          } else {
+            console.log('DashboardOverview - skipping amount for cancelled booking:', appointment.id, 'status:', currentHistoryStatus, 'amount:', appointment.totalAmount);
+          }
+        });
+        
+        console.log('DashboardOverview - final counts:', { total: transformedAppointments.length, completed, inProgress, totalAmount });
+        setCounts({ total: transformedAppointments.length, completed, inProgress, totalAmount });
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+        setError('Không thể tải dữ liệu. Vui lòng thử lại sau.');
+        setCounts({ total: 0, completed: 0, inProgress: 0, totalAmount: 0 });
+        // Set empty arrays to prevent undefined errors
+        setAppointments([]);
+        setTestResults([]);
+      } finally {
+        setLoading(false);
+      }
     };
-    fetchAppointments();
+    fetchData();
   }, [user?.id]);
 
   // Lấy 2 lịch hẹn gần nhất (theo createdAt mới nhất)
   const sortedAppointments = [...appointments].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  const recentAppointments = sortedAppointments.slice(0, 2).map(b => {
-    // Parse timeSlotId
-    let date = '', time = '';
-    if (b.timeSlotId) {
-      const parts = b.timeSlotId.split('_');
-      if (parts.length >= 2) {
-        date = parts[0];
-        time = parts[1];
-      }
-    }
-    // Status logic
-    const createdAt = new Date(b.createdAt);
-    const now = new Date();
-    let isUpcoming = false;
-    if (b.timeSlotId) {
-      const parts = b.timeSlotId.split('_');
-      if (parts.length >= 1) {
-        const appointmentDate = new Date(parts[0]);
-        isUpcoming = !isNaN(appointmentDate.getTime()) && appointmentDate > now;
-      }
-    }
-    let status = 'confirmed';
-    if (isUpcoming) {
-      status = 'confirmed';
-    } else if (createdAt.getTime() + (7 * 24 * 60 * 60 * 1000) < now.getTime()) {
-      status = 'completed';
-    } else {
-      status = 'in-progress';
-    }
-    // Progress
-    let progress = 0;
-    switch (status) {
-      case 'confirmed': progress = 25; break;
-      case 'in-progress': progress = 75; break;
-      case 'completed': progress = 100; break;
-      default: progress = 0;
-    }
-    // Next action
-    let nextAction = 'Đang chờ xử lý';
-    if (status === 'confirmed') nextAction = 'Chuẩn bị cho lịch hẹn';
-    if (status === 'in-progress') nextAction = 'Đang xử lý mẫu tại phòng lab';
-    if (status === 'completed') nextAction = 'Kết quả đã sẵn sàng';
-    
-    // Sử dụng dữ liệu từ nested query
-    const serviceName = b.service?.title || 'Dịch vụ xét nghiệm ADN';
-    const methodName = b.method?.name || 'Phương thức lấy mẫu';
-    
-    return {
-      id: b.id,
-      service: serviceName,
-      date,
-      time,
-      status,
-      method: methodName,
-      progress,
-      nextAction
-    };
-  });
+  const recentAppointments = sortedAppointments.slice(0, 2);
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -158,6 +274,100 @@ const DashboardOverview = ({ user }) => {
     const options = { weekday: 'short', month: 'short', day: 'numeric' };
     return new Date(dateString).toLocaleDateString('vi-VN', options);
   };
+
+  // Process test results for ResultsSummary component
+  const processTestResults = () => {
+            console.log('processTestResults - testResults:', testResults);
+        console.log('processTestResults - testResults length:', testResults?.length);
+        if (!testResults || testResults.length === 0) {
+          console.log('processTestResults - no test results found');
+          return { recentResults: [], pendingResults: [] };
+        }
+
+    // Sort test results by completion date (newest first)
+    const sortedResults = [...testResults].sort((a, b) => 
+      new Date(b.reportDate || b.createdAt) - new Date(a.reportDate || a.createdAt)
+    );
+
+    // Get recent results (completed tests)
+    const recentResults = sortedResults.slice(0, 5).map(result => {
+      // Determine hasLegalValue based on booking details (same logic as TestResults.js)
+      let hasLegalValue = false;
+      const serviceName = result.booking?.service?.title || '';
+      
+      // Priority 1: Use booking details if available
+      if (result.bookingDetails?.service?.category) {
+        hasLegalValue = result.bookingDetails.service.category.hasLegalValue === true || 
+                       result.bookingDetails.service.category.hasLegalValue === 'true' ||
+                       result.bookingDetails.service.category.hasLegalValue === 1 ||
+                       result.bookingDetails.service.category.hasLegalValue === '1';
+      }
+      // Priority 2: Use test result category if available
+      else if (result.booking?.service?.category) {
+        hasLegalValue = result.booking.service.category.hasLegalValue === true || 
+                       result.booking.service.category.hasLegalValue === 'true' ||
+                       result.booking.service.category.hasLegalValue === 1 ||
+                       result.booking.service.category.hasLegalValue === '1';
+      }
+      // Priority 3: Fallback to service name check
+      else {
+        hasLegalValue = serviceName.toLowerCase().includes('hành chính') || 
+                       serviceName.toLowerCase().includes('giấy khai sinh') ||
+                       serviceName.toLowerCase().includes('administrative');
+      }
+      
+      return {
+        id: result.id,
+        service: serviceName || 'Dịch vụ xét nghiệm ADN',
+        completionDate: result.reportDate || result.createdAt,
+        result: result.positive === true ? 'POSITIVE' : result.positive === false ? 'NEGATIVE' : 'INCONCLUSIVE',
+        confidence: result.accuracy || 0,
+        hasLegalValue: hasLegalValue,
+        isNew: new Date(result.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // New if created within 7 days
+      };
+    });
+
+    // Get pending results (appointments that are in progress but not completed)
+    const pendingResults = appointments
+      .filter(appointment => {
+        const history = appointment.bookingHistories_on_booking?.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) || [];
+        const currentStatus = history.length > 0 ? history[0].status : null;
+        return currentStatus && ['SAMPLE_COLLECTED', 'RESULT_PENDING', 'KIT_RETURNED', 'SAMPLE_RECEIVED'].includes(currentStatus);
+      })
+      .slice(0, 3)
+      .map(appointment => {
+        const history = appointment.bookingHistories_on_booking?.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) || [];
+        const currentStatus = history.length > 0 ? history[0].status : null;
+        
+        // Calculate progress based on status
+        let progress = 0;
+        if (currentStatus === 'SAMPLE_COLLECTED') progress = 60;
+        else if (currentStatus === 'RESULT_PENDING') progress = 80;
+        else if (currentStatus === 'KIT_RETURNED' || currentStatus === 'SAMPLE_RECEIVED') progress = 70;
+        else progress = 50;
+
+        // Calculate expected date (7 days from appointment date)
+        const appointmentDate = appointment.timeSlotId ? new Date(appointment.timeSlotId.split('_')[0]) : new Date(appointment.createdAt);
+        const expectedDate = new Date(appointmentDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+        return {
+          id: appointment.id,
+          service: appointment.service?.title || 'Dịch vụ xét nghiệm ADN',
+          status: currentStatus === 'SAMPLE_COLLECTED' ? 'Đang phân tích' :
+                  currentStatus === 'RESULT_PENDING' ? 'Chuẩn bị kết quả' :
+                  currentStatus === 'KIT_RETURNED' ? 'Đã nhận mẫu' :
+                  currentStatus === 'SAMPLE_RECEIVED' ? 'Đang xử lý' : 'Đang thực hiện',
+          progress,
+          expectedDate: expectedDate.toISOString().split('T')[0]
+        };
+      });
+
+                  console.log('processTestResults - recentResults:', recentResults);
+        console.log('processTestResults - pendingResults:', pendingResults);
+        console.log('processTestResults - recentResults length:', recentResults?.length);
+        console.log('processTestResults - pendingResults length:', pendingResults?.length);
+        return { recentResults, pendingResults };
+    };
 
   return (
     <>
@@ -234,7 +444,19 @@ const DashboardOverview = ({ user }) => {
       </Row>
 
       {/* Results Summary */}
-      <ResultsSummary user={user} />
+      {(() => {
+        const { recentResults, pendingResults } = processTestResults();
+        console.log('DashboardOverview - passing to ResultsSummary:', { recentResults, pendingResults });
+        console.log('DashboardOverview - recentResults length:', recentResults?.length);
+        console.log('DashboardOverview - pendingResults length:', pendingResults?.length);
+        return (
+          <ResultsSummary 
+            user={user} 
+            recentResults={recentResults}
+            pendingResults={pendingResults}
+          />
+        );
+      })()}
 
       {/* Recent Appointments */}
       <Row className="mt-4">
