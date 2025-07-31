@@ -469,7 +469,7 @@ const OrderTracking = () => {
                                 <h5 className="mb-0"><i className="bi bi-clipboard-data me-2"></i>Thông tin đặt lịch #{booking.id}</h5>
                             </Card.Header>
                             <Card.Body>
-                                                                  <Row>
+                                 <Row>
                                      <Col md={6} className="text-center">
                                          <p className="mb-1 text-start"><strong>Dịch vụ:</strong> {booking.service?.title}</p>
                                          <p className="mb-1 text-start"><strong>Phương thức:</strong> {booking.method?.name}</p>
