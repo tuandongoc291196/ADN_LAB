@@ -343,16 +343,16 @@ const ResultsManagement = ({ user }) => {
 
     return (
         <div>
-            {/* Header */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2 className="mb-1">
-                        <i className="bi bi-file-earmark-check me-2"></i>
-                        Quản lý và Trả Kết quả
-                    </h2>
-                    <p className="text-muted mb-0">Quản lý việc kiểm duyệt và giao kết quả xét nghiệm cho khách hàng</p>
-                </div>
-            </div>
+            {/* Welcome Header - Inspired by DashboardOverview.js */}
+            <Row className="mb-4">
+                <Col>
+                    <div className="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 className="mb-1">Quản lý kết quả xét nghiệm </h2>
+                        </div>
+                    </div>
+                </Col>
+            </Row>
 
             {/* Alert */}
             {alert.show && (
@@ -362,61 +362,69 @@ const ResultsManagement = ({ user }) => {
                 </Alert>
             )}
 
-            {/* Results Statistics */}
+            {/* Results Statistics - Improved with better colors and layout */}
             <Row className="mb-4">
-                <Col lg={3} md={6} className="mb-3">
-                    <Card className="border-start border-warning border-4 shadow-sm">
-                        <Card.Body className="d-flex align-items-center">
-                            <div className="me-3">
-                                <i className="bi bi-clock-history fs-1 text-warning"></i>
+                <Col md={3} className="mb-2">
+                    <Card className="text-center shadow-sm bg-warning text-white">
+                        <Card.Body className="py-3">
+                            <div className="d-flex align-items-center justify-content-center mb-2">
+                                <i className="bi bi-clock-history fs-4 me-2"></i>
+                                <h6 className="mb-0">Chờ xử lý</h6>
                             </div>
-                            <div>
-                                <div className="h4 mb-0">{results.filter(r => r.status === 'result_pending').length}</div>
-                                <div className="text-muted small">Chờ xử lý</div>
-                            </div>
+                            <h3 className="fw-bold mb-0">{results.filter(r => r.status === 'result_pending').length}</h3>
                         </Card.Body>
                     </Card>
                 </Col>
-                <Col lg={3} md={6} className="mb-3">
-                    <Card className="border-start border-success border-4 shadow-sm">
-                        <Card.Body className="d-flex align-items-center">
-                            <div className="me-3">
-                                <i className="bi bi-check-circle fs-1 text-success"></i>
+                <Col md={3} className="mb-2">
+                    <Card className="text-center shadow-sm bg-success text-white">
+                        <Card.Body className="py-3">
+                            <div className="d-flex align-items-center justify-content-center mb-2">
+                                <i className="bi bi-check-circle fs-4 me-2"></i>
+                                <h6 className="mb-0">Đã duyệt</h6>
                             </div>
-                            <div>
-                                <div className="h4 mb-0">{results.filter(r => r.status === 'complete').length}</div>
-                                <div className="text-muted small">Đã duyệt</div>
-                            </div>
+                            <h3 className="fw-bold mb-0">{results.filter(r => r.status === 'complete').length}</h3>
                         </Card.Body>
                     </Card>
                 </Col>
-                <Col lg={3} md={6} className="mb-3">
-                    <Card className="border-start border-primary border-4 shadow-sm">
-                        <Card.Body className="d-flex align-items-center">
-                            <div className="me-3">
-                                <i className="bi bi-send fs-1 text-primary"></i>
+                <Col md={3} className="mb-2">
+                    <Card className="text-center shadow-sm bg-primary text-white">
+                        <Card.Body className="py-3">
+                            <div className="d-flex align-items-center justify-content-center mb-2">
+                                <i className="bi bi-send fs-4 me-2"></i>
+                                <h6 className="mb-0">Đã giao</h6>
                             </div>
-                            <div>
-                                <div className="h4 mb-0">{results.filter(r => r.status === 'SENT_RESULT').length}</div>
-                                <div className="text-muted small">Đã giao</div>
-                            </div>
+                            <h3 className="fw-bold mb-0">{results.filter(r => r.status === 'SENT_RESULT').length}</h3>
                         </Card.Body>
                     </Card>
                 </Col>
-
+                <Col md={3} className="mb-2">
+                    <Card className="text-center shadow-sm bg-info text-white">
+                        <Card.Body className="py-3">
+                            <div className="d-flex align-items-center justify-content-center mb-2">
+                                <i className="bi bi-clipboard-data fs-4 me-2"></i>
+                                <h6 className="mb-0">Tổng cộng</h6>
+                            </div>
+                            <h3 className="fw-bold mb-0">{results.length}</h3>
+                        </Card.Body>
+                    </Card>
+                </Col>
             </Row>
 
-            {/* Filters */}
+            {/* Filters - Improved layout */}
             <Card className="shadow-sm mb-4">
                 <Card.Body>
-                    <Row>
+                    <Row className="align-items-end">
                         <Col lg={6} md={8} className="mb-3">
-                            <Form.Label>Tìm kiếm</Form.Label>
+                            <Form.Label className="fw-medium">
+                                <i className="bi bi-search text-primary me-2"></i>
+                                Tìm kiếm
+                            </Form.Label>
                             <InputGroup>
                                 <Form.Control
                                     placeholder="Mã đơn, tên khách hàng, mã lab, số điện thoại..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="border-0 shadow-sm"
                                 />
                                 <Button variant="outline-secondary">
                                     <i className="bi bi-search"></i>
@@ -424,25 +432,31 @@ const ResultsManagement = ({ user }) => {
                             </InputGroup>
                         </Col>
                         <Col lg={3} md={4} className="mb-3">
-                            <Form.Label>Trạng thái</Form.Label>
-                            <Form.Select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                            <Form.Label className="fw-medium">
+                                <i className="bi bi-funnel text-primary me-2"></i>
+                                Trạng thái
+                            </Form.Label>
+                            <Form.Select 
+                                value={filterStatus} 
+                                onChange={(e) => setFilterStatus(e.target.value)}
+                                className="border-0 shadow-sm"
+                            >
                                 <option value="all">Tất cả trạng thái</option>
                                 <option value="result_pending">Chờ kết quả</option>
                                 <option value="complete">Hoàn thành</option>
                                 <option value="SENT_RESULT">Đã giao</option>
                             </Form.Select>
                         </Col>
-                        <Col lg={3} className="mb-3 d-flex align-items-end">
-                            <div className="w-100">
-                                <Badge bg="warning" className="me-2">
+                        <Col lg={3} className="mb-3">
+                            <div className="d-flex gap-2">
+                                <Button variant="outline-warning" size="sm" className="flex-fill">
+                                    <i className="bi bi-clock me-1"></i>
                                     Cần xử lý: {results.filter(r => r.status === 'result_pending').length}
-                                </Badge>
-                                <Badge bg="success" className="me-2">
+                                </Button>
+                                <Button variant="outline-success" size="sm" className="flex-fill">
+                                    <i className="bi bi-check me-1"></i>
                                     Hoàn thành: {results.filter(r => r.status === 'complete').length}
-                                </Badge>
-                                <Badge bg="primary" className="me-2">
-                                    Đã giao kết quả: {results.filter(r => r.status === 'SENT_RESULT').length}
-                                </Badge>
+                                </Button>
                             </div>
                         </Col>
                     </Row>
@@ -468,15 +482,15 @@ const ResultsManagement = ({ user }) => {
                         </Card.Header>
                         <Card.Body className="p-0">
                             <div className="table-responsive">
-                                <Table hover className="mb-0">
-                                    <thead className="table-light">
+                                <Table hover className="mb-0 align-middle">
+                                    <thead className="bg-light">
                                         <tr>
-                                            <th>Mã đơn</th>
-                                            <th>Khách hàng</th>
-                                            <th>Dịch vụ</th>
-                                            <th>Kỹ thuật viên</th>
-                                            <th>Ngày hoàn thành</th>
-                                            <th>Thao tác</th>
+                                            <th className="text-center fw-bold" style={{ width: '15%' }}>Mã đơn</th>
+                                            <th className="text-center fw-bold" style={{ width: '20%' }}>Khách hàng</th>
+                                            <th className="text-center fw-bold" style={{ width: '25%' }}>Dịch vụ</th>
+                                            <th className="text-center fw-bold" style={{ width: '15%' }}>Kỹ thuật viên</th>
+                                            <th className="text-center fw-bold" style={{ width: '15%' }}>Ngày hoàn thành</th>
+                                            <th className="text-center fw-bold" style={{ width: '10%' }}>Thao tác</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -495,9 +509,9 @@ const ResultsManagement = ({ user }) => {
                                                         {result.serviceName}
                                                         <div className="mt-1">
                                                             {result.hasLegalValue ? (
-                                                                <Badge bg="warning" text="dark" className="ms-2">Hành chính</Badge>
+                                                                <Badge bg="warning" text="dark" className="ms-2">ADN Hành chính</Badge>
                                                             ) : (
-                                                                <Badge bg="success" text="white" className="ms-2">Dân sự</Badge>
+                                                                <Badge bg="success" text="white" className="ms-2">ADN Dân sự</Badge>
                                                             )}
                                                         </div>
                                                     </div>
