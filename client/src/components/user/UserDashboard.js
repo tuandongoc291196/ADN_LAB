@@ -82,28 +82,95 @@ const UserDashboard = ({ user }) => {
           const appointmentsData = await getBookingByUserId(userId);
           setAppointments(appointmentsData || []);
 
-          // Count status
+          // Count status using same logic as DashboardOverview
           let completed = 0, inProgress = 0;
           (appointmentsData || []).forEach(b => {
-            // Logic phân loại status giống DashboardOverview
-            const createdAt = new Date(b.createdAt);
-            const now = new Date();
+            // Determine status based on booking history (same logic as DashboardOverview)
+            const history = b.bookingHistories_on_booking?.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) || [];
+            const currentHistoryStatus = history.length > 0 ? history[0].status : null;
+            
+            let status = 'confirmed'; // default status
             let isUpcoming = false;
+            
             if (b.timeSlotId) {
-              const parts = b.timeSlotId.split('_');
-              if (parts.length >= 1) {
-                const appointmentDate = new Date(parts[0]);
-                isUpcoming = !isNaN(appointmentDate.getTime()) && appointmentDate > now;
+              try {
+                const parts = b.timeSlotId.split('_');
+                if (parts.length >= 1) {
+                  const appointmentDate = new Date(parts[0]);
+                  isUpcoming = !isNaN(appointmentDate.getTime()) && appointmentDate > new Date();
+                }
+              } catch (e) {
+                console.error('Error checking if appointment is upcoming:', e);
+                isUpcoming = false;
               }
             }
-            let status = 'confirmed';
-            if (isUpcoming) {
-              status = 'confirmed';
-            } else if (createdAt.getTime() + (7 * 24 * 60 * 60 * 1000) < now.getTime()) {
-              status = 'completed';
+
+            // Improved status mapping based on timeline and method (same as DashboardOverview)
+            if (currentHistoryStatus) {
+              if (currentHistoryStatus === 'COMPLETED' || currentHistoryStatus === 'COMPLETE') {
+                status = 'completed';
+              } else if (currentHistoryStatus === 'CANCELLED' || currentHistoryStatus === 'EXPIRED') {
+                status = 'cancelled';
+              } else {
+                // Use same mapping logic as DashboardOverview
+                const methodId = b.method?.id;
+                const methodName = b.method?.name?.toLowerCase() || '';
+                
+                // Self-sample method (Method ID: 0)
+                if (methodId === '0' || methodName.includes('tự') || methodName.includes('self') || methodName.includes('kit')) {
+                  if (['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'KIT_PREPARED', 'KIT_SENT', 'KIT_RECEIVED'].includes(currentHistoryStatus)) {
+                    status = 'confirmed';
+                  } else if (['SELF_COLLECTED', 'KIT_RETURNED', 'SAMPLE_RECEIVED', 'SAMPLE_COLLECTED', 'RESULT_PENDING'].includes(currentHistoryStatus)) {
+                    status = 'in-progress';
+                  } else {
+                    status = 'completed';
+                  }
+                }
+                // Home-visit method (Method ID: 1)
+                else if (methodId === '1' || methodName.includes('tại nhà') || methodName.includes('home') || methodName.includes('visit')) {
+                  if (['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'STAFF_ASSIGNED'].includes(currentHistoryStatus)) {
+                    status = 'confirmed';
+                  } else if (['SAMPLE_RECEIVED', 'SAMPLE_COLLECTED', 'RESULT_PENDING'].includes(currentHistoryStatus)) {
+                    status = 'in-progress';
+                  } else {
+                    status = 'completed';
+                  }
+                }
+                // Lab-visit method (Method ID: 2)
+                else if (methodId === '2' || methodName.includes('tại lab') || methodName.includes('cơ sở') || methodName.includes('lab') || methodName.includes('facility')) {
+                  if (['CREATED', 'PENDING_PAYMENT', 'BOOKED'].includes(currentHistoryStatus)) {
+                    status = 'confirmed';
+                  } else if (['SAMPLE_RECEIVED', 'SAMPLE_COLLECTED', 'RESULT_PENDING'].includes(currentHistoryStatus)) {
+                    status = 'in-progress';
+                  } else {
+                    status = 'completed';
+                  }
+                }
+                // Default mapping
+                else {
+                  if (['SAMPLE_COLLECTED', 'SAMPLE_PROCESSING', 'RESULT_PENDING', 'KIT_RETURNED', 'SAMPLE_RECEIVED'].includes(currentHistoryStatus)) {
+                    status = 'in-progress';
+                  } else if (['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'KIT_PREPARED', 'KIT_SENT', 'KIT_RECEIVED', 'SELF_COLLECTED', 'STAFF_ASSIGNED'].includes(currentHistoryStatus)) {
+                    status = 'confirmed';
+                  } else {
+                    status = 'confirmed'; // fallback
+                  }
+                }
+              }
             } else {
-              status = 'in-progress';
+              // Fallback to time-based status if no history
+              const createdAt = new Date(b.createdAt);
+              const now = new Date();
+              
+              if (isUpcoming) {
+                status = 'confirmed';
+              } else if (createdAt.getTime() + (7 * 24 * 60 * 60 * 1000) < now.getTime()) {
+                status = 'completed';
+              } else {
+                status = 'in-progress';
+              }
             }
+            
             if (status === 'completed') completed++;
             if (status === 'in-progress') inProgress++;
           });

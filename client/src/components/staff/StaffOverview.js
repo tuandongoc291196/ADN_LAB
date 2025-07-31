@@ -6,17 +6,6 @@ import { getBookingByStaffId } from '../../services/api';
 const StaffOverview = ({ user }) => {
   const [todayTasks, setTodayTasks] = useState([]);
 
-  // Mock data cho thống kê công việc tuần này
-  const weeklyStats = {
-    monday: { kits: 12, samples: 8, tests: 6, results: 4 },
-    tuesday: { kits: 10, samples: 12, tests: 8, results: 6 },
-    wednesday: { kits: 8, samples: 10, tests: 5, results: 8 },
-    thursday: { kits: 15, samples: 6, tests: 9, results: 5 },
-    friday: { kits: 8, samples: 12, tests: 5, results: 3 },
-    saturday: { kits: 6, samples: 4, tests: 2, results: 2 },
-    sunday: { kits: 4, samples: 2, tests: 1, results: 1 }
-  };
-
   useEffect(() => {
     const fetchBookings = async () => {
       try {
@@ -60,6 +49,14 @@ const StaffOverview = ({ user }) => {
             case 'EXPIRED':
               taskStatus = 'overdue';
               break;
+            case 'COMPLETE':
+              taskStatus = 'complete';
+              break;
+            case 'REFUNDED':
+              taskStatus = 'refunded';
+              break;
+            case 'CANCELLED':
+              taskStatus = 'cancelled';
             default:
               taskStatus = latestStatus.toLowerCase().replaceAll('_', '-');
               break;
@@ -130,15 +127,18 @@ const StaffOverview = ({ user }) => {
       'waiting-kit-prep': 'secondary',
       'kit-prepared': 'warning',
       'kit-sent': 'primary',
-      'kit-returned': 'info',
+      'kit-returned': 'dark',
       'pending-payment': 'dark',
       'expired': 'danger',
       'sample-received': 'info',
+      'complete': 'primary',
+      'refunded': 'warning',
 
       // SampleCollection statuses
       'collected': 'success',
       'transferred': 'success',
       'overdue': 'danger',
+      'cancelled': 'secondary',
 
       // LabTesting statuses
       'sample-collected': 'success',
@@ -152,12 +152,15 @@ const StaffOverview = ({ user }) => {
       'kit-returned': 'Đã nhận kit',
       'pending-payment': 'Chờ thanh toán',
       'expired': 'Quá hạn',
-      'sample-received': 'Đã nhận mẫu',
+      'sample-received': 'Sẵn sàng thu mẫu',
+      'complete': 'Hoàn thành',
+      'refunded': 'Đã hoàn tiền',
 
       // SampleCollection labels
       'collected': 'Đã thu mẫu',
       'transferred': 'Đã chuyển lab',
       'overdue': 'Quá hạn',
+      'cancelled': 'Đã hủy',
 
       // LabTesting labels
       'sample-collected': 'Đã thu mẫu',
@@ -256,7 +259,7 @@ const StaffOverview = ({ user }) => {
                             <span className={`badge rounded-pill ${task.methodName.includes('tại nhà') ? 'bg-success text-white' : task.methodName.includes('lab') ? 'bg-primary text-white' : 'bg-warning text-dark'}`}
                               style={{ fontSize: '0.6em', display: 'flex', alignItems: 'center', gap: '0.3em' }}>
                               {task.methodName.includes('tại nhà') && <i className="bi bi-house-door-fill me-1"></i>}
-                              {task.methodName.includes('nhân viên') && <i className="bi bi-truck me-1"></i>}
+                              {task.methodName.includes('Nhân viên') && <i className="bi bi-truck me-1"></i>}
                               {task.methodName.includes('lab') && <i className="bi bi-building me-1"></i>}
                               {task.methodName}
                             </span>
@@ -287,7 +290,7 @@ const StaffOverview = ({ user }) => {
                       <div className="mb-2">
                         {getStatusBadge(task.status)}
                       </div>
-                      {!['overdue', 'cancelled', 'collected', 'analysis-complete', 'reviewed', 'delivered', 'result-pending'].includes(task.status) && (
+                      {!['overdue', 'cancelled', 'collected', 'analysis-complete', 'reviewed', 'delivered', 'result-pending', 'complete', 'refunded'].includes(task.status) && (
                         <Button
                           as={Link}
                           to={`${getTaskLink(task.type, task.status, task.isHomeVisit)}/${task.orderIds[0]}`}
@@ -301,50 +304,6 @@ const StaffOverview = ({ user }) => {
                   </ListGroup.Item>
                 ))}
               </ListGroup>
-            </Card.Body>
-          </Card>
-        </Col>
-
-        {/* Weekly Progress */}
-        <Col lg={4} className="mb-4">
-          <Card className="shadow-sm">
-            <Card.Header className="bg-light">
-              <h5 className="mb-0">
-                <i className="bi bi-graph-up me-2"></i>
-                Tiến độ tuần này
-              </h5>
-            </Card.Header>
-            <Card.Body>
-              <div className="border-top pt-3">
-                <h6 className="text-muted mb-3">Thống kê theo ngày</h6>
-                {Object.entries(weeklyStats).map(([day, stats]) => (
-                  <div key={day} className="d-flex justify-content-between align-items-center mb-2">
-                    <small className="text-capitalize">
-                      {day === 'monday' ? 'Thứ 2' :
-                        day === 'tuesday' ? 'Thứ 3' :
-                          day === 'wednesday' ? 'Thứ 4' :
-                            day === 'thursday' ? 'Thứ 5' :
-                              day === 'friday' ? 'Thứ 6' :
-                                day === 'saturday' ? 'Thứ 7' :
-                                  'Chủ nhật'}
-                    </small>
-                    <div className="text-end">
-                      <Badge bg="success" className="me-1">{stats.kits}</Badge>
-                      <Badge bg="warning" className="me-1">{stats.samples}</Badge>
-                      <Badge bg="info" className="me-1">{stats.tests}</Badge>
-                      <Badge bg="danger">{stats.results}</Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="border-top pt-3 mt-3">
-                <small className="text-muted">
-                  <Badge bg="success" className="me-1">Kit</Badge>
-                  <Badge bg="warning" className="me-1">Mẫu</Badge>
-                  <Badge bg="info" className="me-1">Test</Badge>
-                  <Badge bg="danger">KQ</Badge>
-                </small>
-              </div>
             </Card.Body>
           </Card>
         </Col>

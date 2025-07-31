@@ -112,7 +112,7 @@ const getTestResultByUserId = async (req, res) => {
 
         const GET_TEST_RESULT_BY_USER_QUERY = `
           query GetUserTestResults($userId: String!) @auth(level: USER) {
-            testResults(where: {booking: {userId: {eq: $userId}}}, orderBy: {testDate: DESC}) {
+            testResults(where: {booking: {userId: {eq: $userId}, bookingHistories_on_booking: {exist: {status: {eq: "COMPLETE"}}}}}, orderBy: {testDate: DESC}) {
               id
               booking {
                 service {

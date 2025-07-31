@@ -52,7 +52,6 @@ function getRoleLabel(role) {
 const ManagerDashboard = () => {
   // Lấy thông tin đường dẫn hiện tại
   const location = useLocation();
-  const navigate = useNavigate();
   const { user } = useAuth();
 
   // State quản lý tab đang active
@@ -60,8 +59,8 @@ const ManagerDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   // State quản lý thông báo
   const [notifications, setNotifications] = useState([
-    { id: 1, message: 'Có 5 lịch hẹn mới cần xác nhận', time: '5 phút trước', read: false },
-    { id: 2, message: 'Báo cáo doanh thu tháng 3 đã sẵn sàng', time: '1 giờ trước', read: false }
+    // { id: 1, message: 'Có 5 lịch hẹn mới cần xác nhận', time: '5 phút trước', read: false },
+    // { id: 2, message: 'Báo cáo doanh thu tháng 3 đã sẵn sàng', time: '1 giờ trước', read: false }
   ]);
 
   // Cập nhật tab active dựa trên đường dẫn URL
@@ -113,10 +112,6 @@ const ManagerDashboard = () => {
     name: user.fullname || user.name || 'Quản lý',
     position: 'Quản lý phòng xét nghiệm',
     employeeId: user.staffId || user.id || 'MGR001',
-    totalServices: 5, // TODO: Lấy từ API
-    totalStaff: 10, // TODO: Lấy từ API
-    totalAppointments: 150, // TODO: Lấy từ API
-    totalRevenue: 150000000 // TODO: Lấy từ API
   };
 
   // Cấu hình các mục menu trong sidebar
@@ -137,14 +132,14 @@ const ManagerDashboard = () => {
       color: 'success',
       description: 'Quản lý và cấu hình dịch vụ'
     },
-    {
-      key: 'appointments',
-      label: 'Quản lý lịch hẹn',
-      icon: CalendarCheck,
-      path: '/manager/appointments',
-      color: 'warning',
-      description: 'Theo dõi và quản lý lịch hẹn'
-    },
+    // {
+    //   key: 'appointments',
+    //   label: 'Quản lý lịch hẹn',
+    //   icon: CalendarCheck,
+    //   path: '/manager/appointments',
+    //   color: 'warning',
+    //   description: 'Theo dõi và quản lý lịch hẹn'
+    // },
     {
       key: 'results',
       label: 'Quản lý kết quả',
@@ -161,22 +156,22 @@ const ManagerDashboard = () => {
       color: 'info',
       description: 'Quản lý thông tin nhân viên'
     },
-    {
-      key: 'reports',
-      label: 'Báo cáo',
-      icon: GraphUp,
-      path: '/manager/reports',
-      color: 'danger',
-      description: 'Xem báo cáo và thống kê'
-    },
-    {
-      key: 'feedback',
-      label: 'Phản hồi',
-      icon: ChatDots,
-      path: '/manager/feedback',
-      color: 'secondary',
-      description: 'Quản lý phản hồi khách hàng'
-    },
+    // {
+    //   key: 'reports',
+    //   label: 'Báo cáo',
+    //   icon: GraphUp,
+    //   path: '/manager/reports',
+    //   color: 'danger',
+    //   description: 'Xem báo cáo và thống kê'
+    // },
+    // {
+    //   key: 'feedback',
+    //   label: 'Phản hồi',
+    //   icon: ChatDots,
+    //   path: '/manager/feedback',
+    //   color: 'secondary',
+    //   description: 'Quản lý phản hồi khách hàng'
+    // },
     {
       key: 'profile',
       label: 'Hồ sơ cá nhân',
@@ -240,48 +235,6 @@ const ManagerDashboard = () => {
                 </Nav.Link>
               ))}
             </Nav>
-
-            {/* Quick Stats */}
-            <Card.Footer className="bg-light">
-              <div className="row text-center">
-                <div className="col-4">
-                  <div className="fw-bold text-success">{currentUser.totalServices}</div>
-                  <small className="text-muted">Dịch vụ</small>
-                </div>
-                <div className="col-4">
-                  <div className="fw-bold text-primary">{currentUser.totalStaff}</div>
-                  <small className="text-muted">Nhân viên</small>
-                </div>
-                <div className="col-4">
-                  <div className="fw-bold text-warning">{currentUser.totalAppointments}</div>
-                  <small className="text-muted">Lịch hẹn</small>
-                </div>
-              </div>
-            </Card.Footer>
-          </Card>
-
-          {/* Quick Actions */}
-          <Card className="shadow-sm mt-3">
-            <Card.Body>
-              <h6 className="text-primary mb-3">
-                <i className="bi bi-lightning me-2"></i>
-                Thao tác nhanh
-              </h6>
-              <div className="d-grid gap-2">
-                <Button variant="outline-primary" size="sm" as={Link} to="/manager/appointments">
-                  <i className="bi bi-calendar-check me-1"></i>
-                  Xem lịch hẹn mới
-                </Button>
-                <Button variant="outline-success" size="sm" as={Link} to="/manager/feedback">
-                  <i className="bi bi-chat-dots me-1"></i>
-                  Phản hồi chờ xử lý
-                </Button>
-                <Button variant="outline-info" size="sm" as={Link} to="/manager/reports">
-                  <i className="bi bi-graph-up me-1"></i>
-                  Báo cáo tháng
-                </Button>
-              </div>
-            </Card.Body>
           </Card>
         </Col>
 

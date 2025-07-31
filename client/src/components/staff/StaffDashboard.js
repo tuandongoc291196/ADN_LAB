@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { Container, Row, Col, Nav, Card, Alert, Spinner } from 'react-bootstrap';
 import { useAuth } from '../context/auth';
 
@@ -8,7 +8,6 @@ import StaffOverview from './StaffOverview';
 import KitPreparation from './KitPreparation';
 import SampleCollection from './SampleCollection';
 import LabTesting from './LabTesting';
-import ResultsManagement from './ResultsManagement';
 import StaffProfile from './StaffProfile';
 
 // Thêm hàm getRoleLabel để mapping role sang tiếng Việt
@@ -26,7 +25,6 @@ function getRoleLabel(role) {
 
 const StaffDashboard = () => {
   const location = useLocation();
-  const navigate = useNavigate();
   const { user } = useAuth();
 
   // Lấy user từ context, nếu chưa có thì lấy từ localStorage
@@ -78,14 +76,6 @@ const StaffDashboard = () => {
       path: '/staff/lab-testing',
       color: 'info',
       description: 'Thực hiện phân tích ADN'
-    },
-    {
-      key: 'results',
-      label: 'Kết quả',
-      icon: 'bi-file-earmark-check',
-      path: '/staff/results',
-      color: 'danger',
-      description: 'Quản lý và trả kết quả'
     },
     {
       key: 'profile',
@@ -217,41 +207,6 @@ const StaffDashboard = () => {
                 </Nav.Link>
               ))}
             </Nav>
-
-            {/* Quick Stats */}
-            <Card.Footer className="bg-light">
-              <div className="row text-center">
-                <div className="col-4">
-                  <div className="fw-bold text-success">{displayUser.totalSamples}</div>
-                  <small className="text-muted">Tổng mẫu</small>
-                </div>
-                <div className="col-4">
-                  <div className="fw-bold text-primary">{displayUser.completedTests}</div>
-                  <small className="text-muted">Hoàn thành</small>
-                </div>
-                <div className="col-4">
-                  <div className="fw-bold text-warning">{displayUser.pendingTests}</div>
-                  <small className="text-muted">Đang xử lý</small>
-                </div>
-              </div>
-            </Card.Footer>
-          </Card>
-
-          {/* Work Shift Info */}
-          <Card className="shadow-sm mt-3">
-            <Card.Body>
-              <h6 className="text-info mb-3">
-                <i className="bi bi-clock me-2"></i>
-                Ca làm việc hôm nay
-              </h6>
-              <p className="mb-2">
-                <strong>{displayUser.workShift}</strong>
-              </p>
-              <div className="d-flex justify-content-between align-items-center">
-                <small className="text-muted">Trạng thái</small>
-                <span className="badge bg-success">Đang làm việc</span>
-              </div>
-            </Card.Body>
           </Card>
         </Col>
 
@@ -265,7 +220,6 @@ const StaffDashboard = () => {
             <Route path="/sample-collection/:bookingId" element={<SampleCollection user={displayUser} />} />
             <Route path="/lab-testing" element={<LabTesting user={displayUser} />} />
             <Route path="/lab-testing/:bookingId" element={<LabTesting user={displayUser} />} />
-            <Route path="/results" element={<ResultsManagement user={displayUser} />} />
             <Route path="/profile" element={<StaffProfile user={displayUser} />} />
             <Route path="*" element={<StaffOverview user={displayUser} />} />
           </Routes>

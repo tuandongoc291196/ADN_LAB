@@ -61,6 +61,7 @@ const AppointmentBooking = () => {
     idNumber: '',
     address: ''
   });
+  const [participantErrors, setParticipantErrors] = useState([]); // Lỗi thông tin người tham gia
 
   // RELATIONSHIP STATE
   const [isParticipant1Customer, setIsParticipant1Customer] = useState(false); // Checkbox người tham gia 1 là người đặt lịch
@@ -1284,9 +1285,6 @@ const AppointmentBooking = () => {
                               </Form.Control.Feedback>
                             </Col>
                           </Row>
-
-
-
                           <Form.Group>
                             <Row>
                               <Col md={6} className="mb-3">
@@ -1374,9 +1372,77 @@ const AppointmentBooking = () => {
                         </Form>
                       </Card.Body>
                     </Card>
+                    {/* Appointment Date & Time */}
+                    ***
+                    {/* Only show date/time selection if not self-sample */}
+                    {bookingData.collectionMethod !== 'self-sample' && (
+                      <Card className="mb-4 shadow-sm">
+                        <Card.Header className="bg-warning text-dark">
+                          <h5 className="mb-0">
+                            <i className="bi bi-calendar me-2"></i>
+                            Chọn ngày và giờ hẹn
+                          </h5>
+                        </Card.Header>
+                        <Card.Body className="p-4">
+                          <Form.Group className="mb-4">
+                            <Form.Label>
+                              Ngày hẹn <span className="text-danger">*</span>
+                            </Form.Label>
+                            <Form.Control
+                              type="date"
+                              min={getDateOptions()[0]}
+                              max={getDateOptions()[getDateOptions().length - 1]}
+                              value={bookingData.appointmentDate}
+                              onChange={(e) =>
+                                setBookingData({ ...bookingData, appointmentDate: e.target.value })
+                              }
+                              required
+                            />
+                            <Form.Text className="text-muted">
+                              <i className="bi bi-info-circle me-1"></i>
+                              Không làm việc vào Chủ nhật
+                            </Form.Text>
+                          </Form.Group>
 
-                    {/* Participants Information - Modern Form for 2 people */}
-                    <Card className="mt-4 shadow-sm">
+                          {bookingData.appointmentDate && (
+                            <Form.Group className="mb-3">
+                              <Form.Label>
+                                Giờ hẹn <span className="text-danger">*</span>
+                              </Form.Label>
+                              <Row className="g-2">
+                                {timeSlots.map((slot) => (
+                                  <Col key={slot.value} xs={6} md={3}>
+                                    <Button
+                                      variant={
+                                        bookingData.appointmentTime === slot.value
+                                          ? 'warning'
+                                          : 'outline-warning'
+                                      }
+                                      size="md"
+                                      className="w-100 fw-bold py-2"
+                                      style={{ borderRadius: 12, fontSize: 16 }}
+                                      onClick={() =>
+                                        setBookingData({
+                                          ...bookingData,
+                                          appointmentTime: slot.value,
+                                        })
+                                      }
+                                    >
+                                      {slot.label}
+                                    </Button>
+                                  </Col>
+                                ))}
+                              </Row>
+                            </Form.Group>
+                          )}
+                        </Card.Body>
+                      </Card>
+                    )}
+
+                  </Col>
+                  {/* Participants Information - Modern Form for 2 people */}
+                  <Col lg={6}>
+                    <Card className="mb-4 shadow-sm">
                       <Card.Header className="bg-info text-white">
                         <h5 className="mb-0">
                           <i className="bi bi-people me-2"></i>
@@ -1413,9 +1479,26 @@ const AppointmentBooking = () => {
                                       type="text"
                                       placeholder="Nhập họ và tên"
                                       value={bookingData.customerInfo.participants[idx]?.name || ''}
-                                      onChange={e => handleParticipantChange(idx, 'name', e.target.value)}
+                                      onChange={e => {
+                                        const value = e.target.value;
+                                        // Validate: không chứa số, ký tự đặc biệt, tối thiểu 2 từ
+                                        let error = '';
+                                        if (!value.trim()) {
+                                          error = 'Vui lòng nhập họ và tên.';
+                                        } else if (/[^a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀỂưăạảấầẩẫậắằẳẵặẹẻẽềềểỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪỬỮỰỲỴÝỶỸửữựỳỵỷỹ\s]/.test(value)) {
+                                          error = 'Tên không được chứa số hoặc ký tự đặc biệt.';
+                                        } else if (value.trim().split(/\s+/).length < 2) {
+                                          error = 'Vui lòng nhập họ & tên đúng và đầy đủ.';
+                                        }
+                                        setParticipantErrors(prev => ({ ...prev, [idx]: error }));
+                                        handleParticipantChange(idx, 'name', value);
+                                      }}
+                                      isInvalid={!!participantErrors?.[idx]}
                                       required
                                     />
+                                    <Form.Control.Feedback type="invalid">
+                                      {participantErrors?.[idx]}
+                                    </Form.Control.Feedback>
                                   </Form.Group>
                                   <Form.Group className="mb-3">
                                     <Form.Label>CCCD</Form.Label>
@@ -1433,7 +1516,7 @@ const AppointmentBooking = () => {
                                           if (value && value.length !== 12) {
                                             setIdNumberErrors(prev => ({
                                               ...prev,
-                                              [idx]: 'CCCD phải gồm đúng 12 chữ số',
+                                              [idx]: 'CCCD phải gồm 12 chữ số',
                                             }));
                                           } else {
                                             setIdNumberErrors(prev => ({ ...prev, [idx]: '' }));
@@ -1548,96 +1631,6 @@ const AppointmentBooking = () => {
                       </Card.Body>
                     </Card>
                   </Col>
-                  {/* Appointment Date & Time */}
-                  <Col lg={6}>
-                    {/* Only show date/time selection if not self-sample */}
-                    {bookingData.collectionMethod !== 'self-sample' && (
-                      <Card className="mb-4 shadow-sm">
-                        <Card.Header className="bg-warning text-dark">
-                          <h5 className="mb-0">
-                            <i className="bi bi-calendar me-2"></i>
-                            Chọn ngày và giờ hẹn
-                          </h5>
-                        </Card.Header>
-                        <Card.Body className="p-4">
-                          <Form.Group className="mb-4">
-                            <Form.Label>
-                              Ngày hẹn <span className="text-danger">*</span>
-                            </Form.Label>
-                            <Form.Control
-                              type="date"
-                              min={getDateOptions()[0]}
-                              max={getDateOptions()[getDateOptions().length - 1]}
-                              value={bookingData.appointmentDate}
-                              onChange={(e) =>
-                                setBookingData({ ...bookingData, appointmentDate: e.target.value })
-                              }
-                              required
-                            />
-                            <Form.Text className="text-muted">
-                              <i className="bi bi-info-circle me-1"></i>
-                              Không làm việc vào Chủ nhật
-                            </Form.Text>
-                          </Form.Group>
-
-                          {bookingData.appointmentDate && (
-                            <Form.Group className="mb-3">
-                              <Form.Label>
-                                Giờ hẹn <span className="text-danger">*</span>
-                              </Form.Label>
-                              <Row className="g-2">
-                                {timeSlots.map((slot) => (
-                                  <Col key={slot.value} xs={6} md={3}>
-                                    <Button
-                                      variant={
-                                        bookingData.appointmentTime === slot.value
-                                          ? 'warning'
-                                          : 'outline-warning'
-                                      }
-                                      size="md"
-                                      className="w-100 fw-bold py-2"
-                                      style={{ borderRadius: 12, fontSize: 16 }}
-                                      onClick={() =>
-                                        setBookingData({
-                                          ...bookingData,
-                                          appointmentTime: slot.value,
-                                        })
-                                      }
-                                    >
-                                      {slot.label}
-                                    </Button>
-                                  </Col>
-                                ))}
-                              </Row>
-                            </Form.Group>
-                          )}
-                        </Card.Body>
-                      </Card>
-                    )}
-
-                    {/* Self-sample info */}
-                    {bookingData.collectionMethod === 'self-sample' && (
-                      <Card className="mb-4 shadow-sm border-success">
-                        <Card.Header className="bg-success text-white">
-                          <h5 className="mb-0">
-                            <i className="bi bi-box me-2"></i>
-                            Thông tin gửi kit
-                          </h5>
-                        </Card.Header>
-                        <Card.Body>
-                          <Alert variant="success" className="mb-3">
-                            <i className="bi bi-check-circle me-2"></i>
-                            Kit xét nghiệm sẽ được gửi đến địa chỉ của bạn trong <strong>1-2 ngày làm việc</strong>
-                          </Alert>
-                          <ul className="list-unstyled">
-                            <li className="mb-2"><i className="bi bi-box me-2 text-success"></i>Kit bao gồm: Que lấy mẫu, hướng dẫn chi tiết, phong bì trả về</li>
-                            <li className="mb-2"><i className="bi bi-clock me-2 text-warning"></i>Thực hiện thu mẫu trong vòng 3 ngày kể từ khi nhận kit</li>
-                            <li className="mb-2"><i className="bi bi-send me-2 text-primary"></i>Gửi mẫu về phòng lab qua đường bưu điện</li>
-                          </ul>
-                        </Card.Body>
-                      </Card>
-                    )}
-                  </Col>
                 </Row>
                 <Row className="mt-4">
                   <Col>
@@ -1657,6 +1650,15 @@ const AppointmentBooking = () => {
                         !bookingData.customerInfo.district ||
                         !bookingData.customerInfo.ward ||
                         !bookingData.customerInfo.addressDetail ||
+                        !bookingData.customerInfo.participants ||
+                        bookingData.customerInfo.participants.length < 2 ||
+                        bookingData.customerInfo.participants.some((p, idx) => {
+                          // Kiểm tra từng trường bắt buộc
+                          if (!p.name || !p.idNumber || !p.age || !p.gender || !p.relation) return true;
+                          // Kiểm tra lỗi validate
+                          if (participantErrors[idx]) return true;
+                          return false;
+                        }) ||
                         (bookingData.collectionMethod !== 'self-sample' && (!bookingData.appointmentDate || !bookingData.appointmentTime))
                       }
                     >

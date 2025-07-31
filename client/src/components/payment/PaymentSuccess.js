@@ -202,7 +202,7 @@ const PaymentSuccess = () => {
     link.download = `receipt-${paymentResult.bookingId}.json`;
     link.click();
   };
-  
+
   // Hàm tách ngày và giờ từ timeSlot.id
   function parseTimeSlotId(timeSlotId) {
     if (!timeSlotId) return { date: 'N/A', time: 'N/A' };
@@ -369,28 +369,6 @@ const PaymentSuccess = () => {
 
           {/* Next Steps */}
           <Col lg={4} className="mb-4">
-            <Card className="shadow-sm">
-              <Card.Header className="bg-info text-white">
-                <h5 className="mb-0">
-                  <i className="bi bi-list-check me-2"></i>
-                  Các bước tiếp theo
-                </h5>
-              </Card.Header>
-              <Card.Body>
-                <ol className="list-unstyled">
-                  {nextSteps.map((step, index) => (
-                    <li key={index} className="mb-3 d-flex align-items-start">
-                      <div className="bg-info bg-opacity-10 rounded-circle p-2 me-3 mt-1"
-                        style={{ minWidth: '30px', height: '30px', fontSize: '0.8rem', fontWeight: 'bold' }}>
-                        {index + 1}
-                      </div>
-                      <div className="small">{step}</div>
-                    </li>
-                  ))}
-                </ol>
-              </Card.Body>
-            </Card>
-
             {/* Quick Actions */}
             <Card className="shadow-sm mt-3">
               <Card.Header className="bg-secondary text-white">

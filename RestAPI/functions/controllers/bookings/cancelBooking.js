@@ -92,6 +92,7 @@ const cancelBookingByUser = async (req, res) => {
 
         const booking = await getOneBookingById(bookingId);
         const latestStatus = booking.bookingHistories_on_booking[0].status;
+        console.log("Latest booking status:", latestStatus);
         if (latestStatus === "CANCELLED" || latestStatus === "EXPIRED" || latestStatus === "COMPLETED") {
             return res.status(400).json({
                 statusCode: 400,

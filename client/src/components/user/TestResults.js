@@ -1,56 +1,84 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Row, Col, Card, Button, Badge, Alert, Modal, Form } from 'react-bootstrap';
-import { getTestResultByUserId, getSamplesByBookingId } from '../../services/api';
+import { getTestResultByUserId, getSamplesByBookingId, getBookingById } from '../../services/api';
 
 // Hàm mapping dữ liệu từ API getTestResultByUserId sang format frontend
-export function mapTestResultToUserResult(testResult, participants = []) {
-  // Lấy bookingId từ nhiều nguồn khác nhau
-  let bookingId = testResult.bookingId;
-  if (!bookingId && testResult.booking?.id) {
-    bookingId = testResult.booking.id;
-  }
-  if (!bookingId && testResult.id) {
-    bookingId = testResult.id.replace('_RESULT', '');
-  }
-  // Nếu vẫn không có, thử lấy từ participants
-  if (!bookingId && participants.length > 0 && participants[0].bookingId) {
-    bookingId = participants[0].bookingId;
-  }
+export function mapTestResultToUserResult(testResult, participants = [], bookingDetails = null) {
+  // Lấy bookingId từ testResult
+  const bookingId = testResult.bookingId || testResult.booking?.id || testResult.id?.replace('_RESULT', '');
   
   console.log('mapTestResultToUserResult - bookingId:', bookingId, 'from testResult:', testResult.id);
   
-  // Xác định serviceType dựa trên category
+  // Xác định serviceType dựa trên booking details hoặc fallback
   let serviceType = 'civil'; // default
+  let categoryName = '';
   
   console.log('=== DEBUG SERVICE TYPE ===');
+  console.log('bookingDetails:', bookingDetails);
   console.log('testResult.booking?.service:', testResult.booking?.service);
   console.log('testResult.booking?.service?.category:', testResult.booking?.service?.category);
-  console.log('testResult.booking?.service?.category?.hasLegalValue:', testResult.booking?.service?.category?.hasLegalValue);
-  console.log('testResult.booking?.service?.category?.name:', testResult.booking?.service?.category?.name);
   
-  if (testResult.booking?.service?.category) {
-    const hasLegalValue = testResult.booking.service.category.hasLegalValue;
-    const catName = testResult.booking.service.category.name || '';
+  // Ưu tiên sử dụng booking details nếu có
+  if (bookingDetails?.service?.category) {
+    const hasLegalValue = bookingDetails.service.category.hasLegalValue;
+    const catName = bookingDetails.service.category.name || '';
+    categoryName = catName;
     
-    console.log('hasLegalValue:', hasLegalValue, 'type:', typeof hasLegalValue);
-    console.log('catName:', catName);
+    console.log('Using booking details - hasLegalValue:', hasLegalValue, 'type:', typeof hasLegalValue);
+    console.log('Using booking details - catName:', catName);
     
     // Kiểm tra hasLegalValue trước
     if (hasLegalValue === true || hasLegalValue === 'true' || hasLegalValue === 1 || hasLegalValue === '1') {
       serviceType = 'administrative';
-      console.log('Set to administrative based on hasLegalValue');
+      console.log('Set to administrative based on booking details hasLegalValue');
     } else if (hasLegalValue === false || hasLegalValue === 'false' || hasLegalValue === 0 || hasLegalValue === '0') {
       serviceType = 'civil';
-      console.log('Set to civil based on hasLegalValue');
+      console.log('Set to civil based on booking details hasLegalValue');
     } else {
       // Fallback: check category name
       if (catName.toLowerCase().includes('hành chính') || catName.toLowerCase().includes('administrative')) {
         serviceType = 'administrative';
-        console.log('Set to administrative based on category name');
+        console.log('Set to administrative based on booking details category name');
       } else if (catName.toLowerCase().includes('dân sự') || catName.toLowerCase().includes('civil')) {
         serviceType = 'civil';
-        console.log('Set to civil based on category name');
+        console.log('Set to civil based on booking details category name');
+      } else {
+        // Fallback: check service name
+        const serviceName = bookingDetails.service?.title || testResult.booking?.service?.title || '';
+        if (serviceName.toLowerCase().includes('hành chính') || serviceName.toLowerCase().includes('giấy khai sinh')) {
+          serviceType = 'administrative';
+          console.log('Set to administrative based on service name');
+        } else {
+          serviceType = 'civil';
+          console.log('Set to civil as default');
+        }
+      }
+    }
+  } else if (testResult.booking?.service?.category) {
+    // Fallback: sử dụng category từ testResult nếu có
+    const hasLegalValue = testResult.booking.service.category.hasLegalValue;
+    const catName = testResult.booking.service.category.name || '';
+    categoryName = catName;
+    
+    console.log('Using testResult category - hasLegalValue:', hasLegalValue, 'type:', typeof hasLegalValue);
+    console.log('Using testResult category - catName:', catName);
+    
+    // Kiểm tra hasLegalValue trước
+    if (hasLegalValue === true || hasLegalValue === 'true' || hasLegalValue === 1 || hasLegalValue === '1') {
+      serviceType = 'administrative';
+      console.log('Set to administrative based on testResult hasLegalValue');
+    } else if (hasLegalValue === false || hasLegalValue === 'false' || hasLegalValue === 0 || hasLegalValue === '0') {
+      serviceType = 'civil';
+      console.log('Set to civil based on testResult hasLegalValue');
+    } else {
+      // Fallback: check category name
+      if (catName.toLowerCase().includes('hành chính') || catName.toLowerCase().includes('administrative')) {
+        serviceType = 'administrative';
+        console.log('Set to administrative based on testResult category name');
+      } else if (catName.toLowerCase().includes('dân sự') || catName.toLowerCase().includes('civil')) {
+        serviceType = 'civil';
+        console.log('Set to civil based on testResult category name');
       } else {
         // Fallback: check service name
         const serviceName = testResult.booking?.service?.title || '';
@@ -68,9 +96,11 @@ export function mapTestResultToUserResult(testResult, participants = []) {
     const serviceName = testResult.booking?.service?.title || '';
     if (serviceName.toLowerCase().includes('hành chính') || serviceName.toLowerCase().includes('giấy khai sinh')) {
       serviceType = 'administrative';
+      categoryName = 'ADN HÀNH CHÍNH';
       console.log('Set to administrative based on service name (no category)');
     } else {
       serviceType = 'civil';
+      categoryName = 'ADN DÂN SỰ';
       console.log('Set to civil as default (no category)');
     }
   }
@@ -83,7 +113,7 @@ export function mapTestResultToUserResult(testResult, participants = []) {
     bookingId: bookingId || 'N/A', // Mã booking để hiển thị trong danh sách
     service: testResult.booking?.service?.title || '',
     serviceType: serviceType,
-    categoryName: testResult.booking?.service?.category?.name || '', // Thêm tên category
+    categoryName: categoryName, // Sử dụng categoryName đã xác định
     appointmentDate: testResult.testDate,
     completionDate: testResult.reportDate,
     participants: participants,
@@ -125,27 +155,34 @@ const TestResults = ({ user }) => {
     try {
       const apiResults = await getTestResultByUserId(user.id);
       console.log('API getTestResultByUserId:', apiResults);
+      
+      // Hiển thị tất cả kết quả vì API không trả về thông tin booking đầy đủ
+      console.log('All test results:', apiResults);
+      
       const resultsWithParticipants = await Promise.all(
         apiResults.map(async (testResult) => {
-          console.log('Full testResult data:', testResult);
+          console.log('Processing testResult:', testResult.id);
           
-          // Thử nhiều cách để lấy bookingId
-          const bookingId = testResult.bookingId || 
-                           testResult.booking?.id || 
-                           testResult.bookingId || 
-                           testResult.id?.replace('_RESULT', '') || // Thử từ ID
-                           testResult.bookingId;
-          
-          console.log('TestResult:', testResult.id, 'BookingId:', bookingId);
+          // Lấy bookingId từ testResult
+          const bookingId = testResult.bookingId || testResult.booking?.id || testResult.id?.replace('_RESULT', '');
+          console.log('BookingId:', bookingId);
           
           let participants = [];
+          let bookingDetails = null;
+          
           if (bookingId) {
             try {
+              // 1. Gọi API getBookingById để lấy thông tin chi tiết booking (bao gồm service.category)
+              console.log('Calling getBookingById for bookingId:', bookingId);
+              bookingDetails = await getBookingById(bookingId);
+              console.log('getBookingById response:', bookingDetails);
+              
+              // 2. Gọi API getSamplesByBookingId để lấy participants
               console.log('Calling getSamplesByBookingId for bookingId:', bookingId);
               const sampleData = await getSamplesByBookingId(bookingId);
-              console.log('API getSamplesByBookingId:', bookingId, sampleData);
+              console.log('getSamplesByBookingId response:', sampleData);
               
-              // Xử lý dữ liệu samples từ API
+              // Xử lý dữ liệu samples
               let samples = [];
               if (Array.isArray(sampleData)) {
                 samples = sampleData;
@@ -155,40 +192,28 @@ const TestResults = ({ user }) => {
                 samples = sampleData.data;
               }
               
-              console.log('Processed samples array:', samples);
-              
-                             // Map samples thành participants với format đúng
-               participants = samples.map(sample => ({
-                 name: sample.participant?.name || sample.name || sample.fullname || 'Không rõ tên',
-                 role: sample.role || sample.participant?.role || sample.relationship || 'Không rõ vai trò',
-                 relationship: sample.participant?.relationship || sample.relationship || sample.role || 'Không rõ mối quan hệ',
-                 sampleType: sample.sampleType || sample.collectionType || 'Máu', // Thử lấy từ sampleType hoặc collectionType
-                 sampleQuality: sample.sampleQuality || 'good',
-                 sampleConcentration: sample.sampleConcentration || '',
-                 bookingId: sample.bookingId || sample.booking?.id || '' // Thêm bookingId từ sample
-               }));
+              // Map samples thành participants
+              participants = samples.map(sample => ({
+                name: sample.participant?.name || sample.name || sample.fullname || 'Không rõ tên',
+                role: sample.role || sample.participant?.role || sample.relationship || 'Không rõ vai trò',
+                relationship: sample.participant?.relationship || sample.relationship || sample.role || 'Không rõ mối quan hệ',
+                sampleType: sample.sampleType || sample.collectionType || 'Máu',
+                sampleQuality: sample.sampleQuality || 'good',
+                sampleConcentration: sample.sampleConcentration || '',
+                bookingId: sample.bookingId || sample.booking?.id || ''
+              }));
               
               console.log('Mapped participants:', participants);
             } catch (e) {
-              console.error('Error fetching samples for bookingId:', bookingId, e);
-              console.error('Error details:', e.message, e.stack);
+              console.error('Error fetching data for bookingId:', bookingId, e);
               participants = [];
+              bookingDetails = null;
             }
           } else {
             console.log('No bookingId found for testResult:', testResult.id);
-            // Thử lấy participants từ testResult nếu có
-            if (testResult.participants_on_booking) {
-              participants = testResult.participants_on_booking.map(p => ({
-                name: p.name || 'Không rõ tên',
-                relationship: p.relationship || 'Không rõ mối quan hệ',
-                sampleType: 'Máu',
-                sampleQuality: 'good',
-                sampleConcentration: ''
-              }));
-              console.log('Using participants from testResult:', participants);
-            }
           }
-          return mapTestResultToUserResult(testResult, participants);
+          
+          return mapTestResultToUserResult(testResult, participants, bookingDetails);
         })
       );
       setResults(resultsWithParticipants);
@@ -327,7 +352,7 @@ const TestResults = ({ user }) => {
                                                              <h5 className="mb-2 d-flex align-items-center" style={{ gap: 8 }}>
                                  {getServiceTypeBadge(appointment.serviceType, appointment.categoryName)}
                                  <span style={{ fontWeight: 500, fontSize: 18 }}>{appointment.service}</span>
-                               </h5>
+                          </h5>
                           <div className="d-flex align-items-center gap-3 text-muted mb-2">
                              <span className="text-muted small">
                               <i className="bi bi-hash me-1"></i>
@@ -467,10 +492,10 @@ const TestResults = ({ user }) => {
                         <td><strong>Dịch vụ:</strong></td>
                         <td>{selectedResult.service}</td>
                       </tr>
-                                             <tr>
+                      <tr>
                          <td><strong>Loại dịch vụ:</strong></td>
                          <td>{selectedResult.categoryName || (selectedResult.serviceType === 'administrative' ? 'ADN Hành Chính' : 'ADN Dân Sự')}</td>
-                       </tr>
+                      </tr>
                       <tr>
                         <td><strong>Ngày lấy mẫu:</strong></td>
                         <td>{formatDate(selectedResult.appointmentDate)}</td>
@@ -552,33 +577,33 @@ const TestResults = ({ user }) => {
               </div>
                )}
 
-                             {/* Main Result */}
+              {/* Main Result */}
                <div className="mb-4 p-4 border rounded bg-light">
                  <h5 className="text-center mb-3 text-primary fw-bold">
-                   <i className="bi bi-clipboard-check me-2"></i>
-                   KẾT QUẢ XÉT NGHIỆM
-                 </h5>
+                  <i className="bi bi-clipboard-check me-2"></i>
+                  KẾT QUẢ XÉT NGHIỆM
+                </h5>
 
-                 <div className="text-center mb-4">
-                   {getResultBadge(selectedResult.result.conclusion)}
+                <div className="text-center mb-4">
+                  {getResultBadge(selectedResult.result.conclusion)}
                    <div className="h4 text-primary mt-2 fw-bold">
                      Độ chính xác: {selectedResult.result.confidence}%
-                   </div>
-                 </div>
+                  </div>
+                </div>
 
-                 <Alert
-                   variant={
-                     selectedResult.result.conclusion === 'POSITIVE' ? 'success' :
-                       selectedResult.result.conclusion === 'NEGATIVE' ? 'danger' : 'warning'
-                   }
+                <Alert
+                  variant={
+                    selectedResult.result.conclusion === 'POSITIVE' ? 'success' :
+                      selectedResult.result.conclusion === 'NEGATIVE' ? 'danger' : 'warning'
+                  }
                    className="text-center fw-bold"
-                 >
+                >
                    <Alert.Heading className="fw-bold">Kết luận:</Alert.Heading>
                    <p className="mb-0 h6 fw-bold">{selectedResult.result.summary}</p>
-                 </Alert>
+                </Alert>
 
                  
-               </div>
+              </div>
 
               {/* Legal Notice */}
               {selectedResult.result.hasLegalValue && (
@@ -594,7 +619,7 @@ const TestResults = ({ user }) => {
                 <small className="text-muted">
                   <strong>Địa chỉ phòng lab:</strong> 123 Đường ABC, Quận XYZ, Hà Nội
                   <br />
-                  Kết quả được ký và xác nhận bởi: <strong>{selectedResult.result.technician}</strong>
+                  Kết quả được ký và xác nhận bởi: <strong>{selectedResult.result.doctor}</strong>
                   <br />
                   <em>Ngày in: {new Date().toLocaleDateString('vi-VN')}</em>
                   <br />
