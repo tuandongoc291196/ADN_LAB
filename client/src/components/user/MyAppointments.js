@@ -68,6 +68,12 @@ const MyAppointments = ({ user }) => {
         return 'Mẫu đã thu thập - Đang phân tích';
       case 'RESULT_PENDING':
         return 'Đang phân tích mẫu - Kết quả sắp có';
+      case 'PAYMENT_CONFIRMED':
+        return 'Thanh toán thành công - Đang chuẩn bị kit';
+      case 'BOOKED':
+        return 'Lịch hẹn đã xác nhận - Đang chuẩn bị';
+      case 'KIT_PREPARED':
+        return 'Kit đã chuẩn bị - Sắp gửi';
       default:
         return 'Chuẩn bị cho lịch hẹn';
     }
@@ -93,6 +99,12 @@ const MyAppointments = ({ user }) => {
         return 'Mẫu đã được thu thập thành công. Đang trong quá trình phân tích.';
       case 'RESULT_PENDING':
         return 'Mẫu đang được phân tích tại phòng lab. Kết quả sẽ sớm có.';
+      case 'PAYMENT_CONFIRMED':
+        return 'Thanh toán đã xác nhận. Chúng tôi đang chuẩn bị kit xét nghiệm.';
+      case 'BOOKED':
+        return 'Lịch hẹn đã được xác nhận. Vui lòng chuẩn bị đầy đủ giấy tờ cần thiết.';
+      case 'KIT_PREPARED':
+        return 'Kit xét nghiệm đã được chuẩn bị và sắp được gửi đến bạn.';
       default:
         return 'Lịch hẹn đã được xác nhận. Vui lòng chuẩn bị đầy đủ giấy tờ cần thiết.';
     }
@@ -122,29 +134,31 @@ const MyAppointments = ({ user }) => {
 
   // Get timeline for specific method
   const getTimelineForMethod = (method) => {
-    if (!method || !method.id) return ['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'SAMPLE_COLLECTED', 'RESULT_PENDING', 'COMPLETED'];
+    if (!method || !method.id) return ['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'SAMPLE_COLLECTED', 'RESULT_PENDING', 'COMPLETE'];
     
     const methodId = method.id;
     const methodName = method.name?.toLowerCase() || '';
     
-    // Self-sample method (tự thu mẫu tại nhà) - Timeline: CREATED → PENDING_PAYMENT → BOOKED → KIT_PREPARED → KIT_SENT → KIT_RECEIVED → SELF_COLLECTED → SAMPLE_RECEIVED → SAMPLE_COLLECTED → RESULT_PENDING → COMPLETED
+    // Self-sample method (tự thu mẫu tại nhà) - Timeline: CREATED → PENDING_PAYMENT → PAYMENT_CONFIRMED → BOOKED → KIT_PREPARED → KIT_SENT → KIT_RECEIVED → SELF_COLLECTED → KIT_RETURNED → SAMPLE_RECEIVED → SAMPLE_COLLECTED → RESULT_PENDING → COMPLETE
     if (methodId === '0' || methodName.includes('tự') || methodName.includes('self') || methodName.includes('kit')) {
       return [
         'CREATED',
-        'PENDING_PAYMENT', 
+        'PENDING_PAYMENT',
+        'PAYMENT_CONFIRMED',
         'BOOKED',
         'KIT_PREPARED',
         'KIT_SENT',
         'KIT_RECEIVED',
         'SELF_COLLECTED',
+        'KIT_RETURNED',
         'SAMPLE_RECEIVED',
         'SAMPLE_COLLECTED',
         'RESULT_PENDING',
-        'COMPLETED'
+        'COMPLETE'
       ];
     }
     
-    // Home-visit method (nhân viên tới nhà) - Timeline: CREATED → PENDING_PAYMENT → BOOKED → STAFF_ASSIGNED → SAMPLE_RECEIVED → SAMPLE_COLLECTED → RESULT_PENDING → COMPLETED
+    // Home-visit method (nhân viên tới nhà) - Timeline: CREATED → PENDING_PAYMENT → BOOKED → STAFF_ASSIGNED → SAMPLE_RECEIVED → SAMPLE_COLLECTED → RESULT_PENDING → COMPLETE
     if (methodId === '1' || methodName.includes('tại nhà') || methodName.includes('home') || methodName.includes('visit')) {
       return [
         'CREATED',
@@ -154,11 +168,11 @@ const MyAppointments = ({ user }) => {
         'SAMPLE_RECEIVED',
         'SAMPLE_COLLECTED',
         'RESULT_PENDING',
-        'COMPLETED'
+        'COMPLETE'
       ];
     }
     
-    // Lab-visit method (lấy mẫu tại lab/cơ sở) - Timeline: CREATED → PENDING_PAYMENT → BOOKED → SAMPLE_RECEIVED → SAMPLE_COLLECTED → RESULT_PENDING → COMPLETED
+    // Lab-visit method (lấy mẫu tại lab/cơ sở) - Timeline: CREATED → PENDING_PAYMENT → BOOKED → SAMPLE_RECEIVED → SAMPLE_COLLECTED → RESULT_PENDING → COMPLETE
     if (methodId === '2' || methodName.includes('tại lab') || methodName.includes('cơ sở') || methodName.includes('lab') || methodName.includes('facility')) {
       return [
         'CREATED',
@@ -167,12 +181,12 @@ const MyAppointments = ({ user }) => {
         'SAMPLE_RECEIVED',
         'SAMPLE_COLLECTED',
         'RESULT_PENDING',
-        'COMPLETED'
+        'COMPLETE'
       ];
     }
     
     // Default timeline if no match
-    return ['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'SAMPLE_COLLECTED', 'RESULT_PENDING', 'COMPLETED'];
+    return ['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'SAMPLE_COLLECTED', 'RESULT_PENDING', 'COMPLETE'];
   };
 
   // Map timeline status to UI status based on method
@@ -195,47 +209,47 @@ const MyAppointments = ({ user }) => {
     const methodId = method?.id;
     const methodName = method?.name?.toLowerCase() || '';
     
-    // Self-sample method (Method ID: 0) - Timeline: CREATED → PENDING_PAYMENT → BOOKED → KIT_PREPARED → KIT_SENT → KIT_RECEIVED → SELF_COLLECTED → SAMPLE_RECEIVED → SAMPLE_COLLECTED → RESULT_PENDING → COMPLETED
+    // Self-sample method (Method ID: 0)
     if (methodId === '0' || methodName.includes('tự') || methodName.includes('self') || methodName.includes('kit')) {
       console.log('MyAppointments - processing self-sample method');
-      // Đã xác nhận: CREATED, PENDING_PAYMENT, BOOKED, KIT_PREPARED, KIT_SENT, KIT_RECEIVED
-      if (['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'KIT_PREPARED', 'KIT_SENT', 'KIT_RECEIVED'].includes(currentStatus)) {
+      // Đã xác nhận: CREATED, PENDING_PAYMENT, PAYMENT_CONFIRMED, BOOKED
+      if (['CREATED', 'PENDING_PAYMENT', 'PAYMENT_CONFIRMED', 'BOOKED'].includes(currentStatus)) {
         console.log('MyAppointments - self-sample returning confirmed for status:', currentStatus);
         return 'confirmed';
       }
-      // Đang thực hiện: SELF_COLLECTED, SAMPLE_RECEIVED, SAMPLE_COLLECTED, RESULT_PENDING
-      else if (['SELF_COLLECTED', 'SAMPLE_RECEIVED', 'SAMPLE_COLLECTED', 'RESULT_PENDING'].includes(currentStatus)) {
+      // Đang thực hiện: KIT_PREPARED, KIT_SENT, KIT_RECEIVED, SELF_COLLECTED, KIT_RETURNED, SAMPLE_RECEIVED, SAMPLE_COLLECTED, RESULT_PENDING
+      else if (['KIT_PREPARED', 'KIT_SENT', 'KIT_RECEIVED', 'SELF_COLLECTED', 'KIT_RETURNED', 'SAMPLE_RECEIVED', 'SAMPLE_COLLECTED', 'RESULT_PENDING'].includes(currentStatus)) {
         console.log('MyAppointments - self-sample returning in-progress for status:', currentStatus);
         return 'in-progress';
       }
-      // Hoàn thành: COMPLETED
+      // Hoàn thành: COMPLETE
       else {
         console.log('MyAppointments - self-sample returning completed for status:', currentStatus);
         return 'completed';
       }
     }
     
-    // Home-visit method (Method ID: 1) - Timeline: CREATED → PENDING_PAYMENT → BOOKED → STAFF_ASSIGNED → SAMPLE_RECEIVED → SAMPLE_COLLECTED → RESULT_PENDING → COMPLETED
+    // Home-visit method (Method ID: 1)
     else if (methodId === '1' || methodName.includes('tại nhà') || methodName.includes('home') || methodName.includes('visit')) {
       console.log('MyAppointments - processing home-visit method');
-      // Đã xác nhận: CREATED, PENDING_PAYMENT, BOOKED, STAFF_ASSIGNED
-      if (['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'STAFF_ASSIGNED'].includes(currentStatus)) {
+      // Đã xác nhận: CREATED, PENDING_PAYMENT, BOOKED
+      if (['CREATED', 'PENDING_PAYMENT', 'BOOKED'].includes(currentStatus)) {
         console.log('MyAppointments - home-visit returning confirmed for status:', currentStatus);
         return 'confirmed';
       }
-      // Đang thực hiện: SAMPLE_RECEIVED, SAMPLE_COLLECTED, RESULT_PENDING
-      else if (['SAMPLE_RECEIVED', 'SAMPLE_COLLECTED', 'RESULT_PENDING'].includes(currentStatus)) {
+      // Đang thực hiện: STAFF_ASSIGNED, SAMPLE_RECEIVED, SAMPLE_COLLECTED, RESULT_PENDING
+      else if (['STAFF_ASSIGNED', 'SAMPLE_RECEIVED', 'SAMPLE_COLLECTED', 'RESULT_PENDING'].includes(currentStatus)) {
         console.log('MyAppointments - home-visit returning in-progress for status:', currentStatus);
         return 'in-progress';
       }
-      // Hoàn thành: COMPLETED
+      // Hoàn thành: COMPLETE
       else {
         console.log('MyAppointments - home-visit returning completed for status:', currentStatus);
         return 'completed';
       }
     }
     
-    // Lab-visit method (Method ID: 2) - Timeline: CREATED → PENDING_PAYMENT → BOOKED → SAMPLE_RECEIVED → SAMPLE_COLLECTED → RESULT_PENDING → COMPLETED
+    // Lab-visit method (Method ID: 2)
     else if (methodId === '2' || methodName.includes('tại lab') || methodName.includes('cơ sở') || methodName.includes('lab') || methodName.includes('facility')) {
       console.log('MyAppointments - processing lab-visit method');
       // Đã xác nhận: CREATED, PENDING_PAYMENT, BOOKED
@@ -248,7 +262,7 @@ const MyAppointments = ({ user }) => {
         console.log('MyAppointments - lab-visit returning in-progress for status:', currentStatus);
         return 'in-progress';
       }
-      // Hoàn thành: COMPLETED
+      // Hoàn thành: COMPLETE
       else {
         console.log('MyAppointments - lab-visit returning completed for status:', currentStatus);
         return 'completed';
@@ -258,10 +272,10 @@ const MyAppointments = ({ user }) => {
     // Default mapping for unknown methods
     else {
       console.log('MyAppointments - processing default method');
-      if (['SAMPLE_COLLECTED', 'SAMPLE_PROCESSING', 'RESULT_PENDING', 'KIT_RETURNED', 'SAMPLE_RECEIVED'].includes(currentStatus)) {
+      if (['SAMPLE_COLLECTED', 'SAMPLE_PROCESSING', 'RESULT_PENDING', 'KIT_RETURNED', 'SAMPLE_RECEIVED', 'SELF_COLLECTED'].includes(currentStatus)) {
         console.log('MyAppointments - default returning in-progress for status:', currentStatus);
         return 'in-progress';
-      } else if (['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'KIT_PREPARED', 'KIT_SENT', 'KIT_RECEIVED', 'SELF_COLLECTED', 'STAFF_ASSIGNED'].includes(currentStatus)) {
+      } else if (['CREATED', 'PENDING_PAYMENT', 'PAYMENT_CONFIRMED', 'BOOKED', 'KIT_PREPARED', 'KIT_SENT', 'KIT_RECEIVED', 'STAFF_ASSIGNED'].includes(currentStatus)) {
         console.log('MyAppointments - default returning confirmed for status:', currentStatus);
         return 'confirmed';
       } else {
@@ -297,9 +311,9 @@ const MyAppointments = ({ user }) => {
       } else {
         // Find the nearest status in our timeline that comes after the current status
         const allStatuses = Object.keys({
-          CREATED: 1, PENDING_PAYMENT: 1, BOOKED: 1, KIT_PREPARED: 1, KIT_SENT: 1, KIT_RECEIVED: 1, 
+          CREATED: 1, PENDING_PAYMENT: 1, PAYMENT_CONFIRMED: 1, BOOKED: 1, KIT_PREPARED: 1, KIT_SENT: 1, KIT_RECEIVED: 1, 
           SELF_COLLECTED: 1, KIT_RETURNED: 1, STAFF_ASSIGNED: 1, SAMPLE_RECEIVED: 1, SAMPLE_COLLECTED: 1, 
-          RESULT_PENDING: 1, COMPLETED: 1, COMPLETE: 1
+          RESULT_PENDING: 1, COMPLETE: 1
         });
         const currentStatusIndex = allStatuses.indexOf(currentStatus);
         
@@ -946,7 +960,7 @@ const MyAppointments = ({ user }) => {
                             Xem chi tiết
                           </Button>
 
-                          {appointment.status === 'completed' && (
+                          {(appointment.status === 'completed' || appointment.latestHistoryStatus === 'COMPLETE') && (
                             <Button variant="success" as={Link} to="/user/results">
                               <i className="bi bi-download me-2"></i>
                               Tải kết quả
@@ -993,7 +1007,6 @@ const MyAppointments = ({ user }) => {
                                 <i className="bi bi-box-arrow-in-down me-2"></i>
                                 Đã nhận kit
                               </Button>
-
                             </>
                           )}
                           {appointment.latestHistoryStatus === 'KIT_RECEIVED' && (
@@ -1038,6 +1051,13 @@ const MyAppointments = ({ user }) => {
                               <i className="bi bi-activity me-2"></i>
                               <strong>Mẫu của bạn đang được phân tích</strong><br />
                               Chúng tôi đã nhận được mẫu xét nghiệm và đang tiến hành xử lý. Kết quả sẽ sớm có.
+                            </Alert>
+                          )}
+                          {appointment.latestHistoryStatus === 'COMPLETE' && (
+                            <Alert variant="success" className="py-2">
+                              <i className="bi bi-check-circle me-2"></i>
+                              <strong>Xét nghiệm hoàn tất!</strong><br />
+                              Kết quả đã sẵn sàng. Vui lòng xem chi tiết để tải kết quả.
                             </Alert>
                           )}
                         </div>
