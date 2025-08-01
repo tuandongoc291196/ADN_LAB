@@ -89,7 +89,7 @@ const getDashboardReports = async (req, res) => {
           updatedAt
         }
 
-        bookings(where: {createdAt: {gt: $startDate, lt: $endDate}}) {
+        bookings(where: {createdAt: {gt: $startDate, lt: $endDate}, bookingHistories_on_booking:{exist: {status: {eq: "BOOKED"}}}}) {
           id
           staff {
             id
@@ -157,7 +157,7 @@ const getDashboardReports = async (req, res) => {
     const bookingStatusStats = {
       EXPIRED: 0,
       CANCELLED: 0,
-      COMPLETED: 0,
+      COMPLETE: 0,
       PENDING: 0,
       REFUNDED: 0
     };
@@ -167,7 +167,7 @@ const getDashboardReports = async (req, res) => {
     bookings.forEach(booking => {
       const latestStatus = booking.bookingHistories_on_booking?.[0]?.status || 'PENDING';
       
-      if (['EXPIRED', 'CANCELLED', 'COMPLETED', 'REFUNDED'].includes(latestStatus)) {
+      if (['EXPIRED', 'CANCELLED', 'COMPLETE', 'REFUNDED'].includes(latestStatus)) {
         bookingStatusStats[latestStatus]++;
       } else {
         bookingStatusStats.PENDING++;
@@ -188,7 +188,7 @@ const getDashboardReports = async (req, res) => {
         }
         staffPerformance[staffName].total++;
         
-        if (latestStatus === 'COMPLETED') {
+        if (latestStatus === 'COMPLETE') {
           staffPerformance[staffName].completed++;
         } else if (latestStatus === 'CANCELLED') {
           staffPerformance[staffName].cancelled++;
