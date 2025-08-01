@@ -22,6 +22,7 @@ const OrderTracking = () => {
         // Common statuses
         CREATED: { title: 'Đặt hẹn thành công', description: 'Lịch hẹn đã được tạo', icon: 'bi-check-circle' },
         PENDING_PAYMENT: { title: 'Chờ thanh toán', description: 'Vui lòng hoàn tất thanh toán', icon: 'bi-credit-card' },
+        PAYMENT_FAILED: { title: 'Thanh toán thất bại', description: 'Thanh toán không thành công', icon: 'bi-x-circle-fill' },
         PAYMENT_CONFIRMED: { title: 'Đã thanh toán', description: 'Thanh toán đã được xác nhận', icon: 'bi-check-circle-fill' },
         BOOKED: { title: 'Đã xác nhận lịch hẹn', description: 'Lịch hẹn đã được xác nhận', icon: 'bi-calendar-check' },
         SAMPLE_RECEIVED: { title: 'Đã nhận mẫu', description: 'Mẫu đã được nhận tại phòng lab', icon: 'bi-box-arrow-in-down' },
@@ -54,7 +55,8 @@ const OrderTracking = () => {
         if (methodId === '0' || methodName.includes('tự') || methodName.includes('self') || methodName.includes('kit')) {
             return [
                 'CREATED',
-                'PENDING_PAYMENT', 
+                'PENDING_PAYMENT',
+                'PAYMENT_FAILED',
                 'BOOKED',
                 'KIT_PREPARED',
                 'KIT_SENT',
@@ -64,7 +66,9 @@ const OrderTracking = () => {
                 'SAMPLE_RECEIVED',
                 'SAMPLE_COLLECTED',
                 'RESULT_PENDING',
-                'COMPLETE'
+                'COMPLETE',
+                'CANCELLED',
+                'EXPIRED'
             ];
         }
         
@@ -73,12 +77,15 @@ const OrderTracking = () => {
             return [
                 'CREATED',
                 'PENDING_PAYMENT',
+                'PAYMENT_FAILED',
                 'BOOKED',
                 'STAFF_ASSIGNED',
                 'SAMPLE_RECEIVED',
                 'SAMPLE_COLLECTED',
                 'RESULT_PENDING',
-                'COMPLETE'
+                'COMPLETE',
+                'CANCELLED',
+                'EXPIRED'
             ];
         }
         
@@ -87,19 +94,21 @@ const OrderTracking = () => {
             return [
                 'CREATED',
                 'PENDING_PAYMENT',
+                'PAYMENT_FAILED',
                 'BOOKED',
                 'SAMPLE_RECEIVED',
                 'SAMPLE_COLLECTED',
                 'RESULT_PENDING',
-                'COMPLETE'
+                'COMPLETE',
+                'CANCELLED',
+                'EXPIRED'
             ];
         }
         
         // Default timeline if no match
         console.warn('Method ID not recognized, using default timeline:', method.id);
         
-        
-        return ['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'SAMPLE_COLLECTED', 'RESULT_PENDING', 'COMPLETE'];
+        return ['CREATED', 'PENDING_PAYMENT', 'PAYMENT_FAILED', 'BOOKED', 'SAMPLE_COLLECTED', 'RESULT_PENDING', 'COMPLETE', 'CANCELLED', 'EXPIRED'];
     };
     
     const fetchBookingData = async (id) => {
@@ -131,18 +140,6 @@ const OrderTracking = () => {
         if (urlBookingId) {
             fetchBookingData(urlBookingId);
         }
-        
-        // Set up polling to refetch data every 15 seconds
-        const intervalId = setInterval(() => {
-            if (urlBookingId) {
-                console.log("Polling for booking updates...");
-                fetchBookingData(urlBookingId);
-            }
-        }, 15000); // Poll every 15 seconds
-
-        // Cleanup function to clear the interval when the component unmounts
-        return () => clearInterval(intervalId);
-        
     }, [urlBookingId, isUser, user]);
 
     const handleSearch = () => {
@@ -337,11 +334,36 @@ const OrderTracking = () => {
         const completedStatuses = history.map(h => h.status);
         const currentStatus = history.length > 0 ? history.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0].status : null;
         
+        // Filter timeline to only show statuses that have occurred or are current
+        const occurredStatuses = [];
+        let foundCurrent = false;
+        
+        for (const status of fullTimelineSteps) {
+            if (completedStatuses.includes(status) || status === currentStatus) {
+                occurredStatuses.push(status);
+                if (status === currentStatus) {
+                    foundCurrent = true;
+                }
+            } else if (foundCurrent) {
+                // Stop adding statuses after we've found the current one
+                break;
+            }
+        }
+        
+        // Add CANCELLED, EXPIRED, or PAYMENT_FAILED if they are the current status
+        if (currentStatus === 'CANCELLED' || currentStatus === 'EXPIRED' || currentStatus === 'PAYMENT_FAILED') {
+            if (!occurredStatuses.includes(currentStatus)) {
+                occurredStatuses.push(currentStatus);
+            }
+        }
+        
         // Calculate progress based on the current status
         let progress = 0;
         const currentStepIndex = fullTimelineSteps.indexOf(currentStatus);
         
-        if (currentStepIndex !== -1) {
+        if (currentStatus === 'CANCELLED' || currentStatus === 'EXPIRED' || currentStatus === 'PAYMENT_FAILED') {
+            progress = 0; // 0% for cancelled/expired/payment failed
+        } else if (currentStepIndex !== -1) {
             progress = ((currentStepIndex + 1) / fullTimelineSteps.length) * 100;
         } else if (currentStatus) {
             // Find the nearest status in our timeline that comes after the current status
@@ -364,32 +386,27 @@ const OrderTracking = () => {
                     <h6 className="text-primary mb-0">Tiến độ thực hiện</h6>
                     <span className="fw-bold">{Math.round(progress)}%</span>
                 </div>
-                <ProgressBar now={progress} variant={progress === 100 ? 'success' : 'primary'} style={{ height: '10px' }} />
+                <ProgressBar now={progress} variant={progress === 100 ? 'success' : currentStatus === 'CANCELLED' || currentStatus === 'EXPIRED' || currentStatus === 'PAYMENT_FAILED' ? 'danger' : 'primary'} style={{ height: '10px' }} />
 
                 <hr />
 
                 <div className="timeline">
-                    {fullTimelineSteps.map((statusKey, index) => {
+                    {occurredStatuses.map((statusKey, index) => {
                         const statusInfo = statusDetails[statusKey] || { title: statusKey, description: '', icon: 'bi-question-circle' };
-                        const isCompleted = completedStatuses.includes(statusKey);
+                        const isCompleted = completedStatuses.includes(statusKey) && statusKey !== currentStatus;
                         const isCurrent = statusKey === currentStatus;
                         
-                        // Consider a status "completed" if any later status in the timeline is completed
-                        const isEffectivelyCompleted = isCompleted || fullTimelineSteps.some((step, stepIndex) => {
-                            const stepPosition = fullTimelineSteps.indexOf(step);
-                            const statusPosition = fullTimelineSteps.indexOf(statusKey);
-                            return stepIndex > statusPosition && completedStatuses.includes(step);
-                        });
-                        
                         const getStatusColor = () => {
+                            if (statusKey === 'CANCELLED' || statusKey === 'EXPIRED' || statusKey === 'PAYMENT_FAILED') return 'danger';
                             if (isCurrent) return 'primary';
-                            if (isEffectivelyCompleted) return 'success';
+                            if (isCompleted) return 'success';
                             return 'light';
                         }
                         
                         const getStatusIcon = () => {
+                            if (statusKey === 'CANCELLED' || statusKey === 'EXPIRED' || statusKey === 'PAYMENT_FAILED') return 'bi-x-circle-fill';
                             if (isCurrent) return 'bi-arrow-right-circle-fill';
-                            if (isEffectivelyCompleted) return 'bi-check-circle-fill';
+                            if (isCompleted) return 'bi-check-circle-fill';
                             return 'bi-circle';
                         }
                         
@@ -402,22 +419,22 @@ const OrderTracking = () => {
                                     <div className={`rounded-circle d-flex align-items-center justify-content-center mb-2 bg-${getStatusColor()} text-white`} style={{ width: '50px', height: '50px' }}>
                                         <i className={`${getStatusIcon()} fs-5`}></i>
                                     </div>
-                                    {index < fullTimelineSteps.length - 1 && (
-                                        <div className={`mx-auto ${isEffectivelyCompleted ? 'bg-success' : 'bg-light'}`} style={{ width: '2px', height: '40px' }}></div>
+                                    {index < occurredStatuses.length - 1 && (
+                                        <div className={`mx-auto ${isCompleted ? 'bg-success' : statusKey === 'CANCELLED' || statusKey === 'EXPIRED' || statusKey === 'PAYMENT_FAILED' ? 'bg-danger' : 'bg-primary'}`} style={{ width: '2px', height: '40px' }}></div>
                                     )}
                                 </div>
                                 <div className="flex-grow-1">
-                                    <Card className={`border-${getStatusColor()} ${isCurrent ? 'bg-primary bg-opacity-10' : ''}`}>
+                                    <Card className={`border-${getStatusColor()} ${isCurrent ? 'bg-primary bg-opacity-10' : statusKey === 'CANCELLED' || statusKey === 'EXPIRED' || statusKey === 'PAYMENT_FAILED' ? 'bg-danger bg-opacity-10' : ''}`}>
                                         <Card.Body className="py-3">
                                             <div className="d-flex justify-content-between align-items-start">
                                                 <div>
-                                                    <h6 className={`mb-1 ${isCurrent ? 'text-primary fw-bold' : ''}`}>
+                                                    <h6 className={`mb-1 ${isCurrent ? 'text-primary fw-bold' : statusKey === 'CANCELLED' || statusKey === 'EXPIRED' || statusKey === 'PAYMENT_FAILED' ? 'text-danger fw-bold' : ''}`}>
                                                         <i className={`${statusInfo.icon} me-2`}></i>{statusInfo.title}
                                                     </h6>
                                                     <p className="mb-0 text-muted small">{statusInfo.description}</p>
                                                 </div>
                                                 <Badge bg={getStatusColor()} className="ms-3 text-capitalize">
-                                                    {isCurrent ? "Hiện tại" : isEffectivelyCompleted ? "Hoàn thành" : "Chờ"}
+                                                    {statusKey === 'CANCELLED' || statusKey === 'EXPIRED' || statusKey === 'PAYMENT_FAILED' ? "Kết thúc" : isCurrent ? "Hiện tại" : isCompleted ? "Hoàn thành" : "Đã thực hiện"}
                                                 </Badge>
                                             </div>
                                             {actionButton}
@@ -470,16 +487,17 @@ const OrderTracking = () => {
                             </Card.Header>
                             <Card.Body>
                                  <Row>
-                                    <Col md={6}>
-                                        <p className="mb-1"><strong>Dịch vụ:</strong> {booking.service?.title}</p>
-                                        <p className="mb-1"><strong>Phương thức:</strong> {booking.method?.name}</p>
-                                        <p className="mb-1"><strong>Loại:</strong> <Badge bg={booking.service?.category?.hasLegalValue ? 'warning' : 'success'}>{booking.service?.category?.hasLegalValue ? 'Hành chính' : 'Dân sự'}</Badge></p>
-                                    </Col>
-                                     <Col md={6}>
-                                        <p className="mb-1"><strong>Khách hàng:</strong> {booking.informations_on_booking?.[0]?.name}</p>
-                                        <p className="mb-1"><strong>Ngày đặt:</strong> {new Date(booking.createdAt).toLocaleDateString('vi-VN')}</p>
-                                    </Col>
-                                </Row>
+                                     <Col md={6} className="text-center">
+                                         <p className="mb-1 text-start"><strong>Dịch vụ:</strong> {booking.service?.title}</p>
+                                         <p className="mb-1 text-start"><strong>Phương thức:</strong> {booking.method?.name}</p>
+                                         <p className="mb-1 text-start"><strong>Loại dịch vụ:</strong> {booking.service?.category?.hasLegalValue ? 'ADN HÀNH CHÍNH' : 'ADN DÂN SỰ'}</p>
+                                     </Col>
+                                      <Col md={6} className="text-center">
+                                         <p className="mb-1 text-start"><strong>Khách hàng:</strong> {booking.informations_on_booking?.[0]?.name}</p>
+                                         <p className="mb-1 text-start"><strong>Ngày đặt lịch:</strong> {new Date(booking.createdAt).toLocaleDateString('vi-VN')}</p>
+                                         <p className="mb-1 text-start"><strong>Kỹ thuật viên:</strong> {booking.staff?.user?.fullname || 'Chưa phân công'}</p>
+                                     </Col>
+                                 </Row>
                                 <hr/>
                                 {renderTimeline()}
                             </Card.Body>

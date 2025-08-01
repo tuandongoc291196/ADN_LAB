@@ -8,7 +8,7 @@
  * - Quản lý trạng thái tài khoản (active/inactive)
  */
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Card, Row, Col, Button, Table, Badge, Modal, Form,
   Alert, InputGroup, Dropdown, Pagination, Toast, ToastContainer,
@@ -46,6 +46,82 @@ const generateEmailFromName = (fullname) => {
   const initials = words.slice(0, -1).map(word => word.charAt(0)).join(''); // Chữ cái đầu của họ và tên lót
   
   return `${lastName}${initials}@adnlab.com`;
+};
+
+// Helper function để format currency
+const formatCurrency = (amount) => {
+  if (!amount) return '0';
+  return amount.toLocaleString('vi-VN');
+};
+
+// Component con để hiển thị total payment với async loading
+const UserTotalPayment = ({ user, getUserTotalPayment, loadingBookings }) => {
+  const [totalPayment, setTotalPayment] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
+
+  const loadTotalPayment = useCallback(async () => {
+    if (!user || !user.id || hasLoaded) return;
+    
+    setIsLoading(true);
+    try {
+      const total = await getUserTotalPayment(user);
+      setTotalPayment(total);
+      setHasLoaded(true);
+    } catch (error) {
+      console.error('Error loading total payment:', error);
+      setTotalPayment(0);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, getUserTotalPayment, hasLoaded]);
+
+  useEffect(() => {
+    if (user && user.id && !loadingBookings[user.id] && !hasLoaded) {
+      loadTotalPayment();
+    }
+  }, [user, getUserTotalPayment, loadingBookings, loadTotalPayment, hasLoaded]);
+
+  if (isLoading || loadingBookings[user?.id]) {
+    return <span className="text-muted">...</span>;
+  }
+
+  return <span className="fw-medium">{formatCurrency(totalPayment)}</span>;
+};
+
+// Component con để hiển thị test count với async loading
+const UserTestCount = ({ user, getUserTestCount, loadingBookings }) => {
+  const [testCount, setTestCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
+
+  const loadTestCount = useCallback(async () => {
+    if (!user || !user.id || hasLoaded) return;
+    
+    setIsLoading(true);
+    try {
+      const count = await getUserTestCount(user);
+      setTestCount(count);
+      setHasLoaded(true);
+    } catch (error) {
+      console.error('Error loading test count:', error);
+      setTestCount(0);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, getUserTestCount, hasLoaded]);
+
+  useEffect(() => {
+    if (user && user.id && !loadingBookings[user.id] && !hasLoaded) {
+      loadTestCount();
+    }
+  }, [user, getUserTestCount, loadingBookings, loadTestCount, hasLoaded]);
+
+  if (isLoading || loadingBookings[user?.id]) {
+    return <span className="text-muted">...</span>;
+  }
+
+  return <span className="fw-medium">{testCount}</span>;
 };
 
 const UserManagement = ({ 
@@ -598,43 +674,76 @@ const UserManagement = ({
     }
   };
 
-  const formatCurrency = (amount) => {
-    if (!amount) return '0';
-    return amount.toLocaleString('vi-VN');
-  };
+
 
   const formatLastLogin = (timestamp) => {
     if (!timestamp) return 'Chưa đăng nhập';
     return new Date(timestamp).toLocaleString('vi-VN');
   };
 
-  // Function to get booking/test count for a specific user using data from getAllUsers
-  const getUserTestCount = (user) => {
-    if (!user || !user.bookings_on_user || !Array.isArray(user.bookings_on_user)) return 0;
-    return user.bookings_on_user.length;
-  };
-
-  // Function to get total payment amount for a specific user using data from getAllUsers
-  const getUserTotalPayment = (user) => {
-    if (!user || !user.bookings_on_user || !Array.isArray(user.bookings_on_user)) return 0;
+  // Function to get booking/test count for a specific user using getBookingByUserId API
+  const getUserTestCount = useCallback(async (user) => {
+    if (!user || !user.id) return 0;
     
-    // Tính tổng số tiền từ tất cả booking của user, chỉ tính payment thành công
-    return user.bookings_on_user.reduce((total, booking) => {
-      // Kiểm tra payment trong booking
-      if (booking.payments_on_booking && Array.isArray(booking.payments_on_booking)) {
-        // Tính tổng từ các payment có status thành công (SUCCESS)
-        const hasSuccessfulPayment = booking.payments_on_booking.some(
-          payment => payment.status === 'SUCCESS'
-        );
-        
-        // Nếu có payment thành công, thêm totalAmount của booking vào tổng
-        if (hasSuccessfulPayment) {
-          return total + (booking.totalAmount || 0);
+    // Fetch booking data nếu chưa có
+    const bookings = await fetchUserBookings(user.id);
+    if (!bookings || !Array.isArray(bookings)) return 0;
+    
+    return bookings.length;
+  }, []);
+
+  // State để lưu trữ booking data cho từng user
+  const [userBookings, setUserBookings] = useState({});
+  const [loadingBookings, setLoadingBookings] = useState({});
+  const loadedUsersRef = useRef(new Set()); // Sử dụng ref thay vì state để tránh re-render
+
+  // Function để fetch booking data cho một user
+  const fetchUserBookings = useCallback(async (userId) => {
+    if (!userId) return [];
+    
+    // Kiểm tra cache trước
+    if (userBookings[userId]) return userBookings[userId];
+    
+    // Kiểm tra xem đã load chưa để tránh gọi API trùng lặp
+    if (loadedUsersRef.current.has(userId)) return userBookings[userId] || [];
+    
+    setLoadingBookings(prev => ({ ...prev, [userId]: true }));
+    try {
+      const bookings = await getBookingByUserId(userId);
+      setUserBookings(prev => ({ ...prev, [userId]: bookings }));
+      loadedUsersRef.current.add(userId);
+      return bookings;
+    } catch (error) {
+      console.error(`Error fetching bookings for user ${userId}:`, error);
+      return [];
+    } finally {
+      setLoadingBookings(prev => ({ ...prev, [userId]: false }));
+    }
+  }, [userBookings]);
+
+  const getUserTotalPayment = useCallback(async (user) => {
+    if (!user || !user.id) return 0;
+    
+    // Fetch booking data nếu chưa có
+    const bookings = await fetchUserBookings(user.id);
+    if (!bookings || !Array.isArray(bookings)) return 0;
+    
+    // Tính tổng số tiền từ tất cả booking của user, sử dụng logic giống DashboardOverview
+    return bookings.reduce((total, booking) => {
+      // Sử dụng bookingHistories_on_booking để xác định trạng thái hiện tại (giống DashboardOverview)
+      const history = booking.bookingHistories_on_booking?.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) || [];
+      const currentHistoryStatus = history.length > 0 ? history[0].status : null;
+      
+      // Loại trừ các đơn hàng có trạng thái bị hủy hoặc hết hạn (giống DashboardOverview)
+      if (currentHistoryStatus && 
+          !['CANCELLED', 'EXPIRED'].includes(currentHistoryStatus)) {
+        if (booking.totalAmount && !isNaN(parseFloat(booking.totalAmount))) {
+          return total + parseFloat(booking.totalAmount);
         }
       }
       return total;
     }, 0);
-  };
+  }, [fetchUserBookings]);
 
   if (loading || usersLoading) return <div className="text-center py-5"><span>Đang tải dữ liệu người dùng...</span></div>;
   if (error || usersError) return <Alert variant="danger">Lỗi: {error || usersError}</Alert>;
@@ -643,11 +752,10 @@ const UserManagement = ({
     <Table hover responsive className="align-middle table-striped">
       <thead className="bg-light">
         <tr>
-          <th className="text-center fw-bold" style={{ width: '30%' }}>Người dùng</th>
-          <th className="text-center fw-bold" style={{ width: '10%' }}>Vai trò</th>
+          <th className="text-center fw-bold" style={{ width: '35%' }}>Người dùng</th>
+          <th className="text-center fw-bold" style={{ width: '15%' }}>Vai trò</th>
           <th className="text-center fw-bold" style={{ width: '15%' }}>Trạng thái</th>
-          <th className="text-center fw-bold" style={{ width: '15%' }}>Đăng nhập cuối</th>
-          <th className="text-center fw-bold" style={{ width: '10%' }}>Xét nghiệm</th>
+          <th className="text-center fw-bold" style={{ width: '15%' }}>Xét nghiệm</th>
           <th className="text-end fw-bold" style={{ width: '10%' }}>Chi tiêu</th>
           <th className="text-center fw-bold" style={{ width: '10%' }}>Thao tác</th>
         </tr>
@@ -655,7 +763,7 @@ const UserManagement = ({
       <tbody>
         {loadingUsers ? (
           <tr>
-            <td colSpan="7" className="text-center">
+            <td colSpan="6" className="text-center">
               <div className="d-flex justify-content-center">
                 <div className="spinner-border text-primary" role="status">
                   <span className="visually-hidden">Loading...</span>
@@ -665,7 +773,7 @@ const UserManagement = ({
           </tr>
         ) : currentUsers.length === 0 ? (
           <tr>
-            <td colSpan="7" className="text-center">
+            <td colSpan="6" className="text-center">
               Không có dữ liệu người dùng
             </td>
           </tr>
@@ -707,13 +815,10 @@ const UserManagement = ({
               <td className="text-center">{getRoleBadge(userItem.role?.name)}</td>
               <td className="text-center">{getStatusBadge(userItem.accountStatus)}</td>
               <td className="text-center">
-                <small>{formatLastLogin(userItem.lastLogin)}</small>
-              </td>
-              <td className="text-center">
-                <span className="fw-medium">{getUserTestCount(userItem)}</span>
+                <UserTestCount user={userItem} getUserTestCount={getUserTestCount} loadingBookings={loadingBookings} />
               </td>
               <td className="text-end">
-                <span className="fw-medium">{formatCurrency(getUserTotalPayment(userItem))}</span>
+                <UserTotalPayment user={userItem} getUserTotalPayment={getUserTotalPayment} loadingBookings={loadingBookings} />
               </td>
               <td className="text-center">
                 <Dropdown className="position-static" drop={index === currentUsers.length - 1 ? 'up' : 'down'} align="end">
@@ -735,12 +840,6 @@ const UserManagement = ({
                       <i className={`bi ${userItem.accountStatus === 'active' ? "bi-x-circle" : "bi-check-circle"} me-2`}></i>
                       {userItem.accountStatus === 'active' ? 'Vô hiệu hóa' : 'Kích hoạt'}
                     </Dropdown.Item>
-                    <Dropdown.Item
-                      className="text-danger"
-                      onClick={() => handleDeleteUser(userItem.id)}
-                    >
-                      <i className="bi bi-trash me-2"></i>Xóa
-                    </Dropdown.Item>
                   </Dropdown.Menu>
                 </Dropdown>
               </td>
@@ -756,17 +855,16 @@ const UserManagement = ({
     <Table hover responsive className="align-middle table-striped">
       <thead className="bg-light">
         <tr>
-          <th className="text-center fw-bold" style={{ width: '40%' }}>Nhân viên</th>
-          <th className="text-center fw-bold" style={{ width: '15%' }}>Vai trò</th>
+          <th className="text-center fw-bold" style={{ width: '50%' }}>Nhân viên</th>
+          <th className="text-center fw-bold" style={{ width: '20%' }}>Vai trò</th>
           <th className="text-center fw-bold" style={{ width: '15%' }}>Trạng thái</th>
-          <th className="text-center fw-bold" style={{ width: '15%' }}>Đăng nhập cuối</th>
           <th className="text-center fw-bold" style={{ width: '15%' }}>Thao tác</th>
         </tr>
       </thead>
       <tbody>
         {loadingStaff ? (
           <tr>
-            <td colSpan="5" className="text-center">
+            <td colSpan="4" className="text-center">
               <div className="d-flex justify-content-center">
                 <div className="spinner-border text-primary" role="status">
                   <span className="visually-hidden">Loading...</span>
@@ -776,7 +874,7 @@ const UserManagement = ({
           </tr>
         ) : currentStaff.length === 0 ? (
           <tr>
-            <td colSpan="5" className="text-center">
+            <td colSpan="4" className="text-center">
               Không có dữ liệu nhân viên
             </td>
           </tr>
@@ -818,9 +916,6 @@ const UserManagement = ({
               <td className="text-center">{getRoleBadge(staffItem.role?.name)}</td>
               <td className="text-center">{getStatusBadge(staffItem.accountStatus)}</td>
               <td className="text-center">
-                <small>{formatLastLogin(staffItem.lastLogin)}</small>
-              </td>
-              <td className="text-center">
                 <Dropdown className="position-static" drop={index === currentStaff.length - 1 ? 'up' : 'down'} align="end">
                   <Dropdown.Toggle variant="outline-secondary" size="sm">
                     <i className="bi bi-three-dots"></i>
@@ -840,12 +935,6 @@ const UserManagement = ({
                       <i className={`bi ${staffItem.accountStatus === 'active' ? "bi-x-circle" : "bi-check-circle"} me-2`}></i>
                       {staffItem.accountStatus === 'active' ? 'Vô hiệu hóa' : 'Kích hoạt'}
                     </Dropdown.Item>
-                    <Dropdown.Item
-                      className="text-danger"
-                      onClick={() => handleDeleteUser(staffItem.id)}
-                    >
-                      <i className="bi bi-trash me-2"></i>Xóa
-                    </Dropdown.Item>
                   </Dropdown.Menu>
                 </Dropdown>
               </td>
@@ -861,17 +950,16 @@ const UserManagement = ({
     <Table hover responsive className="align-middle table-striped">
       <thead className="bg-light">
         <tr>
-          <th className="text-center fw-bold" style={{ width: '40%' }}>Quản lý</th>
-          <th className="text-center fw-bold" style={{ width: '15%' }}>Vai trò</th>
+          <th className="text-center fw-bold" style={{ width: '50%' }}>Quản lý</th>
+          <th className="text-center fw-bold" style={{ width: '20%' }}>Vai trò</th>
           <th className="text-center fw-bold" style={{ width: '15%' }}>Trạng thái</th>
-          <th className="text-center fw-bold" style={{ width: '15%' }}>Đăng nhập cuối</th>
           <th className="text-center fw-bold" style={{ width: '15%' }}>Thao tác</th>
         </tr>
       </thead>
       <tbody>
         {loadingManagers ? (
           <tr>
-            <td colSpan="5" className="text-center">
+            <td colSpan="4" className="text-center">
               <div className="d-flex justify-content-center">
                 <div className="spinner-border text-primary" role="status">
                   <span className="visually-hidden">Loading...</span>
@@ -881,7 +969,7 @@ const UserManagement = ({
           </tr>
         ) : currentManagers.length === 0 ? (
           <tr>
-            <td colSpan="5" className="text-center">
+            <td colSpan="4" className="text-center">
               Không có dữ liệu quản lý
             </td>
           </tr>
@@ -923,9 +1011,6 @@ const UserManagement = ({
               <td className="text-center">{getRoleBadge(managerItem.role?.name)}</td>
               <td className="text-center">{getStatusBadge(managerItem.accountStatus)}</td>
               <td className="text-center">
-                <small>{formatLastLogin(managerItem.lastLogin)}</small>
-              </td>
-              <td className="text-center">
                 <Dropdown className="position-static" drop={index === currentManagers.length - 1 ? 'up' : 'down'} align="end">
                   <Dropdown.Toggle variant="outline-secondary" size="sm">
                     <i className="bi bi-three-dots"></i>
@@ -944,12 +1029,6 @@ const UserManagement = ({
                     >
                       <i className={`bi ${managerItem.accountStatus === 'active' ? "bi-x-circle" : "bi-check-circle"} me-2`}></i>
                       {managerItem.accountStatus === 'active' ? 'Vô hiệu hóa' : 'Kích hoạt'}
-                    </Dropdown.Item>
-                    <Dropdown.Item
-                      className="text-danger"
-                      onClick={() => handleDeleteUser(managerItem.id)}
-                    >
-                      <i className="bi bi-trash me-2"></i>Xóa
                     </Dropdown.Item>
                   </Dropdown.Menu>
                 </Dropdown>

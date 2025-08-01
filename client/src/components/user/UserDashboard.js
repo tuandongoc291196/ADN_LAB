@@ -42,17 +42,9 @@ const UserDashboard = ({ user }) => {
           localStorage.getItem('user_id');
 
         if (!userId) {
-          console.warn('No user ID found, using mock data');
-          setCurrentUser({
-            id: 1,
-            fullname: 'Nguyễn Văn A',
-            email: 'nguyenvana@example.com',
-            phone: '0123456789',
-            avatar: null,
-            role: { name: 'customer' },
-            createdAt: '2023-01-15'
-          });
-          setCounts({ total: 0, completed: 0, inProgress: 0 });
+          console.warn('No user ID found');
+          setError('Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.');
+          setLoading(false);
           return;
         }
 
@@ -185,18 +177,7 @@ const UserDashboard = ({ user }) => {
         }
       } catch (err) {
         console.error('Error fetching user data:', err);
-        setError('Không thể tải thông tin người dùng');
-        // Fallback to mock data
-        setCurrentUser({
-          id: 1,
-          fullname: 'Nguyễn Văn A',
-          email: 'nguyenvana@example.com',
-          phone: '0123456789',
-          avatar: null,
-          role: { name: 'customer' },
-          createdAt: '2023-01-15'
-        });
-        setCounts({ total: 0, completed: 0, inProgress: 0 });
+        setError('Không thể tải thông tin người dùng. Vui lòng thử lại sau.');
       } finally {
         setLoading(false);
       }
@@ -227,6 +208,22 @@ const UserDashboard = ({ user }) => {
           <i className="bi bi-exclamation-triangle me-2"></i>
           {error}
         </Alert>
+        <div className="text-center mt-3">
+          <button 
+            className="btn btn-primary" 
+            onClick={() => window.location.reload()}
+          >
+            <i className="bi bi-arrow-clockwise me-2"></i>
+            Thử lại
+          </button>
+          <button 
+            className="btn btn-outline-secondary ms-2" 
+            onClick={() => window.location.href = '/login'}
+          >
+            <i className="bi bi-box-arrow-in-right me-2"></i>
+            Đăng nhập lại
+          </button>
+        </div>
       </Container>
     );
   }
