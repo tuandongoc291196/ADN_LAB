@@ -460,65 +460,51 @@ const ManagerOverview = ({ user, onDataUpdate }) => {
             })}
           </p>
         </div>
-        <div className="text-end">
-          <div className="h4 text-success mb-0">
-            {dashboardData.totalResults} kết quả
-          </div>
-          <small className="text-muted">Tổng quản lý</small>
-        </div>
       </div>
 
       {/* Quick Stats */}
       <Row className="mb-4">
         <Col lg={3} md={6} className="mb-3">
-          <Card className="border-start border-success border-4 shadow-sm h-100">
-            <Card.Body className="d-flex align-items-center">
-              <div className="me-3">
-                <Gear className="fs-1 text-success" />
+          <Card className="text-center shadow-sm bg-success text-white h-100">
+            <Card.Body className="py-3">
+              <div className="d-flex align-items-center justify-content-center mb-2">
+                <Gear className="fs-4 me-2" />
+                <h6 className="mb-0">Dịch vụ hoạt động</h6>
               </div>
-              <div>
-                <div className="h4 mb-0">{dashboardData.totalServices}</div>
-                <div className="text-muted small">Dịch vụ đang hoạt động</div>
-              </div>
+              <h3 className="fw-bold mb-0">{dashboardData.totalServices}</h3>
             </Card.Body>
           </Card>
         </Col>
         <Col lg={3} md={6} className="mb-3">
-          <Card className="border-start border-warning border-4 shadow-sm h-100">
-            <Card.Body className="d-flex align-items-center">
-              <div className="me-3">
-                <GraphUp className="fs-1 text-warning" />
+          <Card className="text-center shadow-sm bg-primary text-white h-100">
+            <Card.Body className="py-3">
+              <div className="d-flex align-items-center justify-content-center mb-2">
+                <GraphUp className="fs-4 me-2" />
+                <h6 className="mb-0">Quản lý kết quả</h6>
               </div>
-              <div>
-                <div className="h4 mb-0">{dashboardData.totalResults}</div>
-                <div className="text-muted small">Quản lý kết quả</div>
-              </div>
+              <h3 className="fw-bold mb-0">{dashboardData.totalResults}</h3>
             </Card.Body>
           </Card>
         </Col>
         <Col lg={3} md={6} className="mb-3">
-          <Card className="border-start border-info border-4 shadow-sm h-100">
-            <Card.Body className="d-flex align-items-center">
-              <div className="me-3">
-                <People className="fs-1 text-info" />
+          <Card className="text-center shadow-sm bg-info text-white h-100">
+            <Card.Body className="py-3">
+              <div className="d-flex align-items-center justify-content-center mb-2">
+                <People className="fs-4 me-2" />
+                <h6 className="mb-0">Nhân viên làm việc</h6>
               </div>
-              <div>
-                <div className="h4 mb-0">{dashboardData.totalStaff}</div>
-                <div className="text-muted small">Nhân viên đang làm việc</div>
-              </div>
+              <h3 className="fw-bold mb-0">{dashboardData.totalStaff}</h3>
             </Card.Body>
           </Card>
         </Col>
         <Col lg={3} md={6} className="mb-3">
-          <Card className="border-start border-danger border-4 shadow-sm h-100">
-            <Card.Body className="d-flex align-items-center">
-              <div className="me-3">
-                <CalendarCheck className="fs-1 text-danger" />
+          <Card className="text-center shadow-sm bg-warning text-white h-100">
+            <Card.Body className="py-3">
+              <div className="d-flex align-items-center justify-content-center mb-2">
+                <CalendarCheck className="fs-4 me-2" />
+                <h6 className="mb-0">Kết quả chờ xử lý</h6>
               </div>
-              <div>
-                <div className="h4 mb-0">{dashboardData.pendingResults}</div>
-                <div className="text-muted small">Kết quả chờ xử lý</div>
-              </div>
+              <h3 className="fw-bold mb-0">{dashboardData.pendingResults}</h3>
             </Card.Body>
           </Card>
         </Col>
