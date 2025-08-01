@@ -6,6 +6,7 @@ const {onSchedule} = require("firebase-functions/v2/scheduler");
 
 const {cleanupExpiredBookings} = require("./controllers/scheduledTasks/cleanupExpiredBookings");
 const {cleanupPendingPaymentBookings} = require("./controllers/scheduledTasks/cleanupPendingPaymentBookings");
+const {cleanupStaffSlots} = require("./controllers/scheduledTasks/cleanupStaffSlots");
 
 const {addUser} = require('./controllers/users/addUser');
 const {getAllUsers, getOneUser, getUsersByRole} = require('./controllers/users/getUsers');
@@ -173,4 +174,12 @@ exports.cleanupPendingPaymentBookings = onSchedule({
 }, async (event) => {
   console.log('Running pending payment bookings cleanup at 18:00 GMT+7...');
   await cleanupPendingPaymentBookings();
+});
+
+exports.weeklyStaffSlotReset = onSchedule({
+  schedule: '0 18 * * *',
+  timeZone: 'Asia/Ho_Chi_Minh'
+}, async (event) => {
+  console.log('Running weekly staff slot reset at 18:00 GMT+7...');
+  await cleanupStaffSlots();
 });
