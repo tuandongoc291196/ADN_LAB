@@ -27,8 +27,6 @@ import {
 import ServiceManagement from './ServiceManagement';
 import AppointmentManagement from './AppointmentManagement';
 import StaffManagement from './StaffManagement';
-import ReportManagement from './ReportManagement';
-import FeedbackManagement from './FeedbackManagement';
 import ManagerProfile from './ManagerProfile';
 import ResultsManagement from './ResultsManagement';
 
@@ -279,8 +277,6 @@ const ManagerDashboard = () => {
             <Route path="appointments" element={<AppointmentManagement user={currentUser} />} />
             <Route path="results" element={<ResultsManagement user={currentUser} />} />
             <Route path="staff" element={<StaffManagement user={currentUser} />} />
-            <Route path="reports" element={<ReportManagement user={currentUser} />} />
-            <Route path="feedback" element={<FeedbackManagement user={currentUser} />} />
             <Route path="profile" element={<ManagerProfile user={currentUser} />} />
           </Routes>
         </Col>
