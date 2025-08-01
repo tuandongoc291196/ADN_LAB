@@ -466,7 +466,7 @@ const BlogEditor = () => {
 
               {/* Image Upload */}
               <Form.Group className="mb-3">
-                <Form.Label>Hình ảnh đại diện</Form.Label>
+                <Form.Label>Hình ảnh nội dung</Form.Label>
                 <Form.Control
                   type="file"
                   accept="image/*"
