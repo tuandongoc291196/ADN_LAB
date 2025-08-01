@@ -967,7 +967,7 @@ const MyAppointments = ({ user }) => {
                             </Button>
                           )}
 
-                          {appointment.canReschedule && (
+                          {/* {appointment.canReschedule && (
                             <Button
                               variant="outline-warning"
                               onClick={() => handleRescheduleAppointment(appointment)}
@@ -985,7 +985,7 @@ const MyAppointments = ({ user }) => {
                               <i className="bi bi-x-circle me-2"></i>
                               Hủy lịch hẹn
                             </Button>
-                          )}
+                          )} */}
 
                           <Button variant="outline-secondary">
                             <i className="bi bi-chat-dots me-2"></i>
