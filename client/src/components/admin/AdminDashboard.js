@@ -21,7 +21,6 @@ import BlogEditor from './BlogEditor';
 import AdminReports from './AdminReports';
 import UserManagement from './UserManagement';
 import SystemSettings from './SystemSettings';
-import AdminProfile from './AdminProfile';
 
 const AdminDashboard = () => {
   // Hook lấy thông tin URL hiện tại để xác định tab đang active
@@ -269,14 +268,6 @@ const AdminDashboard = () => {
       path: '/admin/settings',
       color: 'dark',
       description: 'Cấu hình giao diện và xóa cache'
-    },
-    {
-      key: 'profile',
-      label: 'Hồ sơ cá nhân',
-      icon: 'bi-person-circle',
-      path: '/admin/profile',
-      color: 'info',
-      description: 'Quản lý thông tin cá nhân'
     }
   ];
 
@@ -342,6 +333,20 @@ const AdminDashboard = () => {
                 </Nav.Link>
               ))}
             </Nav>
+
+            {/* FOOTER - Thống kê nhanh */}
+            <Card.Footer className="bg-light">
+              <div className="row text-center">
+                <div className="col-6 border-end border-secondary">
+                  <div className="fw-bold text-primary">{stats.totalUsers || 0}</div>
+                  <small className="text-muted">Người dùng</small>
+                </div>
+                <div className="col-6">
+                  <div className="fw-bold text-success">{blogCount}</div>
+                  <small className="text-muted">Bài viết</small>
+                </div>
+              </div>
+            </Card.Footer>
           </Card>
         </Col>
 
@@ -384,8 +389,6 @@ const AdminDashboard = () => {
             <Route path="blog/create" element={<BlogEditor />} />
             <Route path="blog/edit/:id" element={<BlogEditor />} />
             <Route path="reports" element={<AdminReports />} />
-            <Route path="profile" element={<AdminProfile user={currentUser} />} />
-            <Route path="settings" element={<SystemSettings />} />
             <Route 
               path="users" 
               element={
@@ -398,6 +401,7 @@ const AdminDashboard = () => {
                 />
               } 
             />
+            <Route path="settings" element={<SystemSettings />} />
           </Routes>
         </Col>
       </Row>

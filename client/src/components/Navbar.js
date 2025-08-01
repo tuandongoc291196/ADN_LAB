@@ -481,12 +481,12 @@ const MainNavbar = ({ setUser }) => {
                     
                     <Nav.Link
                       as={Link}
-                      to="/manager/results"
-                      className={`fw-medium me-lg-3 ${isActive('/manager/results') ? 'active text-primary' : ''}`}
+                      to="/manager/appointments"
+                      className={`fw-medium me-lg-3 ${isActive('/manager/appointments') ? 'active text-primary' : ''}`}
                       onClick={handleNavClick}
                     >
                       <i className="bi bi-calendar-check me-2"></i>
-                      Quản lý kết quả
+                      Quản lý lịch hẹn
                     </Nav.Link>
                     
                     <Nav.Link
@@ -497,6 +497,26 @@ const MainNavbar = ({ setUser }) => {
                     >
                       <i className="bi bi-people me-2"></i>
                       Quản lý nhân viên
+                    </Nav.Link>
+                    
+                    <Nav.Link
+                      as={Link}
+                      to="/manager/reports"
+                      className={`fw-medium me-lg-3 ${isActive('/manager/reports') ? 'active text-primary' : ''}`}
+                      onClick={handleNavClick}
+                    >
+                      <i className="bi bi-graph-up me-2"></i>
+                      Báo cáo
+                    </Nav.Link>
+                    
+                    <Nav.Link
+                      as={Link}
+                      to="/manager/feedback"
+                      className={`fw-medium me-lg-3 ${isActive('/manager/feedback') ? 'active text-primary' : ''}`}
+                      onClick={handleNavClick}
+                    >
+                      <i className="bi bi-chat-dots me-2"></i>
+                      Phản hồi
                     </Nav.Link>
                   </>
                 )}
@@ -831,10 +851,6 @@ const MainNavbar = ({ setUser }) => {
                           <i className="bi bi-gear me-2"></i>
                           Cài đặt
                         </NavDropdown.Item>
-                        <NavDropdown.Item as={Link} to="/admin/profile" onClick={handleNavClick}>
-                          <i className="bi bi-person me-2"></i>
-                          Hồ sơ cá nhân
-                        </NavDropdown.Item>
                         <NavDropdown.Divider />
                       </>
                     )}
@@ -846,17 +862,21 @@ const MainNavbar = ({ setUser }) => {
                           <i className="bi bi-gear me-2"></i>
                           Quản lý dịch vụ
                         </NavDropdown.Item>
-                        <NavDropdown.Item as={Link} to="/manager/results" onClick={handleNavClick}>
+                        <NavDropdown.Item as={Link} to="/manager/appointments" onClick={handleNavClick}>
                           <i className="bi bi-calendar-check me-2"></i>
-                          Quản lý kết quả
+                          Quản lý lịch hẹn
                         </NavDropdown.Item>
                         <NavDropdown.Item as={Link} to="/manager/staff" onClick={handleNavClick}>
                           <i className="bi bi-people me-2"></i>
                           Quản lý nhân viên
                         </NavDropdown.Item>
-                        <NavDropdown.Item as={Link} to="/manager/profile" onClick={handleNavClick}>
-                          <i className="bi bi-person me-2"></i>
-                          Hồ sơ cá nhân
+                        <NavDropdown.Item as={Link} to="/manager/reports" onClick={handleNavClick}>
+                          <i className="bi bi-graph-up me-2"></i>
+                          Báo cáo
+                        </NavDropdown.Item>
+                        <NavDropdown.Item as={Link} to="/manager/feedback" onClick={handleNavClick}>
+                          <i className="bi bi-chat-dots me-2"></i>
+                          Phản hồi
                         </NavDropdown.Item>
                         <NavDropdown.Divider />
                       </>
@@ -881,13 +901,17 @@ const MainNavbar = ({ setUser }) => {
                           <i className="bi bi-file-earmark-check me-2"></i>
                           Kết quả
                         </NavDropdown.Item>
-                        <NavDropdown.Item as={Link} to="/staff/profile" onClick={handleNavClick}>
-                          <i className="bi bi-person me-2"></i>
-                          Hồ sơ cá nhân
-                        </NavDropdown.Item>
                         <NavDropdown.Divider />
                       </>
                     )}
+
+                    {/* Regular user links - show for everyone */}
+                    <NavDropdown.Item as={Link} to="/user/profile" onClick={handleNavClick}>
+                      <i className="bi bi-person me-2"></i>
+                      Hồ sơ cá nhân
+                    </NavDropdown.Item>
+
+                    {/* Customer specific links */}
                     {isCustomer && (
                       <>
                         <NavDropdown.Item as={Link} to="/user/appointments" onClick={handleNavClick}>
@@ -898,10 +922,6 @@ const MainNavbar = ({ setUser }) => {
                           <i className="bi bi-file-earmark-check me-2"></i>
                           Kết quả xét nghiệm
                         </NavDropdown.Item>
-                        <NavDropdown.Item as={Link} to="/user/profile" onClick={handleNavClick}>
-                      <i className="bi bi-person me-2"></i>
-                      Hồ sơ cá nhân
-                    </NavDropdown.Item>
                       </>
                     )}
                     <NavDropdown.Divider />
