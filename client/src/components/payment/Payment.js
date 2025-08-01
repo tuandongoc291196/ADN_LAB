@@ -222,7 +222,7 @@ const Payment = () => {
                 default:
                     method = paymentMethod.toUpperCase();
             }
-            
+
             const today = new Date().toISOString().split('T')[0];
 
             const payload = {
@@ -260,8 +260,8 @@ const Payment = () => {
                 navigate('/user/appointments', { state: { bookingId } });
             } else {
                 // Thanh toán online
-            alert('Thanh toán thành công!');
-            navigate('/payment-success', { state: { bookingId } });
+                alert('Thanh toán thành công!');
+                navigate('/payment-success', { state: { bookingId } });
             }
 
         } catch (error) {
@@ -395,7 +395,7 @@ const Payment = () => {
                                         // Chỉ cho phép thanh toán tiền mặt khi "tới cơ sở lấy mẫu"
                                         // "Nhân viên tới nhà" phải thanh toán trước để tránh spam
                                         // "Tự lấy mẫu" không có nhân viên thu tiền
-                                        const disallowedCashMethods = ['tự lấy mẫu tại nhà', 'nhân viên tới nhà lấy mẫu'];
+                                        const disallowedCashMethods = ['lấy mẫu tại nhà', 'nhân viên tới nhà lấy mẫu'];
 
                                         // Convert về lowercase để so sánh chính xác
                                         const normalizedMethod = methodName.toLowerCase().trim();
@@ -422,7 +422,7 @@ const Payment = () => {
                                                         <div className="small text-muted">{method.note}</div>
                                                         {isDisabledCash && (
                                                             <div className="mt-2 text-danger small">
-                                                                {methodName.includes('nhân viên tới nhà') 
+                                                                {methodName.includes('nhân viên tới nhà')
                                                                     ? 'Không áp dụng cho phương thức thu mẫu hiện tại'
                                                                     : 'Không áp dụng cho phương thức thu mẫu hiện tại'
                                                                 }

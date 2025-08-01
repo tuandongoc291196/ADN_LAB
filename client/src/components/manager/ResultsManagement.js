@@ -436,8 +436,8 @@ const ResultsManagement = ({ user }) => {
                                 <i className="bi bi-funnel text-primary me-2"></i>
                                 Trạng thái
                             </Form.Label>
-                            <Form.Select 
-                                value={filterStatus} 
+                            <Form.Select
+                                value={filterStatus}
                                 onChange={(e) => setFilterStatus(e.target.value)}
                                 className="border-0 shadow-sm"
                             >
@@ -767,6 +767,7 @@ const ResultsManagement = ({ user }) => {
                                             <tr>
                                                 <th>Họ tên</th>
                                                 <th>Mối quan hệ</th>
+                                                <th>Loại mẫu</th>
                                                 <th>Chất lượng ADN</th>
                                                 <th>Nồng độ (ng/μL)</th>
                                             </tr>
@@ -776,6 +777,23 @@ const ResultsManagement = ({ user }) => {
                                                 <tr key={sample.id || sample.sampleId || index}>
                                                     <td>{sample.name || sample.participant?.name || ''}</td>
                                                     <td>{sample.relationship || sample.participant?.relationship || 'Chưa xác định'}</td>
+                                                    <td>
+                                                        {sample.sampleType === 'blood' ? (
+                                                            <Badge bg="danger">Máu</Badge>
+                                                        ) : sample.sampleType === 'buccal-swab' ? (
+                                                            <Badge bg="warning">Tăm bông miệng</Badge>
+                                                        ) : sample.sampleType === 'saliva' ? (
+                                                            <Badge bg="info">Nước bọt</Badge>
+                                                        ) : sample.sampleType === 'hair-root' ? (
+                                                            <Badge bg="primary">Tóc</Badge>
+                                                        ) : sample.sampleType === 'nail' ? (
+                                                            <Badge bg="success">Móng</Badge>
+                                                        ) : sample.sampleType === 'other' ? (
+                                                            <Badge bg="dark">Khác</Badge>
+                                                        ) : (
+                                                            <Badge bg="secondary">Không xác định</Badge>
+                                                        )}
+                                                    </td>
                                                     <td>
                                                         {sample.sampleQuality === 'excellent' ? (
                                                             <Badge bg="success">Xuất sắc</Badge>

@@ -7,27 +7,27 @@ import { getTestResultByUserId, getSamplesByBookingId, getBookingById } from '..
 export function mapTestResultToUserResult(testResult, participants = [], bookingDetails = null) {
   // Lấy bookingId từ testResult
   const bookingId = testResult.bookingId || testResult.booking?.id || testResult.id?.replace('_RESULT', '');
-  
+
   console.log('mapTestResultToUserResult - bookingId:', bookingId, 'from testResult:', testResult.id);
-  
+
   // Xác định serviceType dựa trên booking details hoặc fallback
   let serviceType = 'civil'; // default
   let categoryName = '';
-  
+
   console.log('=== DEBUG SERVICE TYPE ===');
   console.log('bookingDetails:', bookingDetails);
   console.log('testResult.booking?.service:', testResult.booking?.service);
   console.log('testResult.booking?.service?.category:', testResult.booking?.service?.category);
-  
+
   // Ưu tiên sử dụng booking details nếu có
   if (bookingDetails?.service?.category) {
     const hasLegalValue = bookingDetails.service.category.hasLegalValue;
     const catName = bookingDetails.service.category.name || '';
     categoryName = catName;
-    
+
     console.log('Using booking details - hasLegalValue:', hasLegalValue, 'type:', typeof hasLegalValue);
     console.log('Using booking details - catName:', catName);
-    
+
     // Kiểm tra hasLegalValue trước
     if (hasLegalValue === true || hasLegalValue === 'true' || hasLegalValue === 1 || hasLegalValue === '1') {
       serviceType = 'administrative';
@@ -60,10 +60,10 @@ export function mapTestResultToUserResult(testResult, participants = [], booking
     const hasLegalValue = testResult.booking.service.category.hasLegalValue;
     const catName = testResult.booking.service.category.name || '';
     categoryName = catName;
-    
+
     console.log('Using testResult category - hasLegalValue:', hasLegalValue, 'type:', typeof hasLegalValue);
     console.log('Using testResult category - catName:', catName);
-    
+
     // Kiểm tra hasLegalValue trước
     if (hasLegalValue === true || hasLegalValue === 'true' || hasLegalValue === 1 || hasLegalValue === '1') {
       serviceType = 'administrative';
@@ -104,7 +104,7 @@ export function mapTestResultToUserResult(testResult, participants = [], booking
       console.log('Set to civil as default (no category)');
     }
   }
-  
+
   console.log('Final serviceType:', serviceType);
   console.log('=== END DEBUG ===');
 
@@ -155,33 +155,33 @@ const TestResults = ({ user }) => {
     try {
       const apiResults = await getTestResultByUserId(user.id);
       console.log('API getTestResultByUserId:', apiResults);
-      
+
       // Hiển thị tất cả kết quả vì API không trả về thông tin booking đầy đủ
       console.log('All test results:', apiResults);
-      
+
       const resultsWithParticipants = await Promise.all(
         apiResults.map(async (testResult) => {
           console.log('Processing testResult:', testResult.id);
-          
+
           // Lấy bookingId từ testResult
           const bookingId = testResult.bookingId || testResult.booking?.id || testResult.id?.replace('_RESULT', '');
           console.log('BookingId:', bookingId);
-          
+
           let participants = [];
           let bookingDetails = null;
-          
+
           if (bookingId) {
             try {
               // 1. Gọi API getBookingById để lấy thông tin chi tiết booking (bao gồm service.category)
               console.log('Calling getBookingById for bookingId:', bookingId);
               bookingDetails = await getBookingById(bookingId);
               console.log('getBookingById response:', bookingDetails);
-              
+
               // 2. Gọi API getSamplesByBookingId để lấy participants
               console.log('Calling getSamplesByBookingId for bookingId:', bookingId);
               const sampleData = await getSamplesByBookingId(bookingId);
               console.log('getSamplesByBookingId response:', sampleData);
-              
+
               // Xử lý dữ liệu samples
               let samples = [];
               if (Array.isArray(sampleData)) {
@@ -191,7 +191,7 @@ const TestResults = ({ user }) => {
               } else if (sampleData && sampleData.data && Array.isArray(sampleData.data)) {
                 samples = sampleData.data;
               }
-              
+
               // Map samples thành participants
               participants = samples.map(sample => ({
                 name: sample.participant?.name || sample.name || sample.fullname || 'Không rõ tên',
@@ -202,7 +202,7 @@ const TestResults = ({ user }) => {
                 sampleConcentration: sample.sampleConcentration || '',
                 bookingId: sample.bookingId || sample.booking?.id || ''
               }));
-              
+
               console.log('Mapped participants:', participants);
             } catch (e) {
               console.error('Error fetching data for bookingId:', bookingId, e);
@@ -212,7 +212,7 @@ const TestResults = ({ user }) => {
           } else {
             console.log('No bookingId found for testResult:', testResult.id);
           }
-          
+
           return mapTestResultToUserResult(testResult, participants, bookingDetails);
         })
       );
@@ -232,9 +232,9 @@ const TestResults = ({ user }) => {
   const getResultBadge = (conclusion) => {
     switch (conclusion) {
       case 'POSITIVE':
-         return <Badge bg="success" className="fs-6">DƯƠNG TÍNH</Badge>;
+        return <Badge bg="success" className="fs-6">DƯƠNG TÍNH</Badge>;
       case 'NEGATIVE':
-         return <Badge bg="danger" className="fs-6">ÂM TÍNH</Badge>;
+        return <Badge bg="danger" className="fs-6">ÂM TÍNH</Badge>;
       case 'INCONCLUSIVE':
         return <Badge bg="warning" className="fs-6">KHÔNG KẾT LUẬN</Badge>;
       default:
@@ -249,7 +249,7 @@ const TestResults = ({ user }) => {
         ? <Badge bg="warning" text="dark" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: 500 }}>{categoryName}</Badge>
         : <Badge bg="success" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: 500 }}>{categoryName}</Badge>;
     }
-    
+
     // Fallback nếu không có category name
     return serviceType === 'administrative'
       ? <Badge bg="warning" text="dark" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: 500 }}>ADN Hành Chính</Badge>
@@ -340,103 +340,103 @@ const TestResults = ({ user }) => {
             </div>
           ) : filteredResults.length > 0 ? (
             <div className="list-group list-group-flush">
-               {filteredResults.map((appointment) => {
-                 console.log('Rendering appointment:', appointment.id, 'bookingId:', appointment.bookingId);
-                 return (
-                <div key={appointment.id} className="list-group-item p-4">
-                  <Row>
-                    <Col lg={8}>
-                      {/* Result Header */}
-                      <div className="d-flex justify-content-between align-items-start mb-3">
-                        <div>
-                                                             <h5 className="mb-2 d-flex align-items-center" style={{ gap: 8 }}>
-                                 {getServiceTypeBadge(appointment.serviceType, appointment.categoryName)}
-                                 <span style={{ fontWeight: 500, fontSize: 18 }}>{appointment.service}</span>
-                          </h5>
-                          <div className="d-flex align-items-center gap-3 text-muted mb-2">
-                             <span className="text-muted small">
-                              <i className="bi bi-hash me-1"></i>
-                               {appointment.bookingId || 'N/A'}
-                            </span>
-                             <span className="text-muted small">
-                              <i className="bi bi-calendar me-1"></i>
-                              Xét nghiệm: {formatDate(appointment.appointmentDate)}
-                            </span>
-                             <span className="text-muted small">
-                              <i className="bi bi-check-circle me-1"></i>
-                              Có kết quả: {formatDate(appointment.completionDate)}
-                            </span>
+              {filteredResults.map((appointment) => {
+                console.log('Rendering appointment:', appointment.id, 'bookingId:', appointment.bookingId);
+                return (
+                  <div key={appointment.id} className="list-group-item p-4">
+                    <Row>
+                      <Col lg={8}>
+                        {/* Result Header */}
+                        <div className="d-flex justify-content-between align-items-start mb-3">
+                          <div>
+                            <h5 className="mb-2 d-flex align-items-center" style={{ gap: 8 }}>
+                              {getServiceTypeBadge(appointment.serviceType, appointment.categoryName)}
+                              <span style={{ fontWeight: 500, fontSize: 18 }}>{appointment.service}</span>
+                            </h5>
+                            <div className="d-flex align-items-center gap-3 text-muted mb-2">
+                              <span className="text-muted small">
+                                <i className="bi bi-hash me-1"></i>
+                                {appointment.bookingId || 'N/A'}
+                              </span>
+                              <span className="text-muted small">
+                                <i className="bi bi-calendar me-1"></i>
+                                Xét nghiệm: {formatDate(appointment.appointmentDate)}
+                              </span>
+                              <span className="text-muted small">
+                                <i className="bi bi-check-circle me-1"></i>
+                                Có kết quả: {formatDate(appointment.completionDate)}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-end">
+                            <Badge bg="success" className="fs-6">HOÀN THÀNH</Badge>
                           </div>
                         </div>
-                        <div className="text-end">
-                             <Badge bg="success" className="fs-6">HOÀN THÀNH</Badge>
+
+                        {/* Personnel Info */}
+                        <div className="mb-3">
+                          <strong className="text-muted small" style={{ textAlign: 'left', display: 'block' }}>Thực hiện xét nghiệm:</strong>
+                          <div className="mt-1">
+                            <table className="table table-bordered table-sm mt-2" style={{ maxWidth: 600 }}>
+                              <thead>
+                                <tr className="text-muted small">
+                                  <th>Vai trò</th>
+                                  <th>Họ và tên</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr className="text-muted small">
+                                  <td style={{ fontWeight: 500 }}>Kỹ thuật viên</td>
+                                  <td>{appointment.result.technician}</td>
+                                </tr>
+                                <tr className="text-muted small">
+                                  <td style={{ fontWeight: 500 }}>Bác sĩ</td>
+                                  <td>{appointment.result.doctor}</td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
-                      </div>
 
-                                                                     {/* Personnel Info */}
-                      <div className="mb-3">
-                           <strong className="text-muted small" style={{ textAlign: 'left', display: 'block' }}>Thực hiện xét nghiệm:</strong>
-                           <div className="mt-1">
-                             <table className="table table-bordered table-sm mt-2" style={{ maxWidth: 600 }}>
-                               <thead>
-                                 <tr className="text-muted small">
-                                   <th>Vai trò</th>
-                                   <th>Họ và tên</th>
-                                 </tr>
-                               </thead>
-                               <tbody>
-                                 <tr className="text-muted small">
-                                   <td style={{ fontWeight: 500 }}>Kỹ thuật viên</td>
-                                   <td>{appointment.result.technician}</td>
-                                 </tr>
-                                 <tr className="text-muted small">
-                                   <td style={{ fontWeight: 500 }}>Bác sĩ</td>
-                                   <td>{appointment.result.doctor}</td>
-                                 </tr>
-                               </tbody>
-                             </table>
-                                </div>
-                      </div>
-
-                      {/* Result Summary */}
+                        {/* Result Summary */}
                         <Alert variant="info" className="mb-3 py-2">
                           <i className="bi bi-info-circle me-2"></i>
                           <strong>Thông báo:</strong> Kết quả xét nghiệm đã sẵn sàng. Vui lòng xem chi tiết để biết thêm thông tin.
-                      </Alert>
-                    </Col>
+                        </Alert>
+                      </Col>
 
-                    {/* Actions */}
-                    <Col lg={4} className="mt-3 mt-lg-0">
-                      <div className="d-grid gap-2">
-                        <Button
-                          variant="primary"
-                          onClick={() => handleViewResult(appointment)}
-                        >
-                          <i className="bi bi-eye me-2"></i>
+                      {/* Actions */}
+                      <Col lg={4} className="mt-3 mt-lg-0">
+                        <div className="d-grid gap-2">
+                          <Button
+                            variant="primary"
+                            onClick={() => handleViewResult(appointment)}
+                          >
+                            <i className="bi bi-eye me-2"></i>
                             Xem kết quả
-                        </Button>
+                          </Button>
 
-                        <Button
-                          variant="success"
-                          onClick={() => {
-                            setSelectedResult(appointment);
-                            setTimeout(() => window.print(), 500);
-                          }}
-                        >
-                          <i className="bi bi-printer me-2"></i>
-                          In kết quả
-                        </Button>
+                          <Button
+                            variant="success"
+                            onClick={() => {
+                              setSelectedResult(appointment);
+                              setTimeout(() => window.print(), 500);
+                            }}
+                          >
+                            <i className="bi bi-printer me-2"></i>
+                            In kết quả
+                          </Button>
 
-                        <Button variant="outline-primary" as={Link} to="/user/support">
-                          <i className="bi bi-question-circle me-2"></i>
-                          Tư vấn kết quả
-                        </Button>
-                      </div>
-                    </Col>
-                  </Row>
-                </div>
-               );
-               })}
+                          <Button variant="outline-primary" as={Link} to="/user/support">
+                            <i className="bi bi-question-circle me-2"></i>
+                            Tư vấn kết quả
+                          </Button>
+                        </div>
+                      </Col>
+                    </Row>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-5">
@@ -466,7 +466,7 @@ const TestResults = ({ user }) => {
         <Modal.Header closeButton>
           <Modal.Title>
             <i className="bi bi-file-earmark-medical me-2"></i>
-             Kết quả xét nghiệm chi tiết - {selectedResult?.bookingId}
+            Kết quả xét nghiệm chi tiết - {selectedResult?.bookingId}
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
@@ -478,7 +478,7 @@ const TestResults = ({ user }) => {
                 <p className="text-muted mb-1">123 Đường ABC, Quận XYZ, Hà Nội</p>
                 <p className="text-muted mb-1">Hotline: 1900 1234 | Email: info@adnlab.vn</p>
                 <h4 className="text-primary mt-3 mb-0">KẾT QUẢ XÉT NGHIỆM ADN</h4>
-                                  <p className="mb-0">Mã đặt lịch: <strong>{selectedResult.bookingId}</strong></p>
+                <p className="mb-0">Mã đặt lịch: <strong>{selectedResult.bookingId}</strong></p>
                 <p className="mb-0">Mã xét nghiệm: <strong>{selectedResult.id}</strong></p>
               </div>
 
@@ -493,8 +493,8 @@ const TestResults = ({ user }) => {
                         <td>{selectedResult.service}</td>
                       </tr>
                       <tr>
-                         <td><strong>Loại dịch vụ:</strong></td>
-                         <td>{selectedResult.categoryName || (selectedResult.serviceType === 'administrative' ? 'ADN Hành Chính' : 'ADN Dân Sự')}</td>
+                        <td><strong>Loại dịch vụ:</strong></td>
+                        <td>{selectedResult.categoryName || (selectedResult.serviceType === 'administrative' ? 'ADN Hành Chính' : 'ADN Dân Sự')}</td>
                       </tr>
                       <tr>
                         <td><strong>Ngày lấy mẫu:</strong></td>
@@ -516,8 +516,8 @@ const TestResults = ({ user }) => {
                         <td>{selectedResult.result.method}</td>
                       </tr>
                       <tr>
-                         <td><strong>Kỹ thuật viên:</strong></td>
-                         <td>{selectedResult.result.technician}</td>
+                        <td><strong>Kỹ thuật viên:</strong></td>
+                        <td>{selectedResult.result.technician}</td>
                       </tr>
                       <tr>
                         <td><strong>Bác sĩ:</strong></td>
@@ -535,59 +535,75 @@ const TestResults = ({ user }) => {
               </Row>
 
               {/* Participants */}
-               {selectedResult.participants.length > 0 && (
-              <div className="mb-4">
-                <h6 className="text-primary mb-3">Thông tin người tham gia</h6>
-                <div className="table-responsive">
-                  <table className="table table-bordered">
-                    <thead className="table-light">
-                      <tr>
-                        <th>Họ và tên</th>
-                        <th>Mối quan hệ</th>
-                        <th>Loại mẫu</th>
-                            <th>Nồng độ</th>
-                            <th>Chất lượng ADN</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedResult.participants.map((participant, index) => (
-                        <tr key={index}>
-                          <td><strong>{participant.name}</strong></td>
-                          <td>{participant.relationship}</td>
-                              <td>{participant.sampleType}</td>
-                              <td>{participant.sampleConcentration || 'N/A'}</td>
-                                                             <td>
-                                 {participant.sampleQuality === 'excellent' ? (
-                                   'Xuất sắc'
-                                 ) : participant.sampleQuality === 'good' ? (
-                                   'Tốt'
-                                 ) : participant.sampleQuality === 'fair' ? (
-                                   'Khá'
-                                 ) : participant.sampleQuality === 'poor' ? (
-                                   'Kém'
-                                 ) : (
-                                   'Không xác định'
-                                 )}
-                               </td>
+              {selectedResult.participants.length > 0 && (
+                <div className="mb-4">
+                  <h6 className="text-primary mb-3">Thông tin người tham gia</h6>
+                  <div className="table-responsive">
+                    <table className="table table-bordered">
+                      <thead className="table-light">
+                        <tr>
+                          <th>Họ và tên</th>
+                          <th>Mối quan hệ</th>
+                          <th>Loại mẫu</th>
+                          <th>Nồng độ</th>
+                          <th>Chất lượng ADN</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {selectedResult.participants.map((participant, index) => (
+                          <tr key={index}>
+                            <td><strong>{participant.name}</strong></td>
+                            <td>{participant.relationship}</td>
+                            <td>
+                              {participant.sampleType === 'blood' ? (
+                                <Badge bg="danger">Máu</Badge>
+                              ) : participant.sampleType === 'buccal-swab' ? (
+                                <Badge bg="warning">Tăm bông miệng</Badge>
+                              ) : participant.sampleType === 'saliva' ? (
+                                <Badge bg="info">Nước bọt</Badge>
+                              ) : participant.sampleType === 'hair-root' ? (
+                                <Badge bg="primary">Tóc</Badge>
+                              ) : participant.sampleType === 'nail' ? (
+                                <Badge bg="success">Móng</Badge>
+                              ) : participant.sampleType === 'other' ? (
+                                <Badge bg="dark">Khác</Badge>
+                              ) : (
+                                <Badge bg="secondary">Không xác định</Badge>
+                              )}
+                            </td>
+                            <td>{participant.sampleConcentration || 'N/A'}</td>
+                            <td>
+                              {participant.sampleQuality === 'excellent' ? (
+                                'Xuất sắc'
+                              ) : participant.sampleQuality === 'good' ? (
+                                'Tốt'
+                              ) : participant.sampleQuality === 'fair' ? (
+                                'Khá'
+                              ) : participant.sampleQuality === 'poor' ? (
+                                'Kém'
+                              ) : (
+                                'Không xác định'
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
-               )}
+              )}
 
               {/* Main Result */}
-               <div className="mb-4 p-4 border rounded bg-light">
-                 <h5 className="text-center mb-3 text-primary fw-bold">
+              <div className="mb-4 p-4 border rounded bg-light">
+                <h5 className="text-center mb-3 text-primary fw-bold">
                   <i className="bi bi-clipboard-check me-2"></i>
                   KẾT QUẢ XÉT NGHIỆM
                 </h5>
 
                 <div className="text-center mb-4">
                   {getResultBadge(selectedResult.result.conclusion)}
-                   <div className="h4 text-primary mt-2 fw-bold">
-                     Độ chính xác: {selectedResult.result.confidence}%
+                  <div className="h4 text-primary mt-2 fw-bold">
+                    Độ chính xác: {selectedResult.result.confidence}%
                   </div>
                 </div>
 
@@ -596,13 +612,13 @@ const TestResults = ({ user }) => {
                     selectedResult.result.conclusion === 'POSITIVE' ? 'success' :
                       selectedResult.result.conclusion === 'NEGATIVE' ? 'danger' : 'warning'
                   }
-                   className="text-center fw-bold"
+                  className="text-center fw-bold"
                 >
-                   <Alert.Heading className="fw-bold">Kết luận:</Alert.Heading>
-                   <p className="mb-0 h6 fw-bold">{selectedResult.result.summary}</p>
+                  <Alert.Heading className="fw-bold">Kết luận:</Alert.Heading>
+                  <p className="mb-0 h6 fw-bold">{selectedResult.result.summary}</p>
                 </Alert>
 
-                 
+
               </div>
 
               {/* Legal Notice */}
