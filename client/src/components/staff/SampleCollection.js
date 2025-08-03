@@ -4,26 +4,47 @@ import { getBookingByStaffId, addBookingHistory, getSamplesByBookingId, updateSa
 import { useParams, Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
 
+/**
+ * COMPONENT: SampleCollection
+ * CHỨC NĂNG: Quản lý thu thập mẫu xét nghiệm từ khách hàng
+ * LUỒNG HOẠT ĐỘNG:
+ * 1. Tải danh sách booking có status SAMPLE_RECEIVED từ API getBookingByStaffId()
+ * 2. Lọc và map booking thành sample với status tương ứng
+ * 3. Hiển thị danh sách sample theo tabs: Đang chờ / Đã thu mẫu
+ * 4. Cho phép staff thu mẫu qua modal với thông tin chi tiết
+ * 5. Cập nhật sample qua API updateSample() và booking status qua addBookingHistory()
+ */
 const SampleCollection = ({ user }) => {
-  const [samples, setSamples] = useState([]);
-  const [filteredSamples, setFilteredSamples] = useState([]);
-  const [showCollectionModal, setShowCollectionModal] = useState(false);
-  const [selectedSample, setSelectedSample] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [alert, setAlert] = useState({ show: false, message: '', type: '' });
-  const [collectionData, setCollectionData] = useState({
-    collectionTime: '',
-    collectorName: '',
-    sampleQuality: 'good',
-    participants: [],
-    notes: '',
-    photos: []
-  });
-  const { bookingId } = useParams(); // Assuming you might need this for routing or fetching specific order details
-  const [activeTab, setActiveTab] = useState('pending');
+  // ROUTER HOOKS
+  const { bookingId } = useParams(); // Lấy bookingId từ URL nếu có
 
-  // Tự động chuyển tab dựa trên bookingId nếu có
+  // STATE QUẢN LÝ DỮ LIỆU
+  const [samples, setSamples] = useState([]); // Danh sách mẫu
+  const [filteredSamples, setFilteredSamples] = useState([]); // Danh sách đã lọc
+  const [searchTerm, setSearchTerm] = useState(''); // Từ khóa tìm kiếm
+  const [filterStatus, setFilterStatus] = useState('all'); // Filter theo status
+
+  // STATE QUẢN LÝ UI
+  const [alert, setAlert] = useState({ show: false, message: '', type: '' }); // Alert thông báo
+  const [showCollectionModal, setShowCollectionModal] = useState(false); // Hiển thị modal thu mẫu
+  const [selectedSample, setSelectedSample] = useState(null); // Mẫu được chọn
+  const [activeTab, setActiveTab] = useState('pending'); // Tab hiện tại
+
+  // STATE QUẢN LÝ THU MẪU
+  const [collectionData, setCollectionData] = useState({
+    collectionTime: '', // Thời gian thu mẫu
+    collectorName: '', // Tên người thu mẫu
+    sampleQuality: 'good', // Chất lượng mẫu tổng thể
+    participants: [], // Danh sách người tham gia
+    notes: '', // Ghi chú
+    photos: [] // Ảnh (nếu có)
+  });
+
+  /**
+   * EFFECT 1: Tự động chuyển tab dựa trên bookingId
+   * BƯỚC 1: Kiểm tra nếu có bookingId từ URL
+   * BƯỚC 2: Tìm sample tương ứng và xác định tab phù hợp
+   */
   useEffect(() => {
     if (bookingId && samples.length > 0) {
       const targetSample = samples.find(s => s.id === bookingId);
@@ -38,12 +59,20 @@ const SampleCollection = ({ user }) => {
     }
   }, [bookingId, samples]);
 
-  // Lấy danh sách mẫu cần thu từ API
+  /**
+   * EFFECT 2: Tải dữ liệu booking khi component mount hoặc user.id thay đổi
+   * BƯỚC 1: Gọi API getBookingByStaffId() để lấy danh sách booking
+   * BƯỚC 2: Lọc các booking có status SAMPLE_RECEIVED
+   * BƯỚC 3: Map booking thành sample với thông tin chi tiết
+   * BƯỚC 4: Cập nhật state samples
+   */
   useEffect(() => {
     const fetchSamples = async () => {
       try {
+        // BƯỚC 1: Lấy danh sách booking từ API
         const bookings = await getBookingByStaffId(user.id);
 
+        // BƯỚC 2: Lọc và map booking thành sample
         const mappedSamples = bookings
           .filter(b => {
             // Chỉ hiện các booking có status SAMPLE_RECEIVED
@@ -53,9 +82,11 @@ const SampleCollection = ({ user }) => {
           .map(b => {
             const histories = Array.isArray(b.bookingHistories_on_booking) ? b.bookingHistories_on_booking : [];
             const hasSampleReceived = histories.some(h => h.status?.toLowerCase() === 'sample_received');
-            // Lấy status mới nhất
+            
+            // BƯỚC 2.1: Lấy status mới nhất và xác định status hiển thị
             const sorted = [...histories].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             const latestStatus = sorted[0]?.status?.toUpperCase() || '';
+            
             let status = (() => {
               if (latestStatus === 'EXPIRED') return 'overdue';
               if (histories.some(h => h.status?.toUpperCase() === 'SAMPLE_COLLECTED')) return 'collected';
@@ -63,6 +94,8 @@ const SampleCollection = ({ user }) => {
               const fallbackStatus = b.status?.toUpperCase() || 'SCHEDULED';
               return fallbackStatus.toLowerCase().replaceAll('_', '-');
             })();
+
+            // BƯỚC 2.2: Tạo object sample với đầy đủ thông tin
             return {
               id: b.id,
               customerName: b.informations_on_booking?.[0]?.name || 'Không rõ',
@@ -82,6 +115,7 @@ const SampleCollection = ({ user }) => {
             };
           });
 
+        // BƯỚC 3: Cập nhật state
         setSamples(mappedSamples);
         setFilteredSamples(mappedSamples);
       } catch (error) {
@@ -92,9 +126,13 @@ const SampleCollection = ({ user }) => {
     fetchSamples();
   }, [user.id]);
 
+  /**
+   * EFFECT 3: Highlight sample được chọn từ URL
+   * BƯỚC 1: Kiểm tra nếu có bookingId từ URL
+   * BƯỚC 2: Tìm và highlight row tương ứng
+   */
   useEffect(() => {
     if (bookingId && samples.length > 0) {
-      // Optionally scroll to or highlight the sample row
       const el = document.getElementById(`sample-row-${bookingId}`);
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -104,13 +142,20 @@ const SampleCollection = ({ user }) => {
     }
   }, [bookingId, samples]);
 
-  // Filter samples based on search and status
+  /**
+   * EFFECT 4: Lọc danh sách sample theo search term và filter status
+   * BƯỚC 1: Lọc bỏ các sample quá hạn
+   * BƯỚC 2: Lọc theo từ khóa tìm kiếm
+   * BƯỚC 3: Lọc theo status được chọn
+   * BƯỚC 4: Cập nhật filteredSamples
+   */
   useEffect(() => {
     let filtered = samples;
 
-    // Ẩn đơn quá hạn chỉ dựa vào status
+    // BƯỚC 1: Ẩn sample quá hạn
     filtered = filtered.filter(sample => sample.status !== 'overdue');
 
+    // BƯỚC 2: Lọc theo search term
     if (searchTerm) {
       filtered = filtered.filter(sample =>
         sample.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -119,17 +164,24 @@ const SampleCollection = ({ user }) => {
       );
     }
 
+    // BƯỚC 3: Lọc theo status
     if (filterStatus !== 'all') {
       filtered = filtered.filter(sample => sample.status === filterStatus);
     }
 
+    // BƯỚC 4: Cập nhật state
     setFilteredSamples(filtered);
   }, [searchTerm, filterStatus, samples]);
 
-  // Chia mẫu thành 2 nhóm
+  // BƯỚC 5: Chia sample thành 2 nhóm để hiển thị theo tabs
   const pendingSamples = filteredSamples.filter(s => s.status !== 'collected');
   const completedSamples = filteredSamples.filter(s => s.status === 'collected');
 
+  /**
+   * HELPER FUNCTION: Tạo badge hiển thị status với màu sắc và label tương ứng
+   * INPUT: status (string) - trạng thái sample
+   * OUTPUT: JSX Badge component với màu và text phù hợp
+   */
   const getStatusBadge = (status) => {
     const statusConfig = {
       'sample-received': { bg: 'primary', text: 'Chờ thu mẫu' },
@@ -141,6 +193,12 @@ const SampleCollection = ({ user }) => {
     return <Badge bg={config.bg}>{config.text}</Badge>;
   };
 
+  /**
+   * EVENT HANDLER: Bắt đầu thu mẫu
+   * BƯỚC 1: Set selectedSample và mở modal
+   * BƯỚC 2: Gọi API getSamplesByBookingId() để lấy danh sách mẫu chi tiết
+   * BƯỚC 3: Khởi tạo collectionData với thông tin mặc định
+   */
   const handleStartCollection = (sample) => {
     setSelectedSample(sample);
     getSamplesByBookingId(sample.id).then(samplesList => {
@@ -160,8 +218,15 @@ const SampleCollection = ({ user }) => {
     });
   };
 
+  /**
+   * EVENT HANDLER: Hoàn tất thu mẫu
+   * BƯỚC 1: Gọi API updateSample() cho từng mẫu
+   * BƯỚC 2: Nếu tất cả thành công, gọi addBookingHistory() để cập nhật booking status
+   * BƯỚC 3: Cập nhật state và hiển thị thông báo
+   * BƯỚC 4: Chuyển tab và highlight sample đã thu
+   */
   const handleCompleteCollection = () => {
-    // Gọi updateSample cho từng mẫu, chỉ gọi addBookingHistory nếu tất cả thành công
+    // BƯỚC 1: Gọi updateSample cho từng mẫu
     Promise.all(
       (collectionData.samples || []).map(sample =>
         updateSample({
@@ -173,13 +238,14 @@ const SampleCollection = ({ user }) => {
         })
       )
     ).then(results => {
-      // Nếu tất cả updateSample thành công
+      // BƯỚC 2: Nếu tất cả updateSample thành công
       if (results.every(res => res && !res.error)) {
         addBookingHistory({
           bookingId: selectedSample.id,
           status: 'SAMPLE_COLLECTED',
           description: 'Đã thu mẫu thành công'
         }).then(() => {
+          // BƯỚC 3: Cập nhật state
           const updatedSamples = samples.map(sample =>
             sample.id === selectedSample.id
               ? {
@@ -196,7 +262,8 @@ const SampleCollection = ({ user }) => {
           setShowCollectionModal(false);
           setSelectedSample(null);
           console.log('Updating samples:', collectionData.samples);
-          // Hiện swal, sau khi bấm OK mới chuyển tab và scroll
+          
+          // BƯỚC 4: Hiển thị thông báo thành công và chuyển tab
           Swal.fire({
             icon: 'success',
             title: 'Thành công!',
@@ -240,15 +307,18 @@ const SampleCollection = ({ user }) => {
     });
   };
 
-
-
+  /**
+   * HELPER FUNCTION: Format date time sang định dạng Việt Nam
+   * INPUT: dateTimeString (string) - chuỗi ngày giờ
+   * OUTPUT: string - ngày giờ định dạng Việt Nam
+   */
   const formatDateTime = (dateTimeString) => {
     return new Date(dateTimeString).toLocaleString('vi-VN');
   };
 
   return (
     <div>
-      {/* Header */}
+      {/* HEADER: Tiêu đề trang */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h2 className="mb-1">
@@ -259,7 +329,7 @@ const SampleCollection = ({ user }) => {
         </div>
       </div>
 
-      {/* Alert */}
+      {/* ALERT: Thông báo lỗi/thành công */}
       {alert.show && (
         <Alert variant={alert.type} className="mb-4">
           <i className="bi bi-check-circle me-2"></i>
@@ -267,10 +337,11 @@ const SampleCollection = ({ user }) => {
         </Alert>
       )}
 
-      {/* Filters */}
+      {/* FILTERS: Tìm kiếm và lọc mẫu */}
       <Card className="shadow-sm mb-4">
         <Card.Body>
           <Row>
+            {/* Search input */}
             <Col lg={6} md={8} className="mb-3">
               <Form.Label>Tìm kiếm</Form.Label>
               <InputGroup>
@@ -284,6 +355,8 @@ const SampleCollection = ({ user }) => {
                 </Button>
               </InputGroup>
             </Col>
+            
+            {/* Status filter */}
             <Col lg={3} md={4} className="mb-3">
               <Form.Label>Trạng thái</Form.Label>
               <Form.Select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
@@ -292,6 +365,8 @@ const SampleCollection = ({ user }) => {
                 <option value="collected">Đã thu mẫu</option>
               </Form.Select>
             </Col>
+            
+            {/* Statistics badges */}
             <Col lg={3} className="mb-3 d-flex align-items-end">
               <div className="w-100">
                 <Badge bg="primary" className="me-2">
@@ -306,8 +381,9 @@ const SampleCollection = ({ user }) => {
         </Card.Body>
       </Card>
 
-      {/* Tabs */}
+      {/* TABS: Chia thành 2 tab chính */}
       <Tabs activeKey={activeTab} onSelect={setActiveTab} className="mb-3">
+        {/* TAB 1: Đang chờ thu mẫu */}
         <Tab eventKey="pending" title={<span><i className="bi bi-list-ol me-2"></i>Đang chờ</span>}>
           {/* Table cho mẫu chưa thu */}
           <Card className="shadow-sm">
@@ -333,14 +409,19 @@ const SampleCollection = ({ user }) => {
                   <tbody>
                     {pendingSamples.map((sample) => (
                       <tr key={sample.id} id={`sample-row-${sample.id}`}>
+                        {/* Mã đơn hàng */}
                         <td>
                           <div className="">{sample.id}</div>
                           <small className="text-muted">{sample.participants.length} người</small>
                         </td>
+                        
+                        {/* Thông tin khách hàng */}
                         <td>
                           <div className="">{sample.customerName}</div>
                           <small className="text-muted">{sample.phone}</small>
                         </td>
+                        
+                        {/* Thông tin dịch vụ */}
                         <td>
                           <div>{sample.service}</div>
                           <span
@@ -350,6 +431,8 @@ const SampleCollection = ({ user }) => {
                             {sample.serviceType === 'civil' ? 'Hành chính' : 'Dân sự'}
                           </span>
                         </td>
+                        
+                        {/* Phương thức lấy mẫu */}
                         <td>
                           {sample.methodName === 'Lấy mẫu tại lab' ? (
                             <span className="badge rounded-pill bg-primary" style={{ fontSize: '13px', fontWeight: 500 }}>
@@ -369,17 +452,24 @@ const SampleCollection = ({ user }) => {
                             </span>
                           )}
                         </td>
+                        
+                        {/* Thời gian */}
                         <td>
                           <div>{formatDateTime(sample.scheduledTime)}</div>
                           {sample.returnedDate && (
                             <small className="text-success">Về: {formatDateTime(sample.returnedDate)}</small>
                           )}
                         </td>
+                        
+                        {/* Trạng thái */}
                         <td>
                           {getStatusBadge(sample.status)}
                         </td>
+                        
+                        {/* Các nút thao tác */}
                         <td>
                           <div className="d-flex flex-column gap-1">
+                            {/* Nút thu mẫu */}
                             {sample.status !== 'collected' && sample.status !== 'transferred' && sample.showSampleButton && sample.status !== 'overdue' && (
                               <Button
                                 size="sm"
@@ -390,6 +480,8 @@ const SampleCollection = ({ user }) => {
                                 Thu mẫu
                               </Button>
                             )}
+                            
+                            {/* Nút chuyển lab */}
                             {sample.status === 'collected' && (
                               <Button
                                 as={Link}
@@ -401,6 +493,8 @@ const SampleCollection = ({ user }) => {
                                 Chuyển lab
                               </Button>
                             )}
+                            
+                            {/* Badge hoàn tất */}
                             {sample.status === 'transferred' && (
                               <Badge bg="success" className="p-2">
                                 <i className="bi bi-check-circle me-1"></i>
@@ -417,6 +511,8 @@ const SampleCollection = ({ user }) => {
             </Card.Body>
           </Card>
         </Tab>
+        
+        {/* TAB 2: Đã thu mẫu */}
         <Tab eventKey="completed" title={<span><i className="bi bi-check-circle me-2"></i>Đã Thu Mẫu</span>}>
           {/* Table cho mẫu đã thu */}
           <Card className="shadow-sm">
@@ -442,14 +538,19 @@ const SampleCollection = ({ user }) => {
                   <tbody>
                     {completedSamples.map((sample) => (
                       <tr key={sample.id} id={`sample-row-${sample.id}`}>
+                        {/* Mã đơn hàng */}
                         <td>
                           <div className="">{sample.id}</div>
                           <small className="text-muted">{sample.participants.length} người</small>
                         </td>
+                        
+                        {/* Thông tin khách hàng */}
                         <td>
                           <div className="">{sample.customerName}</div>
                           <small className="text-muted">{sample.phone}</small>
                         </td>
+                        
+                        {/* Thông tin dịch vụ */}
                         <td>
                           <div>{sample.service}</div>
                           <span
@@ -459,6 +560,8 @@ const SampleCollection = ({ user }) => {
                             {sample.serviceType === 'civil' ? 'Hành chính' : 'Dân sự'}
                           </span>
                         </td>
+                        
+                        {/* Phương thức lấy mẫu */}
                         <td>
                           {sample.methodName === 'Lấy mẫu tại lab' ? (
                             <span className="badge rounded-pill bg-primary" style={{ fontSize: '13px', fontWeight: 500 }}>
@@ -478,17 +581,24 @@ const SampleCollection = ({ user }) => {
                             </span>
                           )}
                         </td>
+                        
+                        {/* Thời gian */}
                         <td>
                           <div>{formatDateTime(sample.scheduledTime)}</div>
                           {sample.returnedDate && (
                             <small className="text-success">Về: {formatDateTime(sample.returnedDate)}</small>
                           )}
                         </td>
+                        
+                        {/* Trạng thái */}
                         <td>
                           {getStatusBadge(sample.status)}
                         </td>
+                        
+                        {/* Các nút thao tác */}
                         <td>
                           <div className="d-flex flex-column gap-1">
+                            {/* Nút chuyển lab */}
                             {sample.status === 'collected' && (
                               <Button
                                 as={Link}
@@ -512,7 +622,7 @@ const SampleCollection = ({ user }) => {
         </Tab>
       </Tabs>
 
-      {/* Sample Collection Modal */}
+      {/* MODAL: Thu mẫu chi tiết */}
       <Modal show={showCollectionModal} onHide={() => setShowCollectionModal(false)} size="xl">
         <Modal.Header closeButton>
           <Modal.Title>
@@ -523,8 +633,9 @@ const SampleCollection = ({ user }) => {
         <Modal.Body>
           {selectedSample && (
             <div>
-              {/* Basic Info */}
+              {/* BASIC INFO: Thông tin đơn hàng và thu mẫu */}
               <Row className="mb-4">
+                {/* Thông tin đơn hàng */}
                 <Col md={6}>
                   <h6 className="text-primary mb-3">Thông tin đơn hàng</h6>
                   <table className="table table-borderless table-sm">
@@ -548,10 +659,13 @@ const SampleCollection = ({ user }) => {
                     </tbody>
                   </table>
                 </Col>
+                
+                {/* Thông tin thu mẫu */}
                 <Col md={6}>
                   <h6 className="text-primary mb-3">Thông tin thu mẫu</h6>
                   <Form>
                     <Row>
+                      {/* Thời gian thu mẫu */}
                       <Col md={6} className="mb-3">
                         <Form.Label>Thời gian thu mẫu</Form.Label>
                         <Form.Control
@@ -560,6 +674,8 @@ const SampleCollection = ({ user }) => {
                           onChange={(e) => setCollectionData({ ...collectionData, collectionTime: e.target.value })}
                         />
                       </Col>
+                      
+                      {/* Người thu mẫu */}
                       <Col md={6} className="mb-3">
                         <Form.Label>Người thu mẫu</Form.Label>
                         <Form.Control
@@ -573,7 +689,7 @@ const SampleCollection = ({ user }) => {
                 </Col>
               </Row>
 
-              {/* Participants */}
+              {/* PARTICIPANTS: Danh sách mẫu chi tiết */}
               <div className="mb-4">
                 <h6 className="text-primary mb-3">Danh sách mẫu</h6>
                 <div className="table-responsive">
@@ -591,8 +707,13 @@ const SampleCollection = ({ user }) => {
                     <tbody>
                       {collectionData.samples && collectionData.samples.map((sample, idx) => (
                         <tr key={sample.id || sample.sampleId || idx}>
+                          {/* Mã mẫu */}
                           <td>{sample.id || sample.sampleId}</td>
+                          
+                          {/* Tên người tham gia */}
                           <td>{sample.participant?.name || sample.name || ''}</td>
+                          
+                          {/* Loại mẫu */}
                           <td>
                             <Form.Select
                               size="sm"
@@ -612,6 +733,8 @@ const SampleCollection = ({ user }) => {
                               <option value="other">Khác</option>
                             </Form.Select>
                           </td>
+                          
+                          {/* Chất lượng mẫu */}
                           <td>
                             <Form.Select
                               size="sm"
@@ -629,6 +752,8 @@ const SampleCollection = ({ user }) => {
                               <option value="poor">Kém</option>
                             </Form.Select>
                           </td>
+                          
+                          {/* Nồng độ mẫu */}
                           <td>
                             <Form.Control
                               type="number"
@@ -653,6 +778,8 @@ const SampleCollection = ({ user }) => {
                               }}
                             />
                           </td>
+                          
+                          {/* Ghi chú */}
                           <td>
                             <Form.Control
                               type="text"
@@ -670,43 +797,6 @@ const SampleCollection = ({ user }) => {
                   </Table>
                 </div>
               </div>
-
-              {/* Special Notes
-              {selectedSample.specialNotes && (
-                <div className="mb-4">
-                  <h6 className="text-primary mb-3">Ghi chú đặc biệt</h6>
-                  <Alert variant="warning">
-                    <i className="bi bi-exclamation-triangle me-2"></i>
-                    {selectedSample.specialNotes}
-                  </Alert>
-                </div>
-              )} */}
-
-              {/* Collection Notes */}
-              {/* <div className="mb-4">
-                <h6 className="text-primary mb-3">Ghi chú thu mẫu</h6>
-                <Form.Control
-                  as="textarea"
-                  rows={3}
-                  placeholder="Ghi chú về quá trình thu mẫu, tình trạng khách hàng, vấn đề gặp phải..."
-                  value={collectionData.notes}
-                  onChange={(e) => setCollectionData({ ...collectionData, notes: e.target.value })}
-                />
-              </div>
-
-              {/* Quality Check */}
-              {/* <div className="mb-4">
-                <h6 className="text-primary mb-3">Kiểm tra chất lượng tổng thể</h6>
-                <Form.Select
-                  value={collectionData.sampleQuality}
-                  onChange={(e) => setCollectionData({ ...collectionData, sampleQuality: e.target.value })}
-                >
-                  <option value="excellent">Xuất sắc - Mẫu rất tốt, đủ lượng</option>
-                  <option value="good">Tốt - Mẫu đạt yêu cầu</option>
-                  <option value="fair">Khá - Mẫu có thể sử dụng được</option>
-                  <option value="poor">Kém - Mẫu ít, có thể cần thu lại</option>
-                </Form.Select>
-              </div> */}
             </div>
           )}
         </Modal.Body>

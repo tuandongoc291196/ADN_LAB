@@ -3,71 +3,101 @@ import { Row, Col, Card, Button, Badge, Alert, Modal, Form, Table, InputGroup } 
 import { getBookingByStaffId, addBookingHistory } from '../../services/api';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
-const KitPreparation = ({ user }) => {
-  const [orders, setOrders] = useState([]);
-  const [filteredOrders, setFilteredOrders] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [alert, setAlert] = useState({ show: false, message: '', type: '' });
-  const [showModal, setShowModal] = useState(false);
-  const [modalAction, setModalAction] = useState(null); // 'prepare', 'send', 'confirm'
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [description, setDescription] = useState('');
-  const navigate = useNavigate();
-  const { bookingId } = useParams(); // Assuming you might need this for routing or fetching specific order details
 
-  // API cho các đơn hàng cần chuẩn bị kit
+/**
+ * COMPONENT: KitPreparation
+ * CHỨC NĂNG: Quản lý chuẩn bị và gửi kit xét nghiệm cho khách hàng
+ * LUỒNG HOẠT ĐỘNG:
+ * 1. Tải danh sách booking được phân công cho staff từ API getBookingByStaffId()
+ * 2. Lọc và map booking thành order với status tương ứng
+ * 3. Hiển thị danh sách order với filter và search
+ * 4. Cho phép staff thực hiện các hành động: chuẩn bị kit, gửi kit, xác nhận thanh toán
+ * 5. Cập nhật status qua API addBookingHistory() và hiển thị thông báo
+ */
+const KitPreparation = ({ user }) => {
+  // ROUTER HOOKS
+  const navigate = useNavigate();
+  const { bookingId } = useParams(); // Lấy bookingId từ URL nếu có
+
+  // STATE QUẢN LÝ DỮ LIỆU
+  const [orders, setOrders] = useState([]); // Danh sách đơn hàng
+  const [filteredOrders, setFilteredOrders] = useState([]); // Danh sách đã lọc
+  const [searchTerm, setSearchTerm] = useState(''); // Từ khóa tìm kiếm
+  const [filterStatus, setFilterStatus] = useState('all'); // Filter theo status
+
+  // STATE QUẢN LÝ UI
+  const [alert, setAlert] = useState({ show: false, message: '', type: '' }); // Alert thông báo
+  const [showModal, setShowModal] = useState(false); // Hiển thị modal
+  const [modalAction, setModalAction] = useState(null); // Loại hành động: 'prepare', 'send', 'confirm'
+  const [selectedOrder, setSelectedOrder] = useState(null); // Đơn hàng được chọn
+  const [description, setDescription] = useState(''); // Mô tả hành động
+
+  /**
+   * EFFECT 1: Tải dữ liệu booking khi component mount hoặc user.id thay đổi
+   * BƯỚC 1: Gọi API getBookingByStaffId() để lấy danh sách booking
+   * BƯỚC 2: Lọc và map booking thành order với status tương ứng
+   * BƯỚC 3: Cập nhật state orders
+   */
   useEffect(() => {
     const fetchOrders = async () => {
       try {
+        // BƯỚC 1: Lấy danh sách booking từ API
         const bookings = await getBookingByStaffId(user.id);
 
-        const filtered = bookings
+        // BƯỚC 2: Lọc và map booking thành order
+        const filtered = bookings.map(b => {
+          // Lấy history và status mới nhất
+          const history = Array.isArray(b.bookingHistories_on_booking) ? b.bookingHistories_on_booking : [];
+          const sorted = [...history].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-          .map(b => {
-            // Tìm status mới nhất từ history (nếu có)
-            const history = Array.isArray(b.bookingHistories_on_booking) ? b.bookingHistories_on_booking : [];
-            const sorted = [...history].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            // Kiểm tra nếu có status SAMPLE_RECEIVED và sau đó còn status khác thì mappedStatus thành 'collected'
-            let mappedStatus = '';
-            const idxSampleReceived = sorted.findIndex(h => h.status === 'SAMPLE_RECEIVED');
-            if (idxSampleReceived !== -1 && idxSampleReceived > 0) {
-              // Có status SAMPLE_RECEIVED và sau đó còn status khác
-              mappedStatus = 'collected';
+          // BƯỚC 2.1: Xác định status dựa trên history
+          let mappedStatus = '';
+          const idxSampleReceived = sorted.findIndex(h => h.status === 'SAMPLE_RECEIVED');
+          
+          if (idxSampleReceived !== -1 && idxSampleReceived > 0) {
+            // Có status SAMPLE_RECEIVED và sau đó còn status khác
+            mappedStatus = 'collected';
+          } else {
+            const latestStatus = sorted[0]?.status?.toUpperCase() || '';
+            
+            // BƯỚC 2.2: Map status từ API sang status hiển thị
+            if (latestStatus === 'EXPIRED') {
+              mappedStatus = 'expired';
+            } else if (latestStatus === 'BOOKED') {
+              mappedStatus = 'waiting-kit-prep';
+            } else if (latestStatus === 'PENDING_PAYMENT') {
+              mappedStatus = 'pending-payment';
+            } else if (latestStatus === 'CANCELLED') {
+              mappedStatus = 'cancelled';
+            } else if (latestStatus) {
+              mappedStatus = latestStatus.toLowerCase().replaceAll('_', '-');
             } else {
-              const latestStatus = sorted[0]?.status?.toUpperCase() || '';
-              if (latestStatus === 'EXPIRED') {
-                mappedStatus = 'expired';
-              } else if (latestStatus === 'BOOKED') {
-                mappedStatus = 'waiting-kit-prep';
-              } else if (latestStatus === 'PENDING_PAYMENT') {
-                mappedStatus = 'pending-payment';
-              } else if (latestStatus === 'CANCELLED') {
-                mappedStatus = 'cancelled';
-              } else if (latestStatus) {
-                mappedStatus = latestStatus.toLowerCase().replaceAll('_', '-');
-              } else {
-                mappedStatus = 'sample-received'; // Mặc định nếu không xác định
-              }
-              const validStatuses = ['waiting-kit-prep', 'kit-prepared', 'kit-sent', 'waiting-sample', 'sample-received', 'expired', 'kit-returned', 'pending-payment', 'cancelled'];
-              if (!validStatuses.includes(mappedStatus)) mappedStatus = 'sample-received';
+              mappedStatus = 'sample-received'; // Mặc định nếu không xác định
             }
-            return {
-              id: b.id,
-              customerName: b.informations_on_booking?.[0]?.name || 'Không rõ',
-              phone: b.informations_on_booking?.[0]?.phone || '',
-              service: b.service?.title || 'Không rõ dịch vụ',
-              serviceType: b.service?.category?.hasLegalValue ? 'civil' : 'administrative',
-              methodName: b.method?.name || 'Không rõ',
-              status: mappedStatus,
-              orderDate: b.createdAt,
-              expectedDate: b.timeSlotId?.split('_')[0],
-              returnInfo: b.returnInfo || null,
-              trackingNumber: b.trackingNumber || null,
-              specialInstructions: b.specialInstructions || null
-            };
-          });
+            
+            // BƯỚC 2.3: Validate status hợp lệ
+            const validStatuses = ['waiting-kit-prep', 'kit-prepared', 'kit-sent', 'waiting-sample', 'sample-received', 'expired', 'kit-returned', 'pending-payment', 'cancelled'];
+            if (!validStatuses.includes(mappedStatus)) mappedStatus = 'sample-received';
+          }
 
+          // BƯỚC 2.4: Tạo object order với đầy đủ thông tin
+          return {
+            id: b.id,
+            customerName: b.informations_on_booking?.[0]?.name || 'Không rõ',
+            phone: b.informations_on_booking?.[0]?.phone || '',
+            service: b.service?.title || 'Không rõ dịch vụ',
+            serviceType: b.service?.category?.hasLegalValue ? 'civil' : 'administrative',
+            methodName: b.method?.name || 'Không rõ',
+            status: mappedStatus,
+            orderDate: b.createdAt,
+            expectedDate: b.timeSlotId?.split('_')[0],
+            returnInfo: b.returnInfo || null,
+            trackingNumber: b.trackingNumber || null,
+            specialInstructions: b.specialInstructions || null
+          };
+        });
+
+        // BƯỚC 3: Cập nhật state
         setOrders(filtered);
       } catch (error) {
         console.error('Lỗi khi lấy đơn hàng cần chuẩn bị kit:', error);
@@ -77,9 +107,13 @@ const KitPreparation = ({ user }) => {
     fetchOrders();
   }, [user.id]);
 
+  /**
+   * EFFECT 2: Highlight đơn hàng được chọn từ URL
+   * BƯỚC 1: Kiểm tra nếu có bookingId từ URL
+   * BƯỚC 2: Tìm và highlight row tương ứng
+   */
   useEffect(() => {
     if (bookingId && orders.length > 0) {
-      // Optionally scroll to or highlight the order row
       const el = document.getElementById(`order-row-${bookingId}`);
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -89,13 +123,20 @@ const KitPreparation = ({ user }) => {
     }
   }, [bookingId, orders]);
 
-  // Filter orders based on search and status
+  /**
+   * EFFECT 3: Lọc danh sách order theo search term và filter status
+   * BƯỚC 1: Lọc bỏ các đơn quá hạn/đã hủy
+   * BƯỚC 2: Lọc theo từ khóa tìm kiếm
+   * BƯỚC 3: Lọc theo status được chọn
+   * BƯỚC 4: Cập nhật filteredOrders
+   */
   useEffect(() => {
     let filtered = orders;
 
-    // Ẩn đơn quá hạn
+    // BƯỚC 1: Ẩn đơn quá hạn
     filtered = filtered.filter(order => order.status !== 'expired' && order.status !== 'cancelled');
 
+    // BƯỚC 2: Lọc theo search term
     if (searchTerm) {
       filtered = filtered.filter(order =>
         order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -104,17 +145,26 @@ const KitPreparation = ({ user }) => {
       );
     }
 
+    // BƯỚC 3: Lọc theo status
     if (filterStatus !== 'all') {
       filtered = filtered.filter(order => order.status === filterStatus);
     }
 
+    // BƯỚC 4: Cập nhật state
     setFilteredOrders(filtered);
   }, [searchTerm, filterStatus, orders]);
 
+  /**
+   * HELPER FUNCTION: Tạo badge hiển thị status với màu sắc và label tương ứng
+   * INPUT: status (string) - trạng thái order
+   * OUTPUT: JSX Badge component với màu và text phù hợp
+   */
   const getStatusBadge = (status) => {
     if (status === 'collected') {
       return <Badge bg="success">Đã thu mẫu</Badge>;
     }
+    
+    // Định nghĩa mapping màu sắc và label cho từng status
     const statusConfig = {
       'waiting-kit-prep': { bg: 'warning', text: 'Chờ chuẩn bị kit' },
       'kit-prepared': { bg: 'danger', text: 'Đã chuẩn bị kit' },
@@ -126,10 +176,15 @@ const KitPreparation = ({ user }) => {
       'pending-payment': { bg: 'dark', text: 'Chờ thanh toán' },
       'cancelled': { bg: 'secondary', text: 'Đã hủy' },
     };
+    
     const config = statusConfig[status] || { bg: 'secondary', text: status };
     return <Badge bg={config.bg}>{config.text}</Badge>;
   };
 
+  /**
+   * EVENT HANDLER: Mở modal để thực hiện hành động
+   * INPUT: action (string) - loại hành động, order (object) - đơn hàng được chọn
+   */
   const openActionModal = (action, order) => {
     setSelectedOrder(order);
     setModalAction(action);
@@ -137,12 +192,21 @@ const KitPreparation = ({ user }) => {
     setShowModal(true);
   };
 
+  /**
+   * EVENT HANDLER: Xác nhận thực hiện hành động
+   * BƯỚC 1: Validate dữ liệu đầu vào
+   * BƯỚC 2: Xác định status và cập nhật order tương ứng
+   * BƯỚC 3: Gọi API addBookingHistory() để cập nhật database
+   * BƯỚC 4: Cập nhật state và hiển thị thông báo
+   */
   const handleConfirmAction = async () => {
     if (!selectedOrder || !modalAction || !description.trim()) return;
+    
     let status = '';
     let updatedOrders = [];
 
     try {
+      // BƯỚC 1: Xác định status và cập nhật order theo loại hành động
       if (modalAction === 'prepare') {
         status = 'KIT_PREPARED';
         updatedOrders = orders.map(o =>
@@ -200,9 +264,13 @@ const KitPreparation = ({ user }) => {
         );
       }
 
+      // BƯỚC 2: Gọi API để cập nhật database
       await handleSubmit(selectedOrder.id, status, description);
+      
+      // BƯỚC 3: Cập nhật state
       setOrders(updatedOrders);
 
+      // BƯỚC 4: Hiển thị thông báo thành công
       Swal.fire({
         icon: 'success',
         title: 'Thành công!',
@@ -221,6 +289,12 @@ const KitPreparation = ({ user }) => {
       setShowModal(false);
     }
   };
+
+  /**
+   * HELPER FUNCTION: Gọi API để thêm booking history
+   * INPUT: bookingId (string), status (string), description (string)
+   * OUTPUT: Promise từ API call
+   */
   const handleSubmit = async (bookingId, status, description) => {
     try {
       const payload = {
@@ -232,20 +306,23 @@ const KitPreparation = ({ user }) => {
       const res = await addBookingHistory(payload);
       console.log('Booking history added:', res);
 
-
     } catch (err) {
       console.error('Lỗi khi thêm booking history:', err);
-
     }
   };
 
+  /**
+   * HELPER FUNCTION: Format date sang định dạng Việt Nam
+   * INPUT: dateString (string) - chuỗi ngày tháng
+   * OUTPUT: string - ngày tháng định dạng Việt Nam
+   */
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('vi-VN');
   };
 
   return (
     <div>
-      {/* Header */}
+      {/* HEADER: Tiêu đề trang */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h2 className="mb-1">
@@ -256,17 +333,18 @@ const KitPreparation = ({ user }) => {
         </div>
       </div>
 
-      {/* Alert */}
+      {/* ALERT: Thông báo lỗi/thành công */}
       {alert.show && (
         <Alert variant={alert.type} onClose={() => setAlert({ show: false, message: '', type: '' })} dismissible>
           {alert.message}
         </Alert>
       )}
 
-      {/* Search and Filter */}
+      {/* SEARCH AND FILTER: Tìm kiếm và lọc đơn hàng */}
       <Card className="mb-4">
         <Card.Body>
           <Row>
+            {/* Search input */}
             <Col md={6}>
               <InputGroup>
                 <InputGroup.Text>
@@ -279,6 +357,8 @@ const KitPreparation = ({ user }) => {
                 />
               </InputGroup>
             </Col>
+            
+            {/* Status filter */}
             <Col md={6}>
               <Form.Select
                 value={filterStatus}
@@ -297,7 +377,7 @@ const KitPreparation = ({ user }) => {
         </Card.Body>
       </Card>
 
-      {/* Orders Table */}
+      {/* ORDERS TABLE: Bảng danh sách đơn hàng */}
       <Table responsive hover className="align-middle">
         <thead>
           <tr>
@@ -313,11 +393,16 @@ const KitPreparation = ({ user }) => {
         <tbody>
           {filteredOrders.map((order) => (
             <tr key={order.id} id={`order-row-${order.id}`}>
+              {/* Mã đơn hàng */}
               <td>{order.id}</td>
+              
+              {/* Thông tin khách hàng */}
               <td>
                 <div>{order.customerName}</div>
                 <small className="text-muted">{order.phone}</small>
               </td>
+              
+              {/* Thông tin dịch vụ */}
               <td>
                 <div>{order.service}</div>
                 <div>
@@ -331,6 +416,8 @@ const KitPreparation = ({ user }) => {
                   </span>
                 </div>
               </td>
+              
+              {/* Phương thức lấy mẫu */}
               <td>
                 {order.methodName === 'Lấy mẫu tại lab' ? (
                   <span className="badge rounded-pill bg-primary" style={{ fontSize: '13px', fontWeight: 500 }}>
@@ -350,15 +437,22 @@ const KitPreparation = ({ user }) => {
                   </span>
                 )}
               </td>
+              
+              {/* Trạng thái */}
               <td>
                 <div>{getStatusBadge(order.status)}</div>
               </td>
+              
+              {/* Ngày đặt */}
               <td>
                 <div>{formatDate(order.orderDate)}</div>
                 <small className="text-muted">DK: {formatDate(order.expectedDate)}</small>
               </td>
+              
+              {/* Các nút thao tác */}
               <td>
                 <div className="d-flex flex-column gap-1">
+                  {/* Nút cho trạng thái waiting-kit-prep */}
                   {order.status === 'waiting-kit-prep' && (
                     <>
                       {/* Nếu là tự lấy mẫu tại nhà thì vẫn chuẩn bị kit */}
@@ -385,6 +479,8 @@ const KitPreparation = ({ user }) => {
                       )}
                     </>
                   )}
+                  
+                  {/* Nút cho trạng thái kit-prepared */}
                   {order.status === 'kit-prepared' && (
                     <Button
                       size="sm"
@@ -395,6 +491,8 @@ const KitPreparation = ({ user }) => {
                       Gửi Kit
                     </Button>
                   )}
+                  
+                  {/* Nút cho trạng thái kit-returned */}
                   {order.status === 'kit-returned' && (
                     <Button
                       size="sm"
@@ -405,6 +503,8 @@ const KitPreparation = ({ user }) => {
                       Đã nhận kit
                     </Button>
                   )}
+                  
+                  {/* Nút cho trạng thái pending-payment */}
                   {order.status === 'pending-payment' && (
                     <Button
                       size="sm"
@@ -416,6 +516,7 @@ const KitPreparation = ({ user }) => {
                     </Button>
                   )}
 
+                  {/* Nút chuyển đến thu mẫu */}
                   {order.status === 'sample-received' && (
                     <Button
                       as={Link}
@@ -428,6 +529,7 @@ const KitPreparation = ({ user }) => {
                     </Button>
                   )}
 
+                  {/* Nút bước tiếp theo */}
                   {order.status === 'collected' && (
                     <Button
                       as={Link}
@@ -440,6 +542,7 @@ const KitPreparation = ({ user }) => {
                     </Button>
                   )}
 
+                  {/* Hiển thị tracking number nếu đã gửi kit */}
                   {order.status === 'kit-sent' && order.trackingNumber && (
                     <Badge bg="success" className="p-2">
                       <i className="bi bi-check-circle me-1"></i>
@@ -447,6 +550,8 @@ const KitPreparation = ({ user }) => {
                     </Badge>
                   )}
                 </div>
+                
+                {/* Thông báo chờ khách hàng gửi lại kit */}
                 {order.status === 'kit-sent' && !order.returnInfo && (
                   <div className="mt-2">
                     <small className="text-muted">
@@ -460,6 +565,8 @@ const KitPreparation = ({ user }) => {
           ))}
         </tbody>
       </Table>
+
+      {/* MODAL: Xác nhận hành động */}
       <Modal show={showModal} onHide={() => setShowModal(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>Xác nhận hành động</Modal.Title>
@@ -471,6 +578,7 @@ const KitPreparation = ({ user }) => {
           <Form.Group className="mt-3">
             <Form.Label>Chọn mô tả (bắt buộc)</Form.Label>
             <div className="mt-2">
+              {/* Radio buttons cho từng loại hành động */}
               {modalAction === 'confirm-payment' ? (
                 <>
                   <Form.Check
