@@ -1,3 +1,13 @@
+/**
+ * COMPONENT: StaffManagement
+ * CHỨC NĂNG: Quản lý nhân viên phòng xét nghiệm - xem, sửa, kích hoạt/vô hiệu hóa tài khoản
+ * LUỒNG HOẠT ĐỘNG:
+ * 1. Tải danh sách staff từ API getStaffListByRole()
+ * 2. Lấy chi tiết từng staff bằng getStaffById() để có thông tin position
+ * 3. Hiển thị danh sách với filter và search
+ * 4. Cho phép xem/sửa thông tin staff qua modal
+ * 5. Kích hoạt/vô hiệu hóa tài khoản staff
+ */
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -13,21 +23,40 @@ import Alert from 'react-bootstrap/Alert';
 import Button from 'react-bootstrap/Button';
 import { getStaffListByRole, updateUserAccountStatus, getUserById, getStaffById, updateUserById } from '../../services/api';
 
+/**
+ * COMPONENT: StaffManagement
+ * CHỨC NĂNG: Quản lý toàn bộ nhân viên phòng xét nghiệm
+ * STATE MANAGEMENT:
+ * - staffList: Danh sách nhân viên từ API
+ * - loading: Trạng thái tải dữ liệu
+ * - showModal: Hiển thị modal xem/sửa
+ * - formData: Dữ liệu form sửa thông tin
+ * - searchTerm: Từ khóa tìm kiếm
+ * - filterStatus: Lọc theo trạng thái tài khoản
+ */
 const StaffManagement = () => {
   const navigate = useNavigate();
   
-  // State quản lý dữ liệu
+  // ===== DATA STATES - QUẢN LÝ DỮ LIỆU =====
+  // Danh sách nhân viên từ API
   const [staffList, setStaffList] = useState([]);
+  // Trạng thái tải dữ liệu
   const [loading, setLoading] = useState(true);
+  // Lỗi khi tải dữ liệu
   const [error, setError] = useState(null);
   
-  // State quản lý modal
+  // ===== MODAL STATES - QUẢN LÝ MODAL =====
+  // Hiển thị modal
   const [showModal, setShowModal] = useState(false);
+  // Loại modal (view/edit)
   const [modalType, setModalType] = useState('view'); // 'view' | 'edit'
+  // Nhân viên được chọn để xem/sửa
   const [selectedStaff, setSelectedStaff] = useState(null);
+  // Loading khi tải chi tiết user
   const [loadingUserDetail, setLoadingUserDetail] = useState(false);
   
-  // State quản lý form data cho edit
+  // ===== FORM STATES - QUẢN LÝ FORM =====
+  // Dữ liệu form sửa thông tin nhân viên
   const [formData, setFormData] = useState({
     fullname: '',
     phone: '',
@@ -35,24 +64,36 @@ const StaffManagement = () => {
     address: ''
   });
   
-  // State quản lý filter và search
+  // ===== FILTER STATES - QUẢN LÝ BỘ LỌC =====
+  // Từ khóa tìm kiếm
   const [searchTerm, setSearchTerm] = useState('');
+  // Lọc theo trạng thái tài khoản
   const [filterStatus, setFilterStatus] = useState('all'); // Changed from filterPosition
 
-  // State quản lý pagination
+  // ===== PAGINATION STATES - QUẢN LÝ PHÂN TRANG =====
+  // Trang hiện tại
   const [currentPage, setCurrentPage] = useState(1);
+  // Số item trên mỗi trang
   const [itemsPerPage] = useState(10);
 
-  // Fetch staff data khi component mount
+  // ===== DATA FETCHING - LẤY DỮ LIỆU TỪ API =====
+  /**
+   * useEffect: Tải dữ liệu nhân viên khi component mount
+   * BƯỚC 1: Gọi API getStaffListByRole() để lấy danh sách staff cơ bản
+   * BƯỚC 2: Lọc chỉ lấy những user có role 'staff'
+   * BƯỚC 3: Với mỗi staff, gọi API getStaffById() để lấy thông tin chi tiết
+   * BƯỚC 4: Kết hợp thông tin user và staff
+   * BƯỚC 5: Cập nhật staffList state
+   */
   useEffect(() => {
     const fetchStaff = async () => {
       setLoading(true);
       try {
-        // Lấy danh sách staff cơ bản từ getStaffListByRole
+        // BƯỚC 1: Lấy danh sách staff cơ bản từ getStaffListByRole
         const basicStaffList = await getStaffListByRole([1, 2]); // Lấy cả staff và manager
         const filteredBasicStaff = basicStaffList.filter(s => s.role?.name === 'staff') || [];
         
-        // Lấy chi tiết từng staff bằng getStaffById để có thông tin position
+        // BƯỚC 2 & 3: Lấy chi tiết từng staff bằng getStaffById để có thông tin position
         const detailedStaffList = await Promise.all(
           filteredBasicStaff.map(async (staff) => {
             try {
@@ -60,7 +101,7 @@ const StaffManagement = () => {
               const staffId = staff.staff_on_user?.[0]?.id || staff.id;
               if (staffId) {
                 const detailedStaff = await getStaffById(staffId);
-                // Kết hợp thông tin user và staff
+                // BƯỚC 4: Kết hợp thông tin user và staff
                 return {
                   ...staff,
                   position: detailedStaff.position,
@@ -77,6 +118,7 @@ const StaffManagement = () => {
           })
         );
         
+        // BƯỚC 5: Cập nhật state
         setStaffList(detailedStaffList);
       } catch (err) {
         setError(err.message);
@@ -88,7 +130,13 @@ const StaffManagement = () => {
     fetchStaff();
   }, []);
 
-  // Filter staff based on search term and status
+  // ===== FILTER LOGIC - BỘ LỌC DỮ LIỆU =====
+  /**
+   * filteredStaff: Lọc danh sách nhân viên theo search term và status
+   * BƯỚC 1: Kiểm tra staff có tồn tại và có role 'staff'
+   * BƯỚC 2: Lọc theo trạng thái tài khoản (active/inactive)
+   * BƯỚC 3: Lọc theo từ khóa tìm kiếm (tên, email)
+   */
   const filteredStaff = Array.isArray(staffList)
     ? staffList.filter(member => {
         if (!member) return false;

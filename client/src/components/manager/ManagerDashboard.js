@@ -1,6 +1,12 @@
 /**
- * Dashboard chính cho quản lý phòng xét nghiệm
- * Cung cấp giao diện quản lý tổng quan và điều hướng đến các chức năng quản lý
+ * COMPONENT: ManagerDashboard
+ * CHỨC NĂNG: Dashboard chính cho quản lý phòng xét nghiệm
+ * LUỒNG HOẠT ĐỘNG:
+ * 1. Kiểm tra authentication và quyền truy cập
+ * 2. Tải dữ liệu tổng quan (services, bookings, staff) từ API
+ * 3. Hiển thị sidebar với thống kê và navigation
+ * 4. Quản lý routing cho các component con (ServiceManagement, StaffManagement, etc.)
+ * 5. Hiển thị thông báo và cập nhật real-time
  */
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
@@ -27,17 +33,24 @@ import {
   Inbox
 } from 'react-bootstrap-icons';
 
-// Import API functions
+// ===== API IMPORTS =====
+// Các hàm API để lấy dữ liệu tổng quan
 import { getAllServices, getAllBookings, getStaffListByRole } from '../../services/api';
 
-// Import các component con
+// ===== COMPONENT IMPORTS =====
+// Các component con cho từng chức năng quản lý
 import ServiceManagement from './ServiceManagement';
 import AppointmentManagement from './AppointmentManagement';
 import StaffManagement from './StaffManagement';
 import ManagerProfile from './ManagerProfile';
 import ResultsManagement from './ResultsManagement';
 
-// Thêm hàm getRoleLabel để mapping role sang tiếng Việt
+// ===== HELPER FUNCTIONS =====
+/**
+ * getRoleLabel: Chuyển đổi role từ database sang tiếng Việt
+ * INPUT: role (string hoặc object)
+ * OUTPUT: Tên role bằng tiếng Việt
+ */
 function getRoleLabel(role) {
   if (!role) return '';
   const roleName = typeof role === 'object' && role !== null ? (role.name || role.role_string || '') : (role || '');
@@ -51,31 +64,47 @@ function getRoleLabel(role) {
 }
 
 /**
- * Component chính cho dashboard quản lý
- * @param {Object} user - Thông tin người dùng quản lý
+ * COMPONENT: ManagerDashboard
+ * CHỨC NĂNG: Container chính cho toàn bộ dashboard quản lý
+ * STATE MANAGEMENT:
+ * - activeTab: Tab đang được chọn
+ * - isLoading: Trạng thái loading
+ * - notifications: Danh sách thông báo
+ * - sidebarData: Dữ liệu thống kê cho sidebar
  */
 const ManagerDashboard = () => {
-  // Lấy thông tin đường dẫn hiện tại
-  const location = useLocation();
-  const { user } = useAuth();
+  // ===== ROUTER HOOKS =====
+  const location = useLocation(); // Lấy thông tin đường dẫn hiện tại
+  const { user } = useAuth(); // Lấy thông tin user từ context
 
-  // State quản lý tab đang active
+  // ===== STATE MANAGEMENT =====
+  // Tab management - quản lý tab đang active
   const [activeTab, setActiveTab] = useState('overview');
+  
+  // Loading state - trạng thái tải dữ liệu
   const [isLoading, setIsLoading] = useState(true);
-  // State quản lý thông báo
+  
+  // Notification state - quản lý thông báo
   const [notifications, setNotifications] = useState([
+    // Có thể thêm thông báo mặc định ở đây
     // { id: 1, message: 'Có 5 lịch hẹn mới cần xác nhận', time: '5 phút trước', read: false },
     // { id: 2, message: 'Báo cáo doanh thu tháng 3 đã sẵn sàng', time: '1 giờ trước', read: false }
   ]);
 
-  // State để lưu dashboard data cho sidebar
+  // Sidebar data - dữ liệu thống kê cho sidebar
   const [sidebarData, setSidebarData] = useState({
     totalServices: 0,
     totalResults: 0,
     totalStaff: 0
   });
 
-  // Cập nhật tab active dựa trên đường dẫn URL
+  // ===== EFFECTS - XỬ LÝ SIDE EFFECTS =====
+  /**
+   * useEffect: Cập nhật tab active dựa trên URL
+   * BƯỚC 1: Lấy đường dẫn hiện tại từ location.pathname
+   * BƯỚC 2: Parse đường dẫn để xác định tab đang active
+   * BƯỚC 3: Cập nhật activeTab state
+   */
   useEffect(() => {
     const pathSegments = location.pathname.split('/');
     const currentPath = pathSegments[2]; // Lấy phần sau /manager/
@@ -87,10 +116,14 @@ const ManagerDashboard = () => {
     }
   }, [location.pathname]);
 
-  // Effect để kiểm tra auth và set loading
+  /**
+   * useEffect: Kiểm tra authentication và set loading
+   * BƯỚC 1: Đợi 1500ms để context auth load hoàn toàn
+   * BƯỚC 2: Set isLoading = false để hiển thị dashboard
+   */
   useEffect(() => {
     const checkAuth = () => {
-      // Đợi 1400ms để context có thể load hoàn toàn
+      // Đợi 1500ms để context có thể load hoàn toàn
       setTimeout(() => {
         setIsLoading(false);
       }, 1500);
