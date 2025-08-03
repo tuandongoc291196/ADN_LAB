@@ -1,28 +1,87 @@
+// ========================================
+// PHẦN IMPORT THƯ VIỆN
+// ========================================
+// Thư viện React cốt lõi cho chức năng component
 import React, { useState, useEffect } from 'react';
+// React Router để điều hướng và quản lý routes
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
+// Các component Bootstrap cho giao diện
 import { Container, Row, Col, Nav, Card, Alert, Spinner } from 'react-bootstrap';
+// Các hàm API service để lấy dữ liệu user và booking
 import { getUserById, getBookingByUserId } from '../../services/api';
+// Context authentication để kiểm tra trạng thái đăng nhập
 import { useAuth } from '../context/auth';
 
-// Import dashboard components
+// ========================================
+// PHẦN IMPORT COMPONENTS
+// ========================================
+// Import các component con của dashboard
 import DashboardOverview from './DashboardOverview';
 import MyAppointments from './MyAppointments';
 import TestResults from './TestResults';
 import UserProfile from './UserProfile';
 import OrderHistory from './OrderHistory';
 import SupportCenter from './SupportCenter';
+import PrintableResult from './PrintableResult';
 
+// ========================================
+// COMPONENT CHÍNH: UserDashboard
+// ========================================
+
+/**
+ * Component chính quản lý dashboard của user
+ * 
+ * LUỒNG HOẠT ĐỘNG CHÍNH:
+ * 1. Component mount → useEffect chạy → gọi fetchUserData()
+ * 2. Lấy userId từ props user hoặc localStorage
+ * 3. Gọi API để lấy thông tin user và appointments
+ * 4. Tính toán statistics và counts cho sidebar
+ * 5. Render sidebar với thông tin user và navigation
+ * 6. Render main content dựa trên active route
+ * 
+ * Props: 
+ * - user: Thông tin user hiện tại
+ */
 const UserDashboard = ({ user }) => {
+  // ========================================
+  // PHẦN QUẢN LÝ STATE
+  // ========================================
+  
+  // Hook React Router để lấy thông tin location hiện tại
   const location = useLocation();
+  
+  // Hook authentication để kiểm tra trạng thái đăng nhập
   const { loading: authLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState('overview');
-  const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [appointments, setAppointments] = useState([]);
-  const [counts, setCounts] = useState({ total: 0, completed: 0, inProgress: 0 });
+  
+  // State Giao diện - Điều khiển tab active và loading
+  const [activeTab, setActiveTab] = useState('overview'); // Tab đang được chọn
+  const [loading, setLoading] = useState(true); // Hiển thị spinner khi đang tải dữ liệu
+  const [error, setError] = useState(null); // Lưu trữ thông báo lỗi
+  
+  // State Dữ liệu - Lưu trữ thông tin user và appointments
+  const [currentUser, setCurrentUser] = useState(null); // Thông tin user chi tiết từ API
+  const [appointments, setAppointments] = useState([]); // Danh sách appointments của user
+  
+  // State Statistics - Thống kê cho sidebar
+  const [counts, setCounts] = useState({ 
+    total: 0, // Tổng số lịch hẹn
+    completed: 0, // Số lịch hẹn đã hoàn thành
+    inProgress: 0 // Số lịch hẹn đang trong quá trình
+  });
 
-  // Get current tab from URL
+  // ========================================
+  // PHẦN EFFECTS
+  // ========================================
+  
+  /**
+   * useEffect để cập nhật activeTab dựa trên URL hiện tại
+   * 
+   * LUỒNG HOẠT ĐỘNG:
+   * 1. Lắng nghe thay đổi location.pathname
+   * 2. Tách path để lấy phần cuối của URL
+   * 3. Cập nhật activeTab tương ứng
+   * 4. Fallback về 'overview' nếu không có path cụ thể
+   */
   useEffect(() => {
     const path = location.pathname.split('/').pop();
     if (path && path !== 'user') {
@@ -32,74 +91,83 @@ const UserDashboard = ({ user }) => {
     }
   }, [location.pathname]);
 
-  // Fetch user data and appointments from API
+  /**
+   * useEffect chính để lấy dữ liệu user và appointments
+   * 
+   * LUỒNG LẤY DỮ LIỆU:
+   * 1. Chờ auth loading hoàn thành
+   * 2. Lấy userId từ props hoặc localStorage
+   * 3. Gọi API getUserById để lấy thông tin user
+   * 4. Gọi API getBookingByUserId để lấy appointments
+   * 5. Tính toán statistics dựa trên booking history
+   * 6. Cập nhật state với dữ liệu đã xử lý
+   */
   useEffect(() => {
-    const fetchUserData = async () => {
-      if (authLoading) return; // Wait for auth to finish loading
-      
-      try {
-        setLoading(true);
-
-        // Lấy userId từ props user hoặc localStorage
-        const userId = user?.id || user?.user_id || user?.uid ||
-          JSON.parse(localStorage.getItem('userData'))?.user_id ||
-          localStorage.getItem('user_id');
-
-        if (!userId) {
-          console.warn('No user ID found');
-          setError('Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.');
-          setLoading(false);
-          return;
-        }
-
-        // Gọi API để lấy thông tin user
-        const userData = await getUserById(userId);
-        console.log('User data from API:', userData);
-
-
-
-        if (userData) {
-          setCurrentUser({
-            ...userData,
-            // Map các field từ BE sang FE
-            fullname: userData.fullname || userData.name || 'Không có tên',
-            email: userData.email || '',
-            phone: userData.phone || '',
-            avatar: userData.avatar || null,
-            role: userData.role || { name: 'customer' },
-            createdAt: userData.createdAt || userData.memberSince || new Date().toISOString()
-          });
-        } else {
-          throw new Error('Không thể lấy thông tin người dùng');
-        }
-
-        // Fetch appointments để tính toán stats
+          const fetchUserData = async () => {
+        // BƯỚC 1: Chờ auth loading hoàn thành
+        if (authLoading) return;
+        
         try {
-          const appointmentsData = await getBookingByUserId(userId);
-          setAppointments(appointmentsData || []);
+          // BƯỚC 2: Bắt đầu loading
+          setLoading(true);
 
-          // Count status using same logic as DashboardOverview
-          let completed = 0, inProgress = 0;
-          (appointmentsData || []).forEach(b => {
-            // Determine status based on booking history (same logic as DashboardOverview)
-            const history = b.bookingHistories_on_booking?.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) || [];
-            const currentHistoryStatus = history.length > 0 ? history[0].status : null;
-            
-            let status = 'confirmed'; // default status
-            let isUpcoming = false;
-            
-            if (b.timeSlotId) {
-              try {
-                const parts = b.timeSlotId.split('_');
-                if (parts.length >= 1) {
-                  const appointmentDate = new Date(parts[0]);
-                  isUpcoming = !isNaN(appointmentDate.getTime()) && appointmentDate > new Date();
+          // BƯỚC 3: Lấy userId từ props user hoặc localStorage
+          const userId = user?.id || user?.user_id || user?.uid ||
+            JSON.parse(localStorage.getItem('userData'))?.user_id ||
+            localStorage.getItem('user_id');
+
+                    if (!userId) {
+            setError('Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.');
+            setLoading(false);
+            return;
+          }
+
+          // BƯỚC 4: Gọi API để lấy thông tin user
+          const userData = await getUserById(userId);
+
+          if (userData) {
+            // BƯỚC 5: Mapping dữ liệu user từ BE sang FE
+            setCurrentUser({
+              ...userData,
+              // Map các field từ BE sang FE để đảm bảo tính nhất quán
+              fullname: userData.fullname || userData.name || 'Không có tên',
+              email: userData.email || '',
+              phone: userData.phone || '',
+              avatar: userData.avatar || null,
+              role: userData.role || { name: 'customer' },
+              createdAt: userData.createdAt || userData.memberSince || new Date().toISOString()
+            });
+          } else {
+            throw new Error('Không thể lấy thông tin người dùng');
+          }
+
+                  // BƯỚC 6: Fetch appointments để tính toán statistics
+          try {
+            const appointmentsData = await getBookingByUserId(userId);
+            setAppointments(appointmentsData || []);
+
+            // BƯỚC 7: Tính toán statistics dựa trên booking history
+            let completed = 0, inProgress = 0;
+            (appointmentsData || []).forEach(b => {
+              // Xác định status dựa trên booking history (cùng logic với DashboardOverview)
+              const history = b.bookingHistories_on_booking?.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) || [];
+              const currentHistoryStatus = history.length > 0 ? history[0].status : null;
+              
+              let status = 'confirmed'; // default status
+              let isUpcoming = false;
+              
+              // Kiểm tra xem appointment có phải là upcoming không
+              if (b.timeSlotId) {
+                try {
+                  const parts = b.timeSlotId.split('_');
+                  if (parts.length >= 1) {
+                    const appointmentDate = new Date(parts[0]);
+                    isUpcoming = !isNaN(appointmentDate.getTime()) && appointmentDate > new Date();
+                  }
+                } catch (e) {
+                  isUpcoming = false;
                 }
-              } catch (e) {
-                console.error('Error checking if appointment is upcoming:', e);
-                isUpcoming = false;
               }
-            }
 
             // Improved status mapping based on timeline and method (same as DashboardOverview)
             if (currentHistoryStatus) {
@@ -176,11 +244,9 @@ const UserDashboard = ({ user }) => {
             inProgress
           });
         } catch (appointmentsErr) {
-          console.error('Error fetching appointments:', appointmentsErr);
           setCounts({ total: 0, completed: 0, inProgress: 0 });
         }
       } catch (err) {
-        console.error('Error fetching user data:', err);
         setError('Không thể tải thông tin người dùng. Vui lòng thử lại sau.');
       } finally {
         setLoading(false);
@@ -398,6 +464,7 @@ const UserDashboard = ({ user }) => {
             <Route path="/" element={<DashboardOverview user={currentUser} />} />
             <Route path="/appointments" element={<MyAppointments user={currentUser} />} />
             <Route path="/results" element={<TestResults user={currentUser} />} />
+            <Route path="/print-result/:resultId" element={<PrintableResult user={currentUser} />} />
             <Route path="/profile" element={<UserProfile user={currentUser} />} />
             <Route path="/history" element={<OrderHistory user={currentUser} />} />
             <Route path="/support" element={<SupportCenter user={currentUser} />} />

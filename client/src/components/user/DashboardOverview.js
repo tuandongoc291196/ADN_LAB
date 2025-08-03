@@ -1,68 +1,119 @@
+// ========================================
+// PHẦN IMPORT THƯ VIỆN
+// ========================================
+// Thư viện React cốt lõi cho chức năng component
 import React, { useEffect, useState } from 'react';
+// React Router để điều hướng
 import { Link } from 'react-router-dom';
+// Các component Bootstrap cho giao diện
 import { Row, Col, Card, Button, Badge, ProgressBar, Spinner } from 'react-bootstrap';
-import ResultsSummary from './ResultsSummary';
+// Các hàm API service để lấy dữ liệu booking và test results
 import { getBookingByUserId, getTestResultByUserId, getBookingById } from '../../services/api';
 
+// ========================================
+// COMPONENT CHÍNH: DashboardOverview
+// ========================================
+
+/**
+ * Component hiển thị tổng quan dashboard của user
+ * 
+ * LUỒNG HOẠT ĐỘNG CHÍNH:
+ * 1. Component mount → useEffect chạy → gọi fetchData()
+ * 2. Lấy userId từ props user
+ * 3. Gọi API song song để lấy appointments và test results
+ * 4. Fetch booking details cho từng test result để lấy thông tin category chính xác
+ * 5. Transform dữ liệu appointments và test results
+ * 6. Tính toán statistics và counts
+ * 7. Render dashboard với thông tin tổng quan
+ * 
+ * Props: 
+ * - user: Thông tin user hiện tại
+ */
 const DashboardOverview = ({ user }) => {
-  const [appointments, setAppointments] = useState([]);
-  const [testResults, setTestResults] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [counts, setCounts] = useState({ total: 0, completed: 0, inProgress: 0, totalAmount: 0 });
+  // ========================================
+  // PHẦN QUẢN LÝ STATE
+  // ========================================
+  
+  // State Dữ liệu - Lưu trữ dữ liệu appointments và test results
+  const [appointments, setAppointments] = useState([]); // Danh sách appointments của user
+  const [testResults, setTestResults] = useState([]); // Danh sách test results của user
+  
+  // State Giao diện - Điều khiển trạng thái loading và lỗi
+  const [loading, setLoading] = useState(true); // Hiển thị spinner khi đang tải dữ liệu
+  const [error, setError] = useState(null); // Lưu trữ thông báo lỗi
+  
+  // State Statistics - Thống kê cho dashboard
+  const [counts, setCounts] = useState({ 
+    total: 0, // Tổng số appointments
+    completed: 0, // Số appointments đã hoàn thành
+    inProgress: 0, // Số appointments đang trong quá trình
+    totalAmount: 0 // Tổng số tiền
+  });
 
 
 
+  // ========================================
+  // PHẦN EFFECT LẤY DỮ LIỆU
+  // ========================================
+  
+  /**
+   * useEffect để lấy dữ liệu khi component mount hoặc user thay đổi
+   * 
+   * LUỒNG LẤY DỮ LIỆU:
+   * 1. Kiểm tra user.id có tồn tại không
+   * 2. Gọi API song song để lấy appointments và test results
+   * 3. Fetch booking details cho từng test result để lấy thông tin category chính xác
+   * 4. Transform dữ liệu appointments và test results
+   * 5. Tính toán statistics và counts
+   * 6. Cập nhật state với dữ liệu đã xử lý
+   */
   useEffect(() => {
     const fetchData = async () => {
+      // BƯỚC 1: Kiểm tra user.id có tồn tại không
       if (!user?.id) {
         setLoading(false);
         return;
       }
+      
       try {
+        // BƯỚC 2: Bắt đầu loading và xóa lỗi trước đó
         setLoading(true);
         setError(null);
         
-        // Fetch appointments and test results in parallel
+        // BƯỚC 3: Gọi API song song để lấy appointments và test results
         const [appointmentsData, testResultsData] = await Promise.all([
           getBookingByUserId(user.id),
           getTestResultByUserId(user.id)
         ]);
         
-        console.log('DashboardOverview - appointmentsData:', appointmentsData);
-        console.log('DashboardOverview - testResultsData:', testResultsData);
-        console.log('DashboardOverview - testResultsData length:', testResultsData?.length);
-        
-        // Fetch booking details for each test result to get accurate category information
+        // BƯỚC 4: Fetch booking details cho từng test result để lấy thông tin category chính xác
         const testResultsWithBookingDetails = [];
-        console.log('DashboardOverview - testResultsData before processing:', testResultsData);
+        
         if (testResultsData && testResultsData.length > 0) {
-                      for (const testResult of testResultsData) {
-              console.log('DashboardOverview - processing testResult:', testResult.id);
-              try {
-                const bookingId = testResult.bookingId || testResult.booking?.id || testResult.id?.replace('_RESULT', '');
-                console.log('DashboardOverview - extracted bookingId:', bookingId);
-                if (bookingId) {
-                  const bookingDetails = await getBookingById(bookingId);
-                  console.log('DashboardOverview - fetched bookingDetails for', testResult.id, ':', bookingDetails);
-                  testResultsWithBookingDetails.push({
-                    ...testResult,
-                    bookingDetails
-                  });
-                } else {
-                  console.log('DashboardOverview - no bookingId found for testResult:', testResult.id);
-                  testResultsWithBookingDetails.push(testResult);
-                }
-              } catch (error) {
-                console.error('Error fetching booking details for test result:', testResult.id, error);
+          for (const testResult of testResultsData) {
+            try {
+              // Lấy bookingId từ test result
+              const bookingId = testResult.bookingId || testResult.booking?.id || testResult.id?.replace('_RESULT', '');
+              
+              if (bookingId) {
+                // Gọi API để lấy booking details
+                const bookingDetails = await getBookingById(bookingId);
+                testResultsWithBookingDetails.push({
+                  ...testResult,
+                  bookingDetails
+                });
+              } else {
                 testResultsWithBookingDetails.push(testResult);
               }
+            } catch (error) {
+              testResultsWithBookingDetails.push(testResult);
             }
+          }
         }
         
-        // Transform appointments data using same logic as MyAppointments
+        // BƯỚC 5: Transform appointments data sử dụng cùng logic với MyAppointments
         const transformedAppointments = (appointmentsData || []).map(b => {
-          // Parse timeSlotId
+          // Parse timeSlotId để lấy date và time
           let date = '', time = '';
           if (b.timeSlotId) {
             const parts = b.timeSlotId.split('_');
@@ -72,13 +123,14 @@ const DashboardOverview = ({ user }) => {
             }
           }
           
-          // Determine status based on booking history (same logic as MyAppointments)
+          // Xác định status dựa trên booking history (cùng logic với MyAppointments)
           const history = b.bookingHistories_on_booking?.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) || [];
           const currentHistoryStatus = history.length > 0 ? history[0].status : null;
           
           let status = 'confirmed'; // default status
           let isUpcoming = false;
           
+          // Kiểm tra xem appointment có phải là upcoming không
           if (b.timeSlotId) {
             try {
               const parts = b.timeSlotId.split('_');
@@ -193,9 +245,6 @@ const DashboardOverview = ({ user }) => {
         setAppointments(transformedAppointments);
         setTestResults(testResultsWithBookingDetails || []);
         
-        console.log('DashboardOverview - testResultsWithBookingDetails:', testResultsWithBookingDetails);
-        console.log('DashboardOverview - testResultsWithBookingDetails length:', testResultsWithBookingDetails?.length);
-        
         // Count status and calculate total amount using transformed data
         let completed = 0, inProgress = 0, totalAmount = 0;
         transformedAppointments.forEach(appointment => {
@@ -214,18 +263,13 @@ const DashboardOverview = ({ user }) => {
           if (currentHistoryStatus && 
               !['CANCELLED', 'EXPIRED'].includes(currentHistoryStatus)) {
             if (appointment.totalAmount && !isNaN(parseFloat(appointment.totalAmount))) {
-              console.log('DashboardOverview - adding amount for booking:', appointment.id, 'amount:', appointment.totalAmount, 'status:', currentHistoryStatus);
               totalAmount += parseFloat(appointment.totalAmount);
             }
-          } else {
-            console.log('DashboardOverview - skipping amount for cancelled booking:', appointment.id, 'status:', currentHistoryStatus, 'amount:', appointment.totalAmount);
           }
         });
         
-        console.log('DashboardOverview - final counts:', { total: transformedAppointments.length, completed, inProgress, totalAmount });
         setCounts({ total: transformedAppointments.length, completed, inProgress, totalAmount });
       } catch (err) {
-        console.error('Error fetching dashboard data:', err);
         setError('Không thể tải dữ liệu. Vui lòng thử lại sau.');
         setCounts({ total: 0, completed: 0, inProgress: 0, totalAmount: 0 });
         // Set empty arrays to prevent undefined errors
@@ -275,99 +319,8 @@ const DashboardOverview = ({ user }) => {
     return new Date(dateString).toLocaleDateString('vi-VN', options);
   };
 
-  // Process test results for ResultsSummary component
-  const processTestResults = () => {
-            console.log('processTestResults - testResults:', testResults);
-        console.log('processTestResults - testResults length:', testResults?.length);
-        if (!testResults || testResults.length === 0) {
-          console.log('processTestResults - no test results found');
-          return { recentResults: [], pendingResults: [] };
-        }
 
-    // Sort test results by completion date (newest first)
-    const sortedResults = [...testResults].sort((a, b) => 
-      new Date(b.reportDate || b.createdAt) - new Date(a.reportDate || a.createdAt)
-    );
 
-    // Get recent results (completed tests)
-    const recentResults = sortedResults.slice(0, 5).map(result => {
-      // Determine hasLegalValue based on booking details (same logic as TestResults.js)
-      let hasLegalValue = false;
-      const serviceName = result.booking?.service?.title || '';
-      
-      // Priority 1: Use booking details if available
-      if (result.bookingDetails?.service?.category) {
-        hasLegalValue = result.bookingDetails.service.category.hasLegalValue === true || 
-                       result.bookingDetails.service.category.hasLegalValue === 'true' ||
-                       result.bookingDetails.service.category.hasLegalValue === 1 ||
-                       result.bookingDetails.service.category.hasLegalValue === '1';
-      }
-      // Priority 2: Use test result category if available
-      else if (result.booking?.service?.category) {
-        hasLegalValue = result.booking.service.category.hasLegalValue === true || 
-                       result.booking.service.category.hasLegalValue === 'true' ||
-                       result.booking.service.category.hasLegalValue === 1 ||
-                       result.booking.service.category.hasLegalValue === '1';
-      }
-      // Priority 3: Fallback to service name check
-      else {
-        hasLegalValue = serviceName.toLowerCase().includes('hành chính') || 
-                       serviceName.toLowerCase().includes('giấy khai sinh') ||
-                       serviceName.toLowerCase().includes('administrative');
-      }
-      
-      return {
-        id: result.id,
-        service: serviceName || 'Dịch vụ xét nghiệm ADN',
-        completionDate: result.reportDate || result.createdAt,
-        result: result.positive === true ? 'POSITIVE' : result.positive === false ? 'NEGATIVE' : 'INCONCLUSIVE',
-        confidence: result.accuracy || 0,
-        hasLegalValue: hasLegalValue,
-        isNew: new Date(result.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // New if created within 7 days
-      };
-    });
-
-    // Get pending results (appointments that are in progress but not completed)
-    const pendingResults = appointments
-      .filter(appointment => {
-        const history = appointment.bookingHistories_on_booking?.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) || [];
-        const currentStatus = history.length > 0 ? history[0].status : null;
-        return currentStatus && ['SAMPLE_COLLECTED', 'RESULT_PENDING', 'KIT_RETURNED', 'SAMPLE_RECEIVED'].includes(currentStatus);
-      })
-      .slice(0, 3)
-      .map(appointment => {
-        const history = appointment.bookingHistories_on_booking?.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) || [];
-        const currentStatus = history.length > 0 ? history[0].status : null;
-        
-        // Calculate progress based on status
-        let progress = 0;
-        if (currentStatus === 'SAMPLE_COLLECTED') progress = 60;
-        else if (currentStatus === 'RESULT_PENDING') progress = 80;
-        else if (currentStatus === 'KIT_RETURNED' || currentStatus === 'SAMPLE_RECEIVED') progress = 70;
-        else progress = 50;
-
-        // Calculate expected date (7 days from appointment date)
-        const appointmentDate = appointment.timeSlotId ? new Date(appointment.timeSlotId.split('_')[0]) : new Date(appointment.createdAt);
-        const expectedDate = new Date(appointmentDate.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-        return {
-          id: appointment.id,
-          service: appointment.service?.title || 'Dịch vụ xét nghiệm ADN',
-          status: currentStatus === 'SAMPLE_COLLECTED' ? 'Đang phân tích' :
-                  currentStatus === 'RESULT_PENDING' ? 'Chuẩn bị kết quả' :
-                  currentStatus === 'KIT_RETURNED' ? 'Đã nhận mẫu' :
-                  currentStatus === 'SAMPLE_RECEIVED' ? 'Đang xử lý' : 'Đang thực hiện',
-          progress,
-          expectedDate: expectedDate.toISOString().split('T')[0]
-        };
-      });
-
-                  console.log('processTestResults - recentResults:', recentResults);
-        console.log('processTestResults - pendingResults:', pendingResults);
-        console.log('processTestResults - recentResults length:', recentResults?.length);
-        console.log('processTestResults - pendingResults length:', pendingResults?.length);
-        return { recentResults, pendingResults };
-    };
 
   return (
     <>
@@ -443,20 +396,7 @@ const DashboardOverview = ({ user }) => {
         </Col>
       </Row>
 
-      {/* Results Summary */}
-      {(() => {
-        const { recentResults, pendingResults } = processTestResults();
-        console.log('DashboardOverview - passing to ResultsSummary:', { recentResults, pendingResults });
-        console.log('DashboardOverview - recentResults length:', recentResults?.length);
-        console.log('DashboardOverview - pendingResults length:', pendingResults?.length);
-        return (
-          <ResultsSummary 
-            user={user} 
-            recentResults={recentResults}
-            pendingResults={pendingResults}
-          />
-        );
-      })()}
+
 
       {/* Recent Appointments */}
       <Row className="mt-4">
