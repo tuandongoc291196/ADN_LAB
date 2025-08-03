@@ -8,7 +8,7 @@ import { addBookingHistory } from '../../services/api';
 const OrderTracking = () => {
     const { bookingId: urlBookingId } = useParams();
     const navigate = useNavigate();
-    const { user, isUser, isStaff } = useAuth();
+    const { user, isUser, isStaff, loading: authLoading } = useAuth();
 
     const [searchId, setSearchId] = useState(urlBookingId || '');
     const [booking, setBooking] = useState(null);
@@ -21,7 +21,7 @@ const OrderTracking = () => {
     const statusDetails = {
         // Common statuses
         CREATED: { title: 'Đặt hẹn thành công', description: 'Lịch hẹn đã được tạo', icon: 'bi-check-circle' },
-        PENDING_PAYMENT: { title: 'Chờ thanh toán', description: 'Vui lòng hoàn tất thanh toán', icon: 'bi-credit-card' },
+                PENDING_PAYMENT: { title: 'Chờ thanh toán', description: 'Vui lòng hoàn tất thanh toán', icon: 'bi-credit-card' },
         PAYMENT_FAILED: { title: 'Thanh toán thất bại', description: 'Thanh toán không thành công', icon: 'bi-x-circle-fill' },
         PAYMENT_CONFIRMED: { title: 'Đã thanh toán', description: 'Thanh toán đã được xác nhận', icon: 'bi-check-circle-fill' },
         BOOKED: { title: 'Đã xác nhận lịch hẹn', description: 'Lịch hẹn đã được xác nhận', icon: 'bi-calendar-check' },
@@ -117,18 +117,23 @@ const OrderTracking = () => {
         setError('');
         try {
             const data = await getBookingById(id);
-            if (!data) {
+            console.log('Fetched booking data:', data);
+            console.log('Current user:', user);
+            console.log('Is user:', isUser());
+            if (!data || typeof data !== 'object' || !data.id) {
                 setBooking(null);
                 setError('Không tìm thấy thông tin đặt lịch. Vui lòng kiểm tra lại mã đặt lịch.');
                 return; 
             }
-            if (isUser() && data.userId !== user.id) {
+            if (isUser() && user && data.userId !== user.id) {
                  setError('Bạn không có quyền xem đơn hàng này.');
                  setBooking(null);
             } else {
                  setBooking(data);
+                 setError('');
             }
         } catch (err) {
+            console.error('Error fetching booking data:', err);
             setBooking(null);
             setError('Không tìm thấy thông tin đặt lịch. Vui lòng kiểm tra lại mã đặt lịch.');
         } finally {
@@ -137,10 +142,10 @@ const OrderTracking = () => {
     };
 
     useEffect(() => {
-        if (urlBookingId) {
+        if (urlBookingId && !authLoading) {
             fetchBookingData(urlBookingId);
         }
-    }, [urlBookingId, isUser, user]);
+    }, [urlBookingId, authLoading]);
 
     const handleSearch = () => {
         if (!searchId.trim()) {
@@ -405,9 +410,9 @@ const OrderTracking = () => {
                         
                         const getStatusIcon = () => {
                             if (statusKey === 'CANCELLED' || statusKey === 'EXPIRED' || statusKey === 'PAYMENT_FAILED') return 'bi-x-circle-fill';
-                            if (isCurrent) return 'bi-arrow-right-circle-fill';
+                            if (isCurrent) return statusInfo.icon;
                             if (isCompleted) return 'bi-check-circle-fill';
-                            return 'bi-circle';
+                            return statusInfo.icon;
                         }
                         
                         // Get action button for this status
@@ -431,7 +436,17 @@ const OrderTracking = () => {
                                                     <h6 className={`mb-1 ${isCurrent ? 'text-primary fw-bold' : statusKey === 'CANCELLED' || statusKey === 'EXPIRED' || statusKey === 'PAYMENT_FAILED' ? 'text-danger fw-bold' : ''}`}>
                                                         <i className={`${statusInfo.icon} me-2`}></i>{statusInfo.title}
                                                     </h6>
-                                                    <p className="mb-0 text-muted small">{statusInfo.description}</p>
+                                                    <p className="mb-1 text-muted small">{statusInfo.description}</p>
+                                                    {(() => {
+                                                        const historyEntry = history.find(h => h.status === statusKey);
+                                                        if (historyEntry) {
+                                                            return <p className="mb-0 text-muted" style={{ fontSize: '0.75rem' }}>
+                                                                <i className="bi bi-clock me-1"></i>
+                                                                {new Date(historyEntry.createdAt).toLocaleString('vi-VN')}
+                                                            </p>
+                                                        }
+                                                        return null;
+                                                    })()}
                                                 </div>
                                                 <Badge bg={getStatusColor()} className="ms-3 text-capitalize">
                                                     {statusKey === 'CANCELLED' || statusKey === 'EXPIRED' || statusKey === 'PAYMENT_FAILED' ? "Kết thúc" : isCurrent ? "Hiện tại" : isCompleted ? "Hoàn thành" : "Đã thực hiện"}

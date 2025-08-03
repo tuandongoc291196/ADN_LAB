@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Container, Row, Col, Nav, Card, Alert, Spinner } from 'react-bootstrap';
 import { getUserById, getBookingByUserId } from '../../services/api';
+import { useAuth } from '../context/auth';
 
 // Import dashboard components
 import DashboardOverview from './DashboardOverview';
@@ -13,6 +14,7 @@ import SupportCenter from './SupportCenter';
 
 const UserDashboard = ({ user }) => {
   const location = useLocation();
+  const { loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -33,6 +35,8 @@ const UserDashboard = ({ user }) => {
   // Fetch user data and appointments from API
   useEffect(() => {
     const fetchUserData = async () => {
+      if (authLoading) return; // Wait for auth to finish loading
+      
       try {
         setLoading(true);
 
@@ -184,7 +188,7 @@ const UserDashboard = ({ user }) => {
     };
 
     fetchUserData();
-  }, [user]);
+  }, [user, authLoading]);
 
   // Show loading state
   if (loading) {

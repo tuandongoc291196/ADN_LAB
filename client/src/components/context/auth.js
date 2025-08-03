@@ -19,9 +19,10 @@ const auth = getAuth();
  */
 const AuthProvider = (props) => {
   // Sử dụng hook của react-firebase-hooks để theo dõi trạng thái đăng nhập
-  const [user] = useAuthState(auth);
+  const [user, loading, error] = useAuthState(auth);
   // State lưu thông tin người dùng đã được làm giàu với dữ liệu từ database
   const [authUser, setAuthUser] = useState(null);
+  const [userDataLoading, setUserDataLoading] = useState(false);
 
   /**
    * Lấy thông tin người dùng từ Data Connect dựa vào UID
@@ -47,7 +48,8 @@ const AuthProvider = (props) => {
 
   // Effect chạy khi trạng thái đăng nhập thay đổi
   useEffect(() => {
-    if (user) {      
+    if (user) {
+      setUserDataLoading(true);      
       // Lấy thông tin người dùng từ Data Connect
       fetchUserData(user.uid).then((userData) => {
         if (userData) {
@@ -56,6 +58,7 @@ const AuthProvider = (props) => {
             console.log('🚫 Account is inactive in context:', userData.email);
             // Đăng xuất ngay lập tức
             logout();
+            setUserDataLoading(false);
             return;
           }
           
@@ -88,6 +91,9 @@ const AuthProvider = (props) => {
           // Đặt trạng thái người dùng là online khi đăng nhập
           setUserOnlineStatus(user.uid, true);
         }
+        setUserDataLoading(false);
+      }).catch(() => {
+        setUserDataLoading(false);
       });
     } else {
       // Đặt trạng thái người dùng là offline khi đăng xuất
@@ -97,6 +103,7 @@ const AuthProvider = (props) => {
       localStorage.removeItem("userData");
       localStorage.removeItem("user_id");
       setAuthUser(null);
+      setUserDataLoading(false);
     }
   }, [user]);
 
@@ -267,7 +274,7 @@ const AuthProvider = (props) => {
     isManager,
     isUser,
     refreshUserData,
-    loading: !user && !authUser // Trạng thái loading khi Firebase auth đang khởi tạo
+    loading: loading || userDataLoading
   };
 
   return <AuthContext.Provider value={value} {...props} />;
