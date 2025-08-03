@@ -38,7 +38,6 @@ import LoadingSpinner from './components/common/LoadingSpinner';
 
 // Test Results Components
 import TestResults from './components/user/TestResults';
-import PrintableResult from './components/user/PrintableResult';
 
 // User Information Components
 import UserProfile from './components/user/UserProfile';
@@ -190,11 +189,6 @@ function App() {
               <Route path="/profile" element={<UserProfile user={user} />} />
               <Route path="/results" element={<TestResults user={user} />} />
               <Route path="/results/:resultId" element={<TestResults user={user} />} />
-              <Route path="/print-result/:resultId" element={
-                <div className="container-fluid p-0">
-                  <PrintableResult />
-                </div>
-              } />
 
               {/* Staff Dashboard Routes */}
               <Route path="/staff/*" element={<StaffDashboard />} />

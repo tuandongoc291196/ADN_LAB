@@ -3,7 +3,8 @@ import { Row, Col, Card, Button, Form, Alert, Modal, Badge, Accordion, Tab, Tabs
 
 const SupportCenter = ({ user }) => {
   const [activeTab, setActiveTab] = useState('contact');
-  const [supportTickets, setSupportTickets] = useState([]);
+  // TODO: Kết nối API thực tế để lấy danh sách ticket nếu backend đã sẵn sàng
+  // const [supportTickets, setSupportTickets] = useState([]);
   const [showNewTicketModal, setShowNewTicketModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [message, setMessage] = useState({ type: '', content: '' });
@@ -26,69 +27,6 @@ const SupportCenter = ({ user }) => {
     comment: '',
     recommendation: true
   });
-
-  // Mock support tickets
-  const mockTickets = [
-    {
-      id: 'TK-001',
-      subject: 'Không thể tải kết quả xét nghiệm',
-      category: 'technical',
-      status: 'resolved',
-      priority: 'high',
-      createdDate: '2024-01-20',
-      lastUpdate: '2024-01-21',
-      assignedTo: 'Nguyễn Văn X',
-      messages: [
-        {
-          id: 1,
-          sender: 'customer',
-          content: 'Tôi không thể tải được file kết quả xét nghiệm ADN123457. Vui lòng hỗ trợ.',
-          timestamp: '2024-01-20 09:00',
-          attachments: []
-        },
-        {
-          id: 2,
-          sender: 'support',
-          content: 'Xin chào, chúng tôi đã kiểm tra và thấy file kết quả đã sẵn sàng. Vui lòng thử xóa cache trình duyệt và thử lại.',
-          timestamp: '2024-01-20 10:30',
-          attachments: []
-        },
-        {
-          id: 3,
-          sender: 'customer',
-          content: 'Đã thử theo hướng dẫn và tải thành công. Cảm ơn bạn!',
-          timestamp: '2024-01-21 08:00',
-          attachments: []
-        }
-      ]
-    },
-    {
-      id: 'TK-002',
-      subject: 'Thắc mắc về kết quả xét nghiệm',
-      category: 'consultation',
-      status: 'open',
-      priority: 'medium',
-      createdDate: '2024-01-22',
-      lastUpdate: '2024-01-22',
-      assignedTo: 'TS. Trần Thị Y',
-      messages: [
-        {
-          id: 1,
-          sender: 'customer',
-          content: 'Tôi có một số thắc mắc về kết quả xét nghiệm ADN123458. Có thể tư vấn thêm không?',
-          timestamp: '2024-01-22 14:00',
-          attachments: []
-        },
-        {
-          id: 2,
-          sender: 'support',
-          content: 'Chúng tôi đã chuyển yêu cầu đến chuyên gia tư vấn. Bạn sẽ nhận được phản hồi trong 24h.',
-          timestamp: '2024-01-22 14:30',
-          attachments: []
-        }
-      ]
-    }
-  ];
 
   // FAQ data
   const faqData = [
@@ -378,7 +316,7 @@ const SupportCenter = ({ user }) => {
         </Tab>
 
         {/* Support Tickets Tab */}
-        <Tab eventKey="tickets" title={<><i className="bi bi-ticket-detailed me-2"></i>Yêu cầu hỗ trợ ({mockTickets.length})</>}>
+        <Tab eventKey="tickets" title={<><i className="bi bi-ticket-detailed me-2"></i>Yêu cầu hỗ trợ</>}>
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h5 className="mb-0">Lịch sử yêu cầu hỗ trợ</h5>
             <Button variant="primary" onClick={() => setShowNewTicketModal(true)}>
@@ -387,99 +325,101 @@ const SupportCenter = ({ user }) => {
             </Button>
           </div>
 
-          {mockTickets.length > 0 ? (
-            <div className="list-group">
-              {mockTickets.map(ticket => (
-                <div key={ticket.id} className="list-group-item">
-                  <div className="d-flex justify-content-between align-items-start mb-2">
-                    <div>
-                      <h6 className="mb-1">{ticket.subject}</h6>
-                      <p className="text-muted small mb-1">Mã: {ticket.id}</p>
-                    </div>
-                    <div className="text-end">
-                      {getStatusBadge(ticket.status)}
-                      <div className="mt-1">
-                        {getPriorityBadge(ticket.priority)}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="row small text-muted mb-2">
-                    <div className="col-sm-6">
-                      <i className="bi bi-calendar me-1"></i>
-                      Tạo: {formatDate(ticket.createdDate)}
-                    </div>
-                    <div className="col-sm-6">
-                      <i className="bi bi-clock me-1"></i>
-                      Cập nhật: {formatDate(ticket.lastUpdate)}
-                    </div>
-                  </div>
-                  
-                  <div className="small text-muted mb-3">
-                    <i className="bi bi-person me-1"></i>
-                    Được xử lý bởi: {ticket.assignedTo}
-                  </div>
+          {/* TODO: Kết nối API thực tế để lấy danh sách ticket nếu backend đã sẵn sàng */}
+          {/* const [supportTickets, setSupportTickets] = useState([]); */}
+          {/* mockTickets.length > 0 ? ( */}
+          {/* <div className="list-group"> */}
+          {/* {mockTickets.map(ticket => ( */}
+          {/* <div key={ticket.id} className="list-group-item"> */}
+          {/* <div className="d-flex justify-content-between align-items-start mb-2"> */}
+          {/* <div> */}
+          {/* <h6 className="mb-1">{ticket.subject}</h6> */}
+          {/* <p className="text-muted small mb-1">Mã: {ticket.id}</p> */}
+          {/* </div> */}
+          {/* <div className="text-end"> */}
+          {/* {getStatusBadge(ticket.status)} */}
+          {/* <div className="mt-1"> */}
+          {/* {getPriorityBadge(ticket.priority)} */}
+          {/* </div> */}
+          {/* </div> */}
+          {/* </div> */}
+          
+          {/* <div className="row small text-muted mb-2"> */}
+          {/* <div className="col-sm-6"> */}
+          {/* <i className="bi bi-calendar me-1"></i> */}
+          {/* Tạo: {formatDate(ticket.createdDate)} */}
+          {/* </div> */}
+          {/* <div className="col-sm-6"> */}
+          {/* <i className="bi bi-clock me-1"></i> */}
+          {/* Cập nhật: {formatDate(ticket.lastUpdate)} */}
+          {/* </div> */}
+          {/* </div> */}
+          
+          {/* <div className="small text-muted mb-3"> */}
+          {/* <i className="bi bi-person me-1"></i> */}
+          {/* Được xử lý bởi: {ticket.assignedTo} */}
+          {/* </div> */}
 
-                  <Accordion>
-                    <Accordion.Item eventKey={ticket.id}>
-                      <Accordion.Header>
-                        Xem hội thoại ({ticket.messages.length} tin nhắn)
-                      </Accordion.Header>
-                      <Accordion.Body>
-                        {ticket.messages.map(msg => (
-                          <div key={msg.id} className={`mb-3 ${msg.sender === 'customer' ? 'text-end' : ''}`}>
-                            <div className={`d-inline-block p-3 rounded ${
-                              msg.sender === 'customer' 
-                                ? 'bg-primary text-white' 
-                                : 'bg-light'
-                            }`} style={{ maxWidth: '70%' }}>
-                              <div className="small mb-1">
-                                <strong>
-                                  {msg.sender === 'customer' ? 'Bạn' : 'Hỗ trợ viên'}
-                                </strong>
-                                <span className="ms-2 opacity-75">
-                                  {formatDate(msg.timestamp)}
-                                </span>
-                              </div>
-                              <div>{msg.content}</div>
-                            </div>
-                          </div>
-                        ))}
-                        
-                        {ticket.status === 'open' && (
-                          <div className="mt-3">
-                            <Form>
-                              <Form.Group className="mb-2">
-                                <Form.Control
-                                  as="textarea"
-                                  rows={2}
-                                  placeholder="Nhập phản hồi..."
-                                />
-                              </Form.Group>
-                              <Button variant="primary" size="sm">
-                                <i className="bi bi-send me-1"></i>
-                                Gửi phản hồi
-                              </Button>
-                            </Form>
-                          </div>
-                        )}
-                      </Accordion.Body>
-                    </Accordion.Item>
-                  </Accordion>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-5">
-              <i className="bi bi-ticket text-muted" style={{ fontSize: '4rem' }}></i>
-              <h5 className="text-muted mt-3">Chưa có yêu cầu hỗ trợ nào</h5>
-              <p className="text-muted">Tạo yêu cầu hỗ trợ đầu tiên của bạn</p>
-              <Button variant="primary" onClick={() => setShowNewTicketModal(true)}>
-                <i className="bi bi-plus-circle me-2"></i>
-                Tạo yêu cầu mới
-              </Button>
-            </div>
-          )}
+          {/* <Accordion> */}
+          {/* <Accordion.Item eventKey={ticket.id}> */}
+          {/* <Accordion.Header> */}
+          {/* Xem hội thoại ({ticket.messages.length} tin nhắn) */}
+          {/* </Accordion.Header> */}
+          {/* <Accordion.Body> */}
+          {/* {ticket.messages.map(msg => ( */}
+          {/* <div key={msg.id} className={`mb-3 ${msg.sender === 'customer' ? 'text-end' : ''}`}> */}
+          {/* <div className={`d-inline-block p-3 rounded ${ */}
+          {/* msg.sender === 'customer'  */}
+          {/* ? 'bg-primary text-white'  */}
+          {/* : 'bg-light' */}
+          {/* }`} style={{ maxWidth: '70%' }}> */}
+          {/* <div className="small mb-1"> */}
+          {/* <strong> */}
+          {/* {msg.sender === 'customer' ? 'Bạn' : 'Hỗ trợ viên'} */}
+          {/* </strong> */}
+          {/* <span className="ms-2 opacity-75"> */}
+          {/* {formatDate(msg.timestamp)} */}
+          {/* </span> */}
+          {/* </div> */}
+          {/* <div>{msg.content}</div> */}
+          {/* </div> */}
+          {/* </div> */}
+          {/* ))} */}
+          
+          {/* {ticket.status === 'open' && ( */}
+          {/* <div className="mt-3"> */}
+          {/* <Form> */}
+          {/* <Form.Group className="mb-2"> */}
+          {/* <Form.Control */}
+          {/* as="textarea" */}
+          {/* rows={2} */}
+          {/* placeholder="Nhập phản hồi..." */}
+          {/* /> */}
+          {/* </Form.Group> */}
+          {/* <Button variant="primary" size="sm"> */}
+          {/* <i className="bi bi-send me-1"></i> */}
+          {/* Gửi phản hồi */}
+          {/* </Button> */}
+          {/* </Form> */}
+          {/* </div> */}
+          {/* )} */}
+          {/* </Accordion.Body> */}
+          {/* </Accordion.Item> */}
+          {/* </Accordion> */}
+          {/* </div> */}
+          {/* ))} */}
+          {/* </div> */}
+          {/* ) : ( */}
+          <div className="text-center py-5">
+            <i className="bi bi-ticket text-muted" style={{ fontSize: '4rem' }}></i>
+            <h5 className="text-muted mt-3">Chưa có yêu cầu hỗ trợ nào</h5>
+            <p className="text-muted">Tạo yêu cầu hỗ trợ đầu tiên của bạn</p>
+            <Button variant="primary" onClick={() => setShowNewTicketModal(true)}>
+              <i className="bi bi-plus-circle me-2"></i>
+              Tạo yêu cầu mới
+            </Button>
+          </div>
+          {/* )} */}
         </Tab>
 
         {/* FAQ Tab */}
