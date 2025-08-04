@@ -1,14 +1,13 @@
 /**
  * COMPONENT: ServiceDetail
- * MỤC ĐÍCH: Hiển thị chi tiết một dịch vụ xét nghiệm ADN cụ thể
- * CHỨC NĂNG:
- * - Hiển thị thông tin chi tiết dịch vụ (tên, mô tả, giá, thời gian)
- * - Hiển thị các phương thức thu mẫu có sẵn
- * - Tab navigation cho: Quy trình → Yêu cầu → FAQ
- * - Tích hợp API để lấy dữ liệu service và methods
- * - Fallback UI cho loading và error states
- * - Nút đặt lịch với validation trạng thái đăng nhập
- * - Responsive UI cho mobile và desktop
+ * CHỨC NĂNG: Hiển thị chi tiết một dịch vụ xét nghiệm ADN cụ thể
+ * LUỒNG HOẠT ĐỘNG:
+ * 1. Lấy ID dịch vụ từ URL params và decode
+ * 2. Tải thông tin dịch vụ từ API getAllServices() và tìm service theo ID
+ * 3. Tải danh sách methods từ API getAllMethods() và getMethodsByServiceId()
+ * 4. Hiển thị thông tin chi tiết dịch vụ với tabs: Quy trình → Yêu cầu → FAQ
+ * 5. Xử lý authentication khi user click đặt lịch
+ * 6. Hiển thị các phương thức thu mẫu có sẵn cho dịch vụ
  */
 
 import React, { useState, useEffect } from 'react';
@@ -19,45 +18,55 @@ import { enrichMethodData } from '../data/services-data';
 import Swal from 'sweetalert2';
 
 const ServiceDetail = () => {
-  // ROUTING & NAVIGATION
+  // ROUTER HOOKS
   const { id } = useParams(); // ID dịch vụ từ URL params
   const navigate = useNavigate(); // Hook điều hướng
 
-  // COMPONENT STATE
+  // STATE QUẢN LÝ DỮ LIỆU
   const [service, setService] = useState(null); // Thông tin dịch vụ
   const [methods, setMethods] = useState([]); // Danh sách tất cả phương thức
   const [serviceMethods, setServiceMethods] = useState([]); // Phương thức của dịch vụ này
   const [loading, setLoading] = useState(true); // Loading state
   const [error, setError] = useState(null); // Error message
-  const [expanded, setExpanded] = useState(false); // Trạng thái mở rộng mô tả
 
-  // UI STATE
+  // STATE QUẢN LÝ UI
+  const [expanded, setExpanded] = useState(false); // Trạng thái mở rộng mô tả
   const [activeTab, setActiveTab] = useState('process'); // Tab đang active
   const [openFaq, setOpenFaq] = useState(null); // FAQ đang mở
 
-  // USER DATA
+  // STATE QUẢN LÝ USER
   const storedUserData = JSON.parse(localStorage.getItem('userData')); // Thông tin user
 
-  // EFFECTS & DATA FETCHING
-  // Effect: Fetch dữ liệu khi ID thay đổi
+  /**
+   * EFFECT: Tải dữ liệu khi ID thay đổi
+   * BƯỚC 1: Gọi fetchServiceData() khi component mount hoặc id thay đổi
+   */
   useEffect(() => {
     fetchServiceData();
   }, [id]);
 
-  // API CALLS
-  // Fetch dữ liệu dịch vụ và phương thức
+  /**
+   * API CALL: Tải dữ liệu dịch vụ và phương thức
+   * BƯỚC 1: Set loading state và reset error
+   * BƯỚC 2: Gọi API getAllServices() để lấy danh sách services
+   * BƯỚC 3: Tìm service theo ID với nhiều cách khớp khác nhau
+   * BƯỚC 4: Kiểm tra trạng thái active của service
+   * BƯỚC 5: Gọi fetchServiceMethods() để lấy methods cho service
+   * BƯỚC 6: Gọi API getAllMethods() để lấy tất cả methods
+   * BƯỚC 7: Xử lý lỗi và set loading state
+   */
   const fetchServiceData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Fetch danh sách dịch vụ
+      // BƯỚC 2: Fetch danh sách dịch vụ
       const servicesResponse = await getAllServices();
 
       if (servicesResponse && Array.isArray(servicesResponse)) {
         const decodedId = decodeURIComponent(id);
 
-        // Tìm dịch vụ theo ID - thử các cách khớp khác nhau
+        // BƯỚC 3: Tìm dịch vụ theo ID - thử các cách khớp khác nhau
         let foundService = servicesResponse.find(s => s.id === decodedId); // Khớp chính xác
 
         if (!foundService) { // Khớp không phân biệt hoa thường
@@ -73,14 +82,14 @@ const ServiceDetail = () => {
         }
 
         if (foundService) {
-          // Kiểm tra trạng thái active của dịch vụ
+          // BƯỚC 4: Kiểm tra trạng thái active của dịch vụ
           if (foundService.isActive === false) {
             setError('Dịch vụ này hiện không khả dụng');
             return;
           }
           
           setService(foundService);
-          // Fetch phương thức cho dịch vụ này
+          // BƯỚC 5: Fetch phương thức cho dịch vụ này
           await fetchServiceMethods(foundService.id);
         } else {
           setError('Không tìm thấy dịch vụ');
@@ -89,21 +98,25 @@ const ServiceDetail = () => {
         setError('Không thể tải thông tin dịch vụ');
       }
 
-      // Fetch tất cả phương thức để tham chiếu
+      // BƯỚC 6: Fetch tất cả phương thức để tham chiếu
       const methodsResponse = await getAllMethods();
 
       if (methodsResponse && Array.isArray(methodsResponse)) {
         setMethods(methodsResponse);
       }
     } catch (err) {
-      console.error('Error fetching service data:', err);
       setError('Có lỗi xảy ra khi tải thông tin dịch vụ');
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch phương thức cho dịch vụ cụ thể
+  /**
+   * API CALL: Tải phương thức cho dịch vụ cụ thể
+   * BƯỚC 1: Gọi API getMethodsByServiceId() với serviceId
+   * BƯỚC 2: Kiểm tra response và cập nhật state serviceMethods
+   * BƯỚC 3: Xử lý lỗi nếu có
+   */
   const fetchServiceMethods = async (serviceId) => {
     try {
       const response = await getMethodsByServiceId(serviceId);
@@ -114,16 +127,23 @@ const ServiceDetail = () => {
         setServiceMethods([]);
       }
     } catch (err) {
-      console.error('Error fetching service methods:', err);
       setServiceMethods([]);
     }
   };
 
-  // HELPER FUNCTIONS
-  // Lấy icon cho dịch vụ với fallback
+  /**
+   * HELPER FUNCTION: Lấy icon cho dịch vụ với fallback
+   * INPUT: service (object) - thông tin service
+   * OUTPUT: string - tên icon Bootstrap
+   * BƯỚC 1: Kiểm tra nếu service có icon
+   * BƯỚC 2: Map các icon đặc biệt từ BE sang Bootstrap Icons
+   * BƯỚC 3: Kiểm tra trong mapping và trả về icon tương ứng
+   * BƯỚC 4: Thêm prefix bi- nếu chưa có
+   * BƯỚC 5: Trả về icon mặc định nếu không có
+   */
   const getServiceIcon = (service) => {
     if (service.icon) {
-      // Map các icon đặc biệt từ BE sang Bootstrap Icons
+      // BƯỚC 2: Map các icon đặc biệt từ BE sang Bootstrap Icons
       const iconMapping = {
         'siblings-icon': 'bi-people-fill',      // Icon anh chị em
         'parent-child-icon': 'bi-person-heart', // Icon cha mẹ - con
@@ -137,7 +157,7 @@ const ServiceDetail = () => {
         'immigration-icon': 'bi-passport'       // Icon nhập tịch
       };
 
-      // Kiểm tra trong mapping
+      // BƯỚC 3: Kiểm tra trong mapping
       if (iconMapping[service.icon]) {
         return iconMapping[service.icon];
       }
@@ -147,22 +167,30 @@ const ServiceDetail = () => {
         return service.icon;
       }
 
-      // Thêm prefix bi- nếu chưa có
+      // BƯỚC 4: Thêm prefix bi- nếu chưa có
       const iconWithPrefix = `bi-${service.icon}`;
       return iconWithPrefix;
     }
 
-    // Icon mặc định cho dịch vụ ADN
+    // BƯỚC 5: Icon mặc định cho dịch vụ ADN
     return 'bi-dna';
   };
 
-  // Xác định loại dịch vụ từ category
+  /**
+   * HELPER FUNCTION: Xác định loại dịch vụ từ category
+   * INPUT: category (object) - thông tin category của service
+   * OUTPUT: string - 'administrative' hoặc 'civil'
+   */
   const getServiceTypeFromCategory = (category) => {
     if (!category) return 'civil';
     return category.hasLegalValue ? 'administrative' : 'civil';
   };
 
-  // Format giá tiền theo định dạng VNĐ
+  /**
+   * HELPER FUNCTION: Format giá tiền theo định dạng VNĐ
+   * INPUT: price (number/string) - giá tiền
+   * OUTPUT: string - giá tiền định dạng VNĐ
+   */
   const formatPrice = (price) => {
     if (typeof price === 'number') {
       return new Intl.NumberFormat('vi-VN').format(price) + ' VNĐ';
@@ -170,14 +198,24 @@ const ServiceDetail = () => {
     return price || 'Liên hệ';
   };
 
-  // Tạo badge cho loại dịch vụ
+  /**
+   * HELPER FUNCTION: Tạo badge cho loại dịch vụ
+   * INPUT: serviceType (string) - loại dịch vụ
+   * OUTPUT: JSX Badge component với màu và text phù hợp
+   */
   const getServiceTypeBadge = (serviceType) => {
     return serviceType === 'administrative'
       ? <Badge bg="warning" text="dark" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}>ADN Hành chính</Badge>
       : <Badge bg="success" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}>ADN Dân sự</Badge>;
   };
 
-  // Tạo badges cho các phương thức thu mẫu
+  /**
+   * HELPER FUNCTION: Tạo badges cho các phương thức thu mẫu
+   * OUTPUT: JSX array các Badge components
+   * BƯỚC 1: Kiểm tra nếu không có serviceMethods thì hiển thị "Đang cập nhật"
+   * BƯỚC 2: Làm giàu methods với icon và color từ METHOD_MAPPING
+   * BƯỚC 3: Tạo badges cho từng method
+   */
   const getMethodBadges = () => {
     if (serviceMethods.length === 0) {
       return (
@@ -188,9 +226,10 @@ const ServiceDetail = () => {
       );
     }
 
-    // Làm giàu methods với icon và color
+    // BƯỚC 2: Làm giàu methods với icon và color
     const enrichedMethods = enrichMethodData(serviceMethods);
 
+    // BƯỚC 3: Tạo badges cho từng method
     return enrichedMethods.map(method => (
       <Badge
         key={method.id}
@@ -204,18 +243,25 @@ const ServiceDetail = () => {
     ));
   };
 
-  // Lấy chi tiết của một phương thức
+  /**
+   * HELPER FUNCTION: Lấy chi tiết của một phương thức
+   * INPUT: methodId (string) - ID của method
+   * OUTPUT: object - thông tin method hoặc undefined
+   */
   const getMethodDetails = (methodId) => {
     return methods.find(m => m.id === methodId);
   };
 
-  // EVENT HANDLERS
-  // Toggle FAQ item
+  /**
+   * EVENT HANDLER: Toggle FAQ item
+   * INPUT: faqId (string) - ID của FAQ item
+   * BƯỚC 1: Nếu faqId đang mở thì đóng, ngược lại thì mở
+   */
   const toggleFaq = (faqId) => {
     setOpenFaq(openFaq === faqId ? null : faqId);
   };
 
-  // LOADING STATE
+  // LOADING STATE: Hiển thị spinner khi đang tải dữ liệu
   if (loading) {
     return (
       <div className="text-center py-5">
@@ -227,7 +273,7 @@ const ServiceDetail = () => {
     );
   }
 
-  // ERROR STATE
+  // ERROR STATE: Hiển thị thông báo lỗi nếu có
   if (error || !service) {
     return (
       <Container className="py-5">
@@ -236,7 +282,7 @@ const ServiceDetail = () => {
           {error || 'Không tìm thấy dịch vụ'}
         </Alert>
 
-        {/* Debug Information */}
+        {/* DEBUG INFORMATION: Thông tin debug */}
         <div className="mt-4 p-3 bg-light rounded">
           <h6>Debug Information:</h6>
           <p><strong>ID from URL:</strong> {id}</p>
@@ -282,10 +328,22 @@ const ServiceDetail = () => {
 
   const serviceType = getServiceTypeFromCategory(service.category);
 
+  /**
+   * EVENT HANDLER: Xử lý click navigation
+   * BƯỚC 1: Đóng expanded state
+   */
   const handleNavClick = () => {
     setExpanded(false);
   };
-  // Kiểm tra xem người dùng đã đăng nhập chưa
+
+  /**
+   * EVENT HANDLER: Xử lý click đặt lịch
+   * INPUT: e (event) - event object
+   * BƯỚC 1: Kiểm tra nếu user chưa đăng nhập
+   * BƯỚC 2: Hiển thị thông báo yêu cầu đăng nhập
+   * BƯỚC 3: Chuyển hướng đến trang login nếu user confirm
+   * BƯỚC 4: Nếu đã đăng nhập thì xử lý bình thường
+   */
   const handleBookingClick = (e) => {
     if (!storedUserData) {
       e.preventDefault(); // chặn click chuyển trang
