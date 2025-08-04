@@ -17,6 +17,7 @@ const getSamples = async (bookingId) => {
                 participantId
                 collectionDate
                 sampleQuality
+                sampleType
                 sampleConcentration
                 notes
                 createdAt
@@ -39,6 +40,7 @@ const getSamples = async (bookingId) => {
                 name
                 age
                 gender
+                relationship
                 }
             }
         }
@@ -92,6 +94,7 @@ const getSampleBybookingId = async (req, res) => {
                 participantId
                 collectionDate
                 sampleQuality
+                sampleType
                 sampleConcentration
                 notes
                 createdAt

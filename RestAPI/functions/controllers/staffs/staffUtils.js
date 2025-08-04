@@ -56,6 +56,35 @@ const checkStaffExists = async (staffId) => {
   }
 }
 
+const restStaffSlotByPosition = async (positionId) => {
+  try {
+    if (!positionId) {
+      throw new Error("positionId is required");
+    }
+
+    const GET_STAFF_SLOT_QUERY = `
+      mutation UpdateStaff($positionId: String) @auth(level: USER) {
+        staff_updateMany(where: {positionId: {eq: $positionId}}, data: {slot: 0, updatedAt_expr: "request.time"})
+      }
+    `;
+
+    const variables = { 
+      positionId: positionId 
+    };
+
+    console.log("Updating staff slots for position ID:", positionId, "with variables:", variables);
+    const response = await dataConnect.executeGraphql(GET_STAFF_SLOT_QUERY, { 
+      variables: variables 
+    });
+    
+    return response.data.staff_updateMany;
+  } catch (error) {
+    console.error("Error fetching staff slots by position:", error);
+    throw error;
+  }
+}
+
 module.exports = {
-    checkStaffExists
+    checkStaffExists,
+    restStaffSlotByPosition
 };

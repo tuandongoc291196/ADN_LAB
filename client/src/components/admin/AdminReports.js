@@ -57,7 +57,7 @@ const AdminReports = ({ user }) => {
       total: 0, 
       daily: [], 
       popularServices: [], 
-      statusBreakdown: { EXPIRED: 0, CANCELLED: 0, COMPLETED: 0, PENDING: 0, REFUNDED: 0 },
+      statusBreakdown: { EXPIRED: 0, CANCELLED: 0, COMPLETE: 0, PENDING: 0, REFUNDED: 0 },
       staffPerformance: []
     },
     users: { 
@@ -97,6 +97,7 @@ const AdminReports = ({ user }) => {
       }
       
       const data = await getDashboardReports(requestData);
+      console.log('Dashboard report data:', data);
       setReportData(data);
     } catch (err) {
       setError(err.message);
@@ -277,7 +278,7 @@ const AdminReports = ({ user }) => {
     datasets: [
       {
         data: [
-          reportData.bookings?.statusBreakdown?.COMPLETED || 0,
+          reportData.bookings?.statusBreakdown?.COMPLETE || 0,
           reportData.bookings?.statusBreakdown?.PENDING || 0,
           reportData.bookings?.statusBreakdown?.CANCELLED || 0,
           reportData.bookings?.statusBreakdown?.EXPIRED || 0,
@@ -473,8 +474,8 @@ const AdminReports = ({ user }) => {
       // Booking Status Sheet
       const bookingStatusHeaders = [['Trạng thái', 'Số lượng', 'Tỷ lệ (%)']];
       const bookingStatusData = [
-        ['Hoàn thành', reportData.bookings?.statusBreakdown?.COMPLETED || 0, 
-         reportData.bookings?.total > 0 ? ((reportData.bookings.statusBreakdown.COMPLETED / reportData.bookings.total) * 100).toFixed(1) : 0],
+        ['Hoàn thành', reportData.bookings?.statusBreakdown?.COMPLETE || 0, 
+         reportData.bookings?.total > 0 ? ((reportData.bookings.statusBreakdown.COMPLETE / reportData.bookings.total) * 100).toFixed(1) : 0],
         ['Đang chờ', reportData.bookings?.statusBreakdown?.PENDING || 0,
          reportData.bookings?.total > 0 ? ((reportData.bookings.statusBreakdown.PENDING / reportData.bookings.total) * 100).toFixed(1) : 0],
         ['Đã hủy', reportData.bookings?.statusBreakdown?.CANCELLED || 0,
@@ -583,8 +584,8 @@ const AdminReports = ({ user }) => {
         [''],
         ['TRẠNG THÁI ĐẶT LỊCH'],
         ['Trạng thái', 'Số lượng', 'Tỷ lệ (%)'],
-        ['Hoàn thành', reportData.bookings?.statusBreakdown?.COMPLETED || 0, 
-         reportData.bookings?.total > 0 ? ((reportData.bookings.statusBreakdown.COMPLETED / reportData.bookings.total) * 100).toFixed(1) : 0],
+        ['Hoàn thành', reportData.bookings?.statusBreakdown?.COMPLETE || 0, 
+         reportData.bookings?.total > 0 ? ((reportData.bookings.statusBreakdown.COMPLETE / reportData.bookings.total) * 100).toFixed(1) : 0],
         ['Đang chờ', reportData.bookings?.statusBreakdown?.PENDING || 0,
          reportData.bookings?.total > 0 ? ((reportData.bookings.statusBreakdown.PENDING / reportData.bookings.total) * 100).toFixed(1) : 0],
         ['Đã hủy', reportData.bookings?.statusBreakdown?.CANCELLED || 0,
@@ -1087,11 +1088,11 @@ const AdminReports = ({ user }) => {
                             <i className="bi bi-check-circle text-success me-2"></i>
                             Hoàn thành
                           </td>
-                          <td>{(reportData.bookings?.statusBreakdown?.COMPLETED || 0).toLocaleString()}</td>
+                          <td>{(reportData.bookings?.statusBreakdown?.COMPLETE || 0).toLocaleString()}</td>
                           <td>
                             <Badge bg="success">
                               {reportData.bookings?.total > 0 ? 
-                                ((reportData.bookings.statusBreakdown.COMPLETED / reportData.bookings.total) * 100).toFixed(1) : 0}%
+                                ((reportData.bookings.statusBreakdown.COMPLETE / reportData.bookings.total) * 100).toFixed(1) : 0}%
                             </Badge>
                           </td>
                         </tr>

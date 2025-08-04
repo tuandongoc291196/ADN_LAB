@@ -3,25 +3,44 @@ import { Link } from 'react-router-dom';
 import { Row, Col, Card, Button, Badge, ListGroup } from 'react-bootstrap';
 import { getBookingByStaffId } from '../../services/api';
 
+/**
+ * COMPONENT: StaffOverview
+ * CHỨC NĂNG: Trang tổng quan cho nhân viên - hiển thị danh sách công việc cần xử lý hôm nay
+ * LUỒNG HOẠT ĐỘNG:
+ * 1. Tải danh sách booking được phân công cho staff từ API getBookingByStaffId()
+ * 2. Chuyển đổi booking thành task với status và deadline tương ứng
+ * 3. Phân loại task theo loại: kit-preparation, sample-collection, lab-testing
+ * 4. Hiển thị danh sách task với thông tin chi tiết và nút xử lý
+ * 5. Sắp xếp task: ưu tiên các task cần xử lý, đưa task quá hạn/đã hủy xuống cuối
+ */
 const StaffOverview = ({ user }) => {
-  const [todayTasks, setTodayTasks] = useState([]);
+  // STATE QUẢN LÝ DỮ LIỆU
+  const [todayTasks, setTodayTasks] = useState([]); // Danh sách công việc hôm nay
 
+  /**
+   * EFFECT: Tải dữ liệu booking khi component mount hoặc user.id thay đổi
+   * BƯỚC 1: Gọi API getBookingByStaffId() để lấy danh sách booking được phân công
+   * BƯỚC 2: Chuyển đổi booking thành task với thông tin chi tiết
+   * BƯỚC 3: Cập nhật state todayTasks
+   */
   useEffect(() => {
     const fetchBookings = async () => {
       try {
+        // BƯỚC 1: Lấy danh sách booking từ API
         const bookings = await getBookingByStaffId(user.id);
 
+        // BƯỚC 2: Chuyển đổi booking thành task
         const tasks = bookings.map((booking, index) => {
+          // Xác định loại phương thức lấy mẫu
           const methodName = booking.method?.name || '';
           const isHomeVisit = methodName === 'Lấy mẫu tại nhà';
 
-          // Lấy history tương ứng
+          // BƯỚC 2.1: Lấy history và status mới nhất
           const history = Array.isArray(booking.bookingHistories_on_booking) ? booking.bookingHistories_on_booking : [];
-
-          // Tìm status mới nhất theo createdAt
           const sorted = [...history].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
           const latestStatus = sorted[0]?.status || 'unknown';
-          // Kiểm tra quá hạn
+
+          // BƯỚC 2.2: Map status từ API sang task status
           let taskStatus = '';
           switch (latestStatus) {
             case 'BOOKED':
@@ -62,20 +81,22 @@ const StaffOverview = ({ user }) => {
               break;
           }
 
-          // Xác định task type dựa trên status
+          // BƯỚC 2.3: Xác định loại task dựa trên status
           let taskType = 'kit-preparation';
           if (['sample-collected', 'result-pending'].includes(taskStatus)) {
             taskType = 'lab-testing';
           } else if (['collected', 'transferred'].includes(taskStatus)) {
             taskType = 'sample-collection';
           }
+
+          // BƯỚC 2.4: Tính toán deadline từ timeSlot hoặc createdAt
           let deadline = '';
           try {
             const [date, startTime] = booking.timeSlot?.id?.split('_') || [];
             if (date && startTime) {
               const dateTimeStr = `${date}T${startTime}:00`;
               const timeObj = new Date(dateTimeStr);
-              timeObj.setMinutes(timeObj.getMinutes() - 30);
+              timeObj.setMinutes(timeObj.getMinutes() - 30); // Trừ 30 phút để có thời gian chuẩn bị
               deadline = timeObj.toLocaleString('vi-VN', {
                 weekday: 'long',
                 year: 'numeric',
@@ -86,6 +107,7 @@ const StaffOverview = ({ user }) => {
               });
             }
           } catch (e) {
+            // Fallback: sử dụng createdAt nếu không có timeSlot
             deadline = new Date(booking.createdAt).toLocaleString('vi-VN', {
               weekday: 'long',
               year: 'numeric',
@@ -96,6 +118,7 @@ const StaffOverview = ({ user }) => {
             });
           }
 
+          // BƯỚC 2.5: Tạo object task với đầy đủ thông tin
           return {
             id: booking.id || `task-${index}`,
             type: taskType,
@@ -112,6 +135,7 @@ const StaffOverview = ({ user }) => {
           };
         });
 
+        // BƯỚC 3: Cập nhật state
         setTodayTasks(tasks);
       } catch (err) {
         console.error('Lỗi khi lấy booking hoặc history:', err);
@@ -121,7 +145,13 @@ const StaffOverview = ({ user }) => {
     fetchBookings();
   }, [user.id]);
 
+  /**
+   * HELPER FUNCTION: Tạo badge hiển thị status với màu sắc và label tương ứng
+   * INPUT: status (string) - trạng thái task
+   * OUTPUT: JSX Badge component với màu và text phù hợp
+   */
   const getStatusBadge = (status) => {
+    // Định nghĩa mapping màu sắc cho từng status
     const variants = {
       // KitPreparation statuses
       'waiting-kit-prep': 'secondary',
@@ -144,6 +174,8 @@ const StaffOverview = ({ user }) => {
       'sample-collected': 'success',
       'result-pending': 'success'
     };
+
+    // Định nghĩa label tiếng Việt cho từng status
     const labels = {
       // KitPreparation labels
       'waiting-kit-prep': 'Chờ chuẩn bị kit',
@@ -166,9 +198,15 @@ const StaffOverview = ({ user }) => {
       'sample-collected': 'Đã thu mẫu',
       'result-pending': 'Chờ kết quả'
     };
+
     return <Badge bg={variants[status] || 'secondary'}>{labels[status] || status}</Badge>;
   };
 
+  /**
+   * HELPER FUNCTION: Lấy icon tương ứng với loại task
+   * INPUT: type (string) - loại task
+   * OUTPUT: className của icon Bootstrap
+   */
   const getTaskIcon = (type) => {
     const icons = {
       'kit-preparation': 'bi-box-seam',
@@ -179,11 +217,18 @@ const StaffOverview = ({ user }) => {
     return icons[type] || 'bi-list-task';
   };
 
+  /**
+   * HELPER FUNCTION: Tạo link điều hướng cho task
+   * INPUT: type (string), status (string), isHomeVisit (boolean)
+   * OUTPUT: URL string để điều hướng
+   */
   const getTaskLink = (type, status, isHomeVisit) => {
-    // Nếu là lấy mẫu tại nhà và đã nhận kit thì chuyển sang thu mẫu
+    // Logic đặc biệt: nếu là lấy mẫu tại nhà và đã nhận kit thì chuyển sang thu mẫu
     if (isHomeVisit && (status === 'sample-received')) {
       return '/staff/sample-collection';
     }
+    
+    // Mapping loại task với URL tương ứng
     const links = {
       'kit-preparation': '/staff/kit-preparation',
       'sample-collection': '/staff/sample-collection',
@@ -193,18 +238,19 @@ const StaffOverview = ({ user }) => {
     return links[type] || '/staff';
   };
 
-  // Sắp xếp tasks: các đơn overdue/cancelled xuống cuối
+  // BƯỚC 4: Sắp xếp tasks - ưu tiên các task cần xử lý, đưa task quá hạn/đã hủy xuống cuối
   const sortedTasks = [
     ...todayTasks.filter(task => !['overdue', 'cancelled'].includes(task.status)),
     ...todayTasks.filter(task => ['overdue', 'cancelled'].includes(task.status))
   ];
-  // Đếm số lượng
+
+  // BƯỚC 5: Đếm số lượng task để hiển thị badge
   const normalCount = todayTasks.filter(task => !['overdue', 'cancelled'].includes(task.status)).length;
   const specialCount = todayTasks.filter(task => ['overdue', 'cancelled'].includes(task.status)).length;
 
   return (
     <div>
-      {/* Welcome Header */}
+      {/* HEADER: Chào mừng và ngày hiện tại */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h2 className="mb-1">Chào mừng, {user.name}!</h2>
@@ -218,9 +264,10 @@ const StaffOverview = ({ user }) => {
       </div>
 
       <Row>
-        {/* Tasks for Today */}
+        {/* MAIN CONTENT: Danh sách công việc hôm nay */}
         <Col lg={8} className="mb-4">
           <Card className="shadow-sm">
+            {/* CARD HEADER: Tiêu đề và thống kê */}
             <Card.Header className="bg-light">
               <div className="d-flex justify-content-between align-items-center">
                 <h5 className="mb-0">
@@ -233,6 +280,8 @@ const StaffOverview = ({ user }) => {
                 </div>
               </div>
             </Card.Header>
+
+            {/* CARD BODY: Danh sách task */}
             <Card.Body className="p-0">
               <ListGroup variant="flush">
                 {sortedTasks.map((task, index) => (
@@ -240,12 +289,21 @@ const StaffOverview = ({ user }) => {
                     key={task.id}
                     className="d-flex align-items-center justify-content-between py-3"
                   >
+                    {/* LEFT SIDE: Thông tin task */}
                     <div className="d-flex align-items-center flex-grow-1">
+                      {/* Icon loại task */}
                       <div className="me-3">
                         <i className={`${getTaskIcon(task.type)} fs-4 text-primary`}></i>
                       </div>
+
+                      {/* Thông tin chi tiết task */}
                       <div className="flex-grow-1">
-                        <div className="fw-bold" style={{ fontWeight: 700, fontSize: '1.1rem', textAlign: 'center' }}>{task.serviceTitle || task.title.replace(/^(Chuẩn bị Kit|Thu mẫu) - /, '')}</div>
+                        {/* Tên dịch vụ */}
+                        <div className="fw-bold" style={{ fontWeight: 700, fontSize: '1.1rem', textAlign: 'center' }}>
+                          {task.serviceTitle || task.title.replace(/^(Chuẩn bị Kit|Thu mẫu) - /, '')}
+                        </div>
+
+                        {/* Badge loại dịch vụ (ADN DÂN SỰ/HÀNH CHÍNH) */}
                         <div className="d-flex justify-content-center align-items-center mb-1 mt-1">
                           {task.categoryName && (
                             <span className={`badge rounded-pill ${task.categoryName === 'ADN DÂN SỰ' ? 'bg-success text-white' : 'bg-warning text-dark'}`}
@@ -254,6 +312,8 @@ const StaffOverview = ({ user }) => {
                             </span>
                           )}
                         </div>
+
+                        {/* Badge phương thức lấy mẫu */}
                         {task.methodName && (
                           <div className="d-flex justify-content-center align-items-center mb-1">
                             <span className={`badge rounded-pill ${task.methodName.includes('tại nhà') ? 'bg-success text-white' : task.methodName.includes('lab') ? 'bg-primary text-white' : 'bg-warning text-dark'}`}
@@ -265,15 +325,21 @@ const StaffOverview = ({ user }) => {
                             </span>
                           </div>
                         )}
+
+                        {/* Thông tin bổ sung */}
                         {task.information && (
                           <div className="fw-bold text-dark mb-1" style={{ fontSize: '1em' }}>
                             <i className="bi bi-info-circle me-1"></i>{task.information}
                           </div>
                         )}
+
+                        {/* Deadline */}
                         <div className="text-muted small mb-1" style={{ fontSize: '0.9em' }}>
                           <i className="bi bi-clock me-1"></i>
                           Deadline: {task.deadline}
                         </div>
+
+                        {/* Order ID */}
                         <div className="mt-1">
                           {task.orderIds.map(orderId => (
                             <Badge key={orderId} bg="light" text="dark" className="me-1">
@@ -283,13 +349,15 @@ const StaffOverview = ({ user }) => {
                         </div>
                       </div>
                     </div>
+
+                    {/* RIGHT SIDE: Status và nút xử lý */}
                     <div className="text-end">
-                      <div className="mb-2">
-                        {/* Đã bỏ getPriorityBadge */}
-                      </div>
+                      {/* Status badge */}
                       <div className="mb-2">
                         {getStatusBadge(task.status)}
                       </div>
+
+                      {/* Nút xử lý - chỉ hiển thị cho các task chưa hoàn thành */}
                       {!['overdue', 'cancelled', 'collected', 'analysis-complete', 'reviewed', 'delivered', 'result-pending', 'complete', 'refunded'].includes(task.status) && (
                         <Button
                           as={Link}

@@ -1003,8 +1003,16 @@ export const getTestResultByUserId = async (userId) => {
       },
       body: JSON.stringify({ userId }),
     });
+    
+    // Handle 404 specifically - no test results found
+    if (response.status === 404) {
+      console.log('No test results found for user:', userId);
+      return [];
+    }
+    
     if (!response.ok) throw new Error('Network response was not ok');
     const data = await response.json();
+    console.log('getTestResultByUserId response data:', data);
     return data.data || data;
   } catch (error) {
     throw new Error('Failed to fetch test results by userId: ' + error.message);

@@ -1,3 +1,15 @@
+/**
+ * COMPONENT: OrderTracking
+ * CHỨC NĂNG: Tra cứu và theo dõi trạng thái đặt lịch xét nghiệm ADN
+ * LUỒNG HOẠT ĐỘNG:
+ * 1. Lấy bookingId từ URL params hoặc nhập từ form search
+ * 2. Tải thông tin booking từ API getBookingById()
+ * 3. Xác định timeline dựa trên phương thức thu mẫu (self-sample, home-visit, lab-visit)
+ * 4. Hiển thị timeline với progress bar và các action buttons
+ * 5. Cho phép user/staff cập nhật trạng thái qua modal
+ * 6. Tính toán progress dựa trên trạng thái hiện tại
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Alert, Badge, Form, InputGroup, ProgressBar, Modal } from 'react-bootstrap';
@@ -6,20 +18,29 @@ import { useAuth } from '../context/auth';
 import { addBookingHistory } from '../../services/api';
 
 const OrderTracking = () => {
-    const { bookingId: urlBookingId } = useParams();
-    const navigate = useNavigate();
-    const { user, isUser, isStaff } = useAuth();
+    // ROUTER HOOKS
+    const { bookingId: urlBookingId } = useParams(); // Lấy bookingId từ URL params
+    const navigate = useNavigate(); // Hook điều hướng
 
-    const [searchId, setSearchId] = useState(urlBookingId || '');
-    const [booking, setBooking] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-    
-    const [showModal, setShowModal] = useState(false);
-    const [modalAction, setModalAction] = useState({ type: '', description: '' });
+    // AUTH CONTEXT
+    const { user, isUser, isStaff, loading: authLoading } = useAuth(); // Context authentication
 
+    // STATE QUẢN LÝ DỮ LIỆU
+    const [searchId, setSearchId] = useState(urlBookingId || ''); // ID để tìm kiếm
+    const [booking, setBooking] = useState(null); // Thông tin booking
+    const [loading, setLoading] = useState(false); // Loading state
+    const [error, setError] = useState(''); // Error message
+
+    // STATE QUẢN LÝ UI
+    const [showModal, setShowModal] = useState(false); // Hiển thị modal xác nhận
+    const [modalAction, setModalAction] = useState({ type: '', description: '' }); // Thông tin action trong modal
+
+    /**
+     * CONSTANT DATA: Định nghĩa chi tiết cho từng trạng thái
+     * Mỗi status có title, description và icon tương ứng
+     */
     const statusDetails = {
-        // Common statuses
+        // Common statuses - Trạng thái chung
         CREATED: { title: 'Đặt hẹn thành công', description: 'Lịch hẹn đã được tạo', icon: 'bi-check-circle' },
         PENDING_PAYMENT: { title: 'Chờ thanh toán', description: 'Vui lòng hoàn tất thanh toán', icon: 'bi-credit-card' },
         PAYMENT_FAILED: { title: 'Thanh toán thất bại', description: 'Thanh toán không thành công', icon: 'bi-x-circle-fill' },
@@ -30,28 +51,37 @@ const OrderTracking = () => {
         SAMPLE_PROCESSING: { title: 'Đang phân tích mẫu', description: 'Đang tiến hành phân tích ADN tại phòng lab', icon: 'bi-eye' },
         RESULT_PENDING: { title: 'Chờ kết quả', description: 'Đang chờ kết quả xét nghiệm', icon: 'bi-clock-history' },
         COMPLETE: { title: 'Hoàn thành', description: 'Kết quả đã sẵn sàng', icon: 'bi-file-earmark-check' },
+        SENT_RESULT: { title: 'Đã giao kết quả', description: 'Kết quả đã được giao cho khách hàng', icon: 'bi-send-check' },
         CANCELLED: { title: 'Đã hủy', description: 'Đơn hàng đã bị hủy', icon: 'bi-x-circle' },
         EXPIRED: { title: 'Đã hết hạn', description: 'Đơn hàng đã hết hạn', icon: 'bi-clock-history' },
         
-        // Self-sample specific statuses
+        // Self-sample specific statuses - Trạng thái cho phương thức tự thu mẫu
         KIT_PREPARED: { title: 'Đã chuẩn bị kit', description: 'Kit xét nghiệm đã được chuẩn bị', icon: 'bi-box-seam' },
         KIT_SENT: { title: 'Đã gửi kit', description: 'Kit đã được gửi đến địa chỉ của bạn', icon: 'bi-truck' },
         KIT_RECEIVED: { title: 'Đã nhận kit', description: 'Khách hàng đã nhận được kit xét nghiệm', icon: 'bi-box-arrow-in-down' },
         SELF_COLLECTED: { title: 'Đã tự thu mẫu', description: 'Khách hàng đã tự thu mẫu', icon: 'bi-droplet' },
         KIT_RETURNED: { title: 'Đã gửi mẫu về', description: 'Khách hàng đã gửi mẫu về phòng lab', icon: 'bi-send' },
         
-        // Home-visit specific statuses
+        // Home-visit specific statuses - Trạng thái cho phương thức nhân viên tới nhà
         STAFF_ASSIGNED: { title: 'Đã chỉ định nhân viên', description: 'Nhân viên sẽ đến thu mẫu theo lịch hẹn', icon: 'bi-person-check' },
         STAFF_CONFIRMED: { title: 'Nhân viên xác nhận', description: 'Nhân viên xác nhận sẽ đến đúng hẹn', icon: 'bi-person-video2' },
     };
 
+    /**
+     * HELPER FUNCTION: Xác định timeline dựa trên phương thức thu mẫu
+     * INPUT: method (object) - thông tin phương thức thu mẫu
+     * OUTPUT: array - danh sách các trạng thái theo thứ tự timeline
+     * BƯỚC 1: Kiểm tra nếu không có method thì trả về timeline mặc định
+     * BƯỚC 2: Xác định methodId và methodName
+     * BƯỚC 3: Trả về timeline tương ứng cho từng loại phương thức
+     */
     const getTimelineForMethod = (method) => {
-        if (!method || !method.id) return ['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'SAMPLE_COLLECTED', 'RESULT_PENDING', 'COMPLETE'];
+        if (!method || !method.id) return ['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'SAMPLE_COLLECTED', 'RESULT_PENDING', 'COMPLETE', 'SENT_RESULT'];
         
         const methodId = method.id;
         const methodName = method.name?.toLowerCase() || '';
         
-        // Self-sample method (tự thu mẫu tại nhà)
+        // BƯỚC 3.1: Self-sample method (tự thu mẫu tại nhà)
         if (methodId === '0' || methodName.includes('tự') || methodName.includes('self') || methodName.includes('kit')) {
             return [
                 'CREATED',
@@ -67,12 +97,13 @@ const OrderTracking = () => {
                 'SAMPLE_COLLECTED',
                 'RESULT_PENDING',
                 'COMPLETE',
+                'SENT_RESULT',
                 'CANCELLED',
                 'EXPIRED'
             ];
         }
         
-        // Home-visit method (nhân viên tới nhà)
+        // BƯỚC 3.2: Home-visit method (nhân viên tới nhà)
         if (methodId === '1' || methodName.includes('tại nhà') || methodName.includes('home') || methodName.includes('visit')) {
             return [
                 'CREATED',
@@ -84,12 +115,13 @@ const OrderTracking = () => {
                 'SAMPLE_COLLECTED',
                 'RESULT_PENDING',
                 'COMPLETE',
+                'SENT_RESULT',
                 'CANCELLED',
                 'EXPIRED'
             ];
         }
         
-        // Lab-visit method (lấy mẫu tại lab/cơ sở)
+        // BƯỚC 3.3: Lab-visit method (lấy mẫu tại lab/cơ sở)
         if (methodId === '2' || methodName.includes('tại lab') || methodName.includes('cơ sở') || methodName.includes('lab') || methodName.includes('facility')) {
             return [
                 'CREATED',
@@ -100,33 +132,44 @@ const OrderTracking = () => {
                 'SAMPLE_COLLECTED',
                 'RESULT_PENDING',
                 'COMPLETE',
+                'SENT_RESULT',
                 'CANCELLED',
                 'EXPIRED'
             ];
         }
         
-        // Default timeline if no match
-        console.warn('Method ID not recognized, using default timeline:', method.id);
-        
-        return ['CREATED', 'PENDING_PAYMENT', 'PAYMENT_FAILED', 'BOOKED', 'SAMPLE_COLLECTED', 'RESULT_PENDING', 'COMPLETE', 'CANCELLED', 'EXPIRED'];
+        // BƯỚC 3.4: Default timeline nếu không khớp
+        return ['CREATED', 'PENDING_PAYMENT', 'PAYMENT_FAILED', 'BOOKED', 'SAMPLE_COLLECTED', 'RESULT_PENDING', 'COMPLETE', 'SENT_RESULT', 'CANCELLED', 'EXPIRED'];
     };
     
+    /**
+     * API CALL: Tải dữ liệu booking theo ID
+     * INPUT: id (string) - ID của booking
+     * BƯỚC 1: Kiểm tra nếu có id
+     * BƯỚC 2: Set loading state và reset error
+     * BƯỚC 3: Gọi API getBookingById()
+     * BƯỚC 4: Kiểm tra quyền truy cập (user chỉ xem được booking của mình)
+     * BƯỚC 5: Cập nhật state booking hoặc error
+     * BƯỚC 6: Set loading state thành false
+     */
     const fetchBookingData = async (id) => {
         if (!id) return;
         setLoading(true);
         setError('');
         try {
             const data = await getBookingById(id);
-            if (!data) {
+            if (!data || typeof data !== 'object' || !data.id) {
                 setBooking(null);
                 setError('Không tìm thấy thông tin đặt lịch. Vui lòng kiểm tra lại mã đặt lịch.');
                 return; 
             }
-            if (isUser() && data.userId !== user.id) {
+            // BƯỚC 4: Kiểm tra quyền truy cập
+            if (isUser() && user && data.userId !== user.id) {
                  setError('Bạn không có quyền xem đơn hàng này.');
                  setBooking(null);
             } else {
                  setBooking(data);
+                 setError('');
             }
         } catch (err) {
             setBooking(null);
@@ -136,12 +179,22 @@ const OrderTracking = () => {
         }
     };
 
+    /**
+     * EFFECT: Tải dữ liệu khi URL params thay đổi
+     * BƯỚC 1: Kiểm tra nếu có urlBookingId và auth đã load xong
+     * BƯỚC 2: Gọi fetchBookingData() với urlBookingId
+     */
     useEffect(() => {
-        if (urlBookingId) {
+        if (urlBookingId && !authLoading) {
             fetchBookingData(urlBookingId);
         }
-    }, [urlBookingId, isUser, user]);
+    }, [urlBookingId, authLoading]);
 
+    /**
+     * EVENT HANDLER: Xử lý tìm kiếm booking
+     * BƯỚC 1: Kiểm tra nếu searchId không rỗng
+     * BƯỚC 2: Navigate đến trang tracking với searchId
+     */
     const handleSearch = () => {
         if (!searchId.trim()) {
             setError('Vui lòng nhập mã đặt lịch');
@@ -150,11 +203,26 @@ const OrderTracking = () => {
         navigate(`/tracking/${searchId.trim()}`);
     };
 
+    /**
+     * EVENT HANDLER: Xử lý click action button
+     * INPUT: type (string) - loại action
+     * BƯỚC 1: Set modalAction với type và description rỗng
+     * BƯỚC 2: Hiển thị modal
+     */
     const handleActionClick = (type) => {
         setModalAction({ type, description: '' });
         setShowModal(true);
     };
 
+    /**
+     * EVENT HANDLER: Xác nhận thực hiện action
+     * BƯỚC 1: Set loading state
+     * BƯỚC 2: Gọi API addBookingHistory() để cập nhật trạng thái
+     * BƯỚC 3: Đóng modal và reset modalAction
+     * BƯỚC 4: Refetch dữ liệu để hiển thị trạng thái mới nhất
+     * BƯỚC 5: Xử lý lỗi nếu có
+     * BƯỚC 6: Set loading state thành false
+     */
     const handleConfirmAction = async () => {
         setLoading(true);
         try {
@@ -165,7 +233,7 @@ const OrderTracking = () => {
             });
             setShowModal(false);
             setModalAction({ type: '', description: ''});
-            // Refetch data to show the latest status
+            // BƯỚC 4: Refetch dữ liệu để hiển thị trạng thái mới nhất
             await fetchBookingData(booking.id); 
         } catch (err) {
             setError('Cập nhật trạng thái thất bại. Vui lòng thử lại.');
@@ -174,13 +242,22 @@ const OrderTracking = () => {
         }
     };
 
+    /**
+     * HELPER FUNCTION: Tạo action button cho từng trạng thái
+     * INPUT: statusKey (string) - trạng thái hiện tại, currentStatus (string) - trạng thái hiện tại
+     * OUTPUT: JSX Button component hoặc null
+     * BƯỚC 1: Kiểm tra nếu có booking và method
+     * BƯỚC 2: Xác định methodId và methodName
+     * BƯỚC 3: Tạo action buttons cho user (self-collection method)
+     * BƯỚC 4: Tạo action buttons cho staff (tất cả methods)
+     */
     const getActionButtonForStatus = (statusKey, currentStatus) => {
         if (!booking || !booking.method) return null;
         
         const methodId = booking.method.id;
         const methodName = booking.method.name?.toLowerCase() || '';
         
-        // User actions for self-collection method
+        // BƯỚC 3: User actions cho self-collection method
         if (isUser() && (methodId === '0' || methodName.includes('tự') || methodName.includes('self'))) {
             if (statusKey === 'KIT_SENT' && currentStatus === 'KIT_SENT') {
                 return <Button variant="success" size="sm" onClick={() => handleActionClick('KIT_RECEIVED')} className="mt-2 w-100"><i className="bi bi-box-arrow-in-down me-2"></i>Xác nhận đã nhận Kit</Button>;
@@ -193,7 +270,7 @@ const OrderTracking = () => {
             }
         }
         
-        // Staff actions
+        // BƯỚC 4: Staff actions cho tất cả methods
         if (isStaff()) {
             // Self-sample method staff actions
             if (methodId === '0' || methodName.includes('tự') || methodName.includes('self')) {
@@ -324,17 +401,28 @@ const OrderTracking = () => {
         return null;
     };
 
+    /**
+     * HELPER FUNCTION: Render timeline với progress bar và action buttons
+     * OUTPUT: JSX - timeline component
+     * BƯỚC 1: Kiểm tra nếu có booking và method
+     * BƯỚC 2: Lấy timeline dựa trên method
+     * BƯỚC 3: Sắp xếp history theo thời gian
+     * BƯỚC 4: Lọc các trạng thái đã xảy ra
+     * BƯỚC 5: Tính toán progress dựa trên trạng thái hiện tại
+     * BƯỚC 6: Render timeline với progress bar và action buttons
+     */
     const renderTimeline = () => {
         if (!booking || !booking.method) return null;
         
-        // Get the full timeline based on method
+        // BƯỚC 2: Lấy timeline dựa trên method
         const fullTimelineSteps = getTimelineForMethod(booking.method);
         
+        // BƯỚC 3: Sắp xếp history theo thời gian
         const history = booking.bookingHistories_on_booking?.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)) || [];
         const completedStatuses = history.map(h => h.status);
         const currentStatus = history.length > 0 ? history.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0].status : null;
         
-        // Filter timeline to only show statuses that have occurred or are current
+        // BƯỚC 4: Lọc các trạng thái đã xảy ra
         const occurredStatuses = [];
         let foundCurrent = false;
         
@@ -345,32 +433,34 @@ const OrderTracking = () => {
                     foundCurrent = true;
                 }
             } else if (foundCurrent) {
-                // Stop adding statuses after we've found the current one
+                // Dừng thêm status sau khi đã tìm thấy status hiện tại
                 break;
             }
         }
         
-        // Add CANCELLED, EXPIRED, or PAYMENT_FAILED if they are the current status
-        if (currentStatus === 'CANCELLED' || currentStatus === 'EXPIRED' || currentStatus === 'PAYMENT_FAILED') {
+        // Thêm CANCELLED, EXPIRED, PAYMENT_FAILED, hoặc SENT_RESULT nếu là trạng thái hiện tại
+        if (currentStatus === 'CANCELLED' || currentStatus === 'EXPIRED' || currentStatus === 'PAYMENT_FAILED' || currentStatus === 'SENT_RESULT') {
             if (!occurredStatuses.includes(currentStatus)) {
                 occurredStatuses.push(currentStatus);
             }
         }
         
-        // Calculate progress based on the current status
+        // BƯỚC 5: Tính toán progress dựa trên trạng thái hiện tại
         let progress = 0;
         const currentStepIndex = fullTimelineSteps.indexOf(currentStatus);
         
         if (currentStatus === 'CANCELLED' || currentStatus === 'EXPIRED' || currentStatus === 'PAYMENT_FAILED') {
-            progress = 0; // 0% for cancelled/expired/payment failed
+            progress = 0; // 0% cho cancelled/expired/payment failed
+        } else if (currentStatus === 'SENT_RESULT') {
+            progress = 100; // 100% cho sent result (trạng thái cuối)
         } else if (currentStepIndex !== -1) {
             progress = ((currentStepIndex + 1) / fullTimelineSteps.length) * 100;
         } else if (currentStatus) {
-            // Find the nearest status in our timeline that comes after the current status
+            // Tìm status gần nhất trong timeline sau status hiện tại
             const allStatuses = Object.keys(statusDetails);
             const currentStatusIndex = allStatuses.indexOf(currentStatus);
             
-            // Find the next displayed status after the current one
+            // Tìm status tiếp theo được hiển thị sau status hiện tại
             for (let i = 0; i < fullTimelineSteps.length; i++) {
                 const timelineStatusIndex = allStatuses.indexOf(fullTimelineSteps[i]);
                 if (timelineStatusIndex > currentStatusIndex) {
@@ -382,6 +472,7 @@ const OrderTracking = () => {
 
         return (
             <>
+                {/* PROGRESS BAR: Hiển thị tiến độ thực hiện */}
                 <div className="d-flex justify-content-between align-items-center mb-2">
                     <h6 className="text-primary mb-0">Tiến độ thực hiện</h6>
                     <span className="fw-bold">{Math.round(progress)}%</span>
@@ -390,51 +481,75 @@ const OrderTracking = () => {
 
                 <hr />
 
+                {/* TIMELINE: Hiển thị các bước thực hiện */}
                 <div className="timeline">
                     {occurredStatuses.map((statusKey, index) => {
                         const statusInfo = statusDetails[statusKey] || { title: statusKey, description: '', icon: 'bi-question-circle' };
                         const isCompleted = completedStatuses.includes(statusKey) && statusKey !== currentStatus;
                         const isCurrent = statusKey === currentStatus;
                         
+                        /**
+                         * HELPER FUNCTION: Lấy màu cho status
+                         * OUTPUT: string - tên màu Bootstrap
+                         */
                         const getStatusColor = () => {
                             if (statusKey === 'CANCELLED' || statusKey === 'EXPIRED' || statusKey === 'PAYMENT_FAILED') return 'danger';
+                            if (statusKey === 'SENT_RESULT') return 'success'; // Xử lý SENT_RESULT như trạng thái hoàn thành
                             if (isCurrent) return 'primary';
                             if (isCompleted) return 'success';
                             return 'light';
                         }
                         
+                        /**
+                         * HELPER FUNCTION: Lấy icon cho status
+                         * OUTPUT: string - tên icon Bootstrap
+                         */
                         const getStatusIcon = () => {
                             if (statusKey === 'CANCELLED' || statusKey === 'EXPIRED' || statusKey === 'PAYMENT_FAILED') return 'bi-x-circle-fill';
-                            if (isCurrent) return 'bi-arrow-right-circle-fill';
+                            if (statusKey === 'SENT_RESULT') return 'bi-send-check'; // Icon cho SENT_RESULT
+                            if (isCurrent) return statusInfo.icon;
                             if (isCompleted) return 'bi-check-circle-fill';
-                            return 'bi-circle';
+                            return statusInfo.icon;
                         }
                         
-                        // Get action button for this status
+                        // Lấy action button cho status này
                         const actionButton = getActionButtonForStatus(statusKey, currentStatus);
                         
                         return (
                             <div key={index} className="d-flex align-items-start mb-4">
+                                {/* STATUS ICON: Icon và đường kết nối */}
                                 <div className="me-3 text-center" style={{ minWidth: '60px' }}>
                                     <div className={`rounded-circle d-flex align-items-center justify-content-center mb-2 bg-${getStatusColor()} text-white`} style={{ width: '50px', height: '50px' }}>
                                         <i className={`${getStatusIcon()} fs-5`}></i>
                                     </div>
                                     {index < occurredStatuses.length - 1 && (
-                                        <div className={`mx-auto ${isCompleted ? 'bg-success' : statusKey === 'CANCELLED' || statusKey === 'EXPIRED' || statusKey === 'PAYMENT_FAILED' ? 'bg-danger' : 'bg-primary'}`} style={{ width: '2px', height: '40px' }}></div>
+                                        <div className={`mx-auto ${isCompleted ? 'bg-success' : statusKey === 'CANCELLED' || statusKey === 'EXPIRED' || statusKey === 'PAYMENT_FAILED' ? 'bg-danger' : statusKey === 'SENT_RESULT' ? 'bg-success' : 'bg-primary'}`} style={{ width: '2px', height: '40px' }}></div>
                                     )}
                                 </div>
+                                
+                                {/* STATUS CARD: Thông tin chi tiết status */}
                                 <div className="flex-grow-1">
-                                    <Card className={`border-${getStatusColor()} ${isCurrent ? 'bg-primary bg-opacity-10' : statusKey === 'CANCELLED' || statusKey === 'EXPIRED' || statusKey === 'PAYMENT_FAILED' ? 'bg-danger bg-opacity-10' : ''}`}>
+                                    <Card className={`border-${getStatusColor()} ${isCurrent ? 'bg-primary bg-opacity-10' : statusKey === 'CANCELLED' || statusKey === 'EXPIRED' || statusKey === 'PAYMENT_FAILED' ? 'bg-danger bg-opacity-10' : statusKey === 'SENT_RESULT' ? 'bg-success bg-opacity-10' : ''}`}>
                                         <Card.Body className="py-3">
                                             <div className="d-flex justify-content-between align-items-start">
                                                 <div>
-                                                    <h6 className={`mb-1 ${isCurrent ? 'text-primary fw-bold' : statusKey === 'CANCELLED' || statusKey === 'EXPIRED' || statusKey === 'PAYMENT_FAILED' ? 'text-danger fw-bold' : ''}`}>
+                                                    <h6 className={`mb-1 ${isCurrent ? 'text-primary fw-bold' : statusKey === 'CANCELLED' || statusKey === 'EXPIRED' || statusKey === 'PAYMENT_FAILED' ? 'text-danger fw-bold' : statusKey === 'SENT_RESULT' ? 'text-success fw-bold' : ''}`}>
                                                         <i className={`${statusInfo.icon} me-2`}></i>{statusInfo.title}
                                                     </h6>
-                                                    <p className="mb-0 text-muted small">{statusInfo.description}</p>
+                                                    <p className="mb-1 text-muted small">{statusInfo.description}</p>
+                                                    {(() => {
+                                                        const historyEntry = history.find(h => h.status === statusKey);
+                                                        if (historyEntry) {
+                                                            return <p className="mb-0 text-muted" style={{ fontSize: '0.75rem' }}>
+                                                                <i className="bi bi-clock me-1"></i>
+                                                                {new Date(historyEntry.createdAt).toLocaleString('vi-VN')}
+                                                            </p>
+                                                        }
+                                                        return null;
+                                                    })()}
                                                 </div>
                                                 <Badge bg={getStatusColor()} className="ms-3 text-capitalize">
-                                                    {statusKey === 'CANCELLED' || statusKey === 'EXPIRED' || statusKey === 'PAYMENT_FAILED' ? "Kết thúc" : isCurrent ? "Hiện tại" : isCompleted ? "Hoàn thành" : "Đã thực hiện"}
+                                                    {statusKey === 'CANCELLED' || statusKey === 'EXPIRED' || statusKey === 'PAYMENT_FAILED' ? "Kết thúc" : statusKey === 'SENT_RESULT' ? "Hoàn thành" : isCurrent ? "Hiện tại" : isCompleted ? "Hoàn thành" : "Đã thực hiện"}
                                                 </Badge>
                                             </div>
                                             {actionButton}
@@ -451,6 +566,7 @@ const OrderTracking = () => {
 
     return (
         <Container className="py-5">
+            {/* SEARCH SECTION: Form tìm kiếm booking */}
             <Row className="justify-content-center mb-5">
                 <Col lg={8}>
                     <Card className="shadow-sm">
@@ -478,6 +594,7 @@ const OrderTracking = () => {
                 </Col>
             </Row>
 
+            {/* BOOKING DETAILS: Thông tin chi tiết booking */}
             {booking && (
                 <Row className="justify-content-center">
                     <Col lg={8}>
@@ -502,6 +619,8 @@ const OrderTracking = () => {
                                 {renderTimeline()}
                             </Card.Body>
                         </Card>
+                        
+                        {/* SUPPORT SECTION: Thông tin hỗ trợ */}
                         <Card className="shadow-sm">
                             <Card.Header className="bg-warning text-dark">
                                 <h6 className="mb-0"><i className="bi bi-headset me-2"></i>Cần hỗ trợ?</h6>
@@ -515,6 +634,7 @@ const OrderTracking = () => {
                 </Row>
             )}
             
+            {/* EMPTY STATE: Hiển thị khi chưa có booking */}
             {!booking && !error && !loading && (
                  <Row>
                     <Col lg={8} className="mx-auto text-center">
@@ -527,6 +647,7 @@ const OrderTracking = () => {
                 </Row>
             )}
 
+            {/* CONFIRMATION MODAL: Modal xác nhận action */}
             <Modal show={showModal} onHide={() => setShowModal(false)} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Xác nhận hành động</Modal.Title>

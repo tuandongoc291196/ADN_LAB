@@ -1,3 +1,13 @@
+/**
+ * COMPONENT: ServiceManagement
+ * CHỨC NĂNG: Quản lý dịch vụ xét nghiệm ADN - thêm, sửa, xóa, kích hoạt/vô hiệu hóa dịch vụ
+ * LUỒNG HOẠT ĐỘNG:
+ * 1. Tải danh sách services và methods từ API
+ * 2. Hiển thị danh sách dịch vụ với filter và sort
+ * 3. Cho phép thêm/sửa dịch vụ qua modal form
+ * 4. Kích hoạt/vô hiệu hóa dịch vụ
+ * 5. Quản lý methods cho từng dịch vụ
+ */
 import React, { useState, useEffect } from 'react';
 import { Button, Modal, Form, Row, Col, Spinner, Alert } from 'react-bootstrap';
 import { SortDown, SortUp } from 'react-bootstrap-icons';
@@ -9,17 +19,43 @@ import {
   updateService
 } from '../../services/api';
 
+/**
+ * COMPONENT: ServiceManagement
+ * CHỨC NĂNG: Quản lý toàn bộ dịch vụ xét nghiệm
+ * STATE MANAGEMENT:
+ * - services: Danh sách dịch vụ từ API
+ * - methods: Danh sách methods có sẵn
+ * - loading: Trạng thái tải dữ liệu
+ * - showModal: Hiển thị modal thêm/sửa
+ * - form: Dữ liệu form thêm/sửa dịch vụ
+ * - alert: Thông báo thành công/lỗi
+ */
 function ServiceManagement() {
+  // ===== DATA STATES - QUẢN LÝ DỮ LIỆU =====
+  // Danh sách dịch vụ từ API
   const [services, setServices] = useState([]);
+  // Danh sách methods có sẵn
   const [methods, setMethods] = useState([]);
+  
+  // ===== UI STATES - QUẢN LÝ GIAO DIỆN =====
+  // Loading state
   const [loading, setLoading] = useState(true);
+  // Modal management
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('add'); // 'add' | 'edit' | 'view'
+  const [showIconDropdown, setShowIconDropdown] = useState(false);
+  
+  // ===== FILTER & SORT STATES - BỘ LỌC VÀ SẮP XẾP =====
+  // Tìm kiếm
   const [searchTerm, setSearchTerm] = useState('');
+  // Sắp xếp
   const [sortConfig, setSortConfig] = useState({
     key: 'title',
     direction: 'ascending'
   });
+  
+  // ===== FORM STATES - QUẢN LÝ FORM =====
+  // Dữ liệu form thêm/sửa dịch vụ
   const [form, setForm] = useState({
     id: '',
     title: '',
@@ -33,11 +69,16 @@ function ServiceManagement() {
     isActive: true,
     methodIds: []
   });
+  
+  // ===== FEEDBACK STATES - PHẢN HỒI NGƯỜI DÙNG =====
+  // Thông báo
   const [alert, setAlert] = useState({ show: false, variant: '', message: '' });
+  // Lỗi
   const [error, setError] = useState(null);
+  // Trạng thái submit
   const [submitting, setSubmitting] = useState(false);
-  const [showIconDropdown, setShowIconDropdown] = useState(false);
 
+  // ===== CONSTANT DATA - DỮ LIỆU CỐ ĐỊNH =====
   // Danh sách icon thường sử dụng cho dịch vụ ADN
   const commonIcons = [
     'bi-dna', 'bi-people', 'bi-person-lines-fill', 'bi-person-heart', 'bi-people-fill',

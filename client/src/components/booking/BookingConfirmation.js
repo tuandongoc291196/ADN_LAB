@@ -1,14 +1,14 @@
 /**
- * COMPONENT: BookingConfirmation  
- * MỤC ĐÍCH: Hiển thị thông tin xác nhận đặt lịch và chuyển đến thanh toán
- * CHỨC NĂNG:
- * - Nhận booking data từ navigation state
- * - Hiển thị chi tiết dịch vụ, thời gian, phương thức thu mẫu
- * - Tính toán và hiển thị chi phí (service + method price)
- * - Button tiến hành thanh toán với state management
- * - Thông tin liên hệ hỗ trợ khách hàng
- * - Chức năng in/lưu thông tin đặt lịch
- * - Fallback handling nếu không có booking data
+ * COMPONENT: BookingConfirmation
+ * CHỨC NĂNG: Hiển thị thông tin xác nhận đặt lịch và chuyển đến thanh toán
+ * LUỒNG HOẠT ĐỘNG:
+ * 1. Nhận booking data từ navigation state từ trang AppointmentBooking
+ * 2. Hiển thị chi tiết dịch vụ, thời gian, phương thức thu mẫu
+ * 3. Tính toán và hiển thị chi phí (service + method price)
+ * 4. Button tiến hành thanh toán với state management
+ * 5. Thông tin liên hệ hỗ trợ khách hàng
+ * 6. Chức năng in/lưu thông tin đặt lịch
+ * 7. Fallback handling nếu không có booking data
  */
 
 import React, { useEffect, useState } from 'react';
@@ -16,27 +16,29 @@ import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Button, Alert, Badge } from 'react-bootstrap';
 
 const BookingConfirmation = () => {
-  // ROUTING & NAVIGATION
+  // ROUTER HOOKS
   const location = useLocation(); // Hook nhận state từ trang trước
   const navigate = useNavigate(); // Hook điều hướng
 
-  // BOOKING DATA STATE
+  // STATE QUẢN LÝ BOOKING DATA
   const [bookingData, setBookingData] = useState(null); // Dữ liệu booking từ navigation state
   const [bookingId, setBookingId] = useState(''); // ID booking từ backend
 
-  // EFFECTS & DATA HANDLING
-  // Effect: Xử lý dữ liệu từ navigation state khi component mount
+  /**
+   * EFFECT: Xử lý dữ liệu từ navigation state khi component mount
+   * BƯỚC 1: Kiểm tra nếu có location.state
+   * BƯỚC 2: Lấy booking data từ previous page
+   * BƯỚC 3: Lấy booking ID từ backend response hoặc generate fallback
+   * BƯỚC 4: Cập nhật state bookingData và bookingId
+   */
   useEffect(() => {
     if (location.state) {
-      // Lấy booking data từ previous page
+      // BƯỚC 2: Lấy booking data từ previous page
       if (location.state.bookingData) {
         setBookingData(location.state.bookingData);
-        console.log('Booking data received:', location.state.bookingData);
-        console.log('Selected service:', location.state.bookingData.selectedService);
-        console.log('Selected method:', location.state.bookingData.selectedMethod);
       }
 
-      // Lấy booking ID từ backend response hoặc generate fallback
+      // BƯỚC 3: Lấy booking ID từ backend response hoặc generate fallback
       if (location.state.bookingId) {
         setBookingId(location.state.bookingId);
       } else {
@@ -47,8 +49,11 @@ const BookingConfirmation = () => {
     }
   }, [location.state]); // Chạy khi location.state thay đổi
 
-  // EVENT HANDLERS
-  // Handler: Chuyển đến trang thanh toán với booking data
+  /**
+   * EVENT HANDLER: Chuyển đến trang thanh toán với booking data
+   * BƯỚC 1: Navigate đến trang payment
+   * BƯỚC 2: Truyền booking data và booking ID cho payment
+   */
   const handleProceedToPayment = () => {
     navigate('/payment', {
       state: {
@@ -60,8 +65,7 @@ const BookingConfirmation = () => {
     });
   };
 
-  // ERROR HANDLING
-  // Early return: Hiển thị error nếu không có booking data
+  // ERROR HANDLING: Early return nếu không có booking data
   if (!bookingData) {
     return (
       <Container className="py-5">
@@ -78,16 +82,25 @@ const BookingConfirmation = () => {
     );
   }
 
-  // HELPER FUNCTIONS
-  // Format ngày theo chuẩn Việt Nam
+  /**
+   * HELPER FUNCTION: Format ngày theo chuẩn Việt Nam
+   * INPUT: dateString (string) - chuỗi ngày
+   * OUTPUT: string - ngày định dạng Việt Nam
+   */
   const formatDate = (dateString) => {
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     return new Date(dateString).toLocaleDateString('vi-VN', options);
   };
 
-  // Hiển thị badge loại dịch vụ với logic ưu tiên
+  /**
+   * HELPER FUNCTION: Hiển thị badge loại dịch vụ với logic ưu tiên
+   * INPUT: serviceType (string) - loại dịch vụ, category (object) - thông tin category
+   * OUTPUT: JSX Badge component
+   * BƯỚC 1: Ưu tiên lấy từ category nếu có (dữ liệu mới từ API)
+   * BƯỚC 2: Fallback về serviceType cũ nếu không có category
+   */
   const getServiceTypeBadge = (serviceType, category) => {
-    // Ưu tiên lấy từ category nếu có (dữ liệu mới từ API)
+    // BƯỚC 1: Ưu tiên lấy từ category nếu có (dữ liệu mới từ API)
     if (category) {
       if (category.hasLegalValue) {
         return <Badge bg="warning" text="dark">ADN Hành chính</Badge>;
@@ -96,20 +109,26 @@ const BookingConfirmation = () => {
       }
     }
 
-    // Fallback về serviceType cũ
+    // BƯỚC 2: Fallback về serviceType cũ
     return serviceType === 'administrative'
       ? <Badge bg="warning" text="dark">ADN Hành chính</Badge>
       : <Badge bg="success">ADN Dân sự</Badge>;
   };
 
-  // Lấy tên phương thức thu mẫu với fallback
+  /**
+   * HELPER FUNCTION: Lấy tên phương thức thu mẫu với fallback
+   * INPUT: methodId (string) - ID phương thức, methodInfo (object) - thông tin method
+   * OUTPUT: string - tên phương thức
+   * BƯỚC 1: Ưu tiên lấy tên từ methodInfo nếu có (dữ liệu từ API)
+   * BƯỚC 2: Fallback về mapping cũ cho ID cố định
+   */
   const getCollectionMethodName = (methodId, methodInfo) => {
-    // Ưu tiên lấy tên từ methodInfo nếu có (dữ liệu từ API)
+    // BƯỚC 1: Ưu tiên lấy tên từ methodInfo nếu có (dữ liệu từ API)
     if (methodInfo && methodInfo.name) {
       return methodInfo.name;
     }
 
-    // Fallback về mapping cũ cho ID cố định
+    // BƯỚC 2: Fallback về mapping cũ cho ID cố định
     const methods = {
       '0': 'Tự lấy mẫu tại nhà',
       '1': 'Nhân viên tới nhà lấy mẫu',
@@ -121,7 +140,11 @@ const BookingConfirmation = () => {
     return methods[methodId] || methodId;
   };
 
-  // Lấy màu badge cho phương thức thu mẫu
+  /**
+   * HELPER FUNCTION: Lấy màu badge cho phương thức thu mẫu
+   * INPUT: methodId (string) - ID phương thức
+   * OUTPUT: string - tên màu Bootstrap
+   */
   const getMethodColor = (methodId) => {
     const methodColors = {
       'self-sample': 'success',  // Xanh lá - Tiện lợi
@@ -134,10 +157,9 @@ const BookingConfirmation = () => {
     return methodColors[methodId] || 'secondary';
   };
 
-  // UI RENDERING
   return (
     <Container className="py-5">
-      {/* SUCCESS HEADER - Banner xác nhận thành công */}
+      {/* SUCCESS HEADER: Banner xác nhận thành công */}
       <Row className="mb-4">
         <Col className="text-center">
           <div className="mb-4">
@@ -150,7 +172,7 @@ const BookingConfirmation = () => {
         </Col>
       </Row>
 
-      {/* BOOKING DETAILS CARD - Chi tiết thông tin đặt lịch */}
+      {/* BOOKING DETAILS CARD: Chi tiết thông tin đặt lịch */}
       <Row className="mb-4">
         <Col lg={8} className="mx-auto">
           <Card className="shadow">
@@ -181,7 +203,6 @@ const BookingConfirmation = () => {
                     <div className="mb-2">
                       <strong>Tên dịch vụ:</strong> {(() => {
                         const serviceTitle = bookingData?.selectedService?.title;
-                        console.log('Rendering service title:', serviceTitle);
                         return serviceTitle || 'Không có thông tin';
                       })()}
                     </div>
@@ -350,7 +371,7 @@ const BookingConfirmation = () => {
         </Col>
       </Row>
 
-      {/* PAYMENT CTA SECTION - Khu vực chính để tiến hành thanh toán */}
+      {/* PAYMENT CTA SECTION: Khu vực chính để tiến hành thanh toán */}
       <Row className="mb-4">
         <Col lg={8} className="mx-auto">
           <Card className="border-warning bg-warning bg-opacity-10">
@@ -404,7 +425,7 @@ const BookingConfirmation = () => {
         </Col>
       </Row>
 
-      {/* SUPPORT SECTION - Thông tin liên hệ hỗ trợ khách hàng */}
+      {/* SUPPORT SECTION: Thông tin liên hệ hỗ trợ khách hàng */}
       <Row className="mb-4">
         <Col lg={8} className="mx-auto">
           <Card className="border-primary">
@@ -444,7 +465,7 @@ const BookingConfirmation = () => {
         </Col>
       </Row>
 
-      {/* Save/Print Options */}
+      {/* SAVE/PRINT OPTIONS: Chức năng in thông tin */}
       <Row>
         <Col className="text-center">
           <Button variant="outline-success" onClick={() => {

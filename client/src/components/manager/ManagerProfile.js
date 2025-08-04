@@ -1,61 +1,140 @@
+/**
+ * COMPONENT: ManagerProfile
+ * CHỨC NĂNG: Quản lý thông tin cá nhân của manager - xem, sửa thông tin cá nhân và công việc
+ * LUỒNG HOẠT ĐỘNG:
+ * 1. Tải thông tin staff từ API getStaffById() dựa trên user.staffId
+ * 2. Parse địa chỉ thành các thành phần (tỉnh/huyện/xã)
+ * 3. Hiển thị thông tin cá nhân và công việc
+ * 4. Cho phép sửa thông tin qua modal với tabs
+ * 5. Upload avatar và thay đổi mật khẩu
+ */
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Button, Badge, Alert, Modal, Form, Table, Tabs, Tab, Spinner } from 'react-bootstrap';
 import { getStaffById, updateStaff, updateUserById } from '../../services/api';
 import { uploadAvatar } from '../config/firebase';
 import { getProvinces, getDistricts, getWards } from 'vietnam-provinces';
 
+/**
+ * findCodeByName: Tìm mã code từ tên địa danh
+ * INPUT: list (danh sách địa danh), name (tên cần tìm)
+ * OUTPUT: Mã code tương ứng hoặc chuỗi rỗng
+ * BƯỚC 1: Chuẩn hóa tên (bỏ dấu, chuyển thành chữ thường)
+ * BƯỚC 2: Tìm trong list và trả về code
+ */
 function findCodeByName(list, name) {
   if (!name) return '';
   const normalize = str => str.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
   return (list.find(item => normalize(item.name) === normalize(name)) || {}).code || '';
 }
 
+/**
+ * COMPONENT: ManagerProfile
+ * CHỨC NĂNG: Quản lý profile của manager
+ * STATE MANAGEMENT:
+ * - staffInfo: Thông tin staff từ API
+ * - personalForm: Form thông tin cá nhân
+ * - workForm: Form thông tin công việc
+ * - provinces/districts/wards: Danh sách địa danh
+ * - showEditModal: Hiển thị modal sửa thông tin
+ */
 const ManagerProfile = ({ user }) => {
+  // ===== MODAL STATES - QUẢN LÝ MODAL =====
+  // Modal sửa thông tin
   const [showEditModal, setShowEditModal] = useState(false);
+  // Tab đang active trong modal
   const [activeEditTab, setActiveEditTab] = useState('personal');
-  const [alert, setAlert] = useState({ show: false, message: '', type: '' });
-  const [staffInfo, setStaffInfo] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  // Form states
-  const [personalForm, setPersonalForm] = useState({});
-  const [workForm, setWorkForm] = useState({ specification: '', certifications: '' });
-  const [savingPersonal, setSavingPersonal] = useState(false);
-  const [savingWork, setSavingWork] = useState(false);
+  // Modal đổi mật khẩu
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
-  // Địa chỉ
-  const [provinces, setProvinces] = useState([]);
-  const [districts, setDistricts] = useState([]);
-  const [wards, setWards] = useState([]);
+  
+  // ===== FEEDBACK STATES - PHẢN HỒI NGƯỜI DÙNG =====
+  // Thông báo
+  const [alert, setAlert] = useState({ show: false, message: '', type: '' });
+  // Loading state
+  const [loading, setLoading] = useState(true);
+  // Lỗi
+  const [error, setError] = useState(null);
+  
+  // ===== DATA STATES - QUẢN LÝ DỮ LIỆU =====
+  // Thông tin staff từ API
+  const [staffInfo, setStaffInfo] = useState(null);
+  // Trạng thái chỉnh sửa
   const [isEditing, setIsEditing] = useState(false);
+  
+  // ===== FORM STATES - QUẢN LÝ FORM =====
+  // Form thông tin cá nhân
+  const [personalForm, setPersonalForm] = useState({});
+  // Form thông tin công việc
+  const [workForm, setWorkForm] = useState({ specification: '', certifications: '' });
+  // Form đổi mật khẩu
+  const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  
+  // ===== LOADING STATES - TRẠNG THÁI LƯU DỮ LIỆU =====
+  // Loading khi lưu thông tin cá nhân
+  const [savingPersonal, setSavingPersonal] = useState(false);
+  // Loading khi lưu thông tin công việc
+  const [savingWork, setSavingWork] = useState(false);
+  
+  // ===== LOCATION STATES - QUẢN LÝ ĐỊA CHỈ =====
+  // Danh sách tỉnh/thành phố
+  const [provinces, setProvinces] = useState([]);
+  // Danh sách quận/huyện
+  const [districts, setDistricts] = useState([]);
+  // Danh sách phường/xã
+  const [wards, setWards] = useState([]);
 
+  // ===== EFFECTS - XỬ LÝ SIDE EFFECTS =====
+  /**
+   * useEffect: Tải danh sách tỉnh/thành phố khi component mount
+   */
   useEffect(() => {
     setProvinces(getProvinces());
   }, []);
 
+  /**
+   * useEffect: Cập nhật danh sách quận/huyện khi tỉnh thay đổi
+   * BƯỚC 1: Lọc districts theo province_code
+   * BƯỚC 2: Cập nhật districts state
+   */
   useEffect(() => {
     if (personalForm.city) setDistricts(getDistricts().filter(d => d.province_code === personalForm.city));
     else setDistricts([]);
   }, [personalForm.city]);
 
+  /**
+   * useEffect: Cập nhật danh sách phường/xã khi quận/huyện thay đổi
+   * BƯỚC 1: Lọc wards theo district_code
+   * BƯỚC 2: Cập nhật wards state
+   */
   useEffect(() => {
     if (personalForm.district) setWards(getWards().filter(w => w.district_code === personalForm.district));
     else setWards([]);
   }, [personalForm.district]);
 
+  // ===== DATA FETCHING - LẤY DỮ LIỆU TỪ API =====
+  /**
+   * fetchStaff: Tải thông tin staff từ API
+   * BƯỚC 1: Lấy staffId từ user object
+   * BƯỚC 2: Gọi API getStaffById() để lấy thông tin chi tiết
+   * BƯỚC 3: Parse địa chỉ thành các thành phần (tỉnh/huyện/xã)
+   * BƯỚC 4: Cập nhật personalForm và workForm
+   * BƯỚC 5: Xử lý lỗi nếu có
+   */
   const fetchStaff = async () => {
     setLoading(true);
     try {
+      // BƯỚC 1: Lấy staffId từ user object
       const staffId = user?.staffId || user?.id;
       if (!staffId) {
         setError('Không tìm thấy staffId.');
         setLoading(false);
         return;
       }
+      
+      // BƯỚC 2: Gọi API để lấy thông tin chi tiết
       const data = await getStaffById(staffId);
       setStaffInfo(data);
-      // Địa chỉ tách nhỏ giống UserProfile
+      
+      // BƯỚC 3: Parse địa chỉ thành các thành phần (tỉnh/huyện/xã)
       let addressDetail = '', ward = '', district = '', city = '';
       if (data.user?.address) {
         const parts = data.user.address.split(',').map(s => s.trim());
@@ -74,6 +153,8 @@ const ManagerProfile = ({ user }) => {
           city = '';
         }
       }
+      
+      // BƯỚC 4: Cập nhật form data
       setPersonalForm({
         fullname: data.user?.fullname || '',
         email: data.user?.email || '',
@@ -90,12 +171,16 @@ const ManagerProfile = ({ user }) => {
         certifications: Array.isArray(data.certifications) ? data.certifications.join(', ') : (data.certifications || ''),
       });
     } catch (err) {
+      // BƯỚC 5: Xử lý lỗi
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
+  /**
+   * useEffect: Gọi fetchStaff khi component mount
+   */
   useEffect(() => {
     fetchStaff();
   }, [user]);

@@ -1,11 +1,14 @@
 /**
  * COMPONENT: AdminProfile
- * MỤC ĐÍCH: Trang hồ sơ cá nhân cho quản trị viên
- * CHỨC NĂNG:
- * - Hiển thị thông tin cá nhân admin
- * - Cho phép chỉnh sửa thông tin cá nhân
- * - Quản lý mật khẩu và bảo mật
- * - Hiển thị lịch sử hoạt động
+ * CHỨC NĂNG: Trang hồ sơ cá nhân cho quản trị viên
+ * LUỒNG HOẠT ĐỘNG:
+ * 1. Tải thông tin user từ props và khởi tạo form data
+ * 2. Parse địa chỉ từ user.address thành các thành phần (tỉnh, huyện, xã)
+ * 3. Load danh sách tỉnh/huyện/xã từ vietnam-provinces
+ * 4. Cho phép chỉnh sửa thông tin cá nhân (avatar, họ tên, số điện thoại, địa chỉ)
+ * 5. Upload avatar lên Firebase Storage
+ * 6. Cập nhật thông tin qua API updateUserById()
+ * 7. Quản lý đổi mật khẩu qua modal
  */
 
 import React, { useState, useEffect } from 'react';
@@ -14,6 +17,14 @@ import { updateUserById } from '../../services/api';
 import { uploadAvatar } from '../config/firebase';
 import { getProvinces, getDistricts, getWards } from 'vietnam-provinces';
 
+/**
+ * HELPER FUNCTION: Tìm mã code theo tên trong danh sách
+ * INPUT: list (array) - danh sách các object có code và name, name (string) - tên cần tìm
+ * OUTPUT: string - mã code tương ứng hoặc chuỗi rỗng
+ * BƯỚC 1: Chuẩn hóa chuỗi (loại bỏ dấu tiếng Việt)
+ * BƯỚC 2: Tìm object có tên khớp với name đã chuẩn hóa
+ * BƯỚC 3: Return code hoặc chuỗi rỗng
+ */
 function findCodeByName(list, name) {
   if (!name) return '';
   const normalize = str => str.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
@@ -21,47 +32,85 @@ function findCodeByName(list, name) {
 }
 
 const AdminProfile = ({ user }) => {
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [alert, setAlert] = useState({ show: false, message: '', type: '' });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  // STATE QUẢN LÝ UI
+  const [showPasswordModal, setShowPasswordModal] = useState(false); // Hiển thị modal đổi mật khẩu
+  const [alert, setAlert] = useState({ show: false, message: '', type: '' }); // Alert thông báo
+  const [loading, setLoading] = useState(false); // Loading state
+  const [error, setError] = useState(null); // Error state
+  const [isEditing, setIsEditing] = useState(false); // Trạng thái chỉnh sửa
+  const [saving, setSaving] = useState(false); // Loading state khi lưu
   
-  // Form states
+  // STATE QUẢN LÝ FORM DATA
   const [personalForm, setPersonalForm] = useState({
-    fullname: user?.fullname || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
-    gender: user?.gender || '',
-    avatar: user?.avatar || '',
-    addressDetail: '',
-    ward: '',
-    district: '',
-    city: ''
+    fullname: user?.fullname || '',        // Họ và tên
+    email: user?.email || '',              // Email (không thể thay đổi)
+    phone: user?.phone || '',              // Số điện thoại
+    gender: user?.gender || '',            // Giới tính
+    avatar: user?.avatar || '',            // URL avatar
+    addressDetail: '',                     // Địa chỉ chi tiết
+    ward: '',                             // Mã phường/xã
+    district: '',                         // Mã quận/huyện
+    city: ''                              // Mã tỉnh/thành phố
   });
 
-  // Địa chỉ
-  const [provinces, setProvinces] = useState([]);
-  const [districts, setDistricts] = useState([]);
-  const [wards, setWards] = useState([]);
+  // STATE QUẢN LÝ MẬT KHẨU
+  const [passwordData, setPasswordData] = useState({ 
+    currentPassword: '',    // Mật khẩu hiện tại
+    newPassword: '',       // Mật khẩu mới
+    confirmPassword: ''    // Xác nhận mật khẩu mới
+  });
+  
+  // STATE QUẢN LÝ ĐỊA CHỈ
+  const [provinces, setProvinces] = useState([]); // Danh sách tỉnh/thành phố
+  const [districts, setDistricts] = useState([]); // Danh sách quận/huyện
+  const [wards, setWards] = useState([]); // Danh sách phường/xã
 
+  /**
+   * EFFECT: Load danh sách tỉnh/thành phố khi component mount
+   * BƯỚC 1: Gọi getProvinces() để lấy danh sách tỉnh
+   * BƯỚC 2: Cập nhật state provinces
+   */
   useEffect(() => {
     setProvinces(getProvinces());
   }, []);
 
+  /**
+   * EFFECT: Load danh sách quận/huyện khi tỉnh/thành phố thay đổi
+   * BƯỚC 1: Kiểm tra nếu có city được chọn
+   * BƯỚC 2: Lọc districts theo province_code
+   * BƯỚC 3: Cập nhật state districts
+   * BƯỚC 4: Reset district và ward nếu không có city
+   */
   useEffect(() => {
-    if (personalForm.city) setDistricts(getDistricts().filter(d => d.province_code === personalForm.city));
-    else setDistricts([]);
+    if (personalForm.city) {
+      setDistricts(getDistricts().filter(d => d.province_code === personalForm.city));
+    } else {
+      setDistricts([]);
+    }
   }, [personalForm.city]);
 
+  /**
+   * EFFECT: Load danh sách phường/xã khi quận/huyện thay đổi
+   * BƯỚC 1: Kiểm tra nếu có district được chọn
+   * BƯỚC 2: Lọc wards theo district_code
+   * BƯỚC 3: Cập nhật state wards
+   * BƯỚC 4: Reset ward nếu không có district
+   */
   useEffect(() => {
-    if (personalForm.district) setWards(getWards().filter(w => w.district_code === personalForm.district));
-    else setWards([]);
+    if (personalForm.district) {
+      setWards(getWards().filter(w => w.district_code === personalForm.district));
+    } else {
+      setWards([]);
+    }
   }, [personalForm.district]);
 
-  // Parse địa chỉ khi component mount
+  /**
+   * EFFECT: Parse địa chỉ từ user.address khi component mount
+   * BƯỚC 1: Kiểm tra nếu có user.address
+   * BƯỚC 2: Tách địa chỉ thành các phần (địa chỉ chi tiết, phường, quận, tỉnh)
+   * BƯỚC 3: Tìm mã code tương ứng cho từng phần
+   * BƯỚC 4: Cập nhật personalForm với dữ liệu đã parse
+   */
   useEffect(() => {
     if (user?.address) {
       const parts = user.address.split(',').map(s => s.trim());
@@ -77,12 +126,27 @@ const AdminProfile = ({ user }) => {
     }
   }, [user]);
 
+  /**
+   * HELPER FUNCTION: Format ngày tháng theo định dạng Việt Nam
+   * INPUT: dateString (string) - chuỗi ngày tháng
+   * OUTPUT: string - ngày tháng đã format hoặc "Chưa có thông tin"
+   * BƯỚC 1: Kiểm tra nếu có dateString
+   * BƯỚC 2: Format theo định dạng Việt Nam với đầy đủ thông tin
+   * BƯỚC 3: Return chuỗi đã format hoặc thông báo mặc định
+   */
   const formatDate = (dateString) => {
     if (!dateString) return 'Chưa có thông tin';
     const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
     return new Date(dateString).toLocaleDateString('vi-VN', options);
   };
 
+  /**
+   * HELPER FUNCTION: Tạo badge cho trạng thái tài khoản
+   * INPUT: status (string) - trạng thái tài khoản
+   * OUTPUT: JSX Badge component
+   * BƯỚC 1: Kiểm tra status và return badge tương ứng
+   * BƯỚC 2: Màu sắc khác nhau cho từng trạng thái
+   */
   const getStatusBadge = (status) => {
     switch (status) {
       case 'active':
@@ -96,10 +160,20 @@ const AdminProfile = ({ user }) => {
     }
   };
 
-  // Handler cập nhật thông tin cá nhân
+  /**
+   * EVENT HANDLER: Lưu thông tin cá nhân
+   * BƯỚC 1: Set saving state thành true
+   * BƯỚC 2: Tạo chuỗi địa chỉ từ các thành phần
+   * BƯỚC 3: Chuẩn bị dữ liệu cập nhật
+   * BƯỚC 4: Gọi API updateUserById()
+   * BƯỚC 5: Hiển thị thông báo thành công
+   * BƯỚC 6: Xử lý lỗi nếu có
+   * BƯỚC 7: Set saving state thành false
+   */
   const handleSavePersonal = async () => {
     setSaving(true);
     try {
+      // BƯỚC 2: Tạo chuỗi địa chỉ từ các thành phần
       const address = [
         personalForm.addressDetail,
         wards.find(w => w.code === personalForm.ward)?.name || '',
@@ -107,6 +181,7 @@ const AdminProfile = ({ user }) => {
         provinces.find(p => p.code === personalForm.city)?.name || ''
       ].filter(Boolean).join(', ');
       
+      // BƯỚC 3: Chuẩn bị dữ liệu cập nhật
       const updateData = {
         fullname: personalForm.fullname,
         gender: personalForm.gender,
@@ -115,47 +190,73 @@ const AdminProfile = ({ user }) => {
         address
       };
       
+      // BƯỚC 4: Gọi API updateUserById()
       await updateUserById(user.id, updateData);
+      // BƯỚC 5: Hiển thị thông báo thành công
       setAlert({ show: true, message: 'Cập nhật thông tin cá nhân thành công!', type: 'success' });
     } catch (err) {
+      // BƯỚC 6: Xử lý lỗi nếu có
       setAlert({ show: true, message: 'Lỗi: ' + err.message, type: 'danger' });
       throw err;
     } finally {
+      // BƯỚC 7: Set saving state thành false
       setSaving(false);
     }
   };
 
-  // Handler upload avatar
+  /**
+   * EVENT HANDLER: Upload avatar
+   * INPUT: e (event) - event từ input file
+   * BƯỚC 1: Lấy file từ event
+   * BƯỚC 2: Kiểm tra nếu có file
+   * BƯỚC 3: Gọi uploadAvatar() để upload lên Firebase
+   * BƯỚC 4: Cập nhật personalForm với URL avatar mới
+   * BƯỚC 5: Xử lý lỗi nếu có
+   */
   const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     try {
+      // BƯỚC 3: Gọi uploadAvatar() để upload lên Firebase
       const url = await uploadAvatar(file, user.id);
+      // BƯỚC 4: Cập nhật personalForm với URL avatar mới
       setPersonalForm(f => ({ ...f, avatar: url }));
     } catch (err) {
+      // BƯỚC 5: Xử lý lỗi nếu có
       setAlert({ show: true, message: 'Lỗi upload avatar: ' + err.message, type: 'danger' });
     }
   };
 
-  // Handler đổi mật khẩu
+  /**
+   * EVENT HANDLER: Đổi mật khẩu
+   * BƯỚC 1: Kiểm tra mật khẩu xác nhận có khớp không
+   * BƯỚC 2: Kiểm tra độ dài mật khẩu mới (tối thiểu 6 ký tự)
+   * BƯỚC 3: Gọi API đổi mật khẩu (TODO)
+   * BƯỚC 4: Hiển thị thông báo thành công
+   * BƯỚC 5: Đóng modal và reset form
+   */
   const handleChangePassword = () => {
+    // BƯỚC 1: Kiểm tra mật khẩu xác nhận có khớp không
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       setAlert({ show: true, message: 'Mật khẩu xác nhận không khớp!', type: 'danger' });
       return;
     }
+    // BƯỚC 2: Kiểm tra độ dài mật khẩu mới
     if (passwordData.newPassword.length < 6) {
       setAlert({ show: true, message: 'Mật khẩu mới phải có ít nhất 6 ký tự!', type: 'danger' });
       return;
     }
-    // TODO: Gọi API đổi mật khẩu
+    // BƯỚC 3: Gọi API đổi mật khẩu (TODO)
+    // BƯỚC 4: Hiển thị thông báo thành công
     setAlert({ show: true, message: 'Mật khẩu đã được thay đổi thành công!', type: 'success' });
+    // BƯỚC 5: Đóng modal và reset form
     setShowPasswordModal(false);
     setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
   };
 
   return (
     <div>
-      {/* Header giống ManagerProfile */}
+      {/* HEADER: Tiêu đề trang */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h2 className="mb-1">Hồ sơ quản trị viên</h2>
@@ -166,8 +267,10 @@ const AdminProfile = ({ user }) => {
         </Button>
       </div>
       
+      {/* ALERT: Hiển thị thông báo */}
       {alert.show && <Alert variant={alert.type}>{alert.message}</Alert>}
       
+      {/* LOADING STATE: Hiển thị loading */}
       {loading ? (
         <div className="text-center py-5">
           <Spinner animation="border" variant="primary" />
@@ -176,14 +279,17 @@ const AdminProfile = ({ user }) => {
         <Alert variant="danger">{error}</Alert>
       ) : user ? (
         <>
-          {/* Card Thông tin cá nhân */}
+          {/* CARD: Thông tin cá nhân */}
           <Card className="shadow-sm mb-4">
             <Card.Body className="p-4">
               <Form>
+                {/* SECTION: Thông tin cá nhân */}
                 <h5 className="mb-4 text-primary">
                   <i className="bi bi-person-circle me-2"></i>
                   Thông tin cá nhân
                 </h5>
+                
+                {/* AVATAR SECTION: Ảnh đại diện */}
                 <Row className="mb-4">
                   <Col md={12} className="d-flex flex-column align-items-center justify-content-center position-relative">
                     <div style={{ position: 'relative', display: 'inline-block' }}>
@@ -216,6 +322,8 @@ const AdminProfile = ({ user }) => {
                     </div>
                   </Col>
                 </Row>
+                
+                {/* FORM FIELDS: Thông tin cá nhân */}
                 <Row>
                   <Col md={6} className="mb-3">
                     <Form.Label>Họ và tên *</Form.Label>
@@ -241,6 +349,7 @@ const AdminProfile = ({ user }) => {
                     </Form.Text>
                   </Col>
                 </Row>
+                
                 <Row>
                   <Col md={6} className="mb-3">
                     <Form.Label>Số điện thoại</Form.Label>
@@ -266,6 +375,8 @@ const AdminProfile = ({ user }) => {
                     </Form.Select>
                   </Col>
                 </Row>
+                
+                {/* ADDRESS FIELDS: Thông tin địa chỉ */}
                 <Row>
                   <Col md={6} className="mb-3">
                     <Form.Label>Tỉnh/Thành phố</Form.Label>
@@ -294,6 +405,7 @@ const AdminProfile = ({ user }) => {
                     </Form.Select>
                   </Col>
                 </Row>
+                
                 <Row>
                   <Col md={6} className="mb-3">
                     <Form.Label>Phường/Xã</Form.Label>
@@ -319,12 +431,15 @@ const AdminProfile = ({ user }) => {
                     />
                   </Col>
                 </Row>
+                
                 <hr className="my-4" />
-                {/* Thông tin tài khoản */}
+                
+                {/* SECTION: Thông tin tài khoản */}
                 <h5 className="mb-4 text-primary">
                   <i className="bi bi-shield-lock me-2"></i>
                   Thông tin tài khoản
                 </h5>
+                
                 <Row>
                   <Col md={6} className="mb-3">
                     <Form.Label>Vai trò</Form.Label>
@@ -341,6 +456,7 @@ const AdminProfile = ({ user }) => {
                     </div>
                   </Col>
                 </Row>
+                
                 <Row>
                   <Col md={6} className="mb-3">
                     <Form.Label>Ngày tạo tài khoản</Form.Label>
@@ -359,6 +475,7 @@ const AdminProfile = ({ user }) => {
                     />
                   </Col>
                 </Row>
+                
                 <Row>
                   <Col md={6} className="mb-3">
                     <Form.Label>ID người dùng</Form.Label>
@@ -379,7 +496,8 @@ const AdminProfile = ({ user }) => {
                     />
                   </Col>
                 </Row>
-                {/* Nút lưu/hủy khi chỉnh sửa */}
+                
+                {/* ACTION BUTTONS: Nút lưu/hủy khi chỉnh sửa */}
                 {isEditing && (
                   <div className="text-end mt-4">
                     <Button 
@@ -389,7 +507,7 @@ const AdminProfile = ({ user }) => {
                           await handleSavePersonal();
                           setIsEditing(false);
                         } catch (error) {
-                          console.error('Error saving:', error);
+                          // Xử lý lỗi khi lưu
                         }
                       }} 
                       className="me-2" 
@@ -402,7 +520,8 @@ const AdminProfile = ({ user }) => {
                     </Button>
                   </div>
                 )}
-                {/* Nút đổi mật khẩu */}
+                
+                {/* PASSWORD BUTTON: Nút đổi mật khẩu */}
                 <div className="text-center mt-4">
                   <Button
                     variant="outline-warning"
@@ -419,7 +538,7 @@ const AdminProfile = ({ user }) => {
         </>
       ) : null}
       
-      {/* Modal đổi mật khẩu */}
+      {/* MODAL: Đổi mật khẩu */}
       <Modal show={showPasswordModal} onHide={() => setShowPasswordModal(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>Đổi mật khẩu</Modal.Title>

@@ -210,6 +210,7 @@ const getTestResultSampleByManagerId = async (req, res) => {
                 samples_on_booking {
                   id
                   sampleConcentration
+                  sampleType
                   sampleQuality
                   participant {
                     name

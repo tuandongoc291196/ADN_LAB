@@ -1,15 +1,13 @@
 /**
  * COMPONENT: ServiceList
- * MỤC ĐÍCH: Hiển thị danh sách dịch vụ xét nghiệm ADN với các tính năng lọc và sắp xếp
- * CHỨC NĂNG:
- * - Hiển thị dịch vụ dưới dạng grid cards
- * - Filter theo loại dịch vụ (dân sự/hành chính)
- * - Filter theo phương thức thu mẫu
- * - Sắp xếp theo tên/giá/thời gian
- * - Hiển thị badges cho loại dịch vụ và phương thức
- * - Tích hợp với API để lấy dữ liệu services và methods
- * - URL params sync cho filters
- * - Responsive UI cho mobile và desktop
+ * CHỨC NĂNG: Hiển thị danh sách dịch vụ xét nghiệm ADN với các tính năng lọc và sắp xếp
+ * LUỒNG HOẠT ĐỘNG:
+ * 1. Tải danh sách services và methods từ API getAllServices() và getAllMethods()
+ * 2. Lọc services theo loại (dân sự/hành chính) và phương thức thu mẫu
+ * 3. Sắp xếp services theo tên, giá, thời gian
+ * 4. Hiển thị dưới dạng grid cards với thông tin chi tiết
+ * 5. Tích hợp với URL params để lưu trạng thái filter
+ * 6. Xử lý authentication khi user click đặt lịch
  */
 
 import React, { useState, useEffect } from 'react';
@@ -20,33 +18,42 @@ import { enrichMethodData } from '../data/services-data';
 import Swal from 'sweetalert2';
 
 const ServiceList = () => {
-  // ROUTING & NAVIGATION
+  // ROUTER HOOKS
   const [searchParams, setSearchParams] = useSearchParams(); // URL params cho filters
   const navigate = useNavigate(); // Hook điều hướng
 
-  // COMPONENT STATE
+  // STATE QUẢN LÝ DỮ LIỆU
   const [services, setServices] = useState([]); // Danh sách dịch vụ từ API
   const [methods, setMethods] = useState([]); // Danh sách phương thức từ API
   const [loading, setLoading] = useState(true); // Loading state
   const [error, setError] = useState(null); // Error message
+
+  // STATE QUẢN LÝ UI
   const [expanded, setExpanded] = useState(false); // Trạng thái mở rộng card
 
-  // FILTER & SORT STATE
+  // STATE QUẢN LÝ FILTER & SORT
   const [filterType, setFilterType] = useState(searchParams.get('type') || ''); // Filter theo loại dịch vụ
   const [filterMethod, setFilterMethod] = useState(''); // Filter theo phương thức
   const [sortBy, setSortBy] = useState('name'); // Sắp xếp theo tiêu chí
 
-  // USER DATA
+  // STATE QUẢN LÝ USER
   const storedUserData = localStorage.getItem('userData'); // Thông tin user từ localStorage
 
-  // EFFECTS & DATA FETCHING
-  // Effect: Fetch dữ liệu khi component mount
+  /**
+   * EFFECT 1: Tải dữ liệu khi component mount
+   * BƯỚC 1: Gọi fetchServices() để lấy danh sách services
+   * BƯỚC 2: Gọi fetchMethods() để lấy danh sách methods
+   */
   useEffect(() => {
     fetchServices();
     fetchMethods();
   }, []);
 
-  // Effect: Sync URL params với filterType
+  /**
+   * EFFECT 2: Đồng bộ URL params với filterType
+   * BƯỚC 1: Lấy type từ URL params
+   * BƯỚC 2: Cập nhật filterType nếu khác với giá trị hiện tại
+   */
   useEffect(() => {
     const typeFromUrl = searchParams.get('type');
     if (typeFromUrl !== filterType) {
@@ -54,13 +61,18 @@ const ServiceList = () => {
     }
   }, [searchParams]);
 
-  // API CALLS
-  // Fetch danh sách dịch vụ từ API
+  /**
+   * API CALL: Lấy danh sách dịch vụ từ API
+   * BƯỚC 1: Set loading state thành true
+   * BƯỚC 2: Gọi API getAllServices()
+   * BƯỚC 3: Kiểm tra response và cập nhật state services
+   * BƯỚC 4: Xử lý lỗi nếu có
+   * BƯỚC 5: Set loading state thành false
+   */
   const fetchServices = async () => {
     try {
       setLoading(true);
       const response = await getAllServices();
-      console.log('Services API response:', response);
 
       if (response && Array.isArray(response)) {
         setServices(response);
@@ -68,7 +80,6 @@ const ServiceList = () => {
         setServices([]);
       }
     } catch (err) {
-      console.error('Error fetching services:', err);
       setError('Không thể tải danh sách dịch vụ');
       setServices([]);
     } finally {
@@ -76,11 +87,15 @@ const ServiceList = () => {
     }
   };
 
-  // Fetch danh sách phương thức từ API
+  /**
+   * API CALL: Lấy danh sách phương thức từ API
+   * BƯỚC 1: Gọi API getAllMethods()
+   * BƯỚC 2: Kiểm tra response và cập nhật state methods
+   * BƯỚC 3: Xử lý lỗi nếu có
+   */
   const fetchMethods = async () => {
     try {
       const response = await getAllMethods();
-      console.log('Methods API response:', response);
 
       if (response && Array.isArray(response)) {
         setMethods(response);
@@ -88,19 +103,30 @@ const ServiceList = () => {
         setMethods([]);
       }
     } catch (err) {
-      console.error('Error fetching methods:', err);
       setMethods([]);
     }
   };
 
-  // HELPER FUNCTIONS
-  // Xác định loại dịch vụ từ category
+  /**
+   * HELPER FUNCTION: Xác định loại dịch vụ từ category
+   * INPUT: category (object) - thông tin category của service
+   * OUTPUT: string - 'administrative' hoặc 'civil'
+   * BƯỚC 1: Kiểm tra nếu category tồn tại
+   * BƯỚC 2: Trả về 'administrative' nếu hasLegalValue = true, ngược lại trả về 'civil'
+   */
   const getServiceTypeFromCategory = (category) => {
     if (!category) return 'civil';
     return category.hasLegalValue ? 'administrative' : 'civil';
   };
 
-  // Format giá tiền theo định dạng VNĐ
+  /**
+   * HELPER FUNCTION: Format giá tiền theo định dạng VNĐ
+   * INPUT: price (number/string) - giá tiền
+   * OUTPUT: string - giá tiền định dạng VNĐ
+   * BƯỚC 1: Kiểm tra nếu price là number
+   * BƯỚC 2: Format theo định dạng Việt Nam
+   * BƯỚC 3: Trả về "Liên hệ" nếu không có giá
+   */
   const formatPrice = (price) => {
     if (typeof price === 'number') {
       return new Intl.NumberFormat('vi-VN').format(price) + ' VNĐ';
@@ -108,18 +134,31 @@ const ServiceList = () => {
     return price || 'Liên hệ';
   };
 
-  // Tạo badge cho loại dịch vụ
+  /**
+   * HELPER FUNCTION: Tạo badge cho loại dịch vụ
+   * INPUT: serviceType (string) - loại dịch vụ
+   * OUTPUT: JSX Badge component với màu và text phù hợp
+   */
   const getServiceTypeBadge = (serviceType) => {
     return serviceType === 'administrative'
       ? <Badge bg="warning" text="dark" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}>ADN Hành chính</Badge>
       : <Badge bg="success" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}>ADN Dân sự</Badge>;
   };
 
-  // Tạo badges cho các phương thức thu mẫu
+  /**
+   * HELPER FUNCTION: Tạo badges cho các phương thức thu mẫu
+   * INPUT: service (object) - thông tin service
+   * OUTPUT: JSX array các Badge components
+   * BƯỚC 1: Lấy danh sách methods từ service.methods_via_ServiceMethod
+   * BƯỚC 2: Kiểm tra nếu không có methods thì hiển thị "Đang cập nhật"
+   * BƯỚC 3: Làm giàu methods với icon và color từ METHOD_MAPPING
+   * BƯỚC 4: Tạo badges cho từng method
+   */
   const getMethodBadges = (service) => {
-    // Get methods directly from service data
+    // BƯỚC 1: Lấy methods trực tiếp từ service data
     const serviceMethodsList = service.methods_via_ServiceMethod || [];
 
+    // BƯỚC 2: Kiểm tra nếu không có methods
     if (serviceMethodsList.length === 0) {
       return (
         <Badge bg="secondary" style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: '500' }}>
@@ -129,9 +168,10 @@ const ServiceList = () => {
       );
     }
 
-    // Làm giàu methods với icon và color từ METHOD_MAPPING
+    // BƯỚC 3: Làm giàu methods với icon và color từ METHOD_MAPPING
     const enrichedMethods = enrichMethodData(serviceMethodsList);
 
+    // BƯỚC 4: Tạo badges cho từng method
     return enrichedMethods.map(method => (
       <Badge
         key={method.id}
@@ -145,26 +185,38 @@ const ServiceList = () => {
     ));
   };
 
-  // FILTERING & SORTING
-  // Filter services theo category và method
+  /**
+   * DATA PROCESSING: Filter services theo category và method
+   * BƯỚC 1: Lọc bỏ các service không active
+   * BƯỚC 2: Lọc theo loại dịch vụ (dân sự/hành chính)
+   * BƯỚC 3: Lọc theo phương thức thu mẫu
+   * BƯỚC 4: Trả về danh sách đã lọc
+   */
   const filteredServices = services.filter(service => {
-    // Chỉ hiển thị dịch vụ đang active
+    // BƯỚC 1: Chỉ hiển thị dịch vụ đang active
     if (service.isActive === false) {
       return false;
     }
 
     const serviceType = getServiceTypeFromCategory(service.category);
+    // BƯỚC 2: Lọc theo loại dịch vụ
     const matchesType = !filterType || serviceType === filterType;
 
-    // Filter theo method nếu có
+    // BƯỚC 3: Lọc theo method nếu có
     const matchesMethod = !filterMethod ||
       (service.methods_via_ServiceMethod &&
         service.methods_via_ServiceMethod.some(method => method.id === filterMethod));
 
+    // BƯỚC 4: Trả về kết quả
     return matchesType && matchesMethod;
   });
 
-  // Sắp xếp services theo tiêu chí đã chọn
+  /**
+   * DATA PROCESSING: Sắp xếp services theo tiêu chí đã chọn
+   * BƯỚC 1: Tạo copy của filteredServices
+   * BƯỚC 2: Sắp xếp theo sortBy (name, price-low, price-high, duration)
+   * BƯỚC 3: Trả về danh sách đã sắp xếp
+   */
   const sortedServices = [...filteredServices].sort((a, b) => {
     switch (sortBy) {
       case 'name':
@@ -180,8 +232,13 @@ const ServiceList = () => {
     }
   });
 
-  // EVENT HANDLERS
-  // Xử lý thay đổi filter
+  /**
+   * EVENT HANDLER: Xử lý thay đổi filter
+   * INPUT: type (string) - loại filter, value (string) - giá trị mới
+   * BƯỚC 1: Nếu type là 'serviceType' thì cập nhật filterType và reset filterMethod
+   * BƯỚC 2: Cập nhật URL params nếu có giá trị
+   * BƯỚC 3: Nếu type là 'method' thì cập nhật filterMethod
+   */
   const handleFilterChange = (type, value) => {
     if (type === 'serviceType') {
       setFilterType(value);
@@ -197,33 +254,22 @@ const ServiceList = () => {
     }
   };
 
-  // LOADING STATE
-  if (loading) {
-    return (
-      <div className="text-center py-5">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
-        <p className="mt-3 text-muted">Đang tải danh sách dịch vụ...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <Container className="py-5">
-        <Alert variant="danger">
-          <i className="bi bi-exclamation-triangle me-2"></i>
-          {error}
-        </Alert>
-      </Container>
-    );
-  }
-
+  /**
+   * EVENT HANDLER: Xử lý click navigation
+   * BƯỚC 1: Đóng expanded state
+   */
   const handleNavClick = () => {
     setExpanded(false);
   };
-  // Kiểm tra xem người dùng đã đăng nhập chưa
+
+  /**
+   * EVENT HANDLER: Xử lý click đặt lịch
+   * INPUT: e (event) - event object
+   * BƯỚC 1: Kiểm tra nếu user chưa đăng nhập
+   * BƯỚC 2: Hiển thị thông báo yêu cầu đăng nhập
+   * BƯỚC 3: Chuyển hướng đến trang login nếu user confirm
+   * BƯỚC 4: Nếu đã đăng nhập thì xử lý bình thường
+   */
   const handleBookingClick = (e) => {
     if (!storedUserData) {
       e.preventDefault(); // chặn click chuyển trang
@@ -243,9 +289,33 @@ const ServiceList = () => {
     }
   };
 
+  // LOADING STATE: Hiển thị spinner khi đang tải dữ liệu
+  if (loading) {
+    return (
+      <div className="text-center py-5">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+        <p className="mt-3 text-muted">Đang tải danh sách dịch vụ...</p>
+      </div>
+    );
+  }
+
+  // ERROR STATE: Hiển thị thông báo lỗi nếu có
+  if (error) {
+    return (
+      <Container className="py-5">
+        <Alert variant="danger">
+          <i className="bi bi-exclamation-triangle me-2"></i>
+          {error}
+        </Alert>
+      </Container>
+    );
+  }
+
   return (
     <>
-      {/* Hero Section - Style giống ServiceDetail */}
+      {/* HERO SECTION: Tiêu đề và mô tả trang */}
       <section className="bg-primary text-white py-5">
         <Container>
           <Row className="align-items-center">
@@ -256,7 +326,6 @@ const ServiceList = () => {
               <p className="lead mb-4">
                 Chọn dịch vụ phù hợp với nhu cầu của bạn - Độ chính xác 99.9999% với công nghệ hiện đại
               </p>
-
             </Col>
             <Col lg={4} className="text-end d-none d-lg-block">
               <i className="bi bi-grid-3x3" style={{
@@ -269,9 +338,9 @@ const ServiceList = () => {
       </section>
 
       <Container className="py-5">
-        {/* Filter Section */}
-        {/* Filters - All in one row */}
+        {/* FILTER SECTION: Bộ lọc và sắp xếp */}
         <Row className="mb-4">
+          {/* Search input */}
           <Col lg={3} md={6} className="mb-3">
             <Form.Control
               type="text"
@@ -281,6 +350,7 @@ const ServiceList = () => {
             />
           </Col>
 
+          {/* Service type filter */}
           <Col lg={2} md={6} className="mb-3">
             <Form.Select
               value={filterType}
@@ -294,6 +364,7 @@ const ServiceList = () => {
             </Form.Select>
           </Col>
 
+          {/* Method filter */}
           <Col lg={3} md={6} className="mb-3">
             <Form.Select
               value={filterMethod}
@@ -310,6 +381,7 @@ const ServiceList = () => {
             </Form.Select>
           </Col>
 
+          {/* Sort options */}
           <Col lg={3} md={6} className="mb-3">
             <Form.Select
               value={sortBy}
@@ -324,6 +396,7 @@ const ServiceList = () => {
             </Form.Select>
           </Col>
 
+          {/* Reset filter button */}
           <Col lg={1} md={6} className="mb-3">
             <Button
               variant="outline-secondary"
@@ -341,7 +414,7 @@ const ServiceList = () => {
           </Col>
         </Row>
 
-        {/* Results count */}
+        {/* RESULTS COUNT: Hiển thị số lượng kết quả */}
         <div className="mb-4">
           <div className="d-flex align-items-center justify-content-between">
             <p className="text-muted mb-0">
@@ -352,8 +425,9 @@ const ServiceList = () => {
           </div>
         </div>
 
-        {/* Services Grid */}
+        {/* SERVICES GRID: Hiển thị danh sách dịch vụ */}
         {sortedServices.length === 0 ? (
+          // EMPTY STATE: Hiển thị khi không có kết quả
           <Alert variant="info" className="text-center py-5">
             <i className="bi bi-info-circle fs-1 mb-3 d-block"></i>
             <h4>Không tìm thấy dịch vụ phù hợp</h4>
@@ -372,6 +446,7 @@ const ServiceList = () => {
             </Button>
           </Alert>
         ) : (
+          // SERVICES CARDS: Grid hiển thị các service cards
           <Row>
             {sortedServices.map(service => {
               const serviceType = getServiceTypeFromCategory(service.category);
@@ -394,14 +469,14 @@ const ServiceList = () => {
                       e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.08)';
                     }}
                   >
-                    <Card.Header className={`border-0 ${serviceType === 'administrative' ? 'bg-warning bg-opacity-10' : 'bg-success bg-opacity-10'
-                      }`}>
-                      {/* Service Type - Căn giữa */}
+                    {/* CARD HEADER: Loại dịch vụ và tên */}
+                    <Card.Header className={`border-0 ${serviceType === 'administrative' ? 'bg-warning bg-opacity-10' : 'bg-success bg-opacity-10'}`}>
+                      {/* Service Type Badge */}
                       <div className="text-center mb-3">
                         {getServiceTypeBadge(serviceType)}
                       </div>
 
-                      {/* Service Name và Featured - Cùng hàng */}
+                      {/* Service Name và Featured Icon */}
                       <div className="d-flex align-items-center">
                         <i className={`bi ${service.featured ? 'bi-star-fill' : 'bi-star'} text-danger me-2`}
                           title={service.featured ? 'Dịch vụ nổi bật' : 'Dịch vụ thường'}></i>
@@ -409,15 +484,16 @@ const ServiceList = () => {
                       </div>
                     </Card.Header>
 
+                    {/* CARD BODY: Thông tin chi tiết dịch vụ */}
                     <Card.Body className="d-flex flex-column">
-                      {/* Description - Fixed height */}
+                      {/* Description */}
                       <div className="mb-3" style={{ minHeight: '60px' }}>
                         <Card.Text className="text-muted mb-0">
                           {service.description}
                         </Card.Text>
                       </div>
 
-                      {/* Price and Duration - Fixed height */}
+                      {/* Price and Duration */}
                       <div className="mb-3 text-center" style={{ minHeight: '50px' }}>
                         <div className="h5 text-primary mb-1">{formatPrice(service.price)}</div>
                         <small className="text-muted">
@@ -426,7 +502,7 @@ const ServiceList = () => {
                         </small>
                       </div>
 
-                      {/* Collection Methods - Fixed height */}
+                      {/* Collection Methods */}
                       <div className="mb-3" style={{ minHeight: '80px' }}>
                         <small className="text-muted d-block mb-2">Phương thức lấy mẫu:</small>
                         <div className="d-flex flex-wrap gap-1">
@@ -434,7 +510,7 @@ const ServiceList = () => {
                         </div>
                       </div>
 
-                      {/* Buttons - Fixed at bottom */}
+                      {/* Action Buttons */}
                       <div className="d-grid gap-2 mt-auto">
                         <Button
                           variant="outline-primary"
@@ -467,7 +543,7 @@ const ServiceList = () => {
           </Row>
         )}
 
-        {/* CTA Section */}
+        {/* CTA SECTION: Call to action */}
         <div className="text-center mt-5 pt-5">
           <div className="bg-light rounded-4 p-5" style={{ borderRadius: '24px' }}>
             <h3 className="mb-3 fw-bold">Cần tư vấn chọn dịch vụ phù hợp?</h3>
