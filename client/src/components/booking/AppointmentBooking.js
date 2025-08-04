@@ -1,13 +1,12 @@
 /**
  * COMPONENT: AppointmentBooking
- * MỤC ĐÍCH: Multi-step booking form cho đặt lịch xét nghiệm ADN
- * CHỨC NĂNG:
- * - 4 bước đặt lịch: Chọn dịch vụ → Phương thức lấy mẫu → Thông tin & Lịch hẹn → Xác nhận
- * - Hỗ trợ 2 loại dịch vụ: Dân sự (civil) và Hành chính (administrative)
- * - 3 phương thức thu mẫu: Tự lấy mẫu / Nhân viên tới nhà / Tại cơ sở
- * - Validation phức tạp cho thông tin khách hàng và người tham gia
- * - Tích hợp API để tạo booking và điều hướng đến xác nhận
- * - Auto-fill thông tin từ localStorage nếu user đã đăng nhập
+ * CHỨC NĂNG: Multi-step booking form cho đặt lịch xét nghiệm ADN
+ * LUỒNG HOẠT ĐỘNG:
+ * 1. Tải danh sách services và methods từ API getAllServices() và getAllMethods()
+ * 2. Xử lý 4 bước đặt lịch: Chọn dịch vụ → Phương thức lấy mẫu → Thông tin & Lịch hẹn → Xác nhận
+ * 3. Validation phức tạp cho thông tin khách hàng và người tham gia
+ * 4. Auto-fill thông tin từ localStorage nếu user đã đăng nhập
+ * 5. Tích hợp API createBooking() để tạo booking và điều hướng đến xác nhận
  */
 
 import React, { useState, useEffect } from 'react';
@@ -18,25 +17,25 @@ import { getServiceById, getServicesByType, enrichMethodData, isMethodDisabled, 
 import { getProvinces, getDistricts, getWards } from 'vietnam-provinces';
 
 const AppointmentBooking = () => {
-  // ROUTING & NAVIGATION
+  // ROUTER HOOKS
   const navigate = useNavigate(); // Hook điều hướng
   const location = useLocation(); // Hook nhận state từ page trước
 
-  // BOOKING FLOW STATE
+  // STATE QUẢN LÝ BOOKING FLOW
   const [currentStep, setCurrentStep] = useState(1); // Bước hiện tại (1-4)
 
-  // API DATA STATE
+  // STATE QUẢN LÝ DỮ LIỆU API
   const [services, setServices] = useState([]); // Danh sách dịch vụ từ API
   const [methods, setMethods] = useState([]); // Danh sách phương thức từ API
   const [serviceMethods, setServiceMethods] = useState([]); // Phương thức của dịch vụ được chọn
   const [enrichedMethods, setEnrichedMethods] = useState([]); // Methods với icon và color
 
-  // UI STATE
+  // STATE QUẢN LÝ UI
   const [loading, setLoading] = useState(true); // Trạng thái đang tải dữ liệu
   const [errors, setErrors] = useState(null); // Lỗi chung
   const [userFromAPI, setUserFromAPI] = useState(null); // User data từ API
 
-  // BOOKING DATA STATE
+  // STATE QUẢN LÝ BOOKING DATA
   const [bookingData, setBookingData] = useState({
     serviceType: '',        // Loại dịch vụ: 'civil' hoặc 'administrative'
     serviceId: '',          // ID dịch vụ được chọn
@@ -53,7 +52,7 @@ const AppointmentBooking = () => {
     }
   });
 
-  // VALIDATION STATE
+  // STATE QUẢN LÝ VALIDATION
   const [idNumberErrors, setIdNumberErrors] = useState({}); // Lỗi CMND/CCCD
   const [customerErrors, setCustomerErrors] = useState({    // Lỗi thông tin khách hàng
     fullName: '',
@@ -63,14 +62,20 @@ const AppointmentBooking = () => {
   });
   const [participantErrors, setParticipantErrors] = useState([]); // Lỗi thông tin người tham gia
 
-  // RELATIONSHIP STATE
+  // STATE QUẢN LÝ RELATIONSHIP
   const [isParticipant1Customer, setIsParticipant1Customer] = useState(false); // Checkbox người tham gia 1 là người đặt lịch
 
-  // USER DATA
+  // STATE QUẢN LÝ USER
   const storedUserData = localStorage.getItem('userData');
   const userData = storedUserData ? JSON.parse(storedUserData) : null;
 
-  // Fetch user profile từ API khi component mount
+  /**
+   * EFFECT: Tải thông tin user từ API khi component mount
+   * BƯỚC 1: Kiểm tra nếu có userData từ localStorage
+   * BƯỚC 2: Gọi API getUserById() để lấy thông tin user chi tiết
+   * BƯỚC 3: Cập nhật state userFromAPI
+   * BƯỚC 4: Xử lý lỗi nếu có
+   */
   useEffect(() => {
     if (userData && (userData.id || userData._id)) {
       getUserById(userData.id || userData._id)
@@ -79,15 +84,24 @@ const AppointmentBooking = () => {
     }
   }, []);
 
-  // Helper function: Tính toán giờ kết thúc từ giờ bắt đầu (mỗi slot 1 tiếng)
+  /**
+   * HELPER FUNCTION: Tính toán giờ kết thúc từ giờ bắt đầu
+   * INPUT: startTime (string) - giờ bắt đầu (HH:MM)
+   * OUTPUT: string - giờ kết thúc (HH:MM)
+   * BƯỚC 1: Tách giờ và phút từ startTime
+   * BƯỚC 2: Cộng thêm 1 giờ
+   * BƯỚC 3: Format lại thành chuỗi HH:MM
+   */
   const calculateEndTime = (startTime) => {
     const [hour, minute] = startTime.split(':').map(Number);
     const endHour = hour + 1;
     return `${endHour < 10 ? '0' : ''}${endHour}:${minute < 10 ? '0' : ''}${minute}`;
   };
 
-  // CONSTANTS & DATA
-  // Danh sách các mối quan hệ gia đình hợp lệ
+  /**
+   * CONSTANT DATA: Danh sách các mối quan hệ gia đình hợp lệ
+   * Sử dụng cho dropdown chọn mối quan hệ giữa các người tham gia
+   */
   const familyRelations = [
     "Cha", "Mẹ",
     "Ông nội", "Bà nội",
@@ -140,39 +154,28 @@ const AppointmentBooking = () => {
     return valid.length > 0 ? valid : familyRelations; // Nếu rỗng → trả lại toàn bộ
   };
 
-  // EFFECTS & DATA FETCHING
-  // Effect: Fetch dữ liệu services và methods từ API khi component mount
+  /**
+   * EFFECT: Fetch dữ liệu services và methods từ API khi component mount
+   * BƯỚC 1: Gọi song song 2 API getAllServices() và getAllMethods() để tối ưu performance
+   * BƯỚC 2: Cập nhật state services và methods với dữ liệu từ API
+   * BƯỚC 3: Làm giàu dữ liệu methods với icon và color cho UI
+   * BƯỚC 4: Xử lý lỗi nếu có và set loading state
+   */
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Gọi song song 2 API để tối ưu performance
+        // BƯỚC 1: Gọi song song 2 API để tối ưu performance
         const [servicesData, methodsData] = await Promise.all([
           getAllServices(),
           getAllMethods()
         ]);
 
-        // Debug logs để kiểm tra cấu trúc dữ liệu từ API
-        console.log('=== SERVICES FROM API ===');
-        console.log('Services data:', servicesData);
-        console.log('Services type:', typeof servicesData);
-        console.log('Services length:', servicesData?.length);
-        if (servicesData && servicesData.length > 0) {
-          console.log('First service structure:', servicesData[0]);
-          console.log('First service ID:', servicesData[0].id);
-          console.log('First service title:', servicesData[0].title);
-        }
-
-        console.log('=== METHODS FROM API ===');
-        console.log('Methods data:', methodsData);
-        console.log('Methods type:', typeof methodsData);
-        console.log('Methods length:', methodsData?.length);
-
-        // Cập nhật state với dữ liệu từ API
+        // BƯỚC 2: Cập nhật state với dữ liệu từ API
         setServices(servicesData || []);
         setMethods(methodsData || []);
 
-        // Làm giàu dữ liệu methods với icon và color cho UI
+        // BƯỚC 3: Làm giàu dữ liệu methods với icon và color cho UI
         const enriched = enrichMethodData(methodsData || []);
         setEnrichedMethods(enriched);
       } catch (error) {
@@ -185,7 +188,13 @@ const AppointmentBooking = () => {
     fetchData();
   }, []); // Chạy 1 lần khi component mount
 
-  // Effect: Fetch các phương thức của service được chọn
+  /**
+   * EFFECT: Fetch các phương thức của service được chọn
+   * BƯỚC 1: Kiểm tra nếu có serviceId được chọn
+   * BƯỚC 2: Gọi API getMethodsByServiceId() để lấy methods của service
+   * BƯỚC 3: Cập nhật state serviceMethods
+   * BƯỚC 4: Xử lý lỗi nếu có
+   */
   useEffect(() => {
     const fetchServiceMethods = async () => {
       if (bookingData.serviceId) {
@@ -202,7 +211,14 @@ const AppointmentBooking = () => {
     fetchServiceMethods();
   }, [bookingData.serviceId]); // Chạy khi serviceId thay đổi
 
-  // Effect: Load pre-selected service từ navigation state
+  /**
+   * EFFECT: Load pre-selected service từ navigation state
+   * BƯỚC 1: Kiểm tra nếu có selectedService từ location.state
+   * BƯỚC 2: Tìm service trong danh sách services
+   * BƯỚC 3: Auto-set serviceType và serviceId
+   * BƯỚC 4: Tạo danh sách participants dựa trên yêu cầu của service
+   * BƯỚC 5: Chuyển đến step 2
+   */
   useEffect(() => {
     if (location.state?.selectedService && services.length > 0) {
       const service = getServiceById(services, location.state.selectedService);
@@ -228,7 +244,13 @@ const AppointmentBooking = () => {
     }
   }, [location.state, services]); // Chạy khi có service được chọn từ page trước
 
-  // EFFECT: Auto-fill thông tin khách hàng từ userFromAPI (thay vì localStorage)
+  /**
+   * EFFECT: Auto-fill thông tin khách hàng từ userFromAPI
+   * BƯỚC 1: Kiểm tra nếu có userFromAPI
+   * BƯỚC 2: Parse địa chỉ từ userFromAPI.address
+   * BƯỚC 3: Map tên địa chỉ sang code (giống UserProfile)
+   * BƯỚC 4: Auto-fill thông tin khách hàng từ userFromAPI
+   */
   useEffect(() => {
     if (userFromAPI) {
       let addressDetail = '', ward = '', district = '', city = '';
@@ -236,7 +258,7 @@ const AppointmentBooking = () => {
         const parts = userFromAPI.address.split(',').map(s => s.trim());
         if (parts.length === 4) {
           addressDetail = parts[0];
-          // Map tên sang code (giống UserProfile)
+          // BƯỚC 3: Map tên sang code (giống UserProfile)
           const normalize = str => str.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
           const findCodeByName = (list, name) => (list.find(item => normalize(item.name) === normalize(name)) || {}).code || '';
           city = findCodeByName(getProvinces(), parts[3]);
@@ -247,6 +269,7 @@ const AppointmentBooking = () => {
         }
       }
 
+      // BƯỚC 4: Auto-fill thông tin khách hàng từ userFromAPI
       setBookingData(prev => ({
         ...prev,
         customerInfo: {
@@ -265,6 +288,11 @@ const AppointmentBooking = () => {
     }
   }, [userFromAPI]);
 
+  /**
+   * EFFECT: Tự động build full address khi các thành phần địa chỉ thay đổi
+   * BƯỚC 1: Gọi buildFullAddress() với thông tin địa chỉ hiện tại
+   * BƯỚC 2: Cập nhật bookingData.customerInfo.address
+   */
   useEffect(() => {
     const fullAddress = buildFullAddress(bookingData.customerInfo);
     setBookingData(prev => ({
@@ -281,7 +309,13 @@ const AppointmentBooking = () => {
     bookingData.customerInfo.city
   ]);
 
-  // Handler: Thay đổi loại dịch vụ (civil/administrative)
+  /**
+   * EVENT HANDLER: Thay đổi loại dịch vụ (civil/administrative)
+   * INPUT: type (string) - loại dịch vụ ('civil' hoặc 'administrative')
+   * BƯỚC 1: Cập nhật serviceType
+   * BƯỚC 2: Reset serviceId và collectionMethod
+   * BƯỚC 3: Reset danh sách participants
+   */
   const handleServiceTypeChange = (type) => {
     setBookingData({
       ...bookingData,
@@ -295,15 +329,15 @@ const AppointmentBooking = () => {
     });
   };
 
-  // Handler: Chọn dịch vụ cụ thể
+  /**
+   * EVENT HANDLER: Chọn dịch vụ cụ thể
+   * INPUT: serviceId (string) - ID của service được chọn
+   * BƯỚC 1: Lấy thông tin service từ danh sách services
+   * BƯỚC 2: Cập nhật serviceId và reset collectionMethod
+   * BƯỚC 3: Tạo danh sách participants dựa trên requirements của service
+   */
   const handleServiceSelect = (serviceId) => {
     const selectedService = getServiceById(services, serviceId);
-
-    // Debug logs để kiểm tra service selection
-    console.log('handleServiceSelect called with serviceId:', serviceId);
-    console.log('Selected service object:', selectedService);
-    console.log('Service ID from object:', selectedService?.id);
-    console.log('Service title from object:', selectedService?.title);
 
     setBookingData({
       ...bookingData,
@@ -323,7 +357,11 @@ const AppointmentBooking = () => {
     });
   };
 
-  // Handler: Chọn phương thức thu mẫu
+  /**
+   * EVENT HANDLER: Chọn phương thức thu mẫu
+   * INPUT: method (object) - thông tin method được chọn
+   * BƯỚC 1: Cập nhật collectionMethod với method.id
+   */
   const handleMethodSelect = (method) => {
     setBookingData({
       ...bookingData,
@@ -331,7 +369,11 @@ const AppointmentBooking = () => {
     });
   };
 
-  // Handler: Cập nhật thông tin khách hàng
+  /**
+   * EVENT HANDLER: Cập nhật thông tin khách hàng
+   * INPUT: field (string) - tên field, value (string) - giá trị mới
+   * BƯỚC 1: Cập nhật field tương ứng trong customerInfo
+   */
   const handleCustomerInfoChange = (field, value) => {
     setBookingData({
       ...bookingData,
@@ -342,7 +384,13 @@ const AppointmentBooking = () => {
     });
   };
 
-  // Handler: Cập nhật thông tin người tham gia
+  /**
+   * EVENT HANDLER: Cập nhật thông tin người tham gia
+   * INPUT: idx (number) - index của participant, field (string) - tên field, value (string) - giá trị mới
+   * BƯỚC 1: Tạo copy của danh sách participants
+   * BƯỚC 2: Cập nhật field tương ứng cho participant tại index idx
+   * BƯỚC 3: Cập nhật state với danh sách participants mới
+   */
   const handleParticipantChange = (idx, field, value) => {
     const updated = [...bookingData.customerInfo.participants];
     updated[idx] = {
@@ -358,7 +406,11 @@ const AppointmentBooking = () => {
     }));
   };
 
-  // Navigation functions: Chuyển đổi giữa các step
+  /**
+   * NAVIGATION FUNCTIONS: Chuyển đổi giữa các step
+   * BƯỚC 1: Kiểm tra điều kiện để chuyển step
+   * BƯỚC 2: Cập nhật currentStep
+   */
   const nextStep = () => {
     if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
@@ -371,9 +423,22 @@ const AppointmentBooking = () => {
     }
   };
 
-  // Handler: Submit booking form cuối cùng
+  /**
+   * EVENT HANDLER: Submit booking form cuối cùng
+   * BƯỚC 1: Lấy userId từ localStorage với multiple fallbacks
+   * BƯỚC 2: Lấy thông tin service và method đã chọn
+   * BƯỚC 3: Validation dữ liệu trước khi submit
+   * BƯỚC 4: Tính toán thời gian slot (startTime, endTime)
+   * BƯỚC 5: Map dữ liệu participants theo format API yêu cầu
+   * BƯỚC 6: Chuẩn bị thông tin người đặt lịch
+   * BƯỚC 7: Tính tổng chi phí (service price + method price)
+   * BƯỚC 8: Chuẩn bị payload theo format API backend
+   * BƯỚC 9: Gọi API createBooking()
+   * BƯỚC 10: Extract booking ID từ response
+   * BƯỚC 11: Điều hướng đến trang xác nhận với dữ liệu booking
+   */
   const handleBookingSubmit = async () => {
-    // Bước 1: Lấy userId từ localStorage với multiple fallbacks
+    // BƯỚC 1: Lấy userId từ localStorage với multiple fallbacks
     let userId = '';
     try {
       const userDataFromStorage = JSON.parse(localStorage.getItem('userData'));
@@ -382,11 +447,11 @@ const AppointmentBooking = () => {
       console.error('Error parsing userData:', e);
     }
 
-    // Bước 2: Lấy thông tin service và method đã chọn
+    // BƯỚC 2: Lấy thông tin service và method đã chọn
     const service = selectedService;
     const method = selectedMethod;
 
-    // Bước 3: Validation dữ liệu trước khi submit
+    // BƯỚC 3: Validation dữ liệu trước khi submit
     if (!service) {
       alert('Vui lòng chọn dịch vụ!');
       return;
@@ -407,11 +472,7 @@ const AppointmentBooking = () => {
       return;
     }
 
-    console.log('Selected service:', service);
-    console.log('Service ID type:', typeof service.id);
-    console.log('Service ID value:', service.id);
-
-    // Bước 4: Tính toán thời gian slot (startTime, endTime)
+    // BƯỚC 4: Tính toán thời gian slot (startTime, endTime)
     let startTime = bookingData.appointmentTime || '';
     let endTime = '';
     if (startTime) {
@@ -421,7 +482,7 @@ const AppointmentBooking = () => {
       endTime = start.toTimeString().slice(0, 5);
     }
 
-    // Bước 5: Map dữ liệu participants theo format API yêu cầu
+    // BƯỚC 5: Map dữ liệu participants theo format API yêu cầu
     const participants = (bookingData.customerInfo.participants || []).map((p) => ({
       name: p.name || '',
       age: p.age || null,
@@ -430,7 +491,7 @@ const AppointmentBooking = () => {
       relationship: p.relation || p.role || '',
     }));
 
-    // Bước 6: Chuẩn bị thông tin người đặt lịch
+    // BƯỚC 6: Chuẩn bị thông tin người đặt lịch
     const information = {
       name: bookingData.customerInfo.fullName,
       identification: bookingData.customerInfo.idNumber,
@@ -439,7 +500,7 @@ const AppointmentBooking = () => {
       email: bookingData.customerInfo.email
     };
 
-    // Bước 7: Tính tổng chi phí (service price + method price)
+    // BƯỚC 7: Tính tổng chi phí (service price + method price)
     let totalAmount = 0;
     if (service && typeof service.price === 'number') {
       totalAmount = service.price;
@@ -450,7 +511,7 @@ const AppointmentBooking = () => {
       totalAmount += method.price;
     }
 
-    // Bước 8: Chuẩn bị payload theo format API backend
+    // BƯỚC 8: Chuẩn bị payload theo format API backend
     const payload = {
       userId: userId, // ID người dùng từ localStorage
       slotDate: bookingData.appointmentDate,
@@ -475,38 +536,18 @@ const AppointmentBooking = () => {
       }))
     };
 
-    // Debug: Kiểm tra nếu serviceId có vấn đề với backend data structure
-    if (service.id === service.title) {
-      console.warn('Service ID is same as title, this might be an issue with backend data structure');
-      // Có thể cần điều chỉnh logic này tùy theo yêu cầu backend
-    }
-
-    console.log('Final payload before API call:', payload);
-
-    // Bước 9: Gọi API tạo booking
+    // BƯỚC 9: Gọi API tạo booking
     try {
-      console.log('Submitting booking with payload:', payload);
       const res = await createBooking(payload);
-      console.log('Booking response:', res);
 
-      // Bước 10: Extract booking ID từ response (handle multiple response formats)
+      // BƯỚC 10: Extract booking ID từ response (handle multiple response formats)
       let bookingId = null;
       if (res) {
         bookingId = res.id || res.bookingId || res.data?.id || res.booking_insert?.id || res.data?.booking_insert?.id || null;
       }
 
       if (bookingId) {
-        console.log('Success! Booking ID:', bookingId);
-        console.log('Navigating to booking-confirmation with state:', {
-          bookingData: {
-            ...bookingData,
-            selectedService: service,
-            selectedMethod: method
-          },
-          bookingId: bookingId
-        });
-
-        // Bước 11: Điều hướng đến trang xác nhận với dữ liệu booking
+        // BƯỚC 11: Điều hướng đến trang xác nhận với dữ liệu booking
         try {
           navigate('/booking-confirmation', {
             state: {
@@ -518,7 +559,6 @@ const AppointmentBooking = () => {
               bookingId: bookingId
             }
           });
-          console.log('Navigation successful');
         } catch (navError) {
           console.error('Navigation error:', navError);
           // Fallback: redirect trực tiếp nếu navigate không hoạt động
@@ -536,8 +576,12 @@ const AppointmentBooking = () => {
     }
   };
 
-
-  // Computed values: Lấy thông tin service và method đã chọn
+  /**
+   * COMPUTED VALUES: Lấy thông tin service và method đã chọn
+   * BƯỚC 1: Lấy selectedService từ serviceId trong bookingData
+   * BƯỚC 2: Lấy selectedMethod từ collectionMethod trong bookingData
+   * BƯỚC 3: Handle cả string ID và object method
+   */
   const selectedService = bookingData.serviceId ? getServiceById(services, bookingData.serviceId) : null;
   const selectedMethod = bookingData.collectionMethod ?
     (typeof bookingData.collectionMethod === 'string'
@@ -545,7 +589,12 @@ const AppointmentBooking = () => {
       : bookingData.collectionMethod)
     : null;
 
-  // Helper function: Render badge hiển thị loại dịch vụ
+  /**
+   * HELPER FUNCTION: Render badge hiển thị loại dịch vụ
+   * INPUT: serviceType (string) - loại dịch vụ, category (object) - thông tin category
+   * OUTPUT: JSX Badge component
+   * BƯỚC 1: Kiểm tra serviceType để hiển thị badge tương ứng
+   */
   const renderServiceTypeBadge = (serviceType, category) => {
     if (serviceType === 'administrative') {
       return <Badge bg="warning" text="dark">ADN Hành chính</Badge>;
@@ -553,14 +602,20 @@ const AppointmentBooking = () => {
     return <Badge bg="success">ADN Dân sự</Badge>;
   };
 
-  // Helper function: Lấy tên phương thức thu mẫu (với fallback)
+  /**
+   * HELPER FUNCTION: Lấy tên phương thức thu mẫu (với fallback)
+   * INPUT: methodId (string) - ID phương thức, methodInfo (object) - thông tin method
+   * OUTPUT: string - tên phương thức
+   * BƯỚC 1: Ưu tiên lấy tên từ methodInfo nếu có (từ API)
+   * BƯỚC 2: Fallback về mapping cũ cho các ID cố định
+   */
   const getCollectionMethodName = (methodId, methodInfo) => {
-    // Ưu tiên lấy tên từ methodInfo nếu có (từ API)
+    // BƯỚC 1: Ưu tiên lấy tên từ methodInfo nếu có (từ API)
     if (methodInfo && methodInfo.name) {
       return methodInfo.name;
     }
 
-    // Fallback về mapping cũ cho các ID cố định
+    // BƯỚC 2: Fallback về mapping cũ cho các ID cố định
     const methods = {
       '0': 'Tự lấy mẫu tại nhà',
       '1': 'Nhân viên tới nhà lấy mẫu',
@@ -572,7 +627,11 @@ const AppointmentBooking = () => {
     return methods[methodId] || methodId;
   };
 
-  // Helper function: Lấy màu sắc cho badge method
+  /**
+   * HELPER FUNCTION: Lấy màu sắc cho badge method
+   * INPUT: methodId (string) - ID phương thức
+   * OUTPUT: string - tên màu Bootstrap
+   */
   const getMethodColor = (methodId) => {
     const methodColors = {
       'self-sample': 'success',
@@ -585,14 +644,20 @@ const AppointmentBooking = () => {
     return methodColors[methodId] || 'secondary';
   };
 
-  // Helper function: Tạo danh sách 30 ngày tiếp theo (loại trừ Chủ nhật)
+  /**
+   * HELPER FUNCTION: Tạo danh sách 30 ngày tiếp theo (loại trừ Chủ nhật)
+   * OUTPUT: array - danh sách ngày trong format YYYY-MM-DD
+   * BƯỚC 1: Tạo array 30 ngày từ hôm nay
+   * BƯỚC 2: Loại trừ Chủ nhật (getDay() === 0) vì không làm việc
+   * BƯỚC 3: Format thành chuỗi YYYY-MM-DD
+   */
   const getDateOptions = () => {
     const dates = [];
     const today = new Date();
     for (let i = 1; i <= 30; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
-      // Loại trừ Chủ nhật (getDay() === 0) vì không làm việc
+      // BƯỚC 2: Loại trừ Chủ nhật (getDay() === 0) vì không làm việc
       if (date.getDay() !== 0) {
         dates.push(date.toISOString().split('T')[0]);
       }
@@ -600,14 +665,21 @@ const AppointmentBooking = () => {
     return dates;
   };
 
-  // Helper function: Format ngày sang tiếng Việt
+  /**
+   * HELPER FUNCTION: Format ngày sang tiếng Việt
+   * INPUT: dateString (string) - chuỗi ngày
+   * OUTPUT: string - ngày định dạng tiếng Việt
+   */
   const renderDate = (dateString) => {
     if (!dateString) return '';
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     return new Date(dateString).toLocaleDateString('vi-VN', options);
   };
 
-  // Danh sách time slots cho booking (8 slots/ngày, mỗi slot 1 tiếng)
+  /**
+   * CONSTANT DATA: Danh sách time slots cho booking (8 slots/ngày, mỗi slot 1 tiếng)
+   * Sử dụng cho dropdown chọn giờ hẹn
+   */
   const timeSlots = [
     { label: '08:00 - 09:00', value: '08:00' },
     { label: '09:00 - 10:00', value: '09:00' },
@@ -619,11 +691,17 @@ const AppointmentBooking = () => {
     { label: '16:00 - 17:00', value: '16:00' }
   ];
 
-  // Handler: Auto-fill thông tin người tham gia 1 từ thông tin người đặt lịch
+  /**
+   * EVENT HANDLER: Auto-fill thông tin người tham gia 1 từ thông tin người đặt lịch
+   * INPUT: checked (boolean) - trạng thái checkbox
+   * BƯỚC 1: Cập nhật state isParticipant1Customer
+   * BƯỚC 2: Nếu checked = true: Auto-fill thông tin từ customerInfo
+   * BƯỚC 3: Nếu checked = false: Clear thông tin người tham gia 1
+   */
   const handleParticipant1AsCustomer = (checked) => {
     setIsParticipant1Customer(checked);
     if (checked) {
-      // Auto-fill thông tin từ customerInfo
+      // BƯỚC 2: Auto-fill thông tin từ customerInfo
       const updated = [...bookingData.customerInfo.participants];
       updated[0] = {
         ...updated[0],
@@ -643,7 +721,7 @@ const AppointmentBooking = () => {
         }
       }));
     } else {
-      // Clear thông tin người tham gia 1
+      // BƯỚC 3: Clear thông tin người tham gia 1
       const updated = [...bookingData.customerInfo.participants];
       updated[0] = {
         ...updated[0],
@@ -664,6 +742,15 @@ const AppointmentBooking = () => {
     }
   };
 
+  /**
+   * HELPER FUNCTION: Build full address từ các thành phần địa chỉ
+   * INPUT: addressInfo (object) - thông tin địa chỉ chi tiết
+   * OUTPUT: string - địa chỉ đầy đủ
+   * BƯỚC 1: Lấy tên tỉnh/thành phố từ code
+   * BƯỚC 2: Lấy tên quận/huyện từ code
+   * BƯỚC 3: Lấy tên phường/xã từ code
+   * BƯỚC 4: Kết hợp thành địa chỉ đầy đủ
+   */
   const buildFullAddress = ({ addressDetail, ward, district, city }) => {
     const province = getProvinces().find(p => p.code === city)?.name || '';
     const districtName = getDistricts().find(d => d.code === district)?.name || '';
@@ -676,7 +763,7 @@ const AppointmentBooking = () => {
 
   return (
     <div>
-      {/* HEADER SECTION - Banner với tiêu đề và hotline */}
+      {/* HEADER SECTION: Banner với tiêu đề và hotline */}
       <section className="bg-primary text-white py-4">
         <Container>
           <Row className="align-items-center">
@@ -700,7 +787,7 @@ const AppointmentBooking = () => {
       </section>
 
       <Container className="py-5">
-        {/* LOADING STATE - Hiển thị khi đang fetch dữ liệu từ API */}
+        {/* LOADING STATE: Hiển thị khi đang fetch dữ liệu từ API */}
         {loading ? (
           <div className="text-center py-5">
             <div className="spinner-border text-primary" role="status">
@@ -710,7 +797,7 @@ const AppointmentBooking = () => {
           </div>
         ) : (
           <>
-            {/* PROGRESS BAR - Hiển thị tiến độ 4 bước đặt lịch */}
+            {/* PROGRESS BAR: Hiển thị tiến độ 4 bước đặt lịch */}
             <Row className="mb-5">
               <Col>
                 <div className="d-flex justify-content-center align-items-center">
@@ -746,7 +833,7 @@ const AppointmentBooking = () => {
               </Col>
             </Row>
 
-            {/* STEP LABELS - Nhãn mô tả cho từng bước */}
+            {/* STEP LABELS: Nhãn mô tả cho từng bước */}
             <Row className="mt-3">
               <Col className="text-center">
                 <small className={`fw-medium ${currentStep >= 1 ? 'text-primary' : 'text-muted'}`}>
@@ -770,7 +857,7 @@ const AppointmentBooking = () => {
               </Col>
             </Row>
 
-            {/* Step 1: Service Selection */}
+            {/* STEP 1: Service Selection - Chọn loại dịch vụ xét nghiệm */}
             {currentStep === 1 && (
               <>
                 <div className="text-center mb-5">
@@ -778,7 +865,7 @@ const AppointmentBooking = () => {
                   <p className="lead text-muted">Lựa chọn dịch vụ phù hợp với nhu cầu của bạn</p>
                 </div>
 
-                {/* Service Type Comparison */}
+                {/* SERVICE TYPE COMPARISON: So sánh ADN Dân sự vs Hành chính */}
                 <Row className="mb-5">
                   <Col md={6} className="mb-4">
                     <Card
@@ -1030,7 +1117,7 @@ const AppointmentBooking = () => {
               </>
             )}
 
-            {/* Step 2: Collection Method Selection */}
+            {/* STEP 2: Collection Method Selection - Chọn phương thức lấy mẫu */}
             {currentStep === 2 && selectedService && (
               <>
                 <div className="text-center mb-5">
@@ -1041,7 +1128,7 @@ const AppointmentBooking = () => {
                   </div>
                 </div>
 
-                {/* Restriction alerts */}
+                {/* RESTRICTION ALERTS: Cảnh báo về hạn chế phương thức */}
                 {selectedService.category?.hasLegalValue && (
                   <Alert variant="warning" className="mb-4">
                     <i className="bi bi-shield-check me-2"></i>
@@ -1058,6 +1145,7 @@ const AppointmentBooking = () => {
                   </Alert>
                 )}
 
+                {/* METHOD SELECTION: Danh sách các phương thức thu mẫu */}
                 <Row>
                   {enrichedMethods.length > 0 ? (
                     enrichedMethods.map(method => {
@@ -1156,6 +1244,7 @@ const AppointmentBooking = () => {
                   )}
                 </Row>
 
+                {/* NAVIGATION BUTTONS: Nút điều hướng giữa các step */}
                 <Row className="mt-4">
                   <Col>
                     <Button variant="outline-secondary" size="lg" onClick={prevStep}>
@@ -1176,7 +1265,7 @@ const AppointmentBooking = () => {
               </>
             )}
 
-            {/* Step 3: Customer Information & Appointment */}
+            {/* STEP 3: Customer Information & Appointment - Thông tin khách hàng và lịch hẹn */}
             {currentStep === 3 && selectedMethod && (
               <>
                 <div className="text-center mb-5">
@@ -1187,7 +1276,7 @@ const AppointmentBooking = () => {
                 </div>
 
                 <Row>
-                  {/* Customer Information */}
+                  {/* CUSTOMER INFORMATION: Form thông tin người đặt lịch */}
                   <Col lg={6} className="mb-4">
                     <Card className="shadow-sm">
                       <Card.Header className="bg-primary text-white">
@@ -1285,6 +1374,8 @@ const AppointmentBooking = () => {
                               </Form.Control.Feedback>
                             </Col>
                           </Row>
+                          
+                          {/* ADDRESS FORM: Form địa chỉ chi tiết */}
                           <Form.Group>
                             <Row>
                               <Col md={6} className="mb-3">
@@ -1372,9 +1463,8 @@ const AppointmentBooking = () => {
                         </Form>
                       </Card.Body>
                     </Card>
-                    {/* Appointment Date & Time */}
-                    ***
-                    {/* Only show date/time selection if not self-sample */}
+                    
+                    {/* APPOINTMENT DATE & TIME: Chọn ngày và giờ hẹn (chỉ hiển thị nếu không phải self-sample) */}
                     {bookingData.collectionMethod !== 'self-sample' && (
                       <Card className="mb-4 shadow-sm">
                         <Card.Header className="bg-warning text-dark">
@@ -1438,9 +1528,9 @@ const AppointmentBooking = () => {
                         </Card.Body>
                       </Card>
                     )}
-
                   </Col>
-                  {/* Participants Information - Modern Form for 2 people */}
+                  
+                  {/* PARTICIPANTS INFORMATION: Form thông tin người tham gia xét nghiệm */}
                   <Col lg={6}>
                     <Card className="mb-4 shadow-sm">
                       <Card.Header className="bg-info text-white">
@@ -1451,8 +1541,8 @@ const AppointmentBooking = () => {
                       </Card.Header>
                       <Card.Body className="p-4">
                         <Row>
-                          {[0, 1].map((idx) => ( //Add commentMore actionsAdd commentMore actions
-                            < Col md={6} key={idx} className="mb-4" >
+                          {[0, 1].map((idx) => (
+                            <Col md={6} key={idx} className="mb-4">
                               <Card className="h-100 border-0 bg-light">
                                 <Card.Body>
                                   <h6 className="text-primary mb-3">
@@ -1473,6 +1563,8 @@ const AppointmentBooking = () => {
                                       />
                                     )}
                                   </h6>
+                                  
+                                  {/* PARTICIPANT FORM FIELDS: Các trường thông tin người tham gia */}
                                   <Form.Group className="mb-3">
                                     <Form.Label>Họ và tên <span className="text-danger">*</span></Form.Label>
                                     <Form.Control
@@ -1485,7 +1577,7 @@ const AppointmentBooking = () => {
                                         let error = '';
                                         if (!value.trim()) {
                                           error = 'Vui lòng nhập họ và tên.';
-                                        } else if (/[^a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀỂưăạảấầẩẫậắằẳẵặẹẻẽềềểỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪỬỮỰỲỴÝỶỸửữựỳỵỷỹ\s]/.test(value)) {
+                                        } else if (/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(value)) {
                                           error = 'Tên không được chứa số hoặc ký tự đặc biệt.';
                                         } else if (value.trim().split(/\s+/).length < 2) {
                                           error = 'Vui lòng nhập họ & tên đúng và đầy đủ.';
@@ -1500,6 +1592,7 @@ const AppointmentBooking = () => {
                                       {participantErrors?.[idx]}
                                     </Form.Control.Feedback>
                                   </Form.Group>
+                                  
                                   <Form.Group className="mb-3">
                                     <Form.Label>CCCD</Form.Label>
                                     <Form.Control
@@ -1529,7 +1622,8 @@ const AppointmentBooking = () => {
                                       {idNumberErrors[idx]}
                                     </Form.Control.Feedback>
                                   </Form.Group>
-                                  {/* Tuổi (Age) */}
+                                  
+                                  {/* AGE FIELD: Trường tuổi */}
                                   <Form.Group className="mb-3">
                                     <Form.Label>Tuổi <span className="text-danger">*</span></Form.Label>
                                     <Form.Control
@@ -1562,7 +1656,7 @@ const AppointmentBooking = () => {
                                     </Form.Control.Feedback>
                                   </Form.Group>
 
-                                  {/* Giới tính (Gender) */}
+                                  {/* GENDER FIELD: Trường giới tính */}
                                   <Form.Group className="mb-3">
                                     <Form.Label>Giới tính <span className="text-danger">*</span></Form.Label>
                                     <Form.Select
@@ -1577,7 +1671,7 @@ const AppointmentBooking = () => {
                                     </Form.Select>
                                   </Form.Group>
 
-                                  {/* Mối quan hệ (Relationship) */}
+                                  {/* RELATIONSHIP FIELD: Trường mối quan hệ */}
                                   <Form.Label>Mối quan hệ <span className="text-danger">*</span></Form.Label>
                                   <Form.Select
                                     value={bookingData.customerInfo.participants[idx]?.relation || ''}
@@ -1632,6 +1726,8 @@ const AppointmentBooking = () => {
                     </Card>
                   </Col>
                 </Row>
+                
+                {/* NAVIGATION BUTTONS: Nút điều hướng giữa các step */}
                 <Row className="mt-4">
                   <Col>
                     <Button variant="outline-secondary" size="lg" onClick={prevStep}>
@@ -1668,8 +1764,8 @@ const AppointmentBooking = () => {
                 </Row>
               </>
             )}
-            {/* Step 4: Confirmation - Same as before but with updated logic */}
-            {/* //Step 4 Appointment mới */}
+            
+            {/* STEP 4: Confirmation - Xác nhận thông tin đặt lịch */}
             {currentStep === 4 && (
               <>
                 <div className="text-center mb-5">
@@ -1678,6 +1774,8 @@ const AppointmentBooking = () => {
                     Vui lòng kiểm tra lại thông tin trước khi xác nhận đặt lịch
                   </p>
                 </div>
+                
+                {/* CONFIRMATION CARD: Card hiển thị tất cả thông tin đã nhập */}
                 <Card className="shadow-lg">
                   <Card.Header className="bg-primary text-white">
                     <h5 className="mb-0">
@@ -1686,7 +1784,7 @@ const AppointmentBooking = () => {
                     </h5>
                   </Card.Header>
                   <Card.Body className="p-4">
-                    {/* GOM THÔNG TIN DỊCH VỤ & KHÁCH HÀNG VÀ LỊCH HẸN VÀO 1 CHỖ */}
+                    {/* SERVICE & COST INFORMATION: Thông tin dịch vụ và chi phí */}
                     <Row>
                       <Col md={6} className="mb-4">
                         <h6 className="text-primary mb-3">
@@ -1776,7 +1874,9 @@ const AppointmentBooking = () => {
                         </div>
                       </Col>
                     </Row>
-                    < hr />
+                    <hr />
+                    
+                    {/* CUSTOMER INFORMATION: Thông tin khách hàng */}
                     <Row>
                       <Col md={12} className="mb-4">
                         <h6 className="text-primary mb-3">
@@ -1800,6 +1900,8 @@ const AppointmentBooking = () => {
                       </Col>
                     </Row>
                     <hr />
+                    
+                    {/* APPOINTMENT INFORMATION: Thông tin lịch hẹn */}
                     <Row>
                       <Col md={12} className="mb-4">
                         <h6 className="text-primary mb-3">
@@ -1841,6 +1943,8 @@ const AppointmentBooking = () => {
                         )}
                       </Col>
                     </Row>
+                    
+                    {/* PARTICIPANTS INFORMATION: Thông tin người tham gia */}
                     {bookingData.customerInfo.participants.length > 0 && (
                       <Row>
                         <Col md={6} className="mb-3">
@@ -1900,6 +2004,8 @@ const AppointmentBooking = () => {
                       </Row>
                     )}
                     <hr />
+                    
+                    {/* IMPORTANT NOTES: Lưu ý quan trọng */}
                     <Alert variant="info" className="mb-0">
                       <div className="d-flex flex-column align-items-center text-center">
                         <i className="bi bi-info-circle fs-4 mb-3"></i>
@@ -1925,6 +2031,7 @@ const AppointmentBooking = () => {
                   </Card.Body>
                 </Card>
 
+                {/* FINAL NAVIGATION BUTTONS: Nút cuối cùng để xác nhận hoặc quay lại */}
                 <Row className="mt-4">
                   <Col>
                     <Button variant="outline-secondary" size="lg" onClick={prevStep}>
@@ -1943,7 +2050,7 @@ const AppointmentBooking = () => {
         )}
       </Container>
 
-      {/* Quick Contact Support */}
+      {/* QUICK CONTACT SUPPORT: Section hỗ trợ nhanh */}
       <section className="bg-light py-4 mt-5">
         <Container>
           <Row className="align-items-center">
@@ -1973,6 +2080,5 @@ const AppointmentBooking = () => {
       </section>
     </div>
   );
-
 };
 export default AppointmentBooking;
