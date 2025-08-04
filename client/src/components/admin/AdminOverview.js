@@ -1,11 +1,13 @@
 /**
  * COMPONENT: AdminOverview
- * MỤC ĐÍCH: Trang tổng quan dashboard cho admin hiển thị các thống kê và biểu đồ quan trọng
- * CHỨC NĂNG:
- * - Hiển thị các thống kê chính (người dùng, xét nghiệm)
- * - Biểu đồ tăng trưởng người dùng, phân loại xét nghiệm
- * - Thống kê theo tháng
- * - Sử dụng dữ liệu thực từ API
+ * CHỨC NĂNG: Trang tổng quan dashboard cho admin hiển thị các thống kê và biểu đồ quan trọng
+ * LUỒNG HOẠT ĐỘNG:
+ * 1. Tải dữ liệu tổng quan từ API getOverviewReports()
+ * 2. Xử lý và chuẩn bị dữ liệu cho các biểu đồ Chart.js
+ * 3. Hiển thị các thống kê chính (người dùng, xét nghiệm, hoạt động)
+ * 4. Render các biểu đồ: Line chart (tăng trưởng người dùng), Doughnut chart (phương pháp xét nghiệm), Bar chart (thống kê theo tháng)
+ * 5. Hiển thị phân loại người dùng với progress bars
+ * 6. Hiển thị danh sách người dùng đăng ký gần đây
  */
 
 import React, { useState, useEffect } from 'react';
@@ -25,6 +27,7 @@ import {
 } from 'chart.js';
 import { getOverviewReports } from '../../services/api';
 
+// REGISTER CHART.JS COMPONENTS: Đăng ký các component cần thiết cho Chart.js
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -38,58 +41,69 @@ ChartJS.register(
 );
 
 const AdminOverview = ({ user }) => {
+  // STATE QUẢN LÝ DỮ LIỆU DASHBOARD
   const [dashboardData, setDashboardData] = useState({
     totals: {
-      tests: 0,
-      users: 0,
-      customers: 0,
-      staff: 0,
-      managers: 0,
-      admins: 0,
-      activeUsers: 0,
-      inactiveUsers: 0
+      tests: 0,           // Tổng số xét nghiệm
+      users: 0,           // Tổng số người dùng
+      customers: 0,       // Tổng số khách hàng
+      staff: 0,           // Tổng số nhân viên
+      managers: 0,        // Tổng số quản lý
+      admins: 0,          // Tổng số admin
+      activeUsers: 0,     // Người dùng hoạt động
+      inactiveUsers: 0    // Người dùng không hoạt động
     },
     monthly: {
-      tests: [],
-      users: [],
-      customers: []
+      tests: [],          // Dữ liệu xét nghiệm theo tháng
+      users: [],          // Dữ liệu người dùng theo tháng
+      customers: []       // Dữ liệu khách hàng theo tháng
     },
     testMethods: {
-      popular: [],
-      total: 0
+      popular: [],        // Phương pháp xét nghiệm phổ biến
+      total: 0            // Tổng số loại phương pháp
     },
     recentActivity: {
-      tests: 0,
-      users: 0,
-      testGrowth: 0,
-      userGrowth: 0,
-      newUsers: []
+      tests: 0,           // Số xét nghiệm gần đây
+      users: 0,           // Số người dùng gần đây
+      testGrowth: 0,      // Tăng trưởng xét nghiệm
+      userGrowth: 0,      // Tăng trưởng người dùng
+      newUsers: []        // Danh sách người dùng mới
     },
     userBreakdown: {
-      customers: { count: 0, percentage: 0 },
-      staff: { count: 0, percentage: 0 },
-      managers: { count: 0, percentage: 0 },
-      admins: { count: 0, percentage: 0 },
-      active: { count: 0, percentage: 0 },
-      inactive: { count: 0, percentage: 0 }
+      customers: { count: 0, percentage: 0 },    // Phân loại khách hàng
+      staff: { count: 0, percentage: 0 },        // Phân loại nhân viên
+      managers: { count: 0, percentage: 0 },     // Phân loại quản lý
+      admins: { count: 0, percentage: 0 },       // Phân loại admin
+      active: { count: 0, percentage: 0 },       // Người dùng hoạt động
+      inactive: { count: 0, percentage: 0 }      // Người dùng không hoạt động
     }
   });
   
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  // STATE QUẢN LÝ UI
+  const [loading, setLoading] = useState(true); // Loading state
+  const [error, setError] = useState(null); // Error state
 
-  // Load overview data
+  /**
+   * EFFECT: Load dữ liệu tổng quan từ API
+   * BƯỚC 1: Gọi API getOverviewReports() để lấy dữ liệu dashboard
+   * BƯỚC 2: Cập nhật state dashboardData với dữ liệu nhận được
+   * BƯỚC 3: Xử lý lỗi nếu có
+   * BƯỚC 4: Set loading state thành false
+   */
   useEffect(() => {
     const loadOverviewData = async () => {
       try {
         setLoading(true);
         setError(null);
+        // BƯỚC 1: Gọi API getOverviewReports()
         const data = await getOverviewReports();
+        // BƯỚC 2: Cập nhật state dashboardData với dữ liệu nhận được
         setDashboardData(data);
       } catch (err) {
+        // BƯỚC 3: Xử lý lỗi nếu có
         setError(err.message);
-        console.error('Error loading overview data:', err);
       } finally {
+        // BƯỚC 4: Set loading state thành false
         setLoading(false);
       }
     };
@@ -97,7 +111,12 @@ const AdminOverview = ({ user }) => {
     loadOverviewData();
   }, []);
 
-  // Chart configurations
+  /**
+   * CHART CONFIGURATION: Dữ liệu cho biểu đồ tăng trưởng người dùng (Line Chart)
+   * BƯỚC 1: Lấy labels từ dữ liệu monthly.users (12 tháng gần nhất)
+   * BƯỚC 2: Lấy data từ count của mỗi tháng
+   * BƯỚC 3: Cấu hình màu sắc và style cho line chart
+   */
   const userGrowthData = {
     labels: dashboardData.monthly.users?.slice(0, 12).reverse().map(item => item.monthName) || [],
     datasets: [
@@ -111,22 +130,34 @@ const AdminOverview = ({ user }) => {
     ]
   };
 
+  /**
+   * CHART CONFIGURATION: Dữ liệu cho biểu đồ phương pháp xét nghiệm (Doughnut Chart)
+   * BƯỚC 1: Lấy labels từ tên phương pháp phổ biến (top 5)
+   * BƯỚC 2: Lấy data từ số lượng sử dụng mỗi phương pháp
+   * BƯỚC 3: Cấu hình màu sắc cho từng phần của doughnut
+   */
   const testMethodsData = {
     labels: dashboardData.testMethods.popular?.slice(0, 5).map(item => item.name) || [],
     datasets: [
       {
         data: dashboardData.testMethods.popular?.slice(0, 5).map(item => item.count) || [],
         backgroundColor: [
-          '#dc3545',
-          '#fd7e14', 
-          '#ffc107',
-          '#198754',
-          '#6f42c1'
+          '#dc3545',  // Đỏ
+          '#fd7e14',  // Cam
+          '#ffc107',  // Vàng
+          '#198754',  // Xanh lá
+          '#6f42c1'   // Tím
         ]
       }
     ]
   };
 
+  /**
+   * CHART CONFIGURATION: Dữ liệu cho biểu đồ thống kê theo tháng (Bar Chart)
+   * BƯỚC 1: Lấy labels từ tên tháng (6 tháng gần nhất)
+   * BƯỚC 2: Tạo 2 datasets: xét nghiệm và người dùng mới
+   * BƯỚC 3: Cấu hình màu sắc cho từng dataset
+   */
   const monthlyStatsData = {
     labels: dashboardData.monthly.tests?.slice(0, 6).reverse().map(item => item.monthName) || [],
     datasets: [
@@ -143,6 +174,11 @@ const AdminOverview = ({ user }) => {
     ]
   };
 
+  /**
+   * CONSTANT DATA: Cấu hình chung cho tất cả biểu đồ
+   * BƯỚC 1: Set responsive và maintainAspectRatio
+   * BƯỚC 2: Cấu hình legend position
+   */
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -155,7 +191,7 @@ const AdminOverview = ({ user }) => {
 
   return (
     <div>
-      {/* Error Alert */}
+      {/* ERROR ALERT: Hiển thị lỗi nếu có */}
       {error && (
         <Alert variant="danger" className="mb-4">
           <i className="bi bi-exclamation-triangle me-2"></i>
@@ -163,7 +199,7 @@ const AdminOverview = ({ user }) => {
         </Alert>
       )}
 
-      {/* Loading State */}
+      {/* LOADING STATE: Hiển thị loading trong khi tải dữ liệu */}
       {loading && (
         <div className="text-center py-5">
           <div className="spinner-border text-danger" role="status">
@@ -173,10 +209,12 @@ const AdminOverview = ({ user }) => {
         </div>
       )}
 
-      {/* Key Metrics Cards */}
+      {/* MAIN CONTENT: Hiển thị dashboard khi đã tải xong */}
       {!loading && (
         <>
+          {/* KEY METRICS CARDS: Các thống kê chính */}
           <Row className="mb-4">
+            {/* CARD 1: Tổng người dùng */}
             <Col lg={3} md={6} className="mb-3">
               <Card className="border-0 shadow-sm h-100">
                 <Card.Body>
@@ -199,6 +237,7 @@ const AdminOverview = ({ user }) => {
               </Card>
             </Col>
 
+            {/* CARD 2: Tổng xét nghiệm */}
             <Col lg={3} md={6} className="mb-3">
               <Card className="border-0 shadow-sm h-100">
                 <Card.Body>
@@ -221,6 +260,7 @@ const AdminOverview = ({ user }) => {
               </Card>
             </Col>
 
+            {/* CARD 3: Người dùng hoạt động */}
             <Col lg={3} md={6} className="mb-3">
               <Card className="border-0 shadow-sm h-100">
                 <Card.Body>
@@ -242,6 +282,7 @@ const AdminOverview = ({ user }) => {
               </Card>
             </Col>
 
+            {/* CARD 4: Đăng ký gần đây */}
             <Col lg={3} md={6} className="mb-3">
               <Card className="border-0 shadow-sm h-100">
                 <Card.Body>
@@ -262,8 +303,9 @@ const AdminOverview = ({ user }) => {
             </Col>
           </Row>
 
-          {/* Charts Row */}
+          {/* CHARTS ROW: Biểu đồ tăng trưởng và phương pháp xét nghiệm */}
           <Row className="mb-4">
+            {/* LINE CHART: Tăng trưởng người dùng theo tháng */}
             <Col lg={8} className="mb-3">
               <Card className="border-0 shadow-sm h-100">
                 <Card.Header className="bg-white">
@@ -280,6 +322,7 @@ const AdminOverview = ({ user }) => {
               </Card>
             </Col>
 
+            {/* DOUGHNUT CHART: Phương pháp xét nghiệm phổ biến */}
             <Col lg={4} className="mb-3">
               <Card className="border-0 shadow-sm h-100">
                 <Card.Header className="bg-white">
@@ -297,8 +340,9 @@ const AdminOverview = ({ user }) => {
             </Col>
           </Row>
 
-          {/* Monthly Statistics */}
+          {/* MONTHLY STATISTICS: Thống kê theo tháng và phân loại người dùng */}
           <Row className="mb-4">
+            {/* BAR CHART: Thống kê theo tháng */}
             <Col lg={8} className="mb-3">
               <Card className="border-0 shadow-sm">
                 <Card.Header className="bg-white">
@@ -315,6 +359,7 @@ const AdminOverview = ({ user }) => {
               </Card>
             </Col>
 
+            {/* USER BREAKDOWN: Phân loại người dùng với progress bars */}
             <Col lg={4} className="mb-3">
               <Card className="border-0 shadow-sm h-100">
                 <Card.Header className="bg-white">
@@ -324,6 +369,7 @@ const AdminOverview = ({ user }) => {
                   </h5>
                 </Card.Header>
                 <Card.Body>
+                  {/* Khách hàng */}
                   <div className="mb-3">
                     <div className="d-flex justify-content-between align-items-center mb-2">
                       <span>Khách hàng</span>
@@ -332,6 +378,7 @@ const AdminOverview = ({ user }) => {
                     <ProgressBar variant="success" now={dashboardData.userBreakdown.customers.percentage} />
                   </div>
 
+                  {/* Nhân viên */}
                   <div className="mb-3">
                     <div className="d-flex justify-content-between align-items-center mb-2">
                       <span>Nhân viên</span>
@@ -340,6 +387,7 @@ const AdminOverview = ({ user }) => {
                     <ProgressBar variant="info" now={dashboardData.userBreakdown.staff.percentage} />
                   </div>
 
+                  {/* Quản lý */}
                   <div className="mb-3">
                     <div className="d-flex justify-content-between align-items-center mb-2">
                       <span>Quản lý</span>
@@ -348,6 +396,7 @@ const AdminOverview = ({ user }) => {
                     <ProgressBar variant="warning" now={dashboardData.userBreakdown.managers.percentage} />
                   </div>
 
+                  {/* Admin */}
                   <div className="mb-3">
                     <div className="d-flex justify-content-between align-items-center mb-2">
                       <span>Admin</span>
@@ -358,6 +407,7 @@ const AdminOverview = ({ user }) => {
 
                   <hr />
 
+                  {/* Hoạt động */}
                   <div className="mb-3">
                     <div className="d-flex justify-content-between align-items-center mb-2">
                       <span>Hoạt động</span>
@@ -366,6 +416,7 @@ const AdminOverview = ({ user }) => {
                     <ProgressBar variant="primary" now={dashboardData.userBreakdown.active.percentage} />
                   </div>
 
+                  {/* Không hoạt động */}
                   <div>
                     <div className="d-flex justify-content-between align-items-center mb-2">
                       <span>Không hoạt động</span>
@@ -378,7 +429,7 @@ const AdminOverview = ({ user }) => {
             </Col>
           </Row>
 
-          {/* Recent Activity Summary */}
+          {/* RECENT ACTIVITY SUMMARY: Tổng quan hoạt động gần đây */}
           <Row className="mb-4">
             <Col>
               <Card className="border-0 shadow-sm">
@@ -418,7 +469,7 @@ const AdminOverview = ({ user }) => {
             </Col>
           </Row>
 
-          {/* Recent New Users */}
+          {/* RECENT NEW USERS: Danh sách người dùng đăng ký gần đây */}
           <Row>
             <Col>
               <Card className="border-0 shadow-sm">
