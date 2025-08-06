@@ -201,76 +201,7 @@ const MyAppointments = ({ user }) => {
   // PHẦN MAPPING TIMELINE VÀ TRẠNG THÁI
   // ========================================
 
-  /**
-   * Lấy các bước timeline phù hợp dựa trên phương thức thử nghiệm
-   * Các phương thức khác nhau có các luồng làm việc khác nhau (tự thu mẫu tại nhà vs thăm viện)
-   * @param {Object} method - Đối tượng phương thức chứa id và tên
-   * @returns {Array} Mảng các bước trạng thái theo thứ tự chỉ số
-   */
-  const getTimelineForMethod = (method) => {
-    // Timeline mặc định nếu không có phương thức nào được cung cấp
-    if (!method || !method.id) return ['CREATED', 'PENDING_PAYMENT', 'PAYMENT_FAILED', 'BOOKED', 'SAMPLE_COLLECTED', 'RESULT_PENDING', 'COMPLETE', 'SENT_RESULT'];
 
-    const methodId = method.id;
-    const methodName = method.name?.toLowerCase() || '';
-
-    // Phương thức tự thu mẫu (Method ID: 0) - Tự thu mẫu tại nhà
-    // Timeline: CREATED → PENDING_PAYMENT → PAYMENT_FAILED → BOOKED → KIT_PREPARED → KIT_SENT → KIT_RECEIVED → SELF_COLLECTED → KIT_RETURNED → SAMPLE_RECEIVED → SAMPLE_COLLECTED → RESULT_PENDING → COMPLETE → SENT_RESULT
-    if (methodId === '0' || methodName.includes('tự') || methodName.includes('self') || methodName.includes('kit')) {
-      return [
-        'CREATED',
-        'PENDING_PAYMENT',
-        'PAYMENT_FAILED',
-        'BOOKED',
-        'KIT_PREPARED',
-        'KIT_SENT',
-        'KIT_RECEIVED',
-        'SELF_COLLECTED',
-        'KIT_RETURNED',
-        'SAMPLE_RECEIVED',
-        'SAMPLE_COLLECTED',
-        'RESULT_PENDING',
-        'COMPLETE',
-        'SENT_RESULT'
-      ];
-    }
-
-    // Phương thức thăm viện (Method ID: 1) - Nhân viên thăm nhà
-    // Timeline: CREATED → PENDING_PAYMENT → PAYMENT_FAILED → BOOKED → STAFF_ASSIGNED → SAMPLE_RECEIVED → SAMPLE_COLLECTED → RESULT_PENDING → COMPLETE → SENT_RESULT
-    if (methodId === '1' || methodName.includes('tại nhà') || methodName.includes('home') || methodName.includes('visit')) {
-      return [
-        'CREATED',
-        'PENDING_PAYMENT',
-        'PAYMENT_FAILED',
-        'BOOKED',
-        'STAFF_ASSIGNED',
-        'SAMPLE_RECEIVED',
-        'SAMPLE_COLLECTED',
-        'RESULT_PENDING',
-        'COMPLETE',
-        'SENT_RESULT'
-      ];
-    }
-
-    // Phương thức thăm viện (Method ID: 2) - Lấy mẫu tại viện/cơ sở
-    // Timeline: CREATED → PENDING_PAYMENT → PAYMENT_FAILED → BOOKED → SAMPLE_RECEIVED → SAMPLE_COLLECTED → RESULT_PENDING → COMPLETE → SENT_RESULT
-    if (methodId === '2' || methodName.includes('tại lab') || methodName.includes('cơ sở') || methodName.includes('lab') || methodName.includes('facility')) {
-      return [
-        'CREATED',
-        'PENDING_PAYMENT',
-        'PAYMENT_FAILED',
-        'BOOKED',
-        'SAMPLE_RECEIVED',
-        'SAMPLE_COLLECTED',
-        'RESULT_PENDING',
-        'COMPLETE',
-        'SENT_RESULT'
-      ];
-    }
-
-    // Timeline mặc định nếu không có khớp nào được tìm thấy
-    return ['CREATED', 'PENDING_PAYMENT', 'PAYMENT_FAILED', 'BOOKED', 'SAMPLE_COLLECTED', 'RESULT_PENDING', 'COMPLETE', 'SENT_RESULT'];
-  };
 
   /**
    * Ánh xạ trạng thái nội bộ sang trạng thái hiển thị cho UI
@@ -291,68 +222,29 @@ const MyAppointments = ({ user }) => {
       return 'cancelled';
     }
 
-    // Trích xuất thông tin phương thức để ánh xạ trạng thái
-    const methodId = method?.id;
-    const methodName = method?.name?.toLowerCase() || '';
-
-    // Phương thức tự thu mẫu (Method ID: 0) - Người dùng thu mẫu tại nhà
-    if (methodId === '0' || methodName.includes('tự') || methodName.includes('self') || methodName.includes('kit')) {
-      // Trạng thái đã xác nhận: Các bước đầu tiên của quá trình
-      if (['CREATED', 'PENDING_PAYMENT', 'PAYMENT_FAILED', 'BOOKED'].includes(currentStatus)) {
-        return 'confirmed';
-      }
-      // Trạng thái đang thực hiện: Các bước xử lý hoạt động
-      else if (['KIT_PREPARED', 'KIT_SENT', 'KIT_RECEIVED', 'SELF_COLLECTED', 'KIT_RETURNED', 'SAMPLE_RECEIVED', 'SAMPLE_COLLECTED', 'RESULT_PENDING'].includes(currentStatus)) {
-        return 'in-progress';
-      }
-      // Trạng thái hoàn thành: Bước cuối cùng
-      else {
-        return 'completed';
-      }
+    // Phân loại theo luồng status mới
+    // Tab 'confirmed': Các trạng thái ban đầu
+    if (['CREATED', 'PENDING_PAYMENT', 'PAYMENT_FAILED', 'BOOKED', 'PREPARED'].includes(currentStatus)) {
+      return 'confirmed';
+    }
+    
+    // Tab 'in-progress': Các trạng thái đang xử lý
+    if (['KIT_PREPARED', 'KIT_SENT', 'KIT_RECEIVED', 'KIT_RETURNED', 'SAMPLE_RECEIVED', 'STAFF_ASSIGNED', 'SAMPLE_COLLECTED', 'RESULT_PENDING', 'PAYMENT_CONFIRMED'].includes(currentStatus)) {
+      return 'in-progress';
+    }
+    
+    // Tab 'completed': Các trạng thái hoàn thành
+    if (['COMPLETE', 'SENT_RESULT'].includes(currentStatus)) {
+      return 'completed';
+    }
+    
+    // Tab 'cancelled': Các trạng thái hủy/hết hạn
+    if (['CANCELLED', 'EXPIRED'].includes(currentStatus)) {
+      return 'cancelled';
     }
 
-    // Phương thức thăm viện (Method ID: 1) - Nhân viên thăm nhà
-    else if (methodId === '1' || methodName.includes('tại nhà') || methodName.includes('home') || methodName.includes('visit')) {
-      // Trạng thái đã xác nhận: Các bước đầu tiên
-      if (['CREATED', 'PENDING_PAYMENT', 'PAYMENT_FAILED', 'BOOKED'].includes(currentStatus)) {
-        return 'confirmed';
-      }
-      // Trạng thái đang thực hiện: Xử lý hoạt động
-      else if (['STAFF_ASSIGNED', 'SAMPLE_RECEIVED', 'SAMPLE_COLLECTED', 'RESULT_PENDING'].includes(currentStatus)) {
-        return 'in-progress';
-      }
-      // Trạng thái hoàn thành: Bước cuối cùng
-      else {
-        return 'completed';
-      }
-    }
-
-    // Phương thức thăm viện (Method ID: 2) - Người dùng thăm viện cơ sở
-    else if (methodId === '2' || methodName.includes('tại lab') || methodName.includes('cơ sở') || methodName.includes('lab') || methodName.includes('facility')) {
-      // Trạng thái đã xác nhận: Các bước đầu tiên
-      if (['CREATED', 'PENDING_PAYMENT', 'PAYMENT_FAILED', 'BOOKED'].includes(currentStatus)) {
-        return 'confirmed';
-      }
-      // Trạng thái đang thực hiện: Xử lý hoạt động
-      else if (['SAMPLE_RECEIVED', 'SAMPLE_COLLECTED', 'RESULT_PENDING'].includes(currentStatus)) {
-        return 'in-progress';
-      }
-      // Trạng thái hoàn thành: Bước cuối cùng
-      else {
-        return 'completed';
-      }
-    }
-
-    // Ánh xạ mặc định cho các phương thức không xác định
-    else {
-      if (['SAMPLE_COLLECTED', 'SAMPLE_PROCESSING', 'RESULT_PENDING', 'KIT_RETURNED', 'SAMPLE_RECEIVED', 'SELF_COLLECTED'].includes(currentStatus)) {
-        return 'in-progress';
-      } else if (['CREATED', 'PENDING_PAYMENT', 'PAYMENT_FAILED', 'BOOKED', 'KIT_PREPARED', 'KIT_SENT', 'KIT_RECEIVED', 'STAFF_ASSIGNED'].includes(currentStatus)) {
-        return 'confirmed';
-      } else {
-        return 'completed';
-      }
-    }
+    // Mặc định trả về 'confirmed' cho các trạng thái không xác định
+    return 'confirmed';
   };
 
   // ========================================
@@ -1355,7 +1247,7 @@ const MyAppointments = ({ user }) => {
             disabled={!description.trim()}
             onClick={async () => {
               try {
-                // Cuộc gọi API để thêm lịch sử booking
+                // Gọi API để thêm vào lịch sử booking
                 await addBookingHistory({
                   bookingId: selectedReceiveAppointmentId,
                   status: 'KIT_RECEIVED',
@@ -1427,7 +1319,7 @@ const MyAppointments = ({ user }) => {
             variant="success"
             onClick={async () => {
               try {
-                // Cuộc gọi API để thêm lịch sử booking
+                // Gọi API để thêm vào lịch sử booking
                 await addBookingHistory({
                   bookingId: selectedSendSampleAppointmentId,
                   status: 'KIT_RETURNED',
