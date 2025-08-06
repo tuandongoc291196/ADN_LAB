@@ -211,18 +211,18 @@ const MyAppointments = ({ user }) => {
    */
   const getTimelineForMethod = (method) => {
     // Timeline mặc định nếu không có phương thức nào được cung cấp
-    if (!method || !method.id) return ['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'SAMPLE_COLLECTED', 'RESULT_PENDING', 'COMPLETE'];
+    if (!method || !method.id) return ['CREATED', 'PENDING_PAYMENT', 'PAYMENT_FAILED', 'BOOKED', 'SAMPLE_COLLECTED', 'RESULT_PENDING', 'COMPLETE', 'SENT_RESULT'];
     
     const methodId = method.id;
     const methodName = method.name?.toLowerCase() || '';
     
     // Phương thức tự thu mẫu (Method ID: 0) - Tự thu mẫu tại nhà
-    // Timeline: CREATED → PENDING_PAYMENT → PAYMENT_CONFIRMED → BOOKED → KIT_PREPARED → KIT_SENT → KIT_RECEIVED → SELF_COLLECTED → KIT_RETURNED → SAMPLE_RECEIVED → SAMPLE_COLLECTED → RESULT_PENDING → COMPLETE
+    // Timeline: CREATED → PENDING_PAYMENT → PAYMENT_FAILED → BOOKED → KIT_PREPARED → KIT_SENT → KIT_RECEIVED → SELF_COLLECTED → KIT_RETURNED → SAMPLE_RECEIVED → SAMPLE_COLLECTED → RESULT_PENDING → COMPLETE → SENT_RESULT
     if (methodId === '0' || methodName.includes('tự') || methodName.includes('self') || methodName.includes('kit')) {
       return [
         'CREATED',
         'PENDING_PAYMENT',
-        'PAYMENT_CONFIRMED',
+        'PAYMENT_FAILED',
         'BOOKED',
         'KIT_PREPARED',
         'KIT_SENT',
@@ -232,41 +232,46 @@ const MyAppointments = ({ user }) => {
         'SAMPLE_RECEIVED',
         'SAMPLE_COLLECTED',
         'RESULT_PENDING',
-        'COMPLETE'
+        'COMPLETE',
+        'SENT_RESULT'
       ];
     }
     
     // Phương thức thăm viện (Method ID: 1) - Nhân viên thăm nhà
-    // Timeline: CREATED → PENDING_PAYMENT → BOOKED → STAFF_ASSIGNED → SAMPLE_RECEIVED → SAMPLE_COLLECTED → RESULT_PENDING → COMPLETE
+    // Timeline: CREATED → PENDING_PAYMENT → PAYMENT_FAILED → BOOKED → STAFF_ASSIGNED → SAMPLE_RECEIVED → SAMPLE_COLLECTED → RESULT_PENDING → COMPLETE → SENT_RESULT
     if (methodId === '1' || methodName.includes('tại nhà') || methodName.includes('home') || methodName.includes('visit')) {
       return [
         'CREATED',
         'PENDING_PAYMENT',
+        'PAYMENT_FAILED',
         'BOOKED',
         'STAFF_ASSIGNED',
         'SAMPLE_RECEIVED',
         'SAMPLE_COLLECTED',
         'RESULT_PENDING',
-        'COMPLETE'
+        'COMPLETE',
+        'SENT_RESULT'
       ];
     }
     
     // Phương thức thăm viện (Method ID: 2) - Lấy mẫu tại viện/cơ sở
-    // Timeline: CREATED → PENDING_PAYMENT → BOOKED → SAMPLE_RECEIVED → SAMPLE_COLLECTED → RESULT_PENDING → COMPLETE
+    // Timeline: CREATED → PENDING_PAYMENT → PAYMENT_FAILED → BOOKED → SAMPLE_RECEIVED → SAMPLE_COLLECTED → RESULT_PENDING → COMPLETE → SENT_RESULT
     if (methodId === '2' || methodName.includes('tại lab') || methodName.includes('cơ sở') || methodName.includes('lab') || methodName.includes('facility')) {
       return [
         'CREATED',
         'PENDING_PAYMENT',
+        'PAYMENT_FAILED',
         'BOOKED',
         'SAMPLE_RECEIVED',
         'SAMPLE_COLLECTED',
         'RESULT_PENDING',
-        'COMPLETE'
+        'COMPLETE',
+        'SENT_RESULT'
       ];
     }
     
     // Timeline mặc định nếu không có khớp nào được tìm thấy
-    return ['CREATED', 'PENDING_PAYMENT', 'BOOKED', 'SAMPLE_COLLECTED', 'RESULT_PENDING', 'COMPLETE'];
+    return ['CREATED', 'PENDING_PAYMENT', 'PAYMENT_FAILED', 'BOOKED', 'SAMPLE_COLLECTED', 'RESULT_PENDING', 'COMPLETE', 'SENT_RESULT'];
   };
 
   /**
@@ -281,7 +286,7 @@ const MyAppointments = ({ user }) => {
     if (!currentStatus) return 'confirmed';
     
     // Xử lý các trạng thái đặc biệt trên logic phương thức
-    if (currentStatus === 'COMPLETED' || currentStatus === 'COMPLETE') {
+    if (currentStatus === 'COMPLETED' || currentStatus === 'COMPLETE' || currentStatus === 'SENT_RESULT') {
       return 'completed';
     }
     if (currentStatus === 'CANCELLED' || currentStatus === 'EXPIRED') {
@@ -294,78 +299,59 @@ const MyAppointments = ({ user }) => {
     
     // Phương thức tự thu mẫu (Method ID: 0) - Người dùng thu mẫu tại nhà
     if (methodId === '0' || methodName.includes('tự') || methodName.includes('self') || methodName.includes('kit')) {
-      console.log('MyAppointments - processing self-sample method');
-      
       // Trạng thái đã xác nhận: Các bước đầu tiên của quá trình
-      if (['CREATED', 'PENDING_PAYMENT', 'PAYMENT_CONFIRMED', 'BOOKED'].includes(currentStatus)) {
-        console.log('MyAppointments - self-sample returning confirmed for status:', currentStatus);
+      if (['CREATED', 'PENDING_PAYMENT', 'PAYMENT_FAILED', 'BOOKED'].includes(currentStatus)) {
         return 'confirmed';
       }
       // Trạng thái đang thực hiện: Các bước xử lý hoạt động
       else if (['KIT_PREPARED', 'KIT_SENT', 'KIT_RECEIVED', 'SELF_COLLECTED', 'KIT_RETURNED', 'SAMPLE_RECEIVED', 'SAMPLE_COLLECTED', 'RESULT_PENDING'].includes(currentStatus)) {
-        console.log('MyAppointments - self-sample returning in-progress for status:', currentStatus);
         return 'in-progress';
       }
       // Trạng thái hoàn thành: Bước cuối cùng
       else {
-        console.log('MyAppointments - self-sample returning completed for status:', currentStatus);
         return 'completed';
       }
     }
     
     // Phương thức thăm viện (Method ID: 1) - Nhân viên thăm nhà
     else if (methodId === '1' || methodName.includes('tại nhà') || methodName.includes('home') || methodName.includes('visit')) {
-      console.log('MyAppointments - processing home-visit method');
-      
       // Trạng thái đã xác nhận: Các bước đầu tiên
-      if (['CREATED', 'PENDING_PAYMENT', 'BOOKED'].includes(currentStatus)) {
-        console.log('MyAppointments - home-visit returning confirmed for status:', currentStatus);
+      if (['CREATED', 'PENDING_PAYMENT', 'PAYMENT_FAILED', 'BOOKED'].includes(currentStatus)) {
         return 'confirmed';
       }
       // Trạng thái đang thực hiện: Xử lý hoạt động
       else if (['STAFF_ASSIGNED', 'SAMPLE_RECEIVED', 'SAMPLE_COLLECTED', 'RESULT_PENDING'].includes(currentStatus)) {
-        console.log('MyAppointments - home-visit returning in-progress for status:', currentStatus);
         return 'in-progress';
       }
       // Trạng thái hoàn thành: Bước cuối cùng
       else {
-        console.log('MyAppointments - home-visit returning completed for status:', currentStatus);
         return 'completed';
       }
     }
     
     // Phương thức thăm viện (Method ID: 2) - Người dùng thăm viện cơ sở
     else if (methodId === '2' || methodName.includes('tại lab') || methodName.includes('cơ sở') || methodName.includes('lab') || methodName.includes('facility')) {
-      console.log('MyAppointments - processing lab-visit method');
-      
       // Trạng thái đã xác nhận: Các bước đầu tiên
-      if (['CREATED', 'PENDING_PAYMENT', 'BOOKED'].includes(currentStatus)) {
-        console.log('MyAppointments - lab-visit returning confirmed for status:', currentStatus);
+      if (['CREATED', 'PENDING_PAYMENT', 'PAYMENT_FAILED', 'BOOKED'].includes(currentStatus)) {
         return 'confirmed';
       }
       // Trạng thái đang thực hiện: Xử lý hoạt động
       else if (['SAMPLE_RECEIVED', 'SAMPLE_COLLECTED', 'RESULT_PENDING'].includes(currentStatus)) {
-        console.log('MyAppointments - lab-visit returning in-progress for status:', currentStatus);
         return 'in-progress';
       }
       // Trạng thái hoàn thành: Bước cuối cùng
       else {
-        console.log('MyAppointments - lab-visit returning completed for status:', currentStatus);
         return 'completed';
       }
     }
     
     // Ánh xạ mặc định cho các phương thức không xác định
     else {
-      console.log('MyAppointments - processing default method');
       if (['SAMPLE_COLLECTED', 'SAMPLE_PROCESSING', 'RESULT_PENDING', 'KIT_RETURNED', 'SAMPLE_RECEIVED', 'SELF_COLLECTED'].includes(currentStatus)) {
-        console.log('MyAppointments - default returning in-progress for status:', currentStatus);
         return 'in-progress';
-      } else if (['CREATED', 'PENDING_PAYMENT', 'PAYMENT_CONFIRMED', 'BOOKED', 'KIT_PREPARED', 'KIT_SENT', 'KIT_RECEIVED', 'STAFF_ASSIGNED'].includes(currentStatus)) {
-        console.log('MyAppointments - default returning confirmed for status:', currentStatus);
+      } else if (['CREATED', 'PENDING_PAYMENT', 'PAYMENT_FAILED', 'BOOKED', 'KIT_PREPARED', 'KIT_SENT', 'KIT_RECEIVED', 'STAFF_ASSIGNED'].includes(currentStatus)) {
         return 'confirmed';
       } else {
-        console.log('MyAppointments - default returning completed for status:', currentStatus);
         return 'completed';
       }
     }
@@ -381,61 +367,7 @@ const MyAppointments = ({ user }) => {
    * @param {Object} booking - Đối tượng booking với dữ liệu phương thức và lịch sử
    * @returns {number} Phần trăm tiến độ (0-100)
    */
-  const calculateProgress = (booking) => {
-    // Trả về 0 nếu không có booking hoặc dữ liệu phương thức
-    if (!booking || !booking.method) return 0;
 
-    // Lấy timeline đầy đủ cho loại phương thức này
-    const fullTimelineSteps = getTimelineForMethod(booking.method);
-    
-    // Sắp xếp lịch sử theo ngày tạo (cũ nhất trước)
-    const history = booking.bookingHistories_on_booking?.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)) || [];
-    
-    // Lấy trạng thái gần đây nhất từ lịch sử (bản ghi gần nhất)
-    const currentStatus = history.length > 0 ? history.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))[0].status : null;
-    
-    console.log('calculateProgress - booking:', booking.id, 'currentStatus:', currentStatus, 'timeline:', fullTimelineSteps);
-    
-    // Khởi tạo biến tiến độ
-    let progress = 0;
-    
-    // Xử lý các trường hợp đặc biệt
-    if (currentStatus === 'COMPLETED' || currentStatus === 'COMPLETE') {
-      // Nếu hoàn thành, tiến độ là 100%
-      progress = 100;
-    } else if (currentStatus === 'CANCELLED' || currentStatus === 'EXPIRED') {
-      // Nếu hủy/hết hạn, tiến độ là 0%
-      progress = 0;
-    } else if (currentStatus) {
-      // Tìm trạng thái hiện tại trong timeline của chúng ta
-      const currentStepIndex = fullTimelineSteps.indexOf(currentStatus);
-      
-      if (currentStepIndex !== -1) {
-        // Nếu trạng thái được tìm thấy trong timeline, tính toán tiến độ dựa trên vị trí
-        progress = ((currentStepIndex + 1) / fullTimelineSteps.length) * 100;
-      } else {
-        // Nếu trạng thái không được tìm thấy trong timeline, tìm trạng thái gần nhất đứng sau trạng thái hiện tại
-        const allStatuses = Object.keys({
-          CREATED: 1, PENDING_PAYMENT: 1, PAYMENT_CONFIRMED: 1, BOOKED: 1, KIT_PREPARED: 1, KIT_SENT: 1, KIT_RECEIVED: 1, 
-          SELF_COLLECTED: 1, KIT_RETURNED: 1, STAFF_ASSIGNED: 1, SAMPLE_RECEIVED: 1, SAMPLE_COLLECTED: 1, 
-          RESULT_PENDING: 1, COMPLETE: 1
-        });
-        const currentStatusIndex = allStatuses.indexOf(currentStatus);
-        
-        // Tìm trạng thái hiển thị tiếp theo sau trạng thái hiện tại
-        for (let i = 0; i < fullTimelineSteps.length; i++) {
-          const timelineStatusIndex = allStatuses.indexOf(fullTimelineSteps[i]);
-          if (timelineStatusIndex > currentStatusIndex) {
-            progress = (i / fullTimelineSteps.length) * 100;
-            break;
-          }
-        }
-      }
-    }
-    
-    console.log('calculateProgress - final progress:', progress);
-    return Math.round(progress);
-  };
 
   // ========================================
   // PHẦN BIẾN ĐỔI DỮ LIỆU
@@ -473,7 +405,7 @@ const MyAppointments = ({ user }) => {
           }
         }
       } catch (e) {
-        console.error('Lỗi khi phân tích timeSlotId:', e, timeSlotId);
+        // Xử lý lỗi khi phân tích timeSlotId
       }
     }
 
@@ -481,14 +413,9 @@ const MyAppointments = ({ user }) => {
     // XÁC ĐỊNH TRẠNG THÁI
     // ========================================
     
-    // Lấy trạng thái gần đây nhất từ lịch sử booking
+    // Lấy trạng thái hiện tại từ lịch sử booking (bản ghi gần nhất)
     const history = booking.bookingHistories_on_booking?.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) || [];
     const currentHistoryStatus = history.length > 0 ? history[0].status : null;
-    
-    console.log('MyAppointments - transformBookingData for booking:', booking.id);
-    console.log('MyAppointments - currentHistoryStatus:', currentHistoryStatus);
-    console.log('MyAppointments - history:', history);
-    console.log('MyAppointments - method:', booking.method);
     
     // Khởi tạo biến trạng thái
     let status = 'confirmed'; // trạng thái mặc định
@@ -504,7 +431,6 @@ const MyAppointments = ({ user }) => {
           isUpcoming = !isNaN(appointmentDate.getTime()) && appointmentDate > new Date();
         }
       } catch (e) {
-        console.error('Lỗi khi kiểm tra lịch hẹn có phải là lịch hẹn tới:', e);
         isUpcoming = false;
       }
     }
@@ -513,7 +439,6 @@ const MyAppointments = ({ user }) => {
     if (currentHistoryStatus) {
       // Sử dụng hàm ánh xạ trạng thái để xác định trạng thái UI
       status = mapTimelineStatusToUIStatus(currentHistoryStatus, booking.method);
-      console.log('MyAppointments - mapped status for', booking.id, ':', status, 'from', currentHistoryStatus);
     } else {
       // Fallback về trạng thái dựa trên thời gian nếu không có lịch sử
       const createdAt = new Date(booking.createdAt);
@@ -526,11 +451,9 @@ const MyAppointments = ({ user }) => {
       } else {
         status = 'in-progress';
       }
-      console.log('MyAppointments - fallback status for', booking.id, ':', status);
     }
 
-    // Tính toán tiến độ dựa trên lịch sử booking và timeline
-    const progress = calculateProgress(booking);
+
 
     // ========================================
     // THÔNG TIN DỊCH VỤ TRÍCH XUẤT
@@ -613,7 +536,6 @@ const MyAppointments = ({ user }) => {
       time: time,
       price: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(booking.totalAmount),
       status: status,
-      progress: progress,
       participants: participants,
       canCancel: status === 'confirmed',
       canReschedule: status === 'confirmed',
@@ -645,9 +567,7 @@ const MyAppointments = ({ user }) => {
       // Lưu dữ liệu đã biến đổi vào state
       setTransformedAppointments(transformed);
     } catch (error) {
-      console.error('Lỗi khi biến đổi lịch hẹn:', error);
-      // Xóa dữ liệu đã biến đổi trên lỗi
-      setTransformedAppointments([]);
+      // Xử lý lỗi khi biến đổi lịch hẹn
     }
   }, [appointments]); // Chạy lại khi dữ liệu lịch hẹn thay đổi
 
@@ -816,7 +736,6 @@ const MyAppointments = ({ user }) => {
 
         return dateB - dateA; // Mới nhất trước
       } catch (error) {
-        console.error('Lỗi khi sắp xếp lịch hẹn:', error);
         return 0;
       }
     });
@@ -884,7 +803,6 @@ const MyAppointments = ({ user }) => {
       const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
       return date.toLocaleDateString('vi-VN', options);
     } catch (error) {
-      console.error('Lỗi định dạng ngày:', error);
       return 'Chưa xác định';
     }
   };
@@ -901,7 +819,6 @@ const MyAppointments = ({ user }) => {
       const date = new Date(dateString);
       return !isNaN(date.getTime()) && date > new Date();
     } catch (error) {
-      console.error('Lỗi khi kiểm tra ngày có phải là ngày tới:', error);
       return false;
     }
   };
@@ -1083,8 +1000,6 @@ const MyAppointments = ({ user }) => {
               {filteredAppointments.map((appointment, index) => {
                 const statusInfo = getStatusInfo(appointment.status);
 
-                console.log('Người tham gia:', appointment.participants);
-
                 return (
                   <div key={appointment.id} className="list-group-item p-4">
                     <Row>
@@ -1162,39 +1077,6 @@ const MyAppointments = ({ user }) => {
                             )}
                           </div>
                         </div>
-
-                        {/* Thanh tiến độ */}
-                        {appointment.status !== 'cancelled' && (
-                          <div className="mb-3">
-                            <div className="d-flex justify-content-between align-items-center mb-1">
-                              <span className="small text-muted">Tiến độ thực hiện</span>
-                              <span className="small fw-bold">{appointment.progress}%</span>
-                            </div>
-                            <ProgressBar
-                              now={appointment.progress}
-                              variant={appointment.progress === 100 ? 'success' : appointment.progress > 50 ? 'warning' : 'primary'}
-                              style={{ height: '6px' }}
-                            />
-                            {appointment.progress === 0 && (
-                              <small className="text-muted">
-                                <i className="bi bi-info-circle me-1"></i>
-                                Chưa bắt đầu xử lý
-                              </small>
-                            )}
-                            {appointment.progress > 0 && appointment.progress < 100 && (
-                              <small className="text-muted">
-                                <i className="bi bi-clock me-1"></i>
-                                Đang trong quá trình xử lý
-                              </small>
-                            )}
-                            {appointment.progress === 100 && (
-                              <small className="text-success">
-                                <i className="bi bi-check-circle me-1"></i>
-                                Hoàn thành
-                              </small>
-                            )}
-                          </div>
-                        )}
 
                         {/* Thông báo hành động tiếp theo */}
                         <Alert variant={

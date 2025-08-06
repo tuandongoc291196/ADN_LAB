@@ -1,18 +1,53 @@
+/**
+ * COMPONENT: AppointmentManagement
+ * CHỨC NĂNG: Quản lý lịch hẹn xét nghiệm - xem, xác nhận, phân công nhân viên
+ * LUỒNG HOẠT ĐỘNG:
+ * 1. Tải danh sách appointments từ API (hiện tại dùng mock data)
+ * 2. Hiển thị danh sách với filter và search
+ * 3. Cho phép xem chi tiết appointment qua modal
+ * 4. Cập nhật trạng thái và phân công nhân viên
+ * 5. TODO: Tích hợp với API thực tế
+ */
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+/**
+ * COMPONENT: AppointmentManagement
+ * CHỨC NĂNG: Quản lý toàn bộ lịch hẹn xét nghiệm
+ * STATE MANAGEMENT:
+ * - appointments: Danh sách lịch hẹn từ API
+ * - loading: Trạng thái tải dữ liệu
+ * - showModal: Hiển thị modal chi tiết
+ * - selectedAppointment: Lịch hẹn được chọn để xem
+ * - filterStatus: Lọc theo trạng thái
+ * - searchTerm: Từ khóa tìm kiếm
+ */
 const AppointmentManagement = () => {
   const navigate = useNavigate();
+  
+  // ===== DATA STATES - QUẢN LÝ DỮ LIỆU =====
+  // Danh sách lịch hẹn từ API
   const [appointments, setAppointments] = useState([]);
+  // Trạng thái tải dữ liệu
   const [loading, setLoading] = useState(true);
+  
+  // ===== MODAL STATES - QUẢN LÝ MODAL =====
+  // Hiển thị modal chi tiết
   const [showModal, setShowModal] = useState(false);
+  // Lịch hẹn được chọn để xem chi tiết
   const [selectedAppointment, setSelectedAppointment] = useState(null);
+  
+  // ===== FILTER STATES - QUẢN LÝ BỘ LỌC =====
+  // Lọc theo trạng thái lịch hẹn
   const [filterStatus, setFilterStatus] = useState('all');
+  // Từ khóa tìm kiếm
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Mock data for appointments
+  // ===== MOCK DATA - DỮ LIỆU MẪU =====
+  // TODO: Thay thế bằng API thực tế
+  // Mock data cho appointments - sẽ được thay thế bằng API getAllBookings()
   const mockAppointments = [
     {
       id: 1,
@@ -55,27 +90,102 @@ const AppointmentManagement = () => {
     }
   ];
 
+  // ===== DATA FETCHING - LẤY DỮ LIỆU TỪ API =====
+  /**
+   * useEffect: Tải dữ liệu appointments khi component mount
+   * BƯỚC 1: Hiện tại dùng mock data
+   * BƯỚC 2: TODO: Thay thế bằng API getAllBookings()
+   * BƯỚC 3: Cập nhật appointments state
+   * BƯỚC 4: Set loading = false
+   */
   useEffect(() => {
-    // Simulate API call
+    // TODO: Thay thế bằng API thực tế
+    // const fetchAppointments = async () => {
+    //   try {
+    //     const data = await getAllBookings();
+    //     setAppointments(data);
+    //   } catch (error) {
+    //     console.error('Error fetching appointments:', error);
+    //   } finally {
+    //     setLoading(false);
+    //   }
+    // };
+    // fetchAppointments();
+    
+    // Hiện tại dùng mock data
     setAppointments(mockAppointments);
     setLoading(false);
   }, []);
 
+  // ===== EVENT HANDLERS - XỬ LÝ SỰ KIỆN =====
+  /**
+   * handleStatusChange: Cập nhật trạng thái lịch hẹn
+   * BƯỚC 1: TODO: Gọi API để cập nhật trạng thái
+   * BƯỚC 2: Cập nhật local state
+   * BƯỚC 3: Hiển thị thông báo thành công
+   */
   const handleStatusChange = (appointmentId, newStatus) => {
     // TODO: Implement API call to update appointment status
+    // const updateAppointmentStatus = async () => {
+    //   try {
+    //     await updateBookingStatus(appointmentId, newStatus);
+    //     // Cập nhật local state
+    //     setAppointments(prev => prev.map(apt => 
+    //       apt.id === appointmentId ? { ...apt, status: newStatus } : apt
+    //     ));
+    //     toast.success('Cập nhật trạng thái thành công!');
+    //   } catch (error) {
+    //     toast.error('Có lỗi khi cập nhật trạng thái!');
+    //   }
+    // };
+    // updateAppointmentStatus();
+    
+    // Hiện tại chỉ hiển thị thông báo
     toast.success('Cập nhật trạng thái thành công!');
   };
 
+  /**
+   * handleAssignStaff: Phân công nhân viên cho lịch hẹn
+   * BƯỚC 1: TODO: Gọi API để phân công nhân viên
+   * BƯỚC 2: Cập nhật local state
+   * BƯỚC 3: Hiển thị thông báo thành công
+   */
   const handleAssignStaff = (appointmentId, staffId) => {
     // TODO: Implement API call to assign staff
+    // const assignStaffToAppointment = async () => {
+    //   try {
+    //     await assignStaffToBooking(appointmentId, staffId);
+    //     // Cập nhật local state
+    //     setAppointments(prev => prev.map(apt => 
+    //       apt.id === appointmentId ? { ...apt, staffAssigned: staffId } : apt
+    //     ));
+    //     toast.success('Phân công nhân viên thành công!');
+    //   } catch (error) {
+    //     toast.error('Có lỗi khi phân công nhân viên!');
+    //   }
+    // };
+    // assignStaffToAppointment();
+    
+    // Hiện tại chỉ hiển thị thông báo
     toast.success('Phân công nhân viên thành công!');
   };
 
+  /**
+   * handleViewDetails: Xem chi tiết lịch hẹn
+   * BƯỚC 1: Cập nhật selectedAppointment
+   * BƯỚC 2: Mở modal hiển thị chi tiết
+   */
   const handleViewDetails = (appointment) => {
     setSelectedAppointment(appointment);
     setShowModal(true);
   };
 
+  // ===== HELPER FUNCTIONS - CÁC HÀM TIỆN ÍCH =====
+  /**
+   * getStatusBadge: Tạo badge hiển thị trạng thái lịch hẹn
+   * INPUT: status (pending, confirmed, completed, cancelled)
+   * OUTPUT: JSX Badge component với màu sắc và text tương ứng
+   */
   const getStatusBadge = (status) => {
     const statusConfig = {
       pending: { bg: 'warning', text: 'Chờ xác nhận' },
@@ -92,6 +202,13 @@ const AppointmentManagement = () => {
     );
   };
 
+  // ===== FILTER LOGIC - BỘ LỌC DỮ LIỆU =====
+  /**
+   * filteredAppointments: Lọc danh sách lịch hẹn theo status và search term
+   * BƯỚC 1: Lọc theo trạng thái (pending, confirmed, completed, cancelled)
+   * BƯỚC 2: Lọc theo từ khóa tìm kiếm (tên khách, số điện thoại, email)
+   * BƯỚC 3: Trả về danh sách đã lọc
+   */
   const filteredAppointments = appointments.filter(appointment => {
     const matchesStatus = filterStatus === 'all' || appointment.status === filterStatus;
     const matchesSearch = 

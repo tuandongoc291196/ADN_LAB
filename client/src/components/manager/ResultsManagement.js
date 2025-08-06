@@ -3,16 +3,41 @@ import { Row, Col, Card, Button, Badge, Alert, Modal, Form, Table, InputGroup, T
 import { getAllBookings, getTestResultByBookingId, updateTestResult, getSamplesByBookingId, addBookingHistory, getBookingById } from '../../services/api';
 import Swal from 'sweetalert2';
 
+/**
+ * COMPONENT: ResultsManagement
+ * CHỨC NĂNG: Quản lý kết quả xét nghiệm - cho phép manager xem, phê duyệt và giao kết quả
+ * LUỒNG HOẠT ĐỘNG:
+ * 1. Tải danh sách booking từ API getAllBookings()
+ * 2. Lọc các booking có status: result_pending, complete, sent_result
+ * 3. Lấy thông tin test result chi tiết cho từng booking
+ * 4. Hiển thị danh sách theo tab: Chất lượng, Sẵn sàng trả, Đã giao
+ * 5. Cho phép manager phê duyệt kết quả và giao cho khách hàng
+ */
 const ResultsManagement = ({ user }) => {
+    // ===== STATE MANAGEMENT =====
+    // Danh sách kết quả gốc từ API
     const [results, setResults] = useState([]);
+    // Danh sách kết quả đã được filter theo search và status
     const [filteredResults, setFilteredResults] = useState([]);
+    
+    // Modal states - quản lý các popup
     const [showResultModal, setShowResultModal] = useState(false);
     const [showDeliveryModal, setShowDeliveryModal] = useState(false);
+    const [showTestModal, setShowTestModal] = useState(false);
+    
+    // Selected data - dữ liệu được chọn để xem chi tiết
     const [selectedResult, setSelectedResult] = useState(null);
+    const [selectedTest, setSelectedTest] = useState(null);
+    
+    // Filter states - bộ lọc tìm kiếm và trạng thái
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
+    
+    // UI states - quản lý giao diện
     const [alert, setAlert] = useState({ show: false, message: '', type: '' });
     const [activeTab, setActiveTab] = useState('quality-review');
+    
+    // Delivery states - thông tin giao kết quả
     const [deliveryMethod, setDeliveryMethod] = useState('email');
     const [deliveryDetails, setDeliveryDetails] = useState({
         email: '',
@@ -21,8 +46,8 @@ const ResultsManagement = ({ user }) => {
         recipientName: '',
         notes: ''
     });
-    const [showTestModal, setShowTestModal] = useState(false);
-    const [selectedTest, setSelectedTest] = useState(null);
+    
+    // Test result form state - form nhập kết quả xét nghiệm
     const [testResults, setTestResults] = useState({
         conclusion: '',
         confidence: '',
@@ -41,44 +66,63 @@ const ResultsManagement = ({ user }) => {
         samples: []
     });
 
-    // Lấy danh sách booking từ API
+    // ===== DATA FETCHING - LẤY DỮ LIỆU TỪ API =====
+    /**
+     * useEffect: Tải dữ liệu khi component mount
+     * BƯỚC 1: Gọi API getAllBookings() để lấy tất cả booking
+     * BƯỚC 2: Lọc các booking có status phù hợp (result_pending, complete, sent_result)
+     * BƯỚC 3: Với mỗi booking, gọi API getTestResultByBookingId() để lấy kết quả chi tiết
+     * BƯỚC 4: Transform dữ liệu thành format hiển thị
+     * BƯỚC 5: Cập nhật state results và filteredResults
+     */
     useEffect(() => {
         const fetchBookings = async () => {
             try {
+                // BƯỚC 1: Lấy tất cả booking từ API
                 const bookings = await getAllBookings();
-                // Đảm bảo bookings là array
+                
+                // BƯỚC 2: Đảm bảo bookings là array và xử lý format dữ liệu
                 let bookingList = Array.isArray(bookings)
                     ? bookings
                     : (Array.isArray(bookings?.bookings) ? bookings.bookings : []);
-                // Lọc các booking có status RESULT_PENDING và COMPLETE
+                
+                // BƯỚC 3: Lọc các booking có status RESULT_PENDING, COMPLETE và SENT_RESULT
                 const resultPending = bookingList.filter(b => {
+                    // Lấy booking history để xác định status mới nhất
                     const histories = Array.isArray(b.bookingHistories_on_booking) ? b.bookingHistories_on_booking : [];
                     const sorted = [...histories].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
                     const latestStatus = sorted[0]?.status?.toLowerCase() || b.status?.toLowerCase() || '';
-                    return latestStatus === 'result_pending' || latestStatus === 'complete';
+                    
+                    // Chỉ lấy các booking có status phù hợp để quản lý kết quả
+                    return latestStatus === 'result_pending' || latestStatus === 'complete' || latestStatus === 'sent_result';
                 });
 
-                // Lấy thông tin chi tiết từ getTestResultByBookingId cho từng booking
+                // BƯỚC 4: Lấy thông tin chi tiết từ getTestResultByBookingId cho từng booking
                 const detailedResults = await Promise.all(
                     resultPending.map(async (b) => {
                         try {
+                            // Gọi API lấy test result cho booking này
                             const testResult = await getTestResultByBookingId(b.id);
                             const testResultData = Array.isArray(testResult) ? testResult[0] : testResult;
+                            
                             // Lấy status cuối cùng từ history hoặc booking
                             const histories = Array.isArray(b.bookingHistories_on_booking) ? b.bookingHistories_on_booking : [];
                             const sorted = [...histories].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
                             const latestStatus = sorted[0]?.status?.toLowerCase() || b.status?.toLowerCase() || '';
+                            
+                            // BƯỚC 5: Transform dữ liệu thành format hiển thị
                             return {
                                 id: b.id,
                                 customerName: b.informations_on_booking?.[0]?.name || 'Không rõ',
                                 phone: b.informations_on_booking?.[0]?.phone || '',
                                 email: b.informations_on_booking?.[0]?.email || '',
+                                address: b.informations_on_booking?.[0]?.address || '',
                                 serviceName: b.service?.title || 'Không rõ dịch vụ',
                                 serviceType: b.service?.category?.hasLegalValue ? 'civil' : 'administrative',
                                 labCode: b.labCode || '',
                                 completedDate: b.completedDate || b.updatedAt || (Array.isArray(b.bookingHistories_on_booking) && b.bookingHistories_on_booking[0]?.createdAt) || '',
                                 technician: b.staff?.user?.fullname || '',
-                                status: latestStatus, // chỉ dùng 'result_pending' hoặc 'complete'
+                                status: latestStatus, // chỉ dùng 'result_pending', 'complete' hoặc 'sent_result'
                                 priority: b.priority || 'medium',
                                 hasLegalValue: b.service?.category?.hasLegalValue || false,
                                 result: {
@@ -99,7 +143,7 @@ const ResultsManagement = ({ user }) => {
                             };
                         } catch (error) {
                             console.error(`Error fetching test result for booking ${b.id}:`, error);
-                            // Fallback nếu không lấy được test result
+                            // Fallback nếu không lấy được test result - tạo dữ liệu mặc định
                             const histories = Array.isArray(b.bookingHistories_on_booking) ? b.bookingHistories_on_booking : [];
                             const sorted = [...histories].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
                             const latestStatus = sorted[0]?.status?.toLowerCase() || b.status?.toLowerCase() || '';
@@ -108,12 +152,13 @@ const ResultsManagement = ({ user }) => {
                                 customerName: b.informations_on_booking?.[0]?.name || 'Không rõ',
                                 phone: b.informations_on_booking?.[0]?.phone || '',
                                 email: b.informations_on_booking?.[0]?.email || '',
+                                address: b.informations_on_booking?.[0]?.address || '',
                                 serviceName: b.service?.title || 'Không rõ dịch vụ',
                                 serviceType: b.service?.category?.hasLegalValue ? 'civil' : 'administrative',
                                 labCode: b.labCode || '',
                                 completedDate: b.completedDate || b.updatedAt || (Array.isArray(b.bookingHistories_on_booking) && b.bookingHistories_on_booking[0]?.createdAt) || '',
                                 technician: b.staff?.user?.fullname || '',
-                                status: latestStatus, // chỉ dùng 'result_pending' hoặc 'complete'
+                                status: latestStatus, // chỉ dùng 'result_pending', 'complete' hoặc 'sent_result'
                                 priority: b.priority || 'medium',
                                 hasLegalValue: b.service?.category?.hasLegalValue || false,
                                 result: {
@@ -135,9 +180,12 @@ const ResultsManagement = ({ user }) => {
                         }
                     })
                 );
+                
+                // BƯỚC 6: Cập nhật state với dữ liệu đã xử lý
                 setResults(detailedResults);
                 setFilteredResults(detailedResults);
             } catch (err) {
+                // Xử lý lỗi khi không thể tải dữ liệu
                 setAlert({ show: true, message: 'Không thể tải danh sách booking: ' + err.message, type: 'danger' });
             }
         };
@@ -145,10 +193,18 @@ const ResultsManagement = ({ user }) => {
         fetchBookings();
     }, []);
 
-    // Filter results based on search and status
+    // ===== FILTER LOGIC - BỘ LỌC DỮ LIỆU =====
+    /**
+     * useEffect: Lọc dữ liệu khi searchTerm hoặc filterStatus thay đổi
+     * BƯỚC 1: Bắt đầu với danh sách results gốc
+     * BƯỚC 2: Lọc theo searchTerm (tìm trong id, tên khách, số điện thoại, mã lab)
+     * BƯỚC 3: Lọc theo filterStatus (all, result_pending, complete, sent_result)
+     * BƯỚC 4: Cập nhật filteredResults state
+     */
     useEffect(() => {
         let filtered = results;
 
+        // BƯỚC 2: Lọc theo từ khóa tìm kiếm
         if (searchTerm) {
             filtered = filtered.filter(result =>
                 result.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -158,13 +214,21 @@ const ResultsManagement = ({ user }) => {
             );
         }
 
+        // BƯỚC 3: Lọc theo trạng thái
         if (filterStatus !== 'all') {
-            filtered = filtered.filter(result => result.status === filterStatus);
+            filtered = filtered.filter(result => result.status?.toLowerCase() === filterStatus.toLowerCase());
         }
 
+        // BƯỚC 4: Cập nhật state
         setFilteredResults(filtered);
     }, [searchTerm, filterStatus, results]);
 
+    // ===== HELPER FUNCTIONS - CÁC HÀM TIỆN ÍCH =====
+    /**
+     * getResultBadge: Tạo badge hiển thị kết quả xét nghiệm
+     * INPUT: conclusion (POSITIVE, NEGATIVE, INCONCLUSIVE)
+     * OUTPUT: JSX Badge component với màu sắc và icon tương ứng
+     */
     const getResultBadge = (conclusion) => {
         const resultConfig = {
             'POSITIVE': { bg: 'success', text: 'DƯƠNG TÍNH', icon: 'bi-check-circle' },
@@ -180,16 +244,24 @@ const ResultsManagement = ({ user }) => {
         );
     };
 
+    // ===== EVENT HANDLERS - XỬ LÝ SỰ KIỆN =====
+    /**
+     * handleViewResult: Xem chi tiết kết quả xét nghiệm
+     * BƯỚC 1: Gọi API để lấy thông tin chi tiết (booking, testResult, samples)
+     * BƯỚC 2: Transform dữ liệu thành format hiển thị
+     * BƯỚC 3: Cập nhật selectedResult state
+     * BƯỚC 4: Mở modal hiển thị chi tiết
+     */
     const handleViewResult = async (result) => {
         try {
-            // Lấy thông tin chi tiết từ API
+            // BƯỚC 1: Lấy thông tin chi tiết từ API - gọi song song để tối ưu tốc độ
             const [booking, testResult, samples] = await Promise.all([
                 getBookingById(result.id),
                 getTestResultByBookingId(result.id),
                 getSamplesByBookingId(result.id)
             ]);
 
-            // Cập nhật selectedResult với thông tin chi tiết
+            // BƯỚC 2: Cập nhật selectedResult với thông tin chi tiết
             const testResultData = Array.isArray(testResult) ? testResult[0] : testResult;
 
             const detailedResult = {
@@ -226,27 +298,41 @@ const ResultsManagement = ({ user }) => {
         }
     };
 
+    /**
+     * handlePrepareDelivery: Chuẩn bị giao kết quả
+     * BƯỚC 1: Cập nhật selectedResult với kết quả được chọn
+     * BƯỚC 2: Tự động điền thông tin giao hàng từ booking
+     * BƯỚC 3: Mở modal giao kết quả
+     */
     const handlePrepareDelivery = (result) => {
         setSelectedResult(result);
         setDeliveryDetails({
             email: result.email,
             phone: result.phone,
-            address: '',
+            address: result.address || '', // Tự động điền địa chỉ từ booking
             recipientName: result.customerName,
             notes: ''
         });
         setShowDeliveryModal(true);
     };
 
+    /**
+     * handleDeliverResult: Giao kết quả cho khách hàng
+     * BƯỚC 1: Gọi API addBookingHistory() để cập nhật trạng thái thành SENT_RESULT
+     * BƯỚC 2: Cập nhật local state với thông tin giao hàng
+     * BƯỚC 3: Đóng modal và hiển thị thông báo thành công
+     * BƯỚC 4: Xử lý lỗi nếu có
+     */
     const handleDeliverResult = async () => {
-        // Gọi addBookingHistory trước
+        // BƯỚC 1: Gọi API để cập nhật trạng thái booking
         try {
             await addBookingHistory({
                 bookingId: selectedResult.id,
                 status: 'SENT_RESULT',
                 description: `Giao kết quả bằng phương thức: ${deliveryMethod}`
             });
-            // Cập nhật local state
+            
+            // BƯỚC 2: Cập nhật local state với thông tin mới
             const updatedResults = results.map(result =>
                 result.id === selectedResult.id
                     ? {
@@ -260,6 +346,8 @@ const ResultsManagement = ({ user }) => {
                     : result
             );
             setResults(updatedResults);
+            
+            // BƯỚC 3: Đóng modal và hiển thị thông báo
             setShowDeliveryModal(false);
             setSelectedResult(null);
             setAlert({
@@ -269,6 +357,7 @@ const ResultsManagement = ({ user }) => {
             });
             setTimeout(() => setAlert({ show: false, message: '', type: '' }), 3000);
         } catch (error) {
+            // BƯỚC 4: Xử lý lỗi
             setAlert({
                 show: true,
                 message: 'Có lỗi khi cập nhật lịch sử giao kết quả!',
@@ -371,7 +460,7 @@ const ResultsManagement = ({ user }) => {
                                 <i className="bi bi-clock-history fs-4 me-2"></i>
                                 <h6 className="mb-0">Chờ xử lý</h6>
                             </div>
-                            <h3 className="fw-bold mb-0">{results.filter(r => r.status === 'result_pending').length}</h3>
+                            <h3 className="fw-bold mb-0">{results.filter(r => r.status?.toLowerCase() === 'result_pending').length}</h3>
                         </Card.Body>
                     </Card>
                 </Col>
@@ -382,7 +471,7 @@ const ResultsManagement = ({ user }) => {
                                 <i className="bi bi-check-circle fs-4 me-2"></i>
                                 <h6 className="mb-0">Đã duyệt</h6>
                             </div>
-                            <h3 className="fw-bold mb-0">{results.filter(r => r.status === 'complete').length}</h3>
+                            <h3 className="fw-bold mb-0">{results.filter(r => r.status?.toLowerCase() === 'complete').length}</h3>
                         </Card.Body>
                     </Card>
                 </Col>
@@ -393,7 +482,7 @@ const ResultsManagement = ({ user }) => {
                                 <i className="bi bi-send fs-4 me-2"></i>
                                 <h6 className="mb-0">Đã giao</h6>
                             </div>
-                            <h3 className="fw-bold mb-0">{results.filter(r => r.status === 'SENT_RESULT').length}</h3>
+                            <h3 className="fw-bold mb-0">{results.filter(r => r.status?.toLowerCase() === 'sent_result').length}</h3>
                         </Card.Body>
                     </Card>
                 </Col>
@@ -451,11 +540,11 @@ const ResultsManagement = ({ user }) => {
                             <div className="d-flex gap-2">
                                 <Button variant="outline-warning" size="sm" className="flex-fill">
                                     <i className="bi bi-clock me-1"></i>
-                                    Cần xử lý: {results.filter(r => r.status === 'result_pending').length}
+                                    Cần xử lý: {results.filter(r => r.status?.toLowerCase() === 'result_pending').length}
                                 </Button>
                                 <Button variant="outline-success" size="sm" className="flex-fill">
                                     <i className="bi bi-check me-1"></i>
-                                    Hoàn thành: {results.filter(r => r.status === 'complete').length}
+                                    Hoàn thành: {results.filter(r => r.status?.toLowerCase() === 'complete').length}
                                 </Button>
                             </div>
                         </Col>
@@ -494,7 +583,7 @@ const ResultsManagement = ({ user }) => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {filteredResults.filter(r => r.status === 'result_pending').map((result) => (
+                                        {filteredResults.filter(r => r.status?.toLowerCase() === 'result_pending').map((result) => (
                                             <tr key={result.id}>
                                                 <td>
                                                     <div className="fw-bold">{result.id}</div>
@@ -605,7 +694,7 @@ const ResultsManagement = ({ user }) => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {filteredResults.filter(r => r.status === 'complete' || r.status === 'SENT_RESULT').map((result) => (
+                                        {filteredResults.filter(r => r.status?.toLowerCase() === 'complete' || r.status?.toLowerCase() === 'sent_result').map((result) => (
                                             <tr key={result.id}>
                                                 <td>
                                                     <div className="fw-bold">{result.id}</div>
@@ -657,7 +746,7 @@ const ResultsManagement = ({ user }) => {
                                                             <i className="bi bi-eye me-1"></i>
                                                             Xem
                                                         </Button>
-                                                        {result.status === 'SENT_RESULT' ? (
+                                                        {result.status?.toLowerCase() === 'sent_result' ? (
                                                             <span className="badge bg-primary">KQ đã được giao</span>
                                                         ) : (
                                                             <Button
@@ -867,7 +956,7 @@ const ResultsManagement = ({ user }) => {
                     <Button variant="secondary" onClick={() => setShowResultModal(false)}>
                         Đóng
                     </Button>
-                    {selectedResult?.status === 'complete' && (
+                    {selectedResult?.status?.toLowerCase() === 'complete' && (
                         <Button
                             variant="success"
                             onClick={() => {
@@ -899,7 +988,6 @@ const ResultsManagement = ({ user }) => {
                                     <Col md={6}>
                                         <strong>Mã đơn:</strong> {selectedResult.id}<br />
                                         <strong>Khách hàng:</strong> {selectedResult.customerName}<br />
-                                        <strong>Dịch vụ:</strong> {selectedResult.service}
                                     </Col>
                                     <Col md={6}>
                                         <strong>Kết quả:</strong> {getResultBadge(selectedResult.result.conclusion)}<br />
@@ -954,14 +1042,42 @@ const ResultsManagement = ({ user }) => {
                                     </Col>
                                     {(deliveryMethod === 'post' || deliveryMethod === 'email-and-post') && (
                                         <Col md={6} className="mb-3">
-                                            <Form.Label>Địa chỉ gửi bưu điện</Form.Label>
+                                            <Form.Label>
+                                                Địa chỉ gửi bưu điện
+                                                {selectedResult?.address && (
+                                                    <small className="text-success ms-2">
+                                                        <i className="bi bi-check-circle me-1"></i>
+                                                        Lấy từ thông tin booking
+                                                    </small>
+                                                )}
+                                            </Form.Label>
                                             <Form.Control
                                                 as="textarea"
                                                 rows={2}
                                                 value={deliveryDetails.address}
                                                 onChange={(e) => setDeliveryDetails({ ...deliveryDetails, address: e.target.value })}
-                                                placeholder="Nhập địa chỉ đầy đủ..."
+                                                placeholder={selectedResult?.address ? "Địa chỉ từ booking (có thể chỉnh sửa)" : "Nhập địa chỉ đầy đủ..."}
                                             />
+                                            {selectedResult?.address && (
+                                                <div className="mt-1">
+                                                    {deliveryDetails.address !== selectedResult.address && (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline-secondary"
+                                                            onClick={() => setDeliveryDetails({ ...deliveryDetails, address: selectedResult.address })}
+                                                        >
+                                                            <i className="bi bi-arrow-clockwise me-1"></i>
+                                                            Khôi phục địa chỉ từ booking
+                                                        </Button>
+                                                    )}
+                                                    {!deliveryDetails.address && (
+                                                        <small className="text-muted">
+                                                            <i className="bi bi-info-circle me-1"></i>
+                                                            Địa chỉ từ booking: {selectedResult.address}
+                                                        </small>
+                                                    )}
+                                                </div>
+                                            )}
                                         </Col>
                                     )}
                                 </Row>
@@ -1263,7 +1379,7 @@ const ResultsManagement = ({ user }) => {
                     <Button variant="secondary" onClick={() => setShowTestModal(false)}>
                         Đóng
                     </Button>
-                    {selectedTest?.status !== 'analysis-complete' && (
+                    {selectedTest?.status?.toLowerCase() !== 'analysis-complete' && (
                         <Button
                             variant="success"
                             onClick={handleCompleteAnalysis}
