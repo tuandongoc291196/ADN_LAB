@@ -29,6 +29,52 @@ const SampleCollection = ({ user }) => {
   const [showCollectionModal, setShowCollectionModal] = useState(false); // Hiển thị modal thu mẫu
   const [selectedSample, setSelectedSample] = useState(null); // Mẫu được chọn
   const [activeTab, setActiveTab] = useState('pending'); // Tab hiện tại
+  // Modal xác nhận đã tới nhà
+  const [showArrivedModal, setShowArrivedModal] = useState(false);
+  const [arrivedSample, setArrivedSample] = useState(null);
+  const [arrivedDescription, setArrivedDescription] = useState('Đã tới nhà khách hàng, chuẩn bị thu mẫu');
+  // Modal xác nhận thanh toán
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentSample, setPaymentSample] = useState(null);
+  const [paymentDescription, setPaymentDescription] = useState('Khách hàng đã thanh toán đủ chi phí');
+  // Hàm xác nhận thanh toán, gọi addBookingHistory đổi status thành PAYMENT_CONFIRMED
+  const handleConfirmPayment = async () => {
+    if (!paymentSample) return;
+    try {
+      await addBookingHistory({
+        bookingId: paymentSample.id,
+        status: 'PAYMENT_CONFIRMED',
+        description: paymentDescription
+      });
+      setAlert({ show: true, message: `Đã xác nhận thanh toán cho đơn ${paymentSample.id}`, type: 'success' });
+      // Cập nhật lại danh sách
+      setSamples(samples => samples.map(s => s.id === paymentSample.id ? { ...s, status: 'payment-confirmed' } : s));
+      setShowPaymentModal(false);
+      setPaymentSample(null);
+      setPaymentDescription('Khách hàng đã thanh toán đủ chi phí');
+    } catch (e) {
+      setAlert({ show: true, message: 'Có lỗi khi xác nhận thanh toán!', type: 'danger' });
+    }
+  };
+  // Hàm xác nhận đã tới nhà, gọi addBookingHistory đổi status thành SAMPLE_RECEIVED
+  const handleConfirmArrived = async () => {
+    if (!arrivedSample) return;
+    try {
+      await addBookingHistory({
+        bookingId: arrivedSample.id,
+        status: 'SAMPLE_RECEIVED',
+        description: arrivedDescription
+      });
+      setAlert({ show: true, message: `Đã xác nhận tới nhà cho đơn ${arrivedSample.id}`, type: 'success' });
+      // Cập nhật lại danh sách
+      setSamples(samples => samples.map(s => s.id === arrivedSample.id ? { ...s, status: 'sample-received', showSampleButton: true } : s));
+      setShowArrivedModal(false);
+      setArrivedSample(null);
+      setArrivedDescription('Đã tới nhà khách hàng, chuẩn bị thu mẫu');
+    } catch (e) {
+      setAlert({ show: true, message: 'Có lỗi khi xác nhận!', type: 'danger' });
+    }
+  };
 
   // STATE QUẢN LÝ THU MẪU
   const [collectionData, setCollectionData] = useState({
@@ -73,24 +119,30 @@ const SampleCollection = ({ user }) => {
         const bookings = await getBookingByStaffId(user.id);
 
         // BƯỚC 2: Lọc và map booking thành sample
+        // Hiển thị các booking có SAMPLE_RECEIVED, READY_FOR_SAMPLE hoặc PREPARED
         const mappedSamples = bookings
           .filter(b => {
-            // Chỉ hiện các booking có status SAMPLE_RECEIVED
             const histories = Array.isArray(b.bookingHistories_on_booking) ? b.bookingHistories_on_booking : [];
-            return histories.some(h => h.status?.toLowerCase() === 'sample_received');
+            return histories.some(h => {
+              const s = (h.status || '').toUpperCase();
+              return s === 'SAMPLE_RECEIVED' || s === 'STAFF_ASSIGNED' || s === 'PREPARED';
+            });
           })
           .map(b => {
             const histories = Array.isArray(b.bookingHistories_on_booking) ? b.bookingHistories_on_booking : [];
             const hasSampleReceived = histories.some(h => h.status?.toLowerCase() === 'sample_received');
-            
+
             // BƯỚC 2.1: Lấy status mới nhất và xác định status hiển thị
             const sorted = [...histories].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             const latestStatus = sorted[0]?.status?.toUpperCase() || '';
-            
+
             let status = (() => {
               if (latestStatus === 'EXPIRED') return 'overdue';
               if (histories.some(h => h.status?.toUpperCase() === 'SAMPLE_COLLECTED')) return 'collected';
               if (histories.some(h => h.status?.toUpperCase() === 'SAMPLE_RECEIVED')) return 'sample-received';
+              if (histories.some(h => h.status?.toUpperCase() === 'PAYMENT_CONFIRMED')) return 'payment-confirmed';
+              if (histories.some(h => h.status?.toUpperCase() === 'STAFF_ASSIGNED')) return 'ready';
+              if (histories.some(h => h.status?.toUpperCase() === 'PREPARED')) return 'prepared';
               const fallbackStatus = b.status?.toUpperCase() || 'SCHEDULED';
               return fallbackStatus.toLowerCase().replaceAll('_', '-');
             })();
@@ -174,7 +226,8 @@ const SampleCollection = ({ user }) => {
   }, [searchTerm, filterStatus, samples]);
 
   // BƯỚC 5: Chia sample thành 2 nhóm để hiển thị theo tabs
-  const pendingSamples = filteredSamples.filter(s => s.status !== 'collected');
+  // Hiển thị cả sample-received, ready, prepared, payment-confirm (pending)
+  const pendingSamples = filteredSamples.filter(s => !['collected', 'transferred'].includes(s.status));
   const completedSamples = filteredSamples.filter(s => s.status === 'collected');
 
   /**
@@ -184,7 +237,10 @@ const SampleCollection = ({ user }) => {
    */
   const getStatusBadge = (status) => {
     const statusConfig = {
+      'ready': { bg: 'warning', text: 'Chuẩn bị thu mẫu' },
+      'prepared': { bg: 'info', text: 'Đã chuẩn bị dụng cụ' },
       'sample-received': { bg: 'primary', text: 'Chờ thu mẫu' },
+      'payment-confirmed': { bg: 'warning', text: 'Khách đã tới' },
       'collected': { bg: 'success', text: 'Đã thu mẫu' },
       'transferred': { bg: 'dark', text: 'Đã chuyển lab' },
       'overdue': { bg: 'danger', text: 'Quá hạn' }
@@ -262,7 +318,7 @@ const SampleCollection = ({ user }) => {
           setShowCollectionModal(false);
           setSelectedSample(null);
           console.log('Updating samples:', collectionData.samples);
-          
+
           // BƯỚC 4: Hiển thị thông báo thành công và chuyển tab
           Swal.fire({
             icon: 'success',
@@ -355,7 +411,7 @@ const SampleCollection = ({ user }) => {
                 </Button>
               </InputGroup>
             </Col>
-            
+
             {/* Status filter */}
             <Col lg={3} md={4} className="mb-3">
               <Form.Label>Trạng thái</Form.Label>
@@ -365,7 +421,7 @@ const SampleCollection = ({ user }) => {
                 <option value="collected">Đã thu mẫu</option>
               </Form.Select>
             </Col>
-            
+
             {/* Statistics badges */}
             <Col lg={3} className="mb-3 d-flex align-items-end">
               <div className="w-100">
@@ -414,13 +470,13 @@ const SampleCollection = ({ user }) => {
                           <div className="">{sample.id}</div>
                           <small className="text-muted">{sample.participants.length} người</small>
                         </td>
-                        
+
                         {/* Thông tin khách hàng */}
                         <td>
                           <div className="">{sample.customerName}</div>
                           <small className="text-muted">{sample.phone}</small>
                         </td>
-                        
+
                         {/* Thông tin dịch vụ */}
                         <td>
                           <div>{sample.service}</div>
@@ -431,7 +487,7 @@ const SampleCollection = ({ user }) => {
                             {sample.serviceType === 'civil' ? 'Hành chính' : 'Dân sự'}
                           </span>
                         </td>
-                        
+
                         {/* Phương thức lấy mẫu */}
                         <td>
                           {sample.methodName === 'Lấy mẫu tại lab' ? (
@@ -452,7 +508,7 @@ const SampleCollection = ({ user }) => {
                             </span>
                           )}
                         </td>
-                        
+
                         {/* Thời gian */}
                         <td>
                           <div>{formatDateTime(sample.scheduledTime)}</div>
@@ -460,15 +516,59 @@ const SampleCollection = ({ user }) => {
                             <small className="text-success">Về: {formatDateTime(sample.returnedDate)}</small>
                           )}
                         </td>
-                        
+
                         {/* Trạng thái */}
                         <td>
                           {getStatusBadge(sample.status)}
                         </td>
-                        
+
                         {/* Các nút thao tác */}
                         <td>
                           <div className="d-flex flex-column gap-1">
+                            {/* Nút Đã tới nhà cho trạng thái ready */}
+                            {sample.status === 'ready' && (
+                              <Button
+                                size="sm"
+                                variant="info"
+                                onClick={() => {
+                                  setArrivedSample(sample);
+                                  setShowArrivedModal(true);
+                                }}
+                              >
+                                <i className="bi bi-house-door me-1"></i>
+                                Đã tới nhà
+                              </Button>
+                            )}
+                            {/* Nút xác nhận thanh toán cho trạng thái prepared */}
+                            {sample.status === 'prepared' && (
+                              <Button
+                                size="sm"
+                                variant="info"
+                                onClick={() => {
+                                  setPaymentSample(sample);
+                                  setShowPaymentModal(true);
+                                  setPaymentDescription('Khách hàng đã đến phòng lab');
+                                }}
+                              >
+                                <i className="bi bi-person-check me-1"></i>
+                                Khách hàng đã tới
+                              </Button>
+                            )}
+                            {/* Nút xác nhận thanh toán cho trạng thái payment-confirmed */}
+                            {sample.status === 'payment-confirmed' && (
+                              <Button
+                                size="sm"
+                                variant="warning"
+                                onClick={() => {
+                                  setArrivedSample(sample);
+                                  setShowArrivedModal(true);
+                                  setArrivedDescription('Khách hàng đã thanh toán đủ, chờ thu mẫu');
+                                }}
+                              >
+                                <i className="bi bi-cash-coin me-1"></i>
+                                Xác nhận thanh toán
+                              </Button>
+                            )}
                             {/* Nút thu mẫu */}
                             {sample.status !== 'collected' && sample.status !== 'transferred' && sample.showSampleButton && sample.status !== 'overdue' && (
                               <Button
@@ -480,7 +580,35 @@ const SampleCollection = ({ user }) => {
                                 Thu mẫu
                               </Button>
                             )}
-                            
+                            {/* MODAL: Xác nhận thanh toán */}
+                            <Modal show={showPaymentModal} onHide={() => setShowPaymentModal(false)}>
+                              <Modal.Header closeButton>
+                                <Modal.Title>Xác nhận khách đã đến phòng lab</Modal.Title>
+                              </Modal.Header>
+                              <Modal.Body>
+                                <p>Bạn xác nhận khách hàng đã có đơn hàng <b>{paymentSample?.id}</b> đã đến phòng lab</p>
+                                <Form>
+                                  <Form.Check
+                                    type="radio"
+                                    id="payment-default"
+                                    name="payment-description"
+                                    label="Khách hàng đã đến phòng lab"
+                                    value="Khách hàng đã đến phòng lab"
+                                    checked={paymentDescription === 'Khách hàng đã đến phòng lab'}
+                                    onChange={e => setPaymentDescription(e.target.value)}
+                                    className="mb-2"
+                                  />
+                                </Form>
+                              </Modal.Body>
+                              <Modal.Footer>
+                                <Button variant="secondary" onClick={() => setShowPaymentModal(false)}>
+                                  Hủy
+                                </Button>
+                                <Button variant="info" onClick={handleConfirmPayment} disabled={!paymentDescription || !paymentDescription.trim()}>
+                                  Xác nhận
+                                </Button>
+                              </Modal.Footer>
+                            </Modal>
                             {/* Nút chuyển lab */}
                             {sample.status === 'collected' && (
                               <Button
@@ -493,7 +621,6 @@ const SampleCollection = ({ user }) => {
                                 Chuyển lab
                               </Button>
                             )}
-                            
                             {/* Badge hoàn tất */}
                             {sample.status === 'transferred' && (
                               <Badge bg="success" className="p-2">
@@ -502,6 +629,98 @@ const SampleCollection = ({ user }) => {
                               </Badge>
                             )}
                           </div>
+                          {/* MODAL: Xác nhận đã tới nhà hoặc xác nhận thanh toán cho trạng thái payment-confirm */}
+                          <Modal show={showArrivedModal} onHide={() => setShowArrivedModal(false)}>
+                            <Modal.Header closeButton>
+                              <Modal.Title>
+                                {arrivedSample?.status === 'payment-confirmed'
+                                  ? 'Xác nhận khách đã thanh toán và chuyển sang chờ thu mẫu'
+                                  : 'Xác nhận đã tới nhà khách hàng'}
+                              </Modal.Title>
+                            </Modal.Header>
+                            <Modal.Body>
+                              {arrivedSample?.status === 'payment-confirmed' ? (
+                                <>
+                                  <p>Bạn xác nhận khách hàng đã thanh toán cho đơn <b>{arrivedSample?.id}</b> và chuyển sang chờ thu mẫu?</p>
+                                  <Form>
+                                    <Form.Check
+                                      type="radio"
+                                      id="arrived-default"
+                                      name="arrived-description"
+                                      label="Khách hàng đã thanh toán đủ, chờ thu mẫu"
+                                      value="Khách hàng đã thanh toán đủ, chờ thu mẫu"
+                                      checked={arrivedDescription === 'Khách hàng đã thanh toán đủ, chờ thu mẫu'}
+                                      onChange={e => setArrivedDescription(e.target.value)}
+                                      className="mb-2"
+                                    />
+
+                                  </Form>
+                                </>
+                              ) : (
+                                <>
+                                  <p>Bạn xác nhận đã tới nhà khách hàng để thu mẫu cho đơn <b>{arrivedSample?.id}</b>?</p>
+                                  <Form>
+                                    <Form.Check
+                                      type="radio"
+                                      id="arrived-default"
+                                      name="arrived-description"
+                                      label="Đã tới nhà khách hàng, chuẩn bị thu mẫu"
+                                      value="Đã tới nhà khách hàng, chuẩn bị thu mẫu"
+                                      checked={arrivedDescription === 'Đã tới nhà khách hàng, chuẩn bị thu mẫu'}
+                                      onChange={e => setArrivedDescription(e.target.value)}
+                                      className="mb-2"
+                                    />
+                                    <Form.Check
+                                      type="radio"
+                                      id="arrived-other"
+                                      name="arrived-description"
+                                      label="Khác:"
+                                      value={arrivedDescription.startsWith('Khác:') ? arrivedDescription : ''}
+                                      checked={arrivedDescription.startsWith('Khác:')}
+                                      onChange={() => setArrivedDescription('Khác: ')}
+                                      className="mb-2"
+                                    />
+                                    {arrivedDescription.startsWith('Khác:') && (
+                                      <Form.Control
+                                        type="text"
+                                        placeholder="Nhập mô tả khác..."
+                                        value={arrivedDescription.replace('Khác: ', '')}
+                                        onChange={e => setArrivedDescription('Khác: ' + e.target.value)}
+                                        className="mt-2"
+                                      />
+                                    )}
+                                  </Form>
+                                </>
+                              )}
+                            </Modal.Body>
+                            <Modal.Footer>
+                              <Button variant="secondary" onClick={() => setShowArrivedModal(false)}>
+                                Hủy
+                              </Button>
+                              <Button variant="info" onClick={() => {
+                                if (arrivedSample?.status === 'payment-confirmed') {
+                                  // Xác nhận thanh toán, chuyển sang SAMPLE_RECEIVED
+                                  addBookingHistory({
+                                    bookingId: arrivedSample.id,
+                                    status: 'SAMPLE_RECEIVED',
+                                    description: arrivedDescription
+                                  }).then(() => {
+                                    setAlert({ show: true, message: `Đã xác nhận thanh toán và chuyển sang chờ thu mẫu cho đơn ${arrivedSample.id}`, type: 'success' });
+                                    setSamples(samples => samples.map(s => s.id === arrivedSample.id ? { ...s, status: 'sample-received', showSampleButton: true } : s));
+                                    setShowArrivedModal(false);
+                                    setArrivedSample(null);
+                                    setArrivedDescription('Khách hàng đã thanh toán đủ, chờ thu mẫu');
+                                  }).catch(() => {
+                                    setAlert({ show: true, message: 'Có lỗi khi xác nhận!', type: 'danger' });
+                                  });
+                                } else {
+                                  handleConfirmArrived();
+                                }
+                              }}>
+                                Xác nhận
+                              </Button>
+                            </Modal.Footer>
+                          </Modal>
                         </td>
                       </tr>
                     ))}
@@ -511,7 +730,7 @@ const SampleCollection = ({ user }) => {
             </Card.Body>
           </Card>
         </Tab>
-        
+
         {/* TAB 2: Đã thu mẫu */}
         <Tab eventKey="completed" title={<span><i className="bi bi-check-circle me-2"></i>Đã Thu Mẫu</span>}>
           {/* Table cho mẫu đã thu */}
@@ -543,13 +762,13 @@ const SampleCollection = ({ user }) => {
                           <div className="">{sample.id}</div>
                           <small className="text-muted">{sample.participants.length} người</small>
                         </td>
-                        
+
                         {/* Thông tin khách hàng */}
                         <td>
                           <div className="">{sample.customerName}</div>
                           <small className="text-muted">{sample.phone}</small>
                         </td>
-                        
+
                         {/* Thông tin dịch vụ */}
                         <td>
                           <div>{sample.service}</div>
@@ -560,7 +779,7 @@ const SampleCollection = ({ user }) => {
                             {sample.serviceType === 'civil' ? 'Hành chính' : 'Dân sự'}
                           </span>
                         </td>
-                        
+
                         {/* Phương thức lấy mẫu */}
                         <td>
                           {sample.methodName === 'Lấy mẫu tại lab' ? (
@@ -581,7 +800,7 @@ const SampleCollection = ({ user }) => {
                             </span>
                           )}
                         </td>
-                        
+
                         {/* Thời gian */}
                         <td>
                           <div>{formatDateTime(sample.scheduledTime)}</div>
@@ -589,12 +808,12 @@ const SampleCollection = ({ user }) => {
                             <small className="text-success">Về: {formatDateTime(sample.returnedDate)}</small>
                           )}
                         </td>
-                        
+
                         {/* Trạng thái */}
                         <td>
                           {getStatusBadge(sample.status)}
                         </td>
-                        
+
                         {/* Các nút thao tác */}
                         <td>
                           <div className="d-flex flex-column gap-1">
@@ -659,7 +878,7 @@ const SampleCollection = ({ user }) => {
                     </tbody>
                   </table>
                 </Col>
-                
+
                 {/* Thông tin thu mẫu */}
                 <Col md={6}>
                   <h6 className="text-primary mb-3">Thông tin thu mẫu</h6>
@@ -674,7 +893,7 @@ const SampleCollection = ({ user }) => {
                           onChange={(e) => setCollectionData({ ...collectionData, collectionTime: e.target.value })}
                         />
                       </Col>
-                      
+
                       {/* Người thu mẫu */}
                       <Col md={6} className="mb-3">
                         <Form.Label>Người thu mẫu</Form.Label>
@@ -709,10 +928,10 @@ const SampleCollection = ({ user }) => {
                         <tr key={sample.id || sample.sampleId || idx}>
                           {/* Mã mẫu */}
                           <td>{sample.id || sample.sampleId}</td>
-                          
+
                           {/* Tên người tham gia */}
                           <td>{sample.participant?.name || sample.name || ''}</td>
-                          
+
                           {/* Loại mẫu */}
                           <td>
                             <Form.Select
@@ -733,7 +952,7 @@ const SampleCollection = ({ user }) => {
                               <option value="other">Khác</option>
                             </Form.Select>
                           </td>
-                          
+
                           {/* Chất lượng mẫu */}
                           <td>
                             <Form.Select
@@ -752,7 +971,7 @@ const SampleCollection = ({ user }) => {
                               <option value="poor">Kém</option>
                             </Form.Select>
                           </td>
-                          
+
                           {/* Nồng độ mẫu */}
                           <td>
                             <Form.Control
@@ -778,7 +997,7 @@ const SampleCollection = ({ user }) => {
                               }}
                             />
                           </td>
-                          
+
                           {/* Ghi chú */}
                           <td>
                             <Form.Control

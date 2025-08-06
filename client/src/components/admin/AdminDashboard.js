@@ -23,7 +23,7 @@ import BlogEditor from './BlogEditor';
 import AdminReports from './AdminReports';
 import UserManagement from './UserManagement';
 import SystemSettings from './SystemSettings';
-import AdminProfile from './AdminProfile';
+
 
 const AdminDashboard = () => {
   // ROUTER HOOKS
@@ -276,14 +276,6 @@ const AdminDashboard = () => {
       path: '/admin/settings',
       color: 'dark',
       description: 'Cấu hình giao diện và xóa cache'
-    },
-    {
-      key: 'profile',
-      label: 'Hồ sơ cá nhân',
-      icon: 'bi-person-circle',
-      path: '/admin/profile',
-      color: 'info',
-      description: 'Quản lý thông tin cá nhân'
     }
   ];
 
@@ -414,7 +406,6 @@ const AdminDashboard = () => {
               <Route path="blog/create" element={<BlogEditor />} />
               <Route path="blog/edit/:id" element={<BlogEditor />} />
               <Route path="reports" element={<AdminReports />} />
-              <Route path="profile" element={<AdminProfile user={currentUser} />} />
               <Route path="settings" element={<SystemSettings />} />
               <Route 
                 path="users" 
