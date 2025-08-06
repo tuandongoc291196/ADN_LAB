@@ -44,7 +44,7 @@ const StaffOverview = ({ user }) => {
           let taskStatus = '';
           switch (latestStatus) {
             case 'BOOKED':
-              taskStatus = isHomeVisit ? 'waiting-kit-prep' : 'waiting-sample';
+              taskStatus = 'waiting-kit-prep';
               break;
             case 'KIT_PREPARED':
               taskStatus = 'kit-prepared';
@@ -69,7 +69,7 @@ const StaffOverview = ({ user }) => {
               taskStatus = 'overdue';
               break;
             case 'COMPLETE':
-              taskStatus = 'complete';
+              taskStatus = isHomeVisit ? 'complete' : 'sent-result';;
               break;
             case 'REFUNDED':
               taskStatus = 'refunded';
@@ -162,6 +162,7 @@ const StaffOverview = ({ user }) => {
       'expired': 'danger',
       'sample-received': 'info',
       'complete': 'primary',
+      'sent-result': 'primary',
       'refunded': 'warning',
 
       // SampleCollection statuses
@@ -186,6 +187,7 @@ const StaffOverview = ({ user }) => {
       'expired': 'Quá hạn',
       'sample-received': 'Sẵn sàng thu mẫu',
       'complete': 'Hoàn thành',
+      'sent-result': 'Đã gửi kết quả',
       'refunded': 'Đã hoàn tiền',
 
       // SampleCollection labels
@@ -227,7 +229,7 @@ const StaffOverview = ({ user }) => {
     if (isHomeVisit && (status === 'sample-received')) {
       return '/staff/sample-collection';
     }
-    
+
     // Mapping loại task với URL tương ứng
     const links = {
       'kit-preparation': '/staff/kit-preparation',
@@ -245,7 +247,8 @@ const StaffOverview = ({ user }) => {
   ];
 
   // BƯỚC 5: Đếm số lượng task để hiển thị badge
-  const normalCount = todayTasks.filter(task => !['overdue', 'cancelled'].includes(task.status)).length;
+  const completeCount = todayTasks.filter(task => ['sent-result', 'complete'].includes(task.status)).length;
+  const normalCount = todayTasks.filter(task => !['overdue', 'cancelled', 'complete', 'sent-result'].includes(task.status)).length;
   const specialCount = todayTasks.filter(task => ['overdue', 'cancelled'].includes(task.status)).length;
 
   return (
@@ -275,6 +278,7 @@ const StaffOverview = ({ user }) => {
                   Công việc hôm nay
                 </h5>
                 <div>
+                  <Badge bg="success" className="me-2">{completeCount} đã hoàn thành</Badge>
                   <Badge bg="primary" className="me-2">{normalCount} cần xử lý</Badge>
                   <Badge bg="danger">{specialCount} quá hạn/đã hủy</Badge>
                 </div>
@@ -358,7 +362,7 @@ const StaffOverview = ({ user }) => {
                       </div>
 
                       {/* Nút xử lý - chỉ hiển thị cho các task chưa hoàn thành */}
-                      {!['overdue', 'cancelled', 'collected', 'analysis-complete', 'reviewed', 'delivered', 'result-pending', 'complete', 'refunded'].includes(task.status) && (
+                      {!['overdue', 'cancelled', 'collected', 'analysis-complete', 'sent-result', 'delivered', 'result-pending', 'complete', 'refunded'].includes(task.status) && (
                         <Button
                           as={Link}
                           to={`${getTaskLink(task.type, task.status, task.isHomeVisit)}/${task.orderIds[0]}`}

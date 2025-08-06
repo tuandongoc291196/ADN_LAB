@@ -19,36 +19,34 @@ import Swal from 'sweetalert2';
 // Props: user - đối tượng người dùng hiện tại đã xác thực
 const MyAppointments = ({ user }) => {
   // PHẦN QUẢN LÝ STATE
-  
+
   // Quản lý Tab - Điều khiển tab nào đang được chọn
   const [selectedTab, setSelectedTab] = useState('all'); // 'all', 'confirmed', 'in-progress', 'completed', 'cancelled'
-  
+
   // State Modal - Điều khiển hiển thị các modal khác nhau
   const [showCancelModal, setShowCancelModal] = useState(false); // Modal để hủy lịch hẹn
   const [showRescheduleModal, setShowRescheduleModal] = useState(false); // Modal để đổi lịch hẹn
   const [showReceiveModal, setShowReceiveModal] = useState(false); // Modal để xác nhận đã nhận kit
-  const [showSelfCollectModal, setShowSelfCollectModal] = useState(false); // Modal để xác nhận tự thu mẫu
   const [showSendSampleModal, setShowSendSampleModal] = useState(false); // Modal để xác nhận đã gửi mẫu
-  
+
   // State Item được chọn - Lưu trữ lịch hẹn hiện tại được chọn cho các thao tác modal
   const [selectedAppointment, setSelectedAppointment] = useState(null); // Lịch hẹn hiện tại được chọn để hủy/đổi
   const [selectedReceiveAppointmentId, setSelectedReceiveAppointmentId] = useState(null); // ID lịch hẹn để xác nhận đã nhận kit
-  const [selectedSelfCollectAppointmentId, setSelectedSelfCollectAppointmentId] = useState(null); // ID lịch hẹn để xác nhận tự thu mẫu
   const [selectedSendSampleAppointmentId, setSelectedSendSampleAppointmentId] = useState(null); // ID lịch hẹn để xác nhận đã gửi mẫu
-  
+
   // State Bộ lọc - Điều khiển lịch hẹn nào được hiển thị
   const [searchTerm, setSearchTerm] = useState(''); // Bộ lọc tìm kiếm theo text
   const [timeFilter, setTimeFilter] = useState('all'); // Bộ lọc khoảng thời gian: 'all', '1week', '1month', '3months', '6months', '12months'
   const [statusFilter, setStatusFilter] = useState('all'); // Bộ lọc trạng thái: 'all', 'confirmed', 'in-progress', 'completed', 'cancelled'
-  
+
   // State Dữ liệu - Lưu trữ dữ liệu lịch hẹn thực tế
   const [appointments, setAppointments] = useState([]); // Dữ liệu lịch hẹn thô từ API
   const [transformedAppointments, setTransformedAppointments] = useState([]); // Dữ liệu lịch hẹn đã xử lý để hiển thị
-  
+
   // State Giao diện - Điều khiển trạng thái loading và lỗi
   const [loading, setLoading] = useState(true); // Hiển thị spinner khi đang tải dữ liệu
   const [error, setError] = useState(null); // Lưu trữ thông báo lỗi nếu API call thất bại
-  
+
   // State Form - Cho input trong modal
   const [description, setDescription] = useState(''); // Text mô tả cho việc cập nhật lịch sử booking
 
@@ -68,7 +66,7 @@ const MyAppointments = ({ user }) => {
         setLoading(true);
         // Xóa bất kỳ lỗi trước đó
         setError(null);
-        
+
         // Gọi API để lấy tất cả lịch hẹn cho người dùng hiện tại
         const data = await getBookingByUserId(user.id);
         // Lưu dữ liệu lịch hẹn thô vào state
@@ -89,7 +87,7 @@ const MyAppointments = ({ user }) => {
   // ========================================
   // HÀM TRỢ GIÚP
   // ========================================
-  
+
   /**
    * Xác định tin nhắn hành động tiếp theo dựa trên trạng thái hiện tại
    * @param {string} status - Trạng thái hiện tại của lịch hẹn
@@ -101,7 +99,7 @@ const MyAppointments = ({ user }) => {
     if (latestHistoryStatus === 'COMPLETED' || latestHistoryStatus === 'COMPLETE') {
       return 'Kết quả đã sẵn sàng';
     }
-    
+
     // Ánh xạ mỗi trạng thái để có tin nhắn hành động tiếp theo phù hợp
     switch (latestHistoryStatus) {
       case 'KIT_SENT':
@@ -140,7 +138,7 @@ const MyAppointments = ({ user }) => {
     if (latestHistoryStatus === 'COMPLETED' || latestHistoryStatus === 'COMPLETE') {
       return 'Xét nghiệm hoàn tất. Kết quả có thể tải về hoặc nhận tại cơ sở.';
     }
-    
+
     // Ánh xạ mỗi trạng thái để có hướng dẫn chi tiết
     switch (latestHistoryStatus) {
       case 'KIT_SENT':
@@ -202,7 +200,7 @@ const MyAppointments = ({ user }) => {
   // ========================================
   // PHẦN MAPPING TIMELINE VÀ TRẠNG THÁI
   // ========================================
-  
+
   /**
    * Lấy các bước timeline phù hợp dựa trên phương thức thử nghiệm
    * Các phương thức khác nhau có các luồng làm việc khác nhau (tự thu mẫu tại nhà vs thăm viện)
@@ -212,10 +210,10 @@ const MyAppointments = ({ user }) => {
   const getTimelineForMethod = (method) => {
     // Timeline mặc định nếu không có phương thức nào được cung cấp
     if (!method || !method.id) return ['CREATED', 'PENDING_PAYMENT', 'PAYMENT_FAILED', 'BOOKED', 'SAMPLE_COLLECTED', 'RESULT_PENDING', 'COMPLETE', 'SENT_RESULT'];
-    
+
     const methodId = method.id;
     const methodName = method.name?.toLowerCase() || '';
-    
+
     // Phương thức tự thu mẫu (Method ID: 0) - Tự thu mẫu tại nhà
     // Timeline: CREATED → PENDING_PAYMENT → PAYMENT_FAILED → BOOKED → KIT_PREPARED → KIT_SENT → KIT_RECEIVED → SELF_COLLECTED → KIT_RETURNED → SAMPLE_RECEIVED → SAMPLE_COLLECTED → RESULT_PENDING → COMPLETE → SENT_RESULT
     if (methodId === '0' || methodName.includes('tự') || methodName.includes('self') || methodName.includes('kit')) {
@@ -236,7 +234,7 @@ const MyAppointments = ({ user }) => {
         'SENT_RESULT'
       ];
     }
-    
+
     // Phương thức thăm viện (Method ID: 1) - Nhân viên thăm nhà
     // Timeline: CREATED → PENDING_PAYMENT → PAYMENT_FAILED → BOOKED → STAFF_ASSIGNED → SAMPLE_RECEIVED → SAMPLE_COLLECTED → RESULT_PENDING → COMPLETE → SENT_RESULT
     if (methodId === '1' || methodName.includes('tại nhà') || methodName.includes('home') || methodName.includes('visit')) {
@@ -253,7 +251,7 @@ const MyAppointments = ({ user }) => {
         'SENT_RESULT'
       ];
     }
-    
+
     // Phương thức thăm viện (Method ID: 2) - Lấy mẫu tại viện/cơ sở
     // Timeline: CREATED → PENDING_PAYMENT → PAYMENT_FAILED → BOOKED → SAMPLE_RECEIVED → SAMPLE_COLLECTED → RESULT_PENDING → COMPLETE → SENT_RESULT
     if (methodId === '2' || methodName.includes('tại lab') || methodName.includes('cơ sở') || methodName.includes('lab') || methodName.includes('facility')) {
@@ -269,7 +267,7 @@ const MyAppointments = ({ user }) => {
         'SENT_RESULT'
       ];
     }
-    
+
     // Timeline mặc định nếu không có khớp nào được tìm thấy
     return ['CREATED', 'PENDING_PAYMENT', 'PAYMENT_FAILED', 'BOOKED', 'SAMPLE_COLLECTED', 'RESULT_PENDING', 'COMPLETE', 'SENT_RESULT'];
   };
@@ -284,7 +282,7 @@ const MyAppointments = ({ user }) => {
   const mapTimelineStatusToUIStatus = (currentStatus, method) => {
     // Xử lý null/undefined trạng thái
     if (!currentStatus) return 'confirmed';
-    
+
     // Xử lý các trạng thái đặc biệt trên logic phương thức
     if (currentStatus === 'COMPLETED' || currentStatus === 'COMPLETE' || currentStatus === 'SENT_RESULT') {
       return 'completed';
@@ -292,11 +290,11 @@ const MyAppointments = ({ user }) => {
     if (currentStatus === 'CANCELLED' || currentStatus === 'EXPIRED') {
       return 'cancelled';
     }
-    
+
     // Trích xuất thông tin phương thức để ánh xạ trạng thái
     const methodId = method?.id;
     const methodName = method?.name?.toLowerCase() || '';
-    
+
     // Phương thức tự thu mẫu (Method ID: 0) - Người dùng thu mẫu tại nhà
     if (methodId === '0' || methodName.includes('tự') || methodName.includes('self') || methodName.includes('kit')) {
       // Trạng thái đã xác nhận: Các bước đầu tiên của quá trình
@@ -312,7 +310,7 @@ const MyAppointments = ({ user }) => {
         return 'completed';
       }
     }
-    
+
     // Phương thức thăm viện (Method ID: 1) - Nhân viên thăm nhà
     else if (methodId === '1' || methodName.includes('tại nhà') || methodName.includes('home') || methodName.includes('visit')) {
       // Trạng thái đã xác nhận: Các bước đầu tiên
@@ -328,7 +326,7 @@ const MyAppointments = ({ user }) => {
         return 'completed';
       }
     }
-    
+
     // Phương thức thăm viện (Method ID: 2) - Người dùng thăm viện cơ sở
     else if (methodId === '2' || methodName.includes('tại lab') || methodName.includes('cơ sở') || methodName.includes('lab') || methodName.includes('facility')) {
       // Trạng thái đã xác nhận: Các bước đầu tiên
@@ -344,7 +342,7 @@ const MyAppointments = ({ user }) => {
         return 'completed';
       }
     }
-    
+
     // Ánh xạ mặc định cho các phương thức không xác định
     else {
       if (['SAMPLE_COLLECTED', 'SAMPLE_PROCESSING', 'RESULT_PENDING', 'KIT_RETURNED', 'SAMPLE_RECEIVED', 'SELF_COLLECTED'].includes(currentStatus)) {
@@ -360,7 +358,7 @@ const MyAppointments = ({ user }) => {
   // ========================================
   // PHẦN TÍNH TOÁN TIẾN ĐỘ
   // ========================================
-  
+
   /**
    * Tính toán phần trăm tiến độ dựa trên lịch sử booking và timeline
    * Tiến độ được tính bằng cách tìm bước hiện tại trong timeline và chuyển đổi thành phần trăm
@@ -372,7 +370,7 @@ const MyAppointments = ({ user }) => {
   // ========================================
   // PHẦN BIẾN ĐỔI DỮ LIỆU
   // ========================================
-  
+
   /**
    * Biến đổi dữ liệu lịch hẹn thô từ API sang định dạng hiển thị
    * Trích xuất và định dạng tất cả thông tin cần thiết cho UI
@@ -383,7 +381,7 @@ const MyAppointments = ({ user }) => {
     // ========================================
     // TRÍCH XUẤT NGÀY VÀ GIỜ
     // ========================================
-    
+
     // Trích xuất ngày và giờ từ timeSlotId (định dạng: "2025-07-13_09:00_10:00")
     const timeSlotId = booking.timeSlotId;
     let date = '';
@@ -412,15 +410,15 @@ const MyAppointments = ({ user }) => {
     // ========================================
     // XÁC ĐỊNH TRẠNG THÁI
     // ========================================
-    
+
     // Lấy trạng thái hiện tại từ lịch sử booking (bản ghi gần nhất)
     const history = booking.bookingHistories_on_booking?.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) || [];
     const currentHistoryStatus = history.length > 0 ? history[0].status : null;
-    
+
     // Khởi tạo biến trạng thái
     let status = 'confirmed'; // trạng thái mặc định
     let isUpcoming = false;
-    
+
     // Kiểm tra xem lịch hẹn có phải là lịch hẹn tới không dựa trên ngày
     if (timeSlotId) {
       try {
@@ -443,7 +441,7 @@ const MyAppointments = ({ user }) => {
       // Fallback về trạng thái dựa trên thời gian nếu không có lịch sử
       const createdAt = new Date(booking.createdAt);
       const now = new Date();
-      
+
       if (isUpcoming) {
         status = 'confirmed';
       } else if (createdAt.getTime() + (7 * 24 * 60 * 60 * 1000) < now.getTime()) {
@@ -458,7 +456,7 @@ const MyAppointments = ({ user }) => {
     // ========================================
     // THÔNG TIN DỊCH VỤ TRÍCH XUẤT
     // ========================================
-    
+
     // Lấy thông tin dịch vụ từ dữ liệu lồng nhau (API cấu trúc mới với category được bao gồm)
     const serviceName = booking.service?.title || 'Dịch vụ xét nghiệm ADN';
     let serviceType = 'civil'; // mặc định
@@ -496,18 +494,18 @@ const MyAppointments = ({ user }) => {
     // ========================================
     // THÔNG TIN PHƯƠNG THỨC VÀ NHÂN VIÊN
     // ========================================
-    
+
     // Lấy thông tin phương thức từ dữ liệu lồng nhau
     const methodName = booking.method?.name || 'Phương thức lấy mẫu';
     const methodId = booking.methodId?.toString() || '';
 
     // Lấy thông tin nhân viên từ dữ liệu lồng nhau
     const staffName = booking.staff?.user?.fullname || `Nhân viên ${booking.staffId}`;
-    
+
     // ========================================
     // LỊCH SỬ VÀ NGƯỜI THAM GIA
     // ========================================
-    
+
     // Lấy lịch sử booking và sắp xếp theo ngày
     const bookingHistories = Array.isArray(booking.bookingHistories_on_booking)
       ? booking.bookingHistories_on_booking
@@ -522,7 +520,7 @@ const MyAppointments = ({ user }) => {
     // ========================================
     // TRẢ VỀ ĐỐI TƯỢNG ĐÃ BIẾN ĐỔI
     // ========================================
-    
+
     // Trả về tất cả dữ liệu đã biến đổi trong một đối tượng duy nhất
     return {
       id: booking.id,
@@ -549,7 +547,7 @@ const MyAppointments = ({ user }) => {
   // ========================================
   // EFFECT BIẾN ĐỔI DỮ LIỆU
   // ========================================
-  
+
   /**
    * useEffect để biến đổi dữ liệu lịch hẹn thô sang định dạng hiển thị
    * Chạy khi dữ liệu lịch hẹn thô thay đổi
@@ -574,7 +572,7 @@ const MyAppointments = ({ user }) => {
   // ========================================
   // HÀM TIỆN ÍCH
   // ========================================
-  
+
   /**
    * Cập nhật trạng thái lịch hẹn tự động sau các hành động của người dùng
    * Thêm bản ghi lịch sử vào lịch hẹn mà không lấy lại từ API
@@ -634,7 +632,7 @@ const MyAppointments = ({ user }) => {
   // ========================================
   // PHẦN LỌC VÀ SẮP XẾP
   // ========================================
-  
+
   /**
    * Lọc và sắp xếp lịch hẹn dựa trên lựa chọn của người dùng
    * Áp dụng bộ lọc tìm kiếm, thời gian và trạng thái, sau đó sắp xếp theo ngày
@@ -647,7 +645,7 @@ const MyAppointments = ({ user }) => {
     // ========================================
     // LỌC THEO TAB
     // ========================================
-    
+
     // Lọc theo tab được chọn (tất cả, đã xác nhận, đang thực hiện, hoàn thành, đã hủy)
     if (selectedTab !== 'all') {
       filtered = filtered.filter(apt => apt.status === selectedTab);
@@ -656,7 +654,7 @@ const MyAppointments = ({ user }) => {
     // ========================================
     // LỌC THEO TỪ KHÓA TÌM KIẾM
     // ========================================
-    
+
     // Lọc theo từ khóa tìm kiếm (tên dịch vụ, mã đặt lịch hoặc tên người tham gia)
     if (searchTerm) {
       filtered = filtered.filter(apt =>
@@ -672,7 +670,7 @@ const MyAppointments = ({ user }) => {
     // ========================================
     // LỌC THEO KHOẢNG THỜI GIAN
     // ========================================
-    
+
     // Lọc theo khoảng thời gian (1 tuần, 1 tháng, 3 tháng, v.v.)
     if (timeFilter !== 'all') {
       const now = new Date();
@@ -713,7 +711,7 @@ const MyAppointments = ({ user }) => {
     // ========================================
     // LỌC THEO TRẠNG THÁI
     // ========================================
-    
+
     // Lọc theo trạng thái (đã xác nhận, đang thực hiện, hoàn thành, đã hủy)
     if (statusFilter !== 'all') {
       filtered = filtered.filter(apt => apt.status === statusFilter);
@@ -722,7 +720,7 @@ const MyAppointments = ({ user }) => {
     // ========================================
     // SẮP XẾP
     // ========================================
-    
+
     // Sắp xếp theo ngày (mới nhất trước) với xử lý lỗi
     return filtered.sort((a, b) => {
       try {
@@ -744,7 +742,7 @@ const MyAppointments = ({ user }) => {
   // ========================================
   // HÀM XỬ LÝ SỰ KIỆN
   // ========================================
-  
+
   /**
    * Mở modal hủy lịch hẹn
    * @param {Object} appointment - Lịch hẹn để hủy
@@ -784,7 +782,7 @@ const MyAppointments = ({ user }) => {
   // ========================================
   // HÀM ĐỊNH DẠNG
   // ========================================
-  
+
   /**
    * Định dạng chuỗi ngày thành định dạng người dùng Việt Nam
    * @param {string} dateString - Chuỗi ngày cần định dạng
@@ -826,10 +824,10 @@ const MyAppointments = ({ user }) => {
   // ========================================
   // GIÁ TRỊ TÍNH TOÁN
   // ========================================
-  
+
   // Áp dụng tất cả các bộ lọc và sắp xếp để lấy danh sách lịch hẹn cuối cùng
   const filteredAppointments = filterAppointments();
-  
+
   // Tính toán số lượng cho mỗi tab để hiển thị trên badge tab
   const tabCounts = {
     all: transformedAppointments.length,
@@ -842,7 +840,7 @@ const MyAppointments = ({ user }) => {
   // ========================================
   // PHẦN HIỂN THỊ
   // ========================================
-  
+
   return (
     <>
       {/* ========================================
@@ -872,7 +870,7 @@ const MyAppointments = ({ user }) => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </Col>
-        
+
         {/* Bộ lọc Thời gian */}
         <Col lg={3} md={6} className="mb-2">
           <Form.Select
@@ -888,7 +886,7 @@ const MyAppointments = ({ user }) => {
             <option value="12months">12 tháng qua</option>
           </Form.Select>
         </Col>
-        
+
         {/* Bộ lọc Trạng thái */}
         <Col lg={3} md={6} className="mb-2">
           <Form.Select
@@ -903,7 +901,7 @@ const MyAppointments = ({ user }) => {
             <option value="cancelled">Đã hủy</option>
           </Form.Select>
         </Col>
-        
+
         {/* Nút Đặt lịch mới */}
         <Col lg={3} md={6} className="mb-2">
           <div className="d-flex justify-content-end">
@@ -981,263 +979,243 @@ const MyAppointments = ({ user }) => {
                 <span className="visually-hidden">Loading...</span>
               </Spinner>
             </div>
-          ) : 
-          /* Trạng thái Lỗi */
-          error ? (
-            <div className="text-center py-5">
-              <i className="bi bi-exclamation-triangle text-danger" style={{ fontSize: '4rem' }}></i>
-              <h5 className="text-danger mt-3">
-                {error}
-              </h5>
-              <p className="text-muted">
-                Vui lòng thử lại sau.
-              </p>
-            </div>
-          ) : 
-          /* Danh sách lịch hẹn */
-          filteredAppointments.length > 0 ? (
-            <div className="list-group list-group-flush">
-              {filteredAppointments.map((appointment, index) => {
-                const statusInfo = getStatusInfo(appointment.status);
+          ) :
+            /* Trạng thái Lỗi */
+            error ? (
+              <div className="text-center py-5">
+                <i className="bi bi-exclamation-triangle text-danger" style={{ fontSize: '4rem' }}></i>
+                <h5 className="text-danger mt-3">
+                  {error}
+                </h5>
+                <p className="text-muted">
+                  Vui lòng thử lại sau.
+                </p>
+              </div>
+            ) :
+              /* Danh sách lịch hẹn */
+              filteredAppointments.length > 0 ? (
+                <div className="list-group list-group-flush">
+                  {filteredAppointments.map((appointment, index) => {
+                    const statusInfo = getStatusInfo(appointment.status);
 
-                return (
-                  <div key={appointment.id} className="list-group-item p-4">
-                    <Row>
-                      {/* Cột trái - Chi tiết lịch hẹn */}
-                      <Col lg={8}>
-                        {/* Tiêu đề lịch hẹn */}
-                        <div className="d-flex justify-content-between align-items-start mb-3">
-                          <div>
-                            <h5 className="mb-2 d-flex align-items-center" style={{ gap: 8 }}>
-                              <span className={`badge ${appointment.serviceType === 'administrative' ? 'bg-warning text-dark' : 'bg-success'}`} style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: 500 }}>
-                                {appointment.categoryName}
-                              </span>
-                              <span style={{ fontWeight: 500, fontSize: 18 }}>{appointment.service}</span>
-                            </h5>
-                            <div className="d-flex align-items-center gap-3 text-muted mb-2">
-                              <span className="text-muted small">
-                                <i className="bi bi-hash me-1"></i>
-                                {appointment.id}
-                              </span>
-                              <span className="text-muted small">
-                                <i className="bi bi-calendar me-1"></i>
-                                {formatDate(appointment.date)} lúc {appointment.time}
-                              </span>
-                              <span className="text-muted small">
-                                <i className={`${getMethodIcon(appointment.methodId) + ' me-1'}`}></i>
-                                {appointment.method}
-                              </span>
-                              <span className="text-muted small">
-                                <i className="bi bi-person-badge me-1"></i>
-                                {appointment.staff}
-                              </span>
+                    return (
+                      <div key={appointment.id} className="list-group-item p-4">
+                        <Row>
+                          {/* Cột trái - Chi tiết lịch hẹn */}
+                          <Col lg={8}>
+                            {/* Tiêu đề lịch hẹn */}
+                            <div className="d-flex justify-content-between align-items-start mb-3">
+                              <div>
+                                <h5 className="mb-2 d-flex align-items-center" style={{ gap: 8 }}>
+                                  <span className={`badge ${appointment.serviceType === 'administrative' ? 'bg-warning text-dark' : 'bg-success'}`} style={{ borderRadius: '8px', padding: '6px 12px', fontWeight: 500 }}>
+                                    {appointment.categoryName}
+                                  </span>
+                                  <span style={{ fontWeight: 500, fontSize: 18 }}>{appointment.service}</span>
+                                </h5>
+                                <div className="d-flex align-items-center gap-3 text-muted mb-2">
+                                  <span className="text-muted small">
+                                    <i className="bi bi-hash me-1"></i>
+                                    {appointment.id}
+                                  </span>
+                                  <span className="text-muted small">
+                                    <i className="bi bi-calendar me-1"></i>
+                                    {formatDate(appointment.date)} lúc {appointment.time}
+                                  </span>
+                                  <span className="text-muted small">
+                                    <i className={`${getMethodIcon(appointment.methodId) + ' me-1'}`}></i>
+                                    {appointment.method}
+                                  </span>
+                                  <span className="text-muted small">
+                                    <i className="bi bi-person-badge me-1"></i>
+                                    {appointment.staff}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="text-end">
+                                <Badge bg={statusInfo.variant} className="mb-2">
+                                  <i className={`${statusInfo.icon} me-1`}></i>
+                                  {statusInfo.text}
+                                </Badge>
+                                <div className="text-muted small">
+                                  {appointment.price}
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                          <div className="text-end">
-                            <Badge bg={statusInfo.variant} className="mb-2">
-                              <i className={`${statusInfo.icon} me-1`}></i>
-                              {statusInfo.text}
-                            </Badge>
-                            <div className="text-muted small">
-                              {appointment.price}
-                            </div>
-                          </div>
-                        </div>
 
-                        {/* Bảng Người tham gia */}
-                        <div className="mb-3">
-                          <strong className="text-muted small" style={{ textAlign: 'left', display: 'block' }}>Người tham gia:</strong>
-                          <div className="mt-1">
-                            {appointment.participants && appointment.participants.length > 0 ? (
-                              <table className="table table-bordered table-sm mt-2" style={{ maxWidth: 600 }}>
-                                <thead>
-                                  <tr className="text-muted small">
-                                    <th>Tên</th>
-                                    <th>Tuổi</th>
-                                    <th>Quan hệ nghi ngờ</th>
-                                    <th>Giới tính</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {appointment.participants.map((participant, idx) => (
-                                    <tr key={idx} className="text-muted small">
-                                      <td style={{ fontWeight: 500 }}>{participant.name}</td>
-                                      <td>{participant.age}</td>
-                                      <td>{participant.relationship || 'Chưa xác định'}</td>
-                                      <td>{participant.gender === 'male' ? 'Nam' : participant.gender === 'female' ? 'Nữ' : 'Khác'}</td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            ) : (
-                              <span className="text-muted small">
-                                <i className="bi bi-info-circle me-1"></i>
-                                Chưa có thông tin người tham gia
-                              </span>
+                            {/* Bảng Người tham gia */}
+                            <div className="mb-3">
+                              <strong className="text-muted small" style={{ textAlign: 'left', display: 'block' }}>Người tham gia:</strong>
+                              <div className="mt-1">
+                                {appointment.participants && appointment.participants.length > 0 ? (
+                                  <table className="table table-bordered table-sm mt-2" style={{ maxWidth: 600 }}>
+                                    <thead>
+                                      <tr className="text-muted small">
+                                        <th>Tên</th>
+                                        <th>Tuổi</th>
+                                        <th>Quan hệ nghi ngờ</th>
+                                        <th>Giới tính</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {appointment.participants.map((participant, idx) => (
+                                        <tr key={idx} className="text-muted small">
+                                          <td style={{ fontWeight: 500 }}>{participant.name}</td>
+                                          <td>{participant.age}</td>
+                                          <td>{participant.relationship || 'Chưa xác định'}</td>
+                                          <td>{participant.gender === 'male' ? 'Nam' : participant.gender === 'female' ? 'Nữ' : 'Khác'}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                ) : (
+                                  <span className="text-muted small">
+                                    <i className="bi bi-info-circle me-1"></i>
+                                    Chưa có thông tin người tham gia
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Thông báo hành động tiếp theo */}
+                            <Alert variant={
+                              appointment.status === 'completed' ? 'success' :
+                                appointment.latestHistoryStatus === 'KIT_SENT' || appointment.latestHistoryStatus === 'KIT_RECEIVED' ? 'warning' :
+                                  appointment.latestHistoryStatus === 'SELF_COLLECTED' || appointment.latestHistoryStatus === 'KIT_RETURNED' ? 'primary' :
+                                    'info'
+                            } className="mb-3 py-2">
+                              <i className="bi bi-info-circle me-2"></i>
+                              <strong>Trạng thái hiện tại:</strong> {appointment.nextAction}
+                            </Alert>
+
+                            {/* Ghi chú */}
+                            {appointment.notes && (
+                              <div className="text-muted small">
+                                <i className="bi bi-sticky me-1"></i>
+                                {appointment.notes}
+                              </div>
                             )}
-                          </div>
-                        </div>
+                          </Col>
 
-                        {/* Thông báo hành động tiếp theo */}
-                        <Alert variant={
-                          appointment.status === 'completed' ? 'success' : 
-                          appointment.latestHistoryStatus === 'KIT_SENT' || appointment.latestHistoryStatus === 'KIT_RECEIVED' ? 'warning' :
-                          appointment.latestHistoryStatus === 'SELF_COLLECTED' || appointment.latestHistoryStatus === 'KIT_RETURNED' ? 'primary' :
-                          'info'
-                        } className="mb-3 py-2">
-                          <i className="bi bi-info-circle me-2"></i>
-                          <strong>Trạng thái hiện tại:</strong> {appointment.nextAction}
-                        </Alert>
-
-                        {/* Ghi chú */}
-                        {appointment.notes && (
-                          <div className="text-muted small">
-                            <i className="bi bi-sticky me-1"></i>
-                            {appointment.notes}
-                          </div>
-                        )}
-                      </Col>
-
-                      {/* Cột phải - Hành động */}
-                      <Col lg={4} className="mt-3 mt-lg-0">
-                        <div className="d-grid gap-2">
-                          {/* Nút Xem chi tiết */}
-                          <Button
-                            variant="outline-primary"
-                            as={Link}
-                            to={`/tracking/${appointment.id}`}
-                          >
-                            <i className="bi bi-eye me-2"></i>
-                            Xem chi tiết
-                          </Button>
-
-                          {/* Nút Tải kết quả (cho lịch hẹn hoàn thành) */}
-                          {(appointment.status === 'completed' || appointment.latestHistoryStatus === 'COMPLETE') && (
-                            <Button variant="success" as={Link} to="/user/results">
-                              <i className="bi bi-download me-2"></i>
-                              Tải kết quả
-                            </Button>
-                          )}
-
-                          {/* Nút Hỗ trợ */}
-                          <Button variant="outline-secondary">
-                            <i className="bi bi-chat-dots me-2"></i>
-                            Hỗ trợ
-                          </Button>
-                          
-                          {/* Xác nhận nhận kit */}
-                          {appointment.latestHistoryStatus === 'KIT_SENT' && (
-                            <>
-                              <Alert variant="info" className="py-2">
-                                <i className="bi bi-truck me-2"></i>
-                                <strong>Kit đã đến nơi!</strong>
-                              </Alert>
+                          {/* Cột phải - Hành động */}
+                          <Col lg={4} className="mt-3 mt-lg-0">
+                            <div className="d-grid gap-2">
+                              {/* Nút Xem chi tiết */}
                               <Button
-                                variant="success"
-                                onClick={() => {
-                                  setSelectedReceiveAppointmentId(appointment.id);
-                                  setShowReceiveModal(true);
-                                }}
+                                variant="outline-primary"
+                                as={Link}
+                                to={`/tracking/${appointment.id}`}
                               >
-                                <i className="bi bi-box-arrow-in-down me-2"></i>
-                                Đã nhận kit
+                                <i className="bi bi-eye me-2"></i>
+                                Xem chi tiết
                               </Button>
-                            </>
-                          )}
-                          
-                          {/* Xác nhận tự thu mẫu */}
-                          {appointment.latestHistoryStatus === 'KIT_RECEIVED' && (
-                            <>
-                              <Alert variant="success" className="py-2">
-                                <i className="bi bi-box-arrow-in-down me-2"></i>
-                                <strong>Đã nhận kit thành công!</strong>
-                              </Alert>
-                              <Button
-                                variant="warning"
-                                onClick={() => {
-                                  setSelectedSelfCollectAppointmentId(appointment.id);
-                                  setShowSelfCollectModal(true);
-                                }}
-                              >
-                                <i className="bi bi-check2-circle me-2"></i>
-                                Tự thu mẫu
+
+                              {/* Nút Tải kết quả (cho lịch hẹn hoàn thành) */}
+                              {(appointment.status === 'completed' || appointment.latestHistoryStatus === 'COMPLETE') && (
+                                <Button variant="success" as={Link} to="/user/results">
+                                  <i className="bi bi-download me-2"></i>
+                                  Tải kết quả
+                                </Button>
+                              )}
+
+                              {/* Nút Hỗ trợ */}
+                              <Button variant="outline-secondary">
+                                <i className="bi bi-chat-dots me-2"></i>
+                                Hỗ trợ
                               </Button>
-                            </>
-                          )}
-                          
-                          {/* Xác nhận gửi mẫu */}
-                          {appointment.latestHistoryStatus === 'SELF_COLLECTED' && (
-                            <>
-                              <Alert variant="info" className="py-2">
-                                <i className="bi bi-hourglass-split me-2"></i>
-                                <strong>Bạn đã tự thu mẫu</strong><br />
-                                Vui lòng gửi mẫu về phòng lab theo hướng dẫn.
-                              </Alert>
-                              <Button
-                                variant="primary"
-                                onClick={() => {
-                                  setSelectedSendSampleAppointmentId(appointment.id);
-                                  setShowSendSampleModal(true);
-                                }}
-                              >
-                                <i className="bi bi-send-check me-2"></i>
-                                Gửi lại kit
-                              </Button>
-                            </>
-                          )}
-                          
-                          {/* Trạng thái xử lý mẫu */}
-                          {appointment.latestHistoryStatus === 'KIT_RETURNED' && (
-                            <Alert variant="info" className="py-2">
-                              <i className="bi bi-activity me-2"></i>
-                              <strong>Mẫu của bạn đang được phân tích</strong><br />
-                              Chúng tôi đã nhận được mẫu xét nghiệm và đang tiến hành xử lý. Kết quả sẽ sớm có.
-                            </Alert>
-                          )}
-                          
-                          {/* Trạng thái hoàn thành */}
-                          {appointment.latestHistoryStatus === 'COMPLETE' && (
-                            <Alert variant="success" className="py-2">
-                              <i className="bi bi-check-circle me-2"></i>
-                              <strong>Xét nghiệm hoàn tất!</strong><br />
-                              Kết quả đã sẵn sàng. Vui lòng xem chi tiết để tải kết quả.
-                            </Alert>
-                          )}
-                        </div>
-                      </Col>
-                    </Row>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            /* Trạng thái Trống */
-            <div className="text-center py-5">
-              <i className="bi bi-calendar-x text-muted" style={{ fontSize: '4rem' }}></i>
-              <h5 className="text-muted mt-3">
-                {searchTerm ? 'Không tìm thấy lịch hẹn nào' : 'Chưa có lịch hẹn nào'}
-              </h5>
-              <p className="text-muted">
-                {searchTerm
-                  ? 'Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc'
-                  : 'Bắt đầu đặt lịch xét nghiệm đầu tiên của bạn'
-                }
-              </p>
-              {!searchTerm && (
-                <Button variant="warning" as={Link} to="/appointment">
-                  <i className="bi bi-plus-circle me-2"></i>
-                  Đặt lịch ngay
-                </Button>
+
+                              {/* Xác nhận nhận kit */}
+                              {appointment.latestHistoryStatus === 'KIT_SENT' && (
+                                <>
+                                  <Alert variant="info" className="py-2">
+                                    <i className="bi bi-truck me-2"></i>
+                                    <strong>Kit đã đến nơi!</strong>
+                                  </Alert>
+                                  <Button
+                                    variant="success"
+                                    onClick={() => {
+                                      setSelectedReceiveAppointmentId(appointment.id);
+                                      setShowReceiveModal(true);
+                                    }}
+                                  >
+                                    <i className="bi bi-box-arrow-in-down me-2"></i>
+                                    Đã nhận kit
+                                  </Button>
+                                </>
+                              )}
+
+                              {/* Xác nhận gửi mẫu */}
+                              {appointment.latestHistoryStatus === 'KIT_RECEIVED' && (
+                                <>
+                                  <Alert variant="info" className="py-2">
+                                    <i className="bi bi-hourglass-split me-2"></i>
+                                    <strong>Bạn đã tự thu mẫu</strong><br />
+                                    Vui lòng gửi mẫu về phòng lab theo hướng dẫn.
+                                  </Alert>
+                                  <Button
+                                    variant="primary"
+                                    onClick={() => {
+                                      setSelectedSendSampleAppointmentId(appointment.id);
+                                      setShowSendSampleModal(true);
+                                    }}
+                                  >
+                                    <i className="bi bi-send-check me-2"></i>
+                                    Gửi lại kit
+                                  </Button>
+                                </>
+                              )}
+
+                              {/* Trạng thái xử lý mẫu */}
+                              {appointment.latestHistoryStatus === 'KIT_RETURNED' && (
+                                <Alert variant="info" className="py-2">
+                                  <i className="bi bi-activity me-2"></i>
+                                  <strong>Mẫu của bạn đang được phân tích</strong><br />
+                                  Chúng tôi đã nhận được mẫu xét nghiệm và đang tiến hành xử lý. Kết quả sẽ sớm có.
+                                </Alert>
+                              )}
+
+                              {/* Trạng thái hoàn thành */}
+                              {appointment.latestHistoryStatus === 'COMPLETE' && (
+                                <Alert variant="success" className="py-2">
+                                  <i className="bi bi-check-circle me-2"></i>
+                                  <strong>Xét nghiệm hoàn tất!</strong><br />
+                                  Kết quả đã sẵn sàng. Vui lòng xem chi tiết để tải kết quả.
+                                </Alert>
+                              )}
+                            </div>
+                          </Col>
+                        </Row>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                /* Trạng thái Trống */
+                <div className="text-center py-5">
+                  <i className="bi bi-calendar-x text-muted" style={{ fontSize: '4rem' }}></i>
+                  <h5 className="text-muted mt-3">
+                    {searchTerm ? 'Không tìm thấy lịch hẹn nào' : 'Chưa có lịch hẹn nào'}
+                  </h5>
+                  <p className="text-muted">
+                    {searchTerm
+                      ? 'Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc'
+                      : 'Bắt đầu đặt lịch xét nghiệm đầu tiên của bạn'
+                    }
+                  </p>
+                  {!searchTerm && (
+                    <Button variant="warning" as={Link} to="/appointment">
+                      <i className="bi bi-plus-circle me-2"></i>
+                      Đặt lịch ngay
+                    </Button>
+                  )}
+                </div>
               )}
-            </div>
-          )}
         </Card.Body>
       </Card>
 
       {/* ========================================
           PHẦN MODAL
           ======================================== */}
-      
+
       {/* Modal Hủy lịch hẹn */}
       <Modal show={showCancelModal} onHide={() => setShowCancelModal(false)}>
         <Modal.Header closeButton>
@@ -1383,10 +1361,10 @@ const MyAppointments = ({ user }) => {
                   status: 'KIT_RECEIVED',
                   description
                 });
-                
+
                 // Cập nhật trạng thái cục bộ ngay lập tức để cải thiện UX
                 updateBookingStatusLocally(selectedReceiveAppointmentId, 'KIT_RECEIVED', description);
-                
+
                 // Hiển thị thông báo thành công
                 Swal.fire({
                   icon: 'success',
@@ -1394,7 +1372,7 @@ const MyAppointments = ({ user }) => {
                   text: 'Chúng tôi đã ghi nhận thông tin.',
                   confirmButtonColor: '#198754'
                 });
-                
+
                 // Đóng modal và đặt lại form
                 setShowReceiveModal(false);
                 setDescription('');
@@ -1403,78 +1381,6 @@ const MyAppointments = ({ user }) => {
                 Swal.fire({
                   icon: 'error',
                   title: 'Lỗi!',
-                  text: 'Không thể xác nhận. Vui lòng thử lại.',
-                  confirmButtonColor: '#d33'
-                });
-              }
-            }}
-          >
-            <i className="bi bi-check-circle me-2"></i>
-            Xác nhận
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      {/* Modal Xác nhận tự thu mẫu */}
-      <Modal
-        show={showSelfCollectModal}
-        onHide={() => setShowSelfCollectModal(false)}
-        centered
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Xác nhận tự thu mẫu</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Alert variant="warning">
-            <i className="bi bi-droplet me-2"></i>
-            <strong>Bạn đã tự thu mẫu thành công?</strong><br />
-            Vui lòng xác nhận để chúng tôi sắp xếp tiếp nhận và phân tích mẫu xét nghiệm.
-          </Alert>
-          <Form.Group className="mt-3">
-            <Form.Label>Mô tả thông tin(bắt buộc)</Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={3}
-              placeholder="Ví dụ: Đã nhận kit từ bưu tá Giao hàng nhanh lúc 9h sáng"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </Form.Group>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowSelfCollectModal(false)}>
-            Đóng
-          </Button>
-          <Button
-            variant="success"
-            onClick={async () => {
-              try {
-                // Cuộc gọi API để thêm lịch sử booking
-                await addBookingHistory({
-                  bookingId: selectedSelfCollectAppointmentId,
-                  status: 'SELF_COLLECTED',
-                  description
-                });
-                
-                // Cập nhật trạng thái cục bộ
-                updateBookingStatusLocally(selectedSelfCollectAppointmentId, 'SELF_COLLECTED', description);
-                
-                // Hiển thị thông báo thành công
-                Swal.fire({
-                  icon: 'success',
-                  title: 'Đã xác nhận tự thu mẫu!',
-                  text: 'Hãy đảm bảo gửi mẫu về trung tâm đúng hướng dẫn.',
-                  confirmButtonColor: '#198754'
-                });
-                
-                // Đóng modal và đặt lại form
-                setShowSelfCollectModal(false);
-                setDescription('');
-              } catch (error) {
-                // Hiển thị thông báo lỗi
-                Swal.fire({
-                  icon: 'error',
-                  title: 'Lỗi',
                   text: 'Không thể xác nhận. Vui lòng thử lại.',
                   confirmButtonColor: '#d33'
                 });
@@ -1527,10 +1433,10 @@ const MyAppointments = ({ user }) => {
                   status: 'KIT_RETURNED',
                   description
                 });
-                
+
                 // Cập nhật trạng thái cục bộ
                 updateBookingStatusLocally(selectedSendSampleAppointmentId, 'KIT_RETURNED', description);
-                
+
                 // Hiển thị thông báo thành công
                 Swal.fire({
                   icon: 'success',
@@ -1538,7 +1444,7 @@ const MyAppointments = ({ user }) => {
                   text: 'Chúng tôi sẽ tiến hành xét nghiệm.',
                   confirmButtonColor: '#198754'
                 });
-                
+
                 // Đóng modal và đặt lại form
                 setShowSendSampleModal(false);
                 setDescription('');

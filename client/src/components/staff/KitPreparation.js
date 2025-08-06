@@ -53,13 +53,13 @@ const KitPreparation = ({ user }) => {
           // BƯỚC 2.1: Xác định status dựa trên history
           let mappedStatus = '';
           const idxSampleReceived = sorted.findIndex(h => h.status === 'SAMPLE_RECEIVED');
-          
+
           if (idxSampleReceived !== -1 && idxSampleReceived > 0) {
             // Có status SAMPLE_RECEIVED và sau đó còn status khác
             mappedStatus = 'collected';
           } else {
             const latestStatus = sorted[0]?.status?.toUpperCase() || '';
-            
+
             // BƯỚC 2.2: Map status từ API sang status hiển thị
             if (latestStatus === 'EXPIRED') {
               mappedStatus = 'expired';
@@ -74,7 +74,7 @@ const KitPreparation = ({ user }) => {
             } else {
               mappedStatus = 'sample-received'; // Mặc định nếu không xác định
             }
-            
+
             // BƯỚC 2.3: Validate status hợp lệ
             const validStatuses = ['waiting-kit-prep', 'kit-prepared', 'kit-sent', 'waiting-sample', 'sample-received', 'expired', 'kit-returned', 'pending-payment', 'cancelled'];
             if (!validStatuses.includes(mappedStatus)) mappedStatus = 'sample-received';
@@ -163,7 +163,7 @@ const KitPreparation = ({ user }) => {
     if (status === 'collected') {
       return <Badge bg="success">Đã thu mẫu</Badge>;
     }
-    
+
     // Định nghĩa mapping màu sắc và label cho từng status
     const statusConfig = {
       'waiting-kit-prep': { bg: 'warning', text: 'Chờ chuẩn bị kit' },
@@ -176,7 +176,7 @@ const KitPreparation = ({ user }) => {
       'pending-payment': { bg: 'dark', text: 'Chờ thanh toán' },
       'cancelled': { bg: 'secondary', text: 'Đã hủy' },
     };
-    
+
     const config = statusConfig[status] || { bg: 'secondary', text: status };
     return <Badge bg={config.bg}>{config.text}</Badge>;
   };
@@ -201,7 +201,7 @@ const KitPreparation = ({ user }) => {
    */
   const handleConfirmAction = async () => {
     if (!selectedOrder || !modalAction || !description.trim()) return;
-    
+
     let status = '';
     let updatedOrders = [];
 
@@ -221,7 +221,7 @@ const KitPreparation = ({ user }) => {
             : o
         );
       } else if (modalAction === 'prepare-direct') {
-        status = 'SAMPLE_RECEIVED';
+        status = 'READY_FOR_SAMPLE';
         updatedOrders = orders.map(o =>
           o.id === selectedOrder.id
             ? {
@@ -252,13 +252,13 @@ const KitPreparation = ({ user }) => {
             }
             : o
         );
-      } else if (modalAction === 'confirm-payment') {
-        status = 'BOOKED';
+      } else if (modalAction === 'prepare-direct1') {
+        status = 'PREPARED';
         updatedOrders = orders.map(o =>
           o.id === selectedOrder.id
             ? {
               ...o,
-              status: 'waiting-kit-prep'
+              status: 'sample-received',
             }
             : o
         );
@@ -266,7 +266,7 @@ const KitPreparation = ({ user }) => {
 
       // BƯỚC 2: Gọi API để cập nhật database
       await handleSubmit(selectedOrder.id, status, description);
-      
+
       // BƯỚC 3: Cập nhật state
       setOrders(updatedOrders);
 
@@ -357,7 +357,7 @@ const KitPreparation = ({ user }) => {
                 />
               </InputGroup>
             </Col>
-            
+
             {/* Status filter */}
             <Col md={6}>
               <Form.Select
@@ -395,13 +395,13 @@ const KitPreparation = ({ user }) => {
             <tr key={order.id} id={`order-row-${order.id}`}>
               {/* Mã đơn hàng */}
               <td>{order.id}</td>
-              
+
               {/* Thông tin khách hàng */}
               <td>
                 <div>{order.customerName}</div>
                 <small className="text-muted">{order.phone}</small>
               </td>
-              
+
               {/* Thông tin dịch vụ */}
               <td>
                 <div>{order.service}</div>
@@ -416,7 +416,7 @@ const KitPreparation = ({ user }) => {
                   </span>
                 </div>
               </td>
-              
+
               {/* Phương thức lấy mẫu */}
               <td>
                 {order.methodName === 'Lấy mẫu tại lab' ? (
@@ -437,49 +437,58 @@ const KitPreparation = ({ user }) => {
                   </span>
                 )}
               </td>
-              
+
               {/* Trạng thái */}
               <td>
                 <div>{getStatusBadge(order.status)}</div>
               </td>
-              
+
               {/* Ngày đặt */}
               <td>
                 <div>{formatDate(order.orderDate)}</div>
                 <small className="text-muted">DK: {formatDate(order.expectedDate)}</small>
               </td>
-              
+
               {/* Các nút thao tác */}
               <td>
                 <div className="d-flex flex-column gap-1">
                   {/* Nút cho trạng thái waiting-kit-prep */}
-                  {order.status === 'waiting-kit-prep' && (
-                    <>
-                      {/* Nếu là tự lấy mẫu tại nhà thì vẫn chuẩn bị kit */}
-                      {order.methodName === 'Lấy mẫu tại nhà' && (
-                        <Button
-                          size="sm"
-                          variant="info"
-                          onClick={() => openActionModal('prepare', order)}
-                        >
-                          <i className="bi bi-box me-1"></i>
-                          Chuẩn bị kit
-                        </Button>
-                      )}
-                      {/* Nếu là lấy mẫu tại lab hoặc nhân viên tới nhà thì chuyển thẳng sang SAMPLE_RECEIVED */}
-                      {(order.methodName === 'Lấy mẫu tại lab' || order.methodName === 'Nhân viên tới nhà lấy mẫu') && (
-                        <Button
-                          size="sm"
-                          variant="info"
-                          onClick={() => openActionModal('prepare-direct', order)}
-                        >
-                          <i className="bi bi-box me-1"></i>
-                          Chuẩn bị kit
-                        </Button>
-                      )}
-                    </>
+                  {/* Gom nút chuẩn bị kit cho các trường hợp đặc biệt */}
+                  {(
+                    (order.status === 'waiting-kit-prep' && order.methodName === 'Nhân viên tới nhà lấy mẫu') ||
+                    order.status === 'pending-payment'
+                  ) && (
+                      <Button
+                        size="sm"
+                        variant="info"
+                        onClick={() => openActionModal('prepare-direct1', order)}
+                      >
+                        <i className="bi bi-box me-1"></i>
+                        Chuẩn bị kit
+                      </Button>
+                    )}
+                  {/* Các trường hợp còn lại giữ nguyên */}
+                  {order.status === 'waiting-kit-prep' && order.methodName === 'Lấy mẫu tại nhà' && (
+                    <Button
+                      size="sm"
+                      variant="info"
+                      onClick={() => openActionModal('prepare', order)}
+                    >
+                      <i className="bi bi-box me-1"></i>
+                      Chuẩn bị kit
+                    </Button>
                   )}
-                  
+                  {order.status === 'waiting-kit-prep' && order.methodName === 'Lấy mẫu tại lab' && (
+                    <Button
+                      size="sm"
+                      variant="info"
+                      onClick={() => openActionModal('prepare-direct', order)}
+                    >
+                      <i className="bi bi-box me-1"></i>
+                      Chuẩn bị kit
+                    </Button>
+                  )}
+
                   {/* Nút cho trạng thái kit-prepared */}
                   {order.status === 'kit-prepared' && (
                     <Button
@@ -491,7 +500,7 @@ const KitPreparation = ({ user }) => {
                       Gửi Kit
                     </Button>
                   )}
-                  
+
                   {/* Nút cho trạng thái kit-returned */}
                   {order.status === 'kit-returned' && (
                     <Button
@@ -503,18 +512,19 @@ const KitPreparation = ({ user }) => {
                       Đã nhận kit
                     </Button>
                   )}
-                  
+
                   {/* Nút cho trạng thái pending-payment */}
-                  {order.status === 'pending-payment' && (
+                  {/* {order.status === 'pending-payment' && (
                     <Button
                       size="sm"
-                      variant="warning"
-                      onClick={() => openActionModal('confirm-payment', order)}
+                      variant="info"
+                      onClick={() => openActionModal('prepare-direct1', order)}
                     >
-                      <i className="bi bi-cash-coin me-1"></i>
-                      Xác nhận đã thanh toán
-                    </Button>
-                  )}
+                      <i className="bi bi-box me-1"></i>
+                      // {/* <i className="bi bi-cash-coin me-1"></i> */}
+
+                  {/* </Button>
+                  )} */}
 
                   {/* Nút chuyển đến thu mẫu */}
                   {order.status === 'sample-received' && (
@@ -550,7 +560,7 @@ const KitPreparation = ({ user }) => {
                     </Badge>
                   )}
                 </div>
-                
+
                 {/* Thông báo chờ khách hàng gửi lại kit */}
                 {order.status === 'kit-sent' && !order.returnInfo && (
                   <div className="mt-2">
@@ -579,25 +589,15 @@ const KitPreparation = ({ user }) => {
             <Form.Label>Chọn mô tả (bắt buộc)</Form.Label>
             <div className="mt-2">
               {/* Radio buttons cho từng loại hành động */}
-              {modalAction === 'confirm-payment' ? (
+              {modalAction === 'prepare-direct1' ? (
                 <>
                   <Form.Check
                     type="radio"
                     id="payment-cash"
                     name="description"
-                    label="Khách hàng đã thanh toán tiền mặt"
-                    value="Khách hàng đã thanh toán tiền mặt"
-                    checked={description === "Khách hàng đã thanh toán tiền mặt"}
-                    onChange={(e) => setDescription(e.target.value)}
-                    className="mb-2"
-                  />
-                  <Form.Check
-                    type="radio"
-                    id="payment-transfer"
-                    name="description"
-                    label="Khách hàng đã thanh toán qua chuyển khoản"
-                    value="Khách hàng đã thanh toán qua chuyển khoản"
-                    checked={description === "Khách hàng đã thanh toán qua chuyển khoản"}
+                    label="Đã chuẩn bị kit"
+                    value="Đã chuẩn bị kit"
+                    checked={description === "Đã chuẩn bị kit"}
                     onChange={(e) => setDescription(e.target.value)}
                     className="mb-2"
                   />
@@ -634,9 +634,9 @@ const KitPreparation = ({ user }) => {
                     type="radio"
                     id="direct-check"
                     name="description"
-                    label="Đã chuẩn bị kit và sẵn sàng thu mẫu"
-                    value="Đã chuẩn bị kit và sẵn sàng thu mẫu"
-                    checked={description === "Đã chuẩn bị kit và sẵn sàng thu mẫu"}
+                    label="Đã chuẩn bị kit"
+                    value="Đã chuẩn bị kit"
+                    checked={description === "Đã chuẩn bị kit"}
                     onChange={(e) => setDescription(e.target.value)}
                     className="mb-2"
                   />
