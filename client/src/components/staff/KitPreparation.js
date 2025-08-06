@@ -221,7 +221,7 @@ const KitPreparation = ({ user }) => {
             : o
         );
       } else if (modalAction === 'prepare-direct') {
-        status = 'READY_FOR_SAMPLE';
+        status = 'STAFF_ASSIGNED';
         updatedOrders = orders.map(o =>
           o.id === selectedOrder.id
             ? {

@@ -37,18 +37,18 @@ const SampleCollection = ({ user }) => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentSample, setPaymentSample] = useState(null);
   const [paymentDescription, setPaymentDescription] = useState('Khách hàng đã thanh toán đủ chi phí');
-  // Hàm xác nhận thanh toán, gọi addBookingHistory đổi status thành PAYMENT_CONFIRM
+  // Hàm xác nhận thanh toán, gọi addBookingHistory đổi status thành PAYMENT_CONFIRMED
   const handleConfirmPayment = async () => {
     if (!paymentSample) return;
     try {
       await addBookingHistory({
         bookingId: paymentSample.id,
-        status: 'PAYMENT_CONFIRM',
+        status: 'PAYMENT_CONFIRMED',
         description: paymentDescription
       });
       setAlert({ show: true, message: `Đã xác nhận thanh toán cho đơn ${paymentSample.id}`, type: 'success' });
       // Cập nhật lại danh sách
-      setSamples(samples => samples.map(s => s.id === paymentSample.id ? { ...s, status: 'payment-confirm' } : s));
+      setSamples(samples => samples.map(s => s.id === paymentSample.id ? { ...s, status: 'payment-confirmed' } : s));
       setShowPaymentModal(false);
       setPaymentSample(null);
       setPaymentDescription('Khách hàng đã thanh toán đủ chi phí');
@@ -125,7 +125,7 @@ const SampleCollection = ({ user }) => {
             const histories = Array.isArray(b.bookingHistories_on_booking) ? b.bookingHistories_on_booking : [];
             return histories.some(h => {
               const s = (h.status || '').toUpperCase();
-              return s === 'SAMPLE_RECEIVED' || s === 'READY_FOR_SAMPLE' || s === 'PREPARED';
+              return s === 'SAMPLE_RECEIVED' || s === 'STAFF_ASSIGNED' || s === 'PREPARED';
             });
           })
           .map(b => {
@@ -140,7 +140,8 @@ const SampleCollection = ({ user }) => {
               if (latestStatus === 'EXPIRED') return 'overdue';
               if (histories.some(h => h.status?.toUpperCase() === 'SAMPLE_COLLECTED')) return 'collected';
               if (histories.some(h => h.status?.toUpperCase() === 'SAMPLE_RECEIVED')) return 'sample-received';
-              if (histories.some(h => h.status?.toUpperCase() === 'READY_FOR_SAMPLE')) return 'ready';
+              if (histories.some(h => h.status?.toUpperCase() === 'PAYMENT_CONFIRMED')) return 'payment-confirmed';
+              if (histories.some(h => h.status?.toUpperCase() === 'STAFF_ASSIGNED')) return 'ready';
               if (histories.some(h => h.status?.toUpperCase() === 'PREPARED')) return 'prepared';
               const fallbackStatus = b.status?.toUpperCase() || 'SCHEDULED';
               return fallbackStatus.toLowerCase().replaceAll('_', '-');
@@ -239,7 +240,7 @@ const SampleCollection = ({ user }) => {
       'ready': { bg: 'warning', text: 'Chuẩn bị thu mẫu' },
       'prepared': { bg: 'info', text: 'Đã chuẩn bị dụng cụ' },
       'sample-received': { bg: 'primary', text: 'Chờ thu mẫu' },
-      'payment-confirm': { bg: 'warning', text: 'Khách đã tới' },
+      'payment-confirmed': { bg: 'warning', text: 'Khách đã tới' },
       'collected': { bg: 'success', text: 'Đã thu mẫu' },
       'transferred': { bg: 'dark', text: 'Đã chuyển lab' },
       'overdue': { bg: 'danger', text: 'Quá hạn' }
@@ -553,8 +554,8 @@ const SampleCollection = ({ user }) => {
                                 Khách hàng đã tới
                               </Button>
                             )}
-                            {/* Nút xác nhận thanh toán cho trạng thái payment-confirm */}
-                            {sample.status === 'payment-confirm' && (
+                            {/* Nút xác nhận thanh toán cho trạng thái payment-confirmed */}
+                            {sample.status === 'payment-confirmed' && (
                               <Button
                                 size="sm"
                                 variant="warning"
@@ -632,13 +633,13 @@ const SampleCollection = ({ user }) => {
                           <Modal show={showArrivedModal} onHide={() => setShowArrivedModal(false)}>
                             <Modal.Header closeButton>
                               <Modal.Title>
-                                {arrivedSample?.status === 'payment-confirm'
+                                {arrivedSample?.status === 'payment-confirmed'
                                   ? 'Xác nhận khách đã thanh toán và chuyển sang chờ thu mẫu'
                                   : 'Xác nhận đã tới nhà khách hàng'}
                               </Modal.Title>
                             </Modal.Header>
                             <Modal.Body>
-                              {arrivedSample?.status === 'payment-confirm' ? (
+                              {arrivedSample?.status === 'payment-confirmed' ? (
                                 <>
                                   <p>Bạn xác nhận khách hàng đã thanh toán cho đơn <b>{arrivedSample?.id}</b> và chuyển sang chờ thu mẫu?</p>
                                   <Form>
@@ -697,7 +698,7 @@ const SampleCollection = ({ user }) => {
                                 Hủy
                               </Button>
                               <Button variant="info" onClick={() => {
-                                if (arrivedSample?.status === 'payment-confirm') {
+                                if (arrivedSample?.status === 'payment-confirmed') {
                                   // Xác nhận thanh toán, chuyển sang SAMPLE_RECEIVED
                                   addBookingHistory({
                                     bookingId: arrivedSample.id,
