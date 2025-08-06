@@ -45,12 +45,12 @@ const OrderTracking = () => {
         PENDING_PAYMENT: { title: 'Chờ thanh toán', description: 'Vui lòng hoàn tất thanh toán', icon: 'bi-credit-card' },
         PAYMENT_FAILED: { title: 'Thanh toán thất bại', description: 'Thanh toán không thành công', icon: 'bi-x-circle-fill' },
         PAYMENT_CONFIRMED: { title: 'Đã thanh toán', description: 'Thanh toán đã được xác nhận', icon: 'bi-check-circle-fill' },
-        BOOKED: { title: 'Đã xác nhận lịch hẹn', description: 'Lịch hẹn đã được xác nhận', icon: 'bi-calendar-check' },
-        SAMPLE_RECEIVED: { title: 'Đã nhận mẫu', description: 'Mẫu đã được nhận tại phòng lab', icon: 'bi-box-arrow-in-down' },
-        SAMPLE_COLLECTED: { title: 'Đã thu mẫu', description: 'Mẫu đã được thu thập thành công', icon: 'bi-droplet-fill' },
-        SAMPLE_PROCESSING: { title: 'Đang phân tích mẫu', description: 'Đang tiến hành phân tích ADN tại phòng lab', icon: 'bi-eye' },
-        RESULT_PENDING: { title: 'Chờ kết quả', description: 'Đang chờ kết quả xét nghiệm', icon: 'bi-clock-history' },
-        COMPLETE: { title: 'Hoàn thành', description: 'Kết quả đã sẵn sàng', icon: 'bi-file-earmark-check' },
+        BOOKED: { title: 'Đã xác nhận lịch hẹn', description: 'Lịch hẹn đã được xác nhận và chuẩn bị cho khách hàng', icon: 'bi-calendar-check' },
+        PREPARED: { title: 'Đã xác nhận lịch hẹn', description: 'Lịch hẹn đã được xác nhận và chuẩn bị cho khách hàng', icon: 'bi-box-seam' },
+        SAMPLE_RECEIVED: { title: 'Đã thu và nhận mẫu', description: 'Mẫu đã được thu và nhận tại phòng lab', icon: 'bi-box-arrow-in-down' },
+        SAMPLE_COLLECTED: { title: 'Phân tích mẫu và chuẩn bị xét nghiệm', description: 'Mẫu đã được thu thập và phân tích sơ bộ thành công', icon: 'bi-droplet-fill' },
+        RESULT_PENDING: { title: 'Đang tiến hành xét nghiệm và chờ kết quả', description: 'Đang tiến hành xét nghiệm và chờ kết quả xét nghiệm', icon: 'bi-clock-history' },
+        COMPLETE: { title: 'Xét nghiệm xong và đã trả kết quả trên app', description: 'Kết quả đã sẵn sàng', icon: 'bi-file-earmark-check' },
         SENT_RESULT: { title: 'Đã giao kết quả', description: 'Kết quả đã được giao cho khách hàng', icon: 'bi-send-check' },
         CANCELLED: { title: 'Đã hủy', description: 'Đơn hàng đã bị hủy', icon: 'bi-x-circle' },
         EXPIRED: { title: 'Đã hết hạn', description: 'Đơn hàng đã hết hạn', icon: 'bi-clock-history' },
@@ -59,12 +59,10 @@ const OrderTracking = () => {
         KIT_PREPARED: { title: 'Đã chuẩn bị kit', description: 'Kit xét nghiệm đã được chuẩn bị', icon: 'bi-box-seam' },
         KIT_SENT: { title: 'Đã gửi kit', description: 'Kit đã được gửi đến địa chỉ của bạn', icon: 'bi-truck' },
         KIT_RECEIVED: { title: 'Đã nhận kit', description: 'Khách hàng đã nhận được kit xét nghiệm', icon: 'bi-box-arrow-in-down' },
-        SELF_COLLECTED: { title: 'Đã tự thu mẫu', description: 'Khách hàng đã tự thu mẫu', icon: 'bi-droplet' },
         KIT_RETURNED: { title: 'Đã gửi mẫu về', description: 'Khách hàng đã gửi mẫu về phòng lab', icon: 'bi-send' },
         
         // Home-visit specific statuses - Trạng thái cho phương thức nhân viên tới nhà
         STAFF_ASSIGNED: { title: 'Đã chỉ định nhân viên', description: 'Nhân viên sẽ đến thu mẫu theo lịch hẹn', icon: 'bi-person-check' },
-        STAFF_CONFIRMED: { title: 'Nhân viên xác nhận', description: 'Nhân viên xác nhận sẽ đến đúng hẹn', icon: 'bi-person-video2' },
     };
 
     /**
@@ -91,7 +89,6 @@ const OrderTracking = () => {
                 'KIT_PREPARED',
                 'KIT_SENT',
                 'KIT_RECEIVED',
-                'SELF_COLLECTED',
                 'KIT_RETURNED',
                 'SAMPLE_RECEIVED',
                 'SAMPLE_COLLECTED',
@@ -123,19 +120,42 @@ const OrderTracking = () => {
         
         // BƯỚC 3.3: Lab-visit method (lấy mẫu tại lab/cơ sở)
         if (methodId === '2' || methodName.includes('tại lab') || methodName.includes('cơ sở') || methodName.includes('lab') || methodName.includes('facility')) {
-            return [
-                'CREATED',
-                'PENDING_PAYMENT',
-                'PAYMENT_FAILED',
-                'BOOKED',
-                'SAMPLE_RECEIVED',
-                'SAMPLE_COLLECTED',
-                'RESULT_PENDING',
-                'COMPLETE',
-                'SENT_RESULT',
-                'CANCELLED',
-                'EXPIRED'
-            ];
+            // Kiểm tra xem đã thanh toán chưa dựa vào trạng thái hiện tại
+            const currentStatus = booking?.bookingHistories_on_booking?.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0]?.status;
+            const hasPayment = currentStatus === 'BOOKED'; // BOOKED = đã thanh toán, PREPARED = chưa thanh toán
+            
+            if (hasPayment) {
+                // Lab-visit (đã thanh toán) - timeline: BOOKED → SAMPLE_RECEIVED → ...
+                return [
+                    'CREATED',
+                    'PENDING_PAYMENT',
+                    'PAYMENT_FAILED',
+                    'BOOKED',
+                    'SAMPLE_RECEIVED',
+                    'SAMPLE_COLLECTED',
+                    'RESULT_PENDING',
+                    'COMPLETE',
+                    'SENT_RESULT',
+                    'CANCELLED',
+                    'EXPIRED'
+                ];
+            } else {
+                // Lab-visit (chưa thanh toán) - timeline: PREPARED → PAYMENT_CONFIRMED → ...
+                return [
+                    'CREATED',
+                    'PENDING_PAYMENT',
+                    'PAYMENT_FAILED',
+                    'PREPARED',
+                    'PAYMENT_CONFIRMED',
+                    'SAMPLE_RECEIVED',
+                    'SAMPLE_COLLECTED',
+                    'RESULT_PENDING',
+                    'COMPLETE',
+                    'SENT_RESULT',
+                    'CANCELLED',
+                    'EXPIRED'
+                ];
+            }
         }
         
         // BƯỚC 3.4: Default timeline nếu không khớp
@@ -246,10 +266,6 @@ const OrderTracking = () => {
      * HELPER FUNCTION: Tạo action button cho từng trạng thái
      * INPUT: statusKey (string) - trạng thái hiện tại, currentStatus (string) - trạng thái hiện tại
      * OUTPUT: JSX Button component hoặc null
-     * BƯỚC 1: Kiểm tra nếu có booking và method
-     * BƯỚC 2: Xác định methodId và methodName
-     * BƯỚC 3: Tạo action buttons cho user (self-collection method)
-     * BƯỚC 4: Tạo action buttons cho staff (tất cả methods)
      */
     const getActionButtonForStatus = (statusKey, currentStatus) => {
         if (!booking || !booking.method) return null;
@@ -257,147 +273,16 @@ const OrderTracking = () => {
         const methodId = booking.method.id;
         const methodName = booking.method.name?.toLowerCase() || '';
         
-        // BƯỚC 3: User actions cho self-collection method
+        // Action buttons cho khách hàng với self-collection method
         if (isUser() && (methodId === '0' || methodName.includes('tự') || methodName.includes('self'))) {
             if (statusKey === 'KIT_SENT' && currentStatus === 'KIT_SENT') {
                 return <Button variant="success" size="sm" onClick={() => handleActionClick('KIT_RECEIVED')} className="mt-2 w-100"><i className="bi bi-box-arrow-in-down me-2"></i>Xác nhận đã nhận Kit</Button>;
             }
             if (statusKey === 'KIT_RECEIVED' && currentStatus === 'KIT_RECEIVED') {
-                return <Button variant="primary" size="sm" onClick={() => handleActionClick('SELF_COLLECTED')} className="mt-2 w-100"><i className="bi bi-droplet me-2"></i>Xác nhận đã thu mẫu</Button>;
-            }
-            if (statusKey === 'SELF_COLLECTED' && currentStatus === 'SELF_COLLECTED') {
-                return <Button variant="primary" size="sm" onClick={() => handleActionClick('KIT_RETURNED')} className="mt-2 w-100"><i className="bi bi-send me-2"></i>Xác nhận đã gửi mẫu về</Button>;
+                return <Button variant="primary" size="sm" onClick={() => handleActionClick('KIT_RETURNED')} className="mt-2 w-100"><i className="bi bi-send me-2"></i>Xác nhận đã gửi lại Kit</Button>;
             }
         }
         
-        // BƯỚC 4: Staff actions cho tất cả methods
-        if (isStaff()) {
-            // Self-sample method staff actions
-            if (methodId === '0' || methodName.includes('tự') || methodName.includes('self')) {
-                if (statusKey === 'BOOKED' && ['CREATED', 'PENDING_PAYMENT', 'BOOKED'].includes(currentStatus)) {
-                    return (
-                        <div className="d-grid gap-2 mt-2">
-                            <Button variant="outline-primary" size="sm" onClick={() => handleActionClick('KIT_PREPARED')}>Chuẩn bị kit xét nghiệm</Button>
-                        </div>
-                    );
-                }
-                
-                if (statusKey === 'KIT_PREPARED' && currentStatus === 'KIT_PREPARED') {
-                    return (
-                        <div className="d-grid gap-2 mt-2">
-                            <Button variant="outline-primary" size="sm" onClick={() => handleActionClick('KIT_SENT')}>Gửi kit xét nghiệm</Button>
-                        </div>
-                    );
-                }
-                
-                if (statusKey === 'KIT_RETURNED' && currentStatus === 'KIT_RETURNED') {
-                    return (
-                        <div className="d-grid gap-2 mt-2">
-                            <Button variant="outline-primary" size="sm" onClick={() => handleActionClick('SAMPLE_RECEIVED')}>Xác nhận đã nhận mẫu</Button>
-                        </div>
-                    );
-                }
-                
-                if (statusKey === 'SAMPLE_RECEIVED' && currentStatus === 'SAMPLE_RECEIVED') {
-                    return (
-                        <div className="d-grid gap-2 mt-2">
-                            <Button variant="outline-primary" size="sm" onClick={() => handleActionClick('SAMPLE_COLLECTED')}>Xác nhận đã thu mẫu</Button>
-                        </div>
-                    );
-                }
-                
-                if (statusKey === 'SAMPLE_COLLECTED' && currentStatus === 'SAMPLE_COLLECTED') {
-                    return (
-                        <div className="d-grid gap-2 mt-2">
-                            <Button variant="outline-primary" size="sm" onClick={() => handleActionClick('RESULT_PENDING')}>Bắt đầu xử lý mẫu</Button>
-                        </div>
-                    );
-                }
-                
-                if (statusKey === 'RESULT_PENDING' && currentStatus === 'RESULT_PENDING') {
-                    return (
-                        <div className="d-grid gap-2 mt-2">
-                            <Button variant="outline-success" size="sm" onClick={() => handleActionClick('COMPLETE')}>Công bố kết quả</Button>
-                        </div>
-                    );
-                }
-            } else if (methodId === '1' || methodName.includes('tại nhà')) {
-                // Home visit method staff actions
-                if (statusKey === 'BOOKED' && ['CREATED', 'PENDING_PAYMENT', 'BOOKED'].includes(currentStatus)) {
-                    return (
-                        <div className="d-grid gap-2 mt-2">
-                            <Button variant="outline-primary" size="sm" onClick={() => handleActionClick('STAFF_ASSIGNED')}>Chỉ định nhân viên</Button>
-                        </div>
-                    );
-                }
-                
-                if (statusKey === 'STAFF_ASSIGNED' && currentStatus === 'STAFF_ASSIGNED') {
-                    return (
-                        <div className="d-grid gap-2 mt-2">
-                            <Button variant="outline-primary" size="sm" onClick={() => handleActionClick('SAMPLE_COLLECTED')}>Xác nhận đã thu mẫu</Button>
-                        </div>
-                    );
-                }
-                
-                if (statusKey === 'SAMPLE_COLLECTED' && currentStatus === 'SAMPLE_COLLECTED') {
-                    return (
-                        <div className="d-grid gap-2 mt-2">
-                            <Button variant="outline-primary" size="sm" onClick={() => handleActionClick('SAMPLE_RECEIVED')}>Xác nhận đã nhận mẫu</Button>
-                        </div>
-                    );
-                }
-                
-                if (statusKey === 'SAMPLE_RECEIVED' && currentStatus === 'SAMPLE_RECEIVED') {
-                    return (
-                        <div className="d-grid gap-2 mt-2">
-                            <Button variant="outline-primary" size="sm" onClick={() => handleActionClick('RESULT_PENDING')}>Bắt đầu xử lý mẫu</Button>
-                        </div>
-                    );
-                }
-                
-                if (statusKey === 'RESULT_PENDING' && currentStatus === 'RESULT_PENDING') {
-                    return (
-                        <div className="d-grid gap-2 mt-2">
-                            <Button variant="outline-success" size="sm" onClick={() => handleActionClick('COMPLETE')}>Công bố kết quả</Button>
-                        </div>
-                    );
-                }
-            } else {
-                // Lab visit method staff actions
-                if (statusKey === 'BOOKED' && ['CREATED', 'PENDING_PAYMENT', 'BOOKED'].includes(currentStatus)) {
-                    return (
-                        <div className="d-grid gap-2 mt-2">
-                            <Button variant="outline-primary" size="sm" onClick={() => handleActionClick('SAMPLE_RECEIVED')}>Xác nhận khách đến</Button>
-                        </div>
-                    );
-                }
-                
-                if (statusKey === 'SAMPLE_RECEIVED' && currentStatus === 'SAMPLE_RECEIVED') {
-                    return (
-                        <div className="d-grid gap-2 mt-2">
-                            <Button variant="outline-primary" size="sm" onClick={() => handleActionClick('SAMPLE_COLLECTED')}>Xác nhận đã thu mẫu</Button>
-                        </div>
-                    );
-                }
-                
-                if (statusKey === 'SAMPLE_COLLECTED' && currentStatus === 'SAMPLE_COLLECTED') {
-                    return (
-                        <div className="d-grid gap-2 mt-2">
-                            <Button variant="outline-primary" size="sm" onClick={() => handleActionClick('RESULT_PENDING')}>Bắt đầu xử lý mẫu</Button>
-                        </div>
-                    );
-                }
-                
-                if (statusKey === 'RESULT_PENDING' && currentStatus === 'RESULT_PENDING') {
-                    return (
-                        <div className="d-grid gap-2 mt-2">
-                            <Button variant="outline-success" size="sm" onClick={() => handleActionClick('COMPLETE')}>Công bố kết quả</Button>
-                        </div>
-                    );
-                }
-            }
-        }
-
         return null;
     };
 
@@ -531,8 +416,8 @@ const OrderTracking = () => {
                                 <div className="flex-grow-1">
                                     <Card className={`border-${getStatusColor()} ${isCurrent ? 'bg-primary bg-opacity-10' : statusKey === 'CANCELLED' || statusKey === 'EXPIRED' || statusKey === 'PAYMENT_FAILED' ? 'bg-danger bg-opacity-10' : statusKey === 'SENT_RESULT' ? 'bg-success bg-opacity-10' : ''}`}>
                                         <Card.Body className="py-3">
-                                            <div className="d-flex justify-content-between align-items-start">
-                                                <div>
+                                            <div className="d-flex justify-content-start align-items-start">
+                                                <div className="flex-grow-1">
                                                     <h6 className={`mb-1 ${isCurrent ? 'text-primary fw-bold' : statusKey === 'CANCELLED' || statusKey === 'EXPIRED' || statusKey === 'PAYMENT_FAILED' ? 'text-danger fw-bold' : statusKey === 'SENT_RESULT' ? 'text-success fw-bold' : ''}`}>
                                                         <i className={`${statusInfo.icon} me-2`}></i>{statusInfo.title}
                                                     </h6>
